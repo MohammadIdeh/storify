@@ -1,11 +1,11 @@
-// ignore: file_names
+import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/utilis/animation.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-/// LoginScreen with an animated wave background.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,6 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final FocusNode _passwordFocusNode = FocusNode();
   Color forgotPasswordTextColor = const Color.fromARGB(255, 105, 65, 198);
   bool _isRemembered = false;
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -33,6 +35,20 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  /// Simulate your API call. Notice that the button remains active,
+  /// but we prevent multiple calls by checking _isLoading.
+  Future<void> _performLogin() async {
+    setState(() {
+      _isLoading = true;
+    });
+    // Simulate API call delay. Replace with your actual API call.
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      _isLoading = false;
+    });
+    // Continue with navigation or further actions...
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,9 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: WaveBackground(
-              child: const SizedBox.shrink(),
-            ),
+            child: WaveBackground(child: const SizedBox.shrink()),
           ),
           Align(
             alignment: Alignment.topLeft,
@@ -101,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 70),
-
                             Padding(
                               padding: const EdgeInsets.only(right: 330.0),
                               child: Text(
@@ -155,7 +168,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 15),
-
                             // Password label and text field
                             Padding(
                               padding: const EdgeInsets.only(right: 300.0),
@@ -173,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 370,
                               height: 50,
                               child: TextField(
-                                obscureText: true,
+                                obscureText: _obscurePassword,
                                 focusNode: _passwordFocusNode,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
@@ -184,8 +196,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       const Color.fromARGB(255, 48, 60, 80),
                                   hintText: "Password",
                                   hintStyle: GoogleFonts.inter(
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w400),
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide(
@@ -206,10 +219,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
                                   ),
+                                  // Add the suffix icon here.
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
                                 ),
                                 style: GoogleFonts.inter(color: Colors.white),
                               ),
                             ),
+
                             const SizedBox(height: 10),
                             Padding(
                               padding: const EdgeInsets.only(
@@ -278,11 +306,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 35),
+                            // Updated login button using flutter_spinkit for loading animation.
                             SizedBox(
                               height: 45,
                               width: 370,
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () async {
+                                  if (_isLoading) return;
+                                  await _performLogin();
+                                },
                                 style: ElevatedButton.styleFrom(
                                   shape: ContinuousRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
@@ -290,14 +322,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                   backgroundColor:
                                       const Color.fromARGB(255, 105, 65, 198),
                                 ),
-                                child: Text(
-                                  "Log In",
-                                  style: GoogleFonts.inter(
-                                      color: Colors.white, fontSize: 16),
+                                child: Center(
+                                  child: _isLoading
+                                      ? SpinKitThreeBounce(
+                                          color: Colors.white,
+                                          size: 20.0,
+                                        )
+                                      : Text(
+                                          "Log In",
+                                          style: GoogleFonts.inter(
+                                              color: Colors.white,
+                                              fontSize: 16),
+                                        ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 10),
+                            // ... (rest of your buttons, e.g., for Google and Apple sign in)
                             SizedBox(
                               height: 45,
                               width: 370,
@@ -317,13 +358,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     SvgPicture.asset(
-                                      'assets/images/google.svg', // Path to your Google SVG icon
-                                      width: 20, // Set the width of the icon
-                                      height: 20, // Set the height of the icon
+                                      'assets/images/google.svg',
+                                      width: 20,
+                                      height: 20,
                                     ),
-                                    const SizedBox(
-                                        width:
-                                            10), // Add space between the icon and the text
+                                    const SizedBox(width: 10),
                                     Text(
                                       "Sign in with Google",
                                       style: GoogleFonts.inter(
@@ -353,13 +392,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     SvgPicture.asset(
-                                      'assets/images/apple.svg', // Path to your Google SVG icon
-                                      width: 22, // Set the width of the icon
-                                      height: 22, // Set the height of the icon
+                                      'assets/images/apple.svg',
+                                      width: 22,
+                                      height: 22,
                                     ),
-                                    const SizedBox(
-                                        width:
-                                            10), // Add space between the icon and the text
+                                    const SizedBox(width: 10),
                                     Text(
                                       "Sign in with Apple",
                                       style: GoogleFonts.inter(
@@ -373,7 +410,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    // Right side - Side container with image
+                    // Right side - Side container with image (if screen width allows)
                     if (constraints.maxWidth > 800)
                       Expanded(
                         flex: 2,
@@ -390,17 +427,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 500,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Color.fromARGB(255, 124, 102, 185),
+                                  color:
+                                      const Color.fromARGB(255, 124, 102, 185),
                                 ),
                                 child: ClipOval(
                                   child: SvgPicture.asset(
                                     'assets/images/logo.svg',
-                                    width:
-                                        500, // Ensure this matches the container's width
-                                    height:
-                                        500, // Ensure this matches the container's height
-                                    fit: BoxFit
-                                        .fill, // This ensures the SVG fills the circle
+                                    width: 500,
+                                    height: 500,
+                                    fit: BoxFit.fill,
                                   ),
                                 ),
                               ),
