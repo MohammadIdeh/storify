@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(height: 5.h),
                             SizedBox(
                               width: 370.w, // Scaled width
-                              height: 50.h, // Scaled height
+                              height: 65.h, // Scaled height
                               child: TextField(
                                 focusNode: _emailFocusNode,
                                 cursorColor:
@@ -191,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(height: 5.h),
                             SizedBox(
                               width: 370.w, // Scaled width
-                              height: 50.h, // Scaled height
+                              height: 65.h, // Scaled height
                               child: TextField(
                                 obscureText: _obscurePassword,
                                 focusNode: _passwordFocusNode,
@@ -319,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(height: 35.h),
                             // Updated login button using flutter_spinkit for loading animation.
                             SizedBox(
-                              height: 45.h, // Scaled height
+                              height: 55.h, // Scaled height
                               width: 370.w, // Scaled width
                               child: ElevatedButton(
                                 onPressed: () async {
@@ -353,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(height: 10.h),
                             // Google and Apple sign in buttons
                             SizedBox(
-                              height: 45.h,
+                              height: 55.h,
                               width: 370.w,
                               child: ElevatedButton(
                                 onPressed: () {},
@@ -388,7 +388,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             SizedBox(height: 10.h),
                             SizedBox(
-                              height: 45.h,
+                              height: 55.h,
                               width: 370.w,
                               child: ElevatedButton(
                                 onPressed: () {},
