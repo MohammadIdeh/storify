@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/loginScreen.dart';
 
 void main() {
@@ -10,9 +11,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false, // Removes the debug banner
-      home: LoginScreen(),
+    return ScreenUtilInit(
+      designSize: Size(1920, 1080), // Set to laptop screen size
+      minTextAdapt: true,
+      splitScreenMode: true,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false, // Removes the debug banner
+        home: LoginScreen(),
+      ),
     );
   }
 }

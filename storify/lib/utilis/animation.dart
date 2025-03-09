@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 class WaveBackground extends StatefulWidget {
   final Widget child;
-  const WaveBackground({Key? key, required this.child}) : super(key: key);
+  const WaveBackground({super.key, required this.child});
 
   @override
   _WaveBackgroundState createState() => _WaveBackgroundState();

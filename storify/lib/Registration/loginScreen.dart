@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/utilis/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // Add this import
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,20 +62,20 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.topLeft,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(20.w), // Scaling padding with ScreenUtil
               child: Row(
                 children: [
                   SvgPicture.asset(
                     'assets/images/logo.svg',
-                    width: 27,
-                    height: 27,
+                    width: 27.w, // Scaled width
+                    height: 27.h, // Scaled height
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w), // Scaled spacing
                   Text(
                     "Storify",
                     style: GoogleFonts.inter(
                       color: Colors.white,
-                      fontSize: 25,
+                      fontSize: 25.sp, // Scaled font size
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -92,8 +93,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     Expanded(
                       flex: 2,
                       child: Padding(
-                        padding: const EdgeInsets.only(
-                            left: 40, right: 40, bottom: 140),
+                        padding: EdgeInsets.only(
+                            left: 40.w,
+                            right: 40.w,
+                            bottom: 140.h), // Scaled padding
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -101,35 +104,36 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               "Log in to your account",
                               style: GoogleFonts.inter(
-                                fontSize: 30,
+                                fontSize: 30.sp, // Scaled font size
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8.h), // Scaled spacing
                             Text(
                               "Welcome back! Please enter your details.",
                               style: GoogleFonts.inter(
                                 color: Colors.grey,
-                                fontSize: 16,
+                                fontSize: 16.sp, // Scaled font size
                               ),
                             ),
-                            const SizedBox(height: 70),
+                            SizedBox(height: 70.h), // Scaled spacing
                             Padding(
-                              padding: const EdgeInsets.only(right: 330.0),
+                              padding: EdgeInsets.only(
+                                  right: 330.w), // Scaled padding
                               child: Text(
                                 "Email",
                                 style: GoogleFonts.inter(
-                                  fontSize: 16,
+                                  fontSize: 16.sp, // Scaled font size
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 5),
+                            SizedBox(height: 5.h),
                             SizedBox(
-                              width: 370,
-                              height: 50,
+                              width: 370.w, // Scaled width
+                              height: 50.h, // Scaled height
                               child: TextField(
                                 focusNode: _emailFocusNode,
                                 cursorColor:
@@ -144,7 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       color: Colors.grey,
                                       fontWeight: FontWeight.w400),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        8.r), // Scaled radius
                                     borderSide: BorderSide(
                                       color: _emailFocusNode.hasFocus
                                           ? const Color.fromARGB(
@@ -154,36 +159,39 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        8.r), // Scaled radius
                                     borderSide: const BorderSide(
                                       color: Color.fromARGB(255, 141, 150, 158),
                                     ),
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        8.r), // Scaled radius
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
                                 style: GoogleFonts.inter(color: Colors.white),
                               ),
                             ),
-                            const SizedBox(height: 15),
+                            SizedBox(height: 15.h),
                             // Password label and text field
                             Padding(
-                              padding: const EdgeInsets.only(right: 300.0),
+                              padding: EdgeInsets.only(
+                                  right: 300.w), // Scaled padding
                               child: Text(
                                 "Password",
                                 style: GoogleFonts.inter(
-                                  fontSize: 16,
+                                  fontSize: 16.sp, // Scaled font size
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 5),
+                            SizedBox(height: 5.h),
                             SizedBox(
-                              width: 370,
-                              height: 50,
+                              width: 370.w, // Scaled width
+                              height: 50.h, // Scaled height
                               child: TextField(
                                 obscureText: _obscurePassword,
                                 focusNode: _passwordFocusNode,
@@ -200,7 +208,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontWeight: FontWeight.w400,
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        8.r), // Scaled radius
                                     borderSide: BorderSide(
                                       color: _passwordFocusNode.hasFocus
                                           ? const Color.fromARGB(
@@ -210,16 +219,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        8.r), // Scaled radius
                                     borderSide: const BorderSide(
                                       color: Color.fromARGB(255, 141, 150, 158),
                                     ),
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        8.r), // Scaled radius
                                     borderSide: BorderSide.none,
                                   ),
-                                  // Add the suffix icon here.
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       _obscurePassword
@@ -237,11 +247,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: GoogleFonts.inter(color: Colors.white),
                               ),
                             ),
-
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10.h),
+                            // Remember me and Forgot password
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 250.0, right: 250),
+                              padding:
+                                  EdgeInsets.only(left: 250.w, right: 250.w),
                               child: Row(
                                 children: [
                                   Checkbox(
@@ -257,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: GoogleFonts.inter(
                                       color: const Color.fromARGB(
                                           178, 255, 255, 255),
-                                      fontSize: 14,
+                                      fontSize: 14.sp, // Scaled font size
                                     ),
                                   ),
                                   const Spacer(),
@@ -271,7 +281,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           TextSpan(
                                             text: "Forgot Password?",
                                             style: GoogleFonts.inter(
-                                              fontSize: 14,
+                                              fontSize:
+                                                  14.sp, // Scaled font size
                                               fontWeight: FontWeight.w500,
                                               color: forgotPasswordTextColor,
                                             ),
@@ -305,11 +316,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 35),
+                            SizedBox(height: 35.h),
                             // Updated login button using flutter_spinkit for loading animation.
                             SizedBox(
-                              height: 45,
-                              width: 370,
+                              height: 45.h, // Scaled height
+                              width: 370.w, // Scaled width
                               child: ElevatedButton(
                                 onPressed: () async {
                                   if (_isLoading) return;
@@ -317,7 +328,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                                 style: ElevatedButton.styleFrom(
                                   shape: ContinuousRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(
+                                        20.r), // Scaled radius
                                   ),
                                   backgroundColor:
                                       const Color.fromARGB(255, 105, 65, 198),
@@ -332,16 +344,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                           "Log In",
                                           style: GoogleFonts.inter(
                                               color: Colors.white,
-                                              fontSize: 16),
+                                              fontSize:
+                                                  16.sp), // Scaled font size
                                         ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            // ... (rest of your buttons, e.g., for Google and Apple sign in)
+                            SizedBox(height: 10.h),
+                            // Google and Apple sign in buttons
                             SizedBox(
-                              height: 45,
-                              width: 370,
+                              height: 45.h,
+                              width: 370.w,
                               child: ElevatedButton(
                                 onPressed: () {},
                                 style: ElevatedButton.styleFrom(
@@ -349,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     side: const BorderSide(
                                       color: Color.fromARGB(38, 238, 238, 238),
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20.r),
                                   ),
                                   backgroundColor:
                                       const Color.fromARGB(255, 48, 60, 80),
@@ -359,23 +372,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                   children: [
                                     SvgPicture.asset(
                                       'assets/images/google.svg',
-                                      width: 20,
-                                      height: 20,
+                                      width: 20.w, // Scaled width
+                                      height: 20.h, // Scaled height
                                     ),
-                                    const SizedBox(width: 10),
+                                    SizedBox(width: 10.w), // Scaled spacing
                                     Text(
                                       "Sign in with Google",
                                       style: GoogleFonts.inter(
-                                          color: Colors.white, fontSize: 16),
+                                          color: Colors.white,
+                                          fontSize: 16.sp), // Scaled font size
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10.h),
                             SizedBox(
-                              height: 45,
-                              width: 370,
+                              height: 45.h,
+                              width: 370.w,
                               child: ElevatedButton(
                                 onPressed: () {},
                                 style: ElevatedButton.styleFrom(
@@ -383,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     side: const BorderSide(
                                       color: Color.fromARGB(38, 238, 238, 238),
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20.r),
                                   ),
                                   backgroundColor:
                                       const Color.fromARGB(255, 48, 60, 80),
@@ -393,14 +407,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                   children: [
                                     SvgPicture.asset(
                                       'assets/images/apple.svg',
-                                      width: 22,
-                                      height: 22,
+                                      width: 22.w, // Scaled width
+                                      height: 22.h, // Scaled height
                                     ),
-                                    const SizedBox(width: 10),
+                                    SizedBox(width: 10.w), // Scaled spacing
                                     Text(
                                       "Sign in with Apple",
                                       style: GoogleFonts.inter(
-                                          color: Colors.white, fontSize: 16),
+                                          color: Colors.white,
+                                          fontSize: 16.sp), // Scaled font size
                                     ),
                                   ],
                                 ),
@@ -415,16 +430,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(
                         flex: 2,
                         child: Padding(
-                          padding: const EdgeInsets.all(25.0),
+                          padding: EdgeInsets.all(25.w), // Scaled padding
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(39),
+                              borderRadius:
+                                  BorderRadius.circular(39.r), // Scaled radius
                               color: const Color.fromARGB(255, 41, 52, 68),
                             ),
                             child: Center(
                               child: Container(
-                                width: 500,
-                                height: 500,
+                                width: 500.w, // Scaled width
+                                height: 500.h, // Scaled height
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color:
@@ -433,8 +449,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: ClipOval(
                                   child: SvgPicture.asset(
                                     'assets/images/logo.svg',
-                                    width: 500,
-                                    height: 500,
+                                    width: 500.w, // Scaled width
+                                    height: 500.h, // Scaled height
                                     fit: BoxFit.fill,
                                   ),
                                 ),
