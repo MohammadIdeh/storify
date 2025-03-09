@@ -27,3 +27,9 @@ flutter:
     - assets/images/logo.svg
     - assets/images/google.svg
     - assets/images/apple.svg
+    - assets/images/changePass.svg 
+    - assets/images/emailcheck.svg  
+    - assets/images/emailSnack.svg    
+    - assets/images/changePassword.svg
+    - assets/images/passChanged.svg
+

@@ -3,7 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/utilis/animation.dart';
+import 'package:storify/Registration/Screens/forgotPassword.dart';
+import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Add this import
 
@@ -47,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isLoading = false;
     });
-    // Continue with navigation or further actions...
   }
 
   @override
@@ -272,9 +272,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const Spacer(),
                                   GestureDetector(
-                                    onTap: () {
-                                      // Navigate to forgot password screen
-                                    },
                                     child: RichText(
                                       text: TextSpan(
                                         children: [
@@ -299,6 +296,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   forgotPasswordTextColor =
                                                       const Color.fromARGB(
                                                           255, 105, 65, 198);
+                                                });
+                                                setState(() {
+                                                  Navigator.of(context).push(
+                                                    PageRouteBuilder(
+                                                      pageBuilder: (context,
+                                                              animation,
+                                                              secondaryAnimation) =>
+                                                          const Forgotpassword(),
+                                                      transitionsBuilder:
+                                                          (context,
+                                                              animation,
+                                                              secondaryAnimation,
+                                                              child) {
+                                                        return FadeTransition(
+                                                          opacity: animation,
+                                                          child: child,
+                                                        );
+                                                      },
+                                                      transitionDuration:
+                                                          const Duration(
+                                                              milliseconds:
+                                                                  600), // Set longer duration here
+                                                    ),
+                                                  );
                                                 });
                                               }
                                               ..onTapCancel = () {
@@ -372,8 +393,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   children: [
                                     SvgPicture.asset(
                                       'assets/images/google.svg',
-                                      width: 20.w, // Scaled width
-                                      height: 20.h, // Scaled height
+                                      width: 25.w, // Scaled width
+                                      height: 25.h, // Scaled height
                                     ),
                                     SizedBox(width: 10.w), // Scaled spacing
                                     Text(
@@ -407,8 +428,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   children: [
                                     SvgPicture.asset(
                                       'assets/images/apple.svg',
-                                      width: 22.w, // Scaled width
-                                      height: 22.h, // Scaled height
+                                      width: 25.w, // Scaled width
+                                      height: 25.h, // Scaled height
                                     ),
                                     SizedBox(width: 10.w), // Scaled spacing
                                     Text(
@@ -439,8 +460,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Center(
                               child: Container(
-                                width: 500.w, // Scaled width
-                                height: 500.h, // Scaled height
+                                width: 450, // Scaled width
+                                height: 450, // Scaled height
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color:
@@ -449,8 +470,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: ClipOval(
                                   child: SvgPicture.asset(
                                     'assets/images/logo.svg',
-                                    width: 500.w, // Scaled width
-                                    height: 500.h, // Scaled height
+                                    width: 450, // Scaled width
+                                    height: 450, // Scaled height
                                     fit: BoxFit.fill,
                                   ),
                                 ),
