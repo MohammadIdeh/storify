@@ -32,4 +32,13 @@ flutter:
     - assets/images/emailSnack.svg    
     - assets/images/changePassword.svg
     - assets/images/passChanged.svg
-
+    - assets/images/home.svg
+    - assets/images/products.svg
+    - assets/images/orders.svg
+    - assets/images/stores.svg
+    - assets/images/search.svg
+    - assets/images/noti.svg
+    - assets/images/me.png
+    - assets/images/filter.svg
+    - assets/images/totalProducts.svg
+    - assets/images/arrow_up.svg

@@ -67,7 +67,7 @@ class _CustomSnackBarState extends State<CustomSnackBar> {
                 SizedBox(width: 10.w),
                 Text(
                   widget.text,
-                  style: GoogleFonts.inter(color: Colors.white),
+                  style: GoogleFonts.spaceGrotesk(color: Colors.white),
                 ),
               ],
             ),
