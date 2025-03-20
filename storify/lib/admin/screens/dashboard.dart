@@ -112,50 +112,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
                 SizedBox(height: 40.h),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 428),
-                      child: StatsCard(
-                        percentage: "20 %",
-                        svgIconPath: "assets/images/totalProducts.svg",
-                        title: "Total Products",
-                        value: "25,430",
-                      ),
-                    ),
-                    SizedBox(width: 40),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 428),
-                      child: StatsCard(
-                        percentage: "20 %",
-                        svgIconPath: "assets/images/totalProducts.svg",
-                        title: "Total Products",
-                        value: "25,430",
-                      ),
-                    ),
-                    SizedBox(width: 40),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 428),
-                      child: StatsCard(
-                        percentage: "20 %",
-                        svgIconPath: "assets/images/totalProducts.svg",
-                        title: "Total Products",
-                        value: "25,430",
-                      ),
-                    ),
-                    SizedBox(width: 40),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 428),
-                      child: StatsCard(
-                        percentage: "20 %",
-                        svgIconPath: "assets/images/totalProducts.svg",
-                        title: "Total Products",
-                        value: "25,430",
-                      ),
-                    ),
-                  ],
-                )
+                Wrap(alignment: WrapAlignment.center, children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Total available width
+                      final availableWidth = constraints.maxWidth - 41;
+                      // Number of cards per row
+                      final numberOfCards = 4;
+                      // Horizontal spacing between cards (using SizedBox width)
+                      final spacing = 40.0;
+
+                      // Calculate the dynamic width for each card.
+                      // (Subtract spacing between cards from the total width)
+                      final cardWidth =
+                          (availableWidth - ((numberOfCards - 1) * spacing)) /
+                              numberOfCards;
+
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: 20,
+                        children: [
+                          Container(
+                            width: cardWidth,
+                            child: StatsCard(
+                              percentage: "20 %",
+                              svgIconPath: "assets/images/totalProducts.svg",
+                              title: "Total Products",
+                              value: "25,430",
+                            ),
+                          ),
+                          Container(
+                            width: cardWidth,
+                            child: StatsCard(
+                              percentage: "20 %",
+                              svgIconPath: "assets/images/totalProducts.svg",
+                              title: "Total Products",
+                              value: "25,430",
+                            ),
+                          ),
+                          Container(
+                            width: cardWidth,
+                            child: StatsCard(
+                              percentage: "20 %",
+                              svgIconPath: "assets/images/totalProducts.svg",
+                              title: "Total Products",
+                              value: "25,430",
+                            ),
+                          ),
+                          Container(
+                            width: cardWidth,
+                            child: StatsCard(
+                              percentage: "20 %",
+                              svgIconPath: "assets/images/totalProducts.svg",
+                              title: "Total Products",
+                              value: "25,430",
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ])
               ],
             ),
           ),
