@@ -44,7 +44,7 @@ class StatsCard extends StatelessWidget {
               final titleFontSize =
                   constraints.maxWidth * 0.045; // ~15/318 of width
               final valueFontSize =
-                  constraints.maxWidth * 0.11; // ~35/318 of width
+                  constraints.maxWidth * 0.10; // ~35/318 of width
               final percentageFontSize =
                   constraints.maxWidth * 0.045; // ~15/318 of width
               // The stats container originally was 140x140 which is about 44% of the width and 70% of the height.

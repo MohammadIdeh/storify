@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/widgets/longPressDraggable.dart';
+
+// Import your four dashboard widgets:
+import 'package:storify/admin/widgets/ordersBySuperMarket.dart';
+import 'package:storify/admin/widgets/ordersOverview.dart';
+import 'package:storify/admin/widgets/orderCount.dart';
+import 'package:storify/admin/widgets/profit.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/widgets/cards.dart';
+import 'package:storify/admin/widgets/topProductsList.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,32 +23,72 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
-  // Example handler for tapping on nav items
+  // Our 4 dashboard widgets in a list (initial order).
+  final List<Widget> _dashboardWidgets = [
+    Ordersbysupermarket(
+      alShiniPercent: 50,
+      alSudaniPercent: 10,
+      alNidalPercent: 35,
+      tilalSurdaPercent: 30,
+      totalStores: 4,
+      key: UniqueKey(),
+    ),
+    Ordersoverview(key: UniqueKey()),
+    Ordercount(key: UniqueKey()),
+    Profit(key: UniqueKey()),
+  ];
+
+  // Our 4 StatsCards in a list (initial order).
+  final List<Widget> _statsCards = [
+    StatsCard(
+      percentage: "20 %",
+      svgIconPath: "assets/images/totalProducts.svg",
+      title: "Total Products",
+      value: "25,430",
+      key: UniqueKey(),
+    ),
+    StatsCard(
+      percentage: "12 %",
+      svgIconPath: "assets/images/totalPaidOrders.svg",
+      title: "Total paid Orders",
+      value: "16,000",
+      key: UniqueKey(),
+    ),
+    StatsCard(
+      percentage: "15 %",
+      svgIconPath: "assets/images/totalUsers.svg",
+      title: "Total User",
+      value: "18,540k",
+      key: UniqueKey(),
+    ),
+    StatsCard(
+      percentage: "20 %",
+      svgIconPath: "assets/images/totalStores.svg",
+      title: "24,763",
+      value: "24,763",
+      key: UniqueKey(),
+    ),
+  ];
+
   void _onNavItemTap(int index) {
     setState(() {
       _currentIndex = index;
     });
-    // Navigate to a new screen or set a body widget, etc.
     switch (index) {
       case 0:
         // Dashboard
-        // Navigator.pushNamed(context, '/dashboard');
         break;
       case 1:
         // Products
-        // Navigator.pushNamed(context, '/products');
         break;
       case 2:
         // Orders
-        // Navigator.pushNamed(context, '/orders');
         break;
       case 3:
         // Stores
-        // Navigator.pushNamed(context, '/stores');
         break;
       case 4:
         // More
-        // Navigator.pushNamed(context, '/more');
         break;
     }
   }
@@ -48,8 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 29, 41, 57), // N,
-
+      backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(200),
         child: MyNavigationBar(
@@ -60,11 +107,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SingleChildScrollView(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.only(left: 45.0, top: 20),
+            padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
+                /// --- Dashboard Title & Filter Button ---
                 Row(
                   children: [
                     Text(
@@ -75,107 +122,169 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: const Color.fromARGB(255, 246, 246, 246),
                       ),
                     ),
-                    Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 40.0),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 36, 50, 69),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                    const Spacer(),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(138.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: () {},
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/images/filter.svg',
+                            width: 18.w,
+                            height: 18.h,
                           ),
-                          fixedSize: const Size(138, 50),
-                          elevation: 1,
-                        ),
-                        onPressed: () {},
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/images/filter.svg',
-                              width: 18,
-                              height: 18,
+                          SizedBox(width: 12.w),
+                          Text(
+                            'Filter',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromARGB(255, 105, 123, 123),
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Filter',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 17.sp,
-                                fontWeight: FontWeight.w700,
-                                color: const Color.fromARGB(255, 105, 123, 123),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
                 SizedBox(height: 40.h),
-                Wrap(alignment: WrapAlignment.center, children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Total available width
-                      final availableWidth = constraints.maxWidth - 41;
-                      // Number of cards per row
-                      final numberOfCards = 4;
-                      // Horizontal spacing between cards (using SizedBox width)
-                      final spacing = 40.0;
 
-                      // Calculate the dynamic width for each card.
-                      // (Subtract spacing between cards from the total width)
-                      final cardWidth =
-                          (availableWidth - ((numberOfCards - 1) * spacing)) /
-                              numberOfCards;
+                /// --- Draggable Stats Cards (2x1 grid) ---
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Total available width for stats cards
+                    final availableWidth = constraints.maxWidth;
+                    // We display the stats cards in a single row (or adjust columns as needed)
+                    // Here, we use 4 cards in one row.
+                    const numberOfCards = 4;
+                    const spacing = 40.0;
+                    final cardWidth =
+                        (availableWidth - ((numberOfCards - 1) * spacing)) /
+                            numberOfCards;
 
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: 20,
-                        children: [
-                          Container(
-                            width: cardWidth,
-                            child: StatsCard(
-                              percentage: "20 %",
-                              svgIconPath: "assets/images/totalProducts.svg",
-                              title: "Total Products",
-                              value: "25,430",
-                            ),
-                          ),
-                          Container(
-                            width: cardWidth,
-                            child: StatsCard(
-                              percentage: "20 %",
-                              svgIconPath: "assets/images/totalProducts.svg",
-                              title: "Total Products",
-                              value: "25,430",
-                            ),
-                          ),
-                          Container(
-                            width: cardWidth,
-                            child: StatsCard(
-                              percentage: "20 %",
-                              svgIconPath: "assets/images/totalProducts.svg",
-                              title: "Total Products",
-                              value: "25,430",
-                            ),
-                          ),
-                          Container(
-                            width: cardWidth,
-                            child: StatsCard(
-                              percentage: "20 %",
-                              svgIconPath: "assets/images/totalProducts.svg",
-                              title: "Total Products",
-                              value: "25,430",
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ])
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: 20,
+                      children: List.generate(_statsCards.length, (index) {
+                        return _buildDraggableStatsCardItem(index, cardWidth);
+                      }),
+                    );
+                  },
+                ),
+                SizedBox(height: 20.h),
+
+                /// --- Draggable 2x2 Grid of the Dashboard Widgets ---
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final spacing = 20.w;
+                    const columns = 2;
+                    final itemWidth =
+                        (constraints.maxWidth - (columns - 1) * spacing) /
+                            columns;
+
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children:
+                          List.generate(_dashboardWidgets.length, (index) {
+                        return _buildDraggableItem(index, itemWidth);
+                      }),
+                    );
+                  },
+                ),
+
+                ProductsTable(),
+                SizedBox(height: 100.h),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Build a single draggable + droppable dashboard widget
+  Widget _buildDraggableItem(int index, double itemWidth) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.grab,
+      child: SizedBox(
+        width: itemWidth,
+        child: DragTarget<int>(
+          builder: (context, candidateData, rejectedData) {
+            return CustomLongPressDraggable<int>(
+              data: index,
+              feedback: SizedBox(
+                width: itemWidth,
+                child: Material(
+                  color: Colors.transparent,
+                  child: _dashboardWidgets[index],
+                ),
+              ),
+              childWhenDragging: SizedBox(
+                width: itemWidth,
+                child: Opacity(
+                  opacity: 0.3,
+                  child: _dashboardWidgets[index],
+                ),
+              ),
+              child: _dashboardWidgets[index],
+            );
+          },
+          onWillAccept: (oldIndex) => oldIndex != index,
+          onAccept: (oldIndex) {
+            setState(() {
+              final temp = _dashboardWidgets[oldIndex];
+              _dashboardWidgets[oldIndex] = _dashboardWidgets[index];
+              _dashboardWidgets[index] = temp;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Build a single draggable + droppable stats card
+  Widget _buildDraggableStatsCardItem(int index, double cardWidth) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.grab,
+      child: SizedBox(
+        width: cardWidth,
+        child: DragTarget<int>(
+          builder: (context, candidateData, rejectedData) {
+            return CustomLongPressDraggable<int>(
+              data: index,
+              feedback: SizedBox(
+                width: cardWidth,
+                child: Material(
+                  color: Colors.transparent,
+                  child: _statsCards[index],
+                ),
+              ),
+              childWhenDragging: SizedBox(
+                width: cardWidth,
+                child: Opacity(
+                  opacity: 0.3,
+                  child: _statsCards[index],
+                ),
+              ),
+              child: _statsCards[index],
+            );
+          },
+          onWillAccept: (oldIndex) => oldIndex != index,
+          onAccept: (oldIndex) {
+            setState(() {
+              final temp = _statsCards[oldIndex];
+              _statsCards[oldIndex] = _statsCards[index];
+              _statsCards[index] = temp;
+            });
+          },
         ),
       ),
     );

@@ -1,38 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/GeneralWidgets/profilePopUp.dart';
 
 class MyNavigationBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
   const MyNavigationBar({
-    super.key,
+    Key? key,
     required this.currentIndex,
     required this.onTap,
-  });
+  }) : super(key: key);
 
   @override
   State<MyNavigationBar> createState() => _MyNavigationBarState();
 }
 
 class _MyNavigationBarState extends State<MyNavigationBar> {
-  final List<String> _navItems = [
-    'Dashboard',
-    'Products',
-    'Orders',
-    'Stores',
-    'More',
-  ];
+  // (Optional) Key for the profile section
+  final GlobalKey _profileKey = GlobalKey();
 
-  final List<String?> _navIcons = [
-    'assets/images/home.svg',
-    'assets/images/products.svg',
-    'assets/images/orders.svg',
-    'assets/images/stores.svg',
-    null,
-  ];
+  OverlayEntry? _overlayEntry;
+  bool _isMenuOpen = false;
+
+  void _toggleProfileMenu() {
+    if (_isMenuOpen) {
+      _closeMenu();
+    } else {
+      _openMenu();
+    }
+  }
+
+  void _openMenu() {
+    _overlayEntry = OverlayEntry(
+      builder: (BuildContext context) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: _closeMenu,
+              behavior: HitTestBehavior.translucent,
+              child: Container(
+                color: Colors.transparent,
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+              ),
+            ),
+            Positioned(
+              right: 40,
+              top: 100,
+              child: Material(
+                color: Colors.transparent,
+                child: const Profilepopup(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() {
+      _isMenuOpen = true;
+    });
+  }
+
+  void _closeMenu() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    setState(() {
+      _isMenuOpen = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +85,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Left side: Logo + Title
           Row(
             children: [
               SvgPicture.asset(
@@ -63,80 +104,26 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               ),
             ],
           ),
+
+          // Middle: Navigation Items
           Row(
-            children: _navItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final text = entry.value;
-              final bool isSelected = (index == widget.currentIndex);
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => widget.onTap(index),
-                  child: Container(
-                    margin: EdgeInsets.only(left: 24.w),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16.w,
-                      vertical: 8.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color.fromARGB(255, 105, 65, 198) // Purple
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color.fromARGB(0, 0, 0, 0)
-                            : const Color.fromARGB(255, 34, 53,
-                                62), // rgba(34, 53, 62, 1)Gray border
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(30.r),
-                    ),
-                    child: Row(
-                      children: [
-                        if (_navIcons[index] != null &&
-                            _navIcons[index]!.isNotEmpty)
-                          SvgPicture.asset(
-                            _navIcons[index]!,
-                            width: 24.w,
-                            height: 24.h,
-                            // ignore: deprecated_member_use
-                            color: isSelected
-                                ? Colors.white
-                                : const Color.fromARGB(255, 105, 123, 123),
-                          ),
-                        if (_navIcons[index] != null &&
-                            _navIcons[index]!.isNotEmpty)
-                          SizedBox(width: 9.w),
-                        Text(
-                          text,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 15.sp,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w700,
-                            color: isSelected
-                                ? Colors.white
-                                : const Color.fromARGB(255, 105, 123, 123),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+            children: _buildNavItems(),
           ),
+
+          // Right side: Search, Notifications, Profile
           Row(
             children: [
+              // Search
               InkWell(
                 onTap: () {
-                  // Handle search action
+                  // Handle search
                 },
                 child: Container(
                   width: 50.w,
                   height: 52.h,
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(13.0),
@@ -145,16 +132,18 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                 ),
               ),
               SizedBox(width: 14.w),
+
+              // Notifications
               InkWell(
                 onTap: () {
-                  // Handle notification action
+                  // Handle notification
                 },
                 child: Container(
                   width: 50.w,
                   height: 52.h,
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(13.0),
@@ -167,29 +156,111 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                 ),
               ),
               SizedBox(width: 14.w),
+
+              // Profile + Arrow
               InkWell(
-                onTap: () {},
-                child: Container(
-                  width: 50.w,
-                  height: 50.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/me.png'),
-                      fit: BoxFit.cover,
+                key: _profileKey,
+                onTap: _toggleProfileMenu,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/me.png'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      _isMenuOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                      size: 35,
+                      color: const Color.fromARGB(255, 105, 123, 123),
+                    ),
+                  ],
                 ),
               ),
-              Icon(
-                size: 35,
-                Icons.arrow_drop_down,
-                color: Color.fromARGB(255, 105, 123, 123),
-              ),
             ],
-          )
+          ),
         ],
       ),
     );
+  }
+
+  /// Helper to build the middle navigation items
+  List<Widget> _buildNavItems() {
+    final List<String> navItems = [
+      'Dashboard',
+      'Products',
+      'Orders',
+      'Stores',
+      'Settings',
+    ];
+
+    final List<String?> navIcons = [
+      'assets/images/home.svg',
+      'assets/images/products.svg',
+      'assets/images/orders.svg',
+      'assets/images/stores.svg',
+      'assets/images/settings.svg',
+    ];
+
+    return navItems.asMap().entries.map((entry) {
+      final index = entry.key;
+      final text = entry.value;
+      final bool isSelected = (index == widget.currentIndex);
+
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => widget.onTap(index),
+          child: Container(
+            margin: EdgeInsets.only(left: 24.w),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color.fromARGB(255, 105, 65, 198) // Purple
+                  : Colors.transparent,
+              border: Border.all(
+                color: isSelected
+                    ? Colors.transparent
+                    : const Color.fromARGB(255, 34, 53, 62),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(30.r),
+            ),
+            child: Row(
+              children: [
+                if (navIcons[index] != null && navIcons[index]!.isNotEmpty)
+                  SvgPicture.asset(
+                    navIcons[index]!,
+                    width: 24.w,
+                    height: 24.h,
+                    // ignore: deprecated_member_use
+                    color: isSelected
+                        ? Colors.white
+                        : const Color.fromARGB(255, 105, 123, 123),
+                  ),
+                if (navIcons[index] != null && navIcons[index]!.isNotEmpty)
+                  SizedBox(width: 9.w),
+                Text(
+                  text,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 15.sp,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w700,
+                    color: isSelected
+                        ? Colors.white
+                        : const Color.fromARGB(255, 105, 123, 123),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
   }
 }
