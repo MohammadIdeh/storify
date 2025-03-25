@@ -39,7 +39,7 @@ class _ProductsTableState extends State<ProductsTable> {
       vendor: "Mohammad Ideh",
       price: "\$1,000",
       stock: "62 items",
-      imageAsset: "assets/images/tomatoes.png",
+      imageAsset: "assets/images/image3.png",
     ),
     Product(
       id: 22738,
