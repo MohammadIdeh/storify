@@ -201,7 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
 
                 ProductsTable(),
-                SizedBox(height: 100.h),
+                SizedBox(height: 101.h),
               ],
             ),
           ),
