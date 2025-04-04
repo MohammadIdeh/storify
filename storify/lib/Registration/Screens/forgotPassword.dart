@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert'; // For JSON encoding
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,7 +8,8 @@ import 'package:storify/Registration/Screens/emailCode.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // Add this import
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart' as http; // For making http requests
 
 class Forgotpassword extends StatefulWidget {
   const Forgotpassword({super.key});
@@ -19,6 +21,10 @@ class Forgotpassword extends StatefulWidget {
 class _ForgotpasswordState extends State<Forgotpassword> {
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+
+  // Controller for email TextField.
+  final TextEditingController _emailController = TextEditingController();
+
   Color forgotPasswordTextColor = const Color.fromARGB(255, 105, 65, 198);
   bool _isRemembered = false;
   bool _isLoading = false;
@@ -35,34 +41,67 @@ class _ForgotpasswordState extends State<Forgotpassword> {
   void dispose() {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
-  /// Simulate your API call. Notice that the button remains active,
-  /// but we prevent multiple calls by checking _isLoading.
+  /// Connect the API to send a reset code.
   Future<void> _performLogin() async {
+    // Validate that the email field is not empty.
+    if (_emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your email")),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
-    // Simulate API call delay. Replace with your actual API call.
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _isLoading = false;
-    });
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const Emailcode(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(
-            milliseconds: 600), // Set longer duration here  Color
-      ),
-    );
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'https://202b-139-190-132-141.ngrok-free.app/auth/resetPassword'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "email": _emailController.text.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // If the request is successful, navigate to the Emailcode screen.
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const Emailcode(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 600),
+          ),
+        );
+      } else {
+        // If the API call fails, show an error message.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Failed to send reset code. Please try again.")),
+        );
+      }
+    } catch (error) {
+      // Handle exceptions and show an error message.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An error occurred: $error")),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -77,20 +116,20 @@ class _ForgotpasswordState extends State<Forgotpassword> {
           Align(
             alignment: Alignment.topLeft,
             child: Padding(
-              padding: EdgeInsets.all(20.w), // Scaling padding with ScreenUtil
+              padding: EdgeInsets.all(20.w),
               child: Row(
                 children: [
                   SvgPicture.asset(
                     'assets/images/logo.svg',
-                    width: 27.w, // Scaled width
-                    height: 27.h, // Scaled height
+                    width: 27.w,
+                    height: 27.h,
                   ),
-                  SizedBox(width: 10.w), // Scaled spacing
+                  SizedBox(width: 10.w),
                   Text(
                     "Storify",
                     style: GoogleFonts.inter(
                       color: Colors.white,
-                      fontSize: 25.sp, // Scaled font size
+                      fontSize: 25.sp,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -109,9 +148,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                       flex: 2,
                       child: Padding(
                         padding: EdgeInsets.only(
-                            left: 40.w,
-                            right: 40.w,
-                            bottom: 140.h), // Scaled padding
+                            left: 40.w, right: 40.w, bottom: 140.h),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -121,33 +158,30 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                               height: 100.h,
                               width: 100.w,
                             ),
-                            SizedBox(
-                              height: 20,
-                            ),
+                            SizedBox(height: 20),
                             Text(
                               "Forgot password?",
                               style: GoogleFonts.inter(
-                                fontSize: 30.sp, // Scaled font size
+                                fontSize: 30.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
                             ),
-                            SizedBox(height: 8.h), // Scaled spacing
+                            SizedBox(height: 8.h),
                             Text(
                               "No worries, we’ll send you reset Code.",
                               style: GoogleFonts.inter(
                                 color: Colors.grey,
-                                fontSize: 16.sp, // Scaled font size
+                                fontSize: 16.sp,
                               ),
                             ),
-                            SizedBox(height: 70.h), // Scaled spacing
+                            SizedBox(height: 70.h),
                             Padding(
-                              padding: EdgeInsets.only(
-                                  right: 330.w), // Scaled padding
+                              padding: EdgeInsets.only(right: 330.w),
                               child: Text(
                                 "Email",
                                 style: GoogleFonts.inter(
-                                  fontSize: 16.sp, // Scaled font size
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white60,
                                 ),
@@ -155,9 +189,11 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                             ),
                             SizedBox(height: 5.h),
                             SizedBox(
-                              width: 370.w, // Scaled width
-                              height: 65.h, // Scaled height
+                              width: 370.w,
+                              height: 65.h,
                               child: TextField(
+                                controller:
+                                    _emailController, // Added controller here
                                 focusNode: _emailFocusNode,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
@@ -171,8 +207,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                       color: Colors.grey,
                                       fontWeight: FontWeight.w400),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        8.r), // Scaled radius
+                                    borderRadius: BorderRadius.circular(8.r),
                                     borderSide: BorderSide(
                                       color: _emailFocusNode.hasFocus
                                           ? const Color.fromARGB(
@@ -182,27 +217,23 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        8.r), // Scaled radius
+                                    borderRadius: BorderRadius.circular(8.r),
                                     borderSide: const BorderSide(
                                       color: Color.fromARGB(255, 141, 150, 158),
                                     ),
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        8.r), // Scaled radius
+                                    borderRadius: BorderRadius.circular(8.r),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
                                 style: GoogleFonts.inter(color: Colors.white),
                               ),
                             ),
+                            SizedBox(height: 10.h),
                             SizedBox(
-                              height: 10.h,
-                            ),
-                            SizedBox(
-                              height: 55.h, // Scaled height
-                              width: 370.w, // Scaled width
+                              height: 55.h,
+                              width: 370.w,
                               child: ElevatedButton(
                                 onPressed: () async {
                                   if (_isLoading) return;
@@ -210,8 +241,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                 },
                                 style: ElevatedButton.styleFrom(
                                   shape: ContinuousRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        20.r), // Scaled radius
+                                    borderRadius: BorderRadius.circular(20.r),
                                   ),
                                   backgroundColor:
                                       const Color.fromARGB(255, 105, 65, 198),
@@ -226,39 +256,33 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                           "Send",
                                           style: GoogleFonts.inter(
                                               color: Colors.white,
-                                              fontSize:
-                                                  16.sp), // Scaled font size
+                                              fontSize: 16.sp),
                                         ),
                                 ),
                               ),
                             ),
-                            SizedBox(
-                              height: 35.h,
-                            ),
+                            SizedBox(height: 35.h),
                             InkWell(
-                              hoverColor: Color.fromARGB(0, 0, 0, 0),
-                              splashColor: Color.fromARGB(0, 0, 0, 0),
-                              highlightColor: Color.fromARGB(0, 0, 0, 0),
+                              hoverColor: const Color.fromARGB(0, 0, 0, 0),
+                              splashColor: const Color.fromARGB(0, 0, 0, 0),
+                              highlightColor: const Color.fromARGB(0, 0, 0, 0),
                               onTap: () {
-                                setState(() {
-                                  Navigator.of(context).push(
-                                    PageRouteBuilder(
-                                      pageBuilder: (context, animation,
-                                              secondaryAnimation) =>
-                                          const LoginScreen(),
-                                      transitionsBuilder: (context, animation,
-                                          secondaryAnimation, child) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        );
-                                      },
-                                      transitionDuration: const Duration(
-                                          milliseconds:
-                                              600), // Set longer duration here
-                                    ),
-                                  );
-                                });
+                                Navigator.of(context).push(
+                                  PageRouteBuilder(
+                                    pageBuilder: (context, animation,
+                                            secondaryAnimation) =>
+                                        const LoginScreen(),
+                                    transitionsBuilder: (context, animation,
+                                        secondaryAnimation, child) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      );
+                                    },
+                                    transitionDuration:
+                                        const Duration(milliseconds: 600),
+                                  ),
+                                );
                               },
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -266,17 +290,14 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                 children: [
                                   Icon(
                                     Icons.arrow_back,
-                                    color: Color.fromARGB(255, 255, 255, 255),
+                                    color: Colors.white,
                                     size: 22.w,
                                   ),
-                                  SizedBox(
-                                    width: 10.w,
-                                  ),
+                                  SizedBox(width: 10.w),
                                   Text(
                                     "Back to login",
                                     style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontSize: 16.sp), // Scaled font size
+                                        color: Colors.white, fontSize: 16.sp),
                                   ),
                                 ],
                               ),
@@ -290,17 +311,16 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                       Expanded(
                         flex: 2,
                         child: Padding(
-                          padding: EdgeInsets.all(25.w), // Scaled padding
+                          padding: EdgeInsets.all(25.w),
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius:
-                                  BorderRadius.circular(39.r), // Scaled radius
+                              borderRadius: BorderRadius.circular(39.r),
                               color: const Color.fromARGB(255, 41, 52, 68),
                             ),
                             child: Center(
                               child: Container(
-                                width: 450, // Scaled width
-                                height: 450, // Scaled height
+                                width: 450,
+                                height: 450,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color:
@@ -309,8 +329,8 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                 child: ClipOval(
                                   child: SvgPicture.asset(
                                     'assets/images/logo.svg',
-                                    width: 450, // Scaled width
-                                    height: 450, // Scaled height
+                                    width: 450,
+                                    height: 450,
                                     fit: BoxFit.fill,
                                   ),
                                 ),
