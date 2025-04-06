@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         debugShowCheckedModeBanner: false, // Removes the debug banner
-        home: LoginScreen(),
+        home: DashboardScreen(),
       ),
     );
   }

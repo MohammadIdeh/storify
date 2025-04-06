@@ -21,9 +21,8 @@ class Product {
   });
 }
 
-/// The widget that shows a sortable table of products.
 class ProductsTable extends StatefulWidget {
-  const ProductsTable({super.key});
+  const ProductsTable({Key? key}) : super(key: key);
 
   @override
   State<ProductsTable> createState() => _ProductsTableState();
@@ -31,7 +30,6 @@ class ProductsTable extends StatefulWidget {
 
 class _ProductsTableState extends State<ProductsTable> {
   /// Sample data (fake).
-  /// Replace `imageAsset` with your actual product PNG paths.
   List<Product> _products = [
     Product(
       id: 22739,
@@ -47,7 +45,7 @@ class _ProductsTableState extends State<ProductsTable> {
       vendor: "Mohammad Ideh",
       price: "\$900",
       stock: "24 items",
-      imageAsset: "assets/images/blu.png",
+      imageAsset: "assets/images/image3.png",
     ),
     Product(
       id: 22737,
@@ -55,7 +53,7 @@ class _ProductsTableState extends State<ProductsTable> {
       vendor: "Waseem Abed",
       price: "\$750",
       stock: "30 items",
-      imageAsset: "assets/images/xl.png",
+      imageAsset: "assets/images/image3.png",
     ),
     Product(
       id: 22736,
@@ -63,7 +61,7 @@ class _ProductsTableState extends State<ProductsTable> {
       vendor: "Waseem Abed",
       price: "\$1,200",
       stock: "18 items",
-      imageAsset: "assets/images/cocacola.png",
+      imageAsset: "assets/images/image3.png",
     ),
     Product(
       id: 22735,
@@ -71,7 +69,7 @@ class _ProductsTableState extends State<ProductsTable> {
       vendor: "Waseem Abed",
       price: "\$2,000",
       stock: "12 items",
-      imageAsset: "assets/images/cabuy.png",
+      imageAsset: "assets/images/image3.png",
     ),
     Product(
       id: 22734,
@@ -79,7 +77,7 @@ class _ProductsTableState extends State<ProductsTable> {
       vendor: "Mohammad Ideh",
       price: "\$3,000",
       stock: "20 items",
-      imageAsset: "assets/images/cola_zero.png",
+      imageAsset: "assets/images/image3.png",
     ),
   ];
 
@@ -87,7 +85,7 @@ class _ProductsTableState extends State<ProductsTable> {
   int? _sortColumnIndex;
   bool _sortAscending = true;
 
-  /// Sort logic for each column
+  /// Sort logic for each column (optional).
   void _onSort(int columnIndex, bool ascending) {
     setState(() {
       _sortColumnIndex = columnIndex;
@@ -106,33 +104,30 @@ class _ProductsTableState extends State<ProductsTable> {
         case 2:
           _products.sort((a, b) => a.vendor.compareTo(b.vendor));
           break;
-        // 3 => Sort by Price (string => parse int if you want numeric)
+        // 3 => Sort by Price (parsing numeric value)
         case 3:
-          // We'll do a naive parse ignoring the '$' and commas
           int parsePrice(String price) {
-            // e.g. "$1,000" => "1000"
             return int.tryParse(
                   price.replaceAll("\$", "").replaceAll(",", ""),
                 ) ??
                 0;
           }
-
           _products.sort(
-              (a, b) => parsePrice(a.price).compareTo(parsePrice(b.price)));
+            (a, b) => parsePrice(a.price).compareTo(parsePrice(b.price)),
+          );
           break;
-        // 4 => Sort by Stock (string => parse int if you want numeric)
+        // 4 => Sort by Stock (parsing numeric value)
         case 4:
           int parseStock(String stock) {
-            // e.g. "62 items" => "62"
             return int.tryParse(stock.replaceAll(" items", "")) ?? 0;
           }
-
           _products.sort(
-              (a, b) => parseStock(a.stock).compareTo(parseStock(b.stock)));
+            (a, b) => parseStock(a.stock).compareTo(parseStock(b.stock)),
+          );
           break;
       }
 
-      // If descending, reverse after sort
+      // Reverse list if descending is selected.
       if (!ascending) {
         _products = _products.reversed.toList();
       }
@@ -141,100 +136,109 @@ class _ProductsTableState extends State<ProductsTable> {
 
   @override
   Widget build(BuildContext context) {
-    // Main container background from your screenshot (#2D3C4E)
-    final Color backgroundColor = const Color(0xFF2D3C4E);
-
+    // Main container background
+    final Color backgroundColor = const Color.fromARGB(0, 0, 0, 0);
+    // Heading row color
+    final Color headingColor = const Color.fromARGB(255, 36, 50, 69);
+    // Divider and border color/thickness
+    final BorderSide dividerSide =
+        BorderSide(color: const Color.fromARGB(255, 34, 53, 62), width: 1);
+    final BorderSide dividerSide2 =
+        BorderSide(color: const Color.fromARGB(255, 36, 50, 69), width: 2);
     return Container(
       width: double.infinity,
-      // A padding around the table
-      padding: EdgeInsets.all(16.w),
+      clipBehavior:
+          Clip.antiAlias, // Ensures rounded corners clip child content
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      // Horizontal scroll if columns overflow
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          // Let the DataTable handle showing the arrow icons
-          sortColumnIndex: _sortColumnIndex,
-          sortAscending: _sortAscending,
-
-          // Some style customizations
-          columnSpacing: 30.w,
-          headingRowColor: MaterialStateProperty.all(backgroundColor),
-          dataRowColor: MaterialStateProperty.all(backgroundColor),
-          dividerThickness: 0.5,
-          headingTextStyle: GoogleFonts.spaceGrotesk(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 14.sp,
-            fontWeight: FontWeight.bold,
-          ),
-          dataTextStyle: GoogleFonts.spaceGrotesk(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 13.sp,
-          ),
-
-          columns: [
-            // ID Number
-            DataColumn(
-              label: Text("ID Number"),
-              onSort: _onSort,
-            ),
-            // Name (with image)
-            DataColumn(
-              label: Text("Name"),
-              onSort: _onSort,
-            ),
-            // Vendor
-            DataColumn(
-              label: Text("Vendor"),
-              onSort: _onSort,
-            ),
-            // Price
-            DataColumn(
-              label: Text("Price"),
-              onSort: _onSort,
-            ),
-            // Stock
-            DataColumn(
-              label: Text("Stock"),
-              onSort: _onSort,
-            ),
-          ],
-
-          rows: _products.map((product) {
-            return DataRow(
-              cells: [
-                // ID Number
-                DataCell(Text("${product.id}")),
-                // Name + image
-                DataCell(Row(
-                  children: [
-                    // Product image
-                    Image.asset(
-                      product.imageAsset,
-                      width: 30.w,
-                      height: 30.h,
-                      fit: BoxFit.cover,
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(product.name),
-                    ),
-                  ],
-                )),
-                // Vendor
-                DataCell(Text(product.vendor)),
-                // Price
-                DataCell(Text(product.price)),
-                // Stock
-                DataCell(Text(product.stock)),
-              ],
-            );
-          }).toList(),
+        // Rounded top corners
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30.r),
+          topRight: Radius.circular(30.r),
         ),
       ),
+      child: DataTable(
+        // Hide built-in sort arrow by making it transparent.
+
+        headingRowColor: MaterialStateProperty.all(headingColor),
+        border: TableBorder(
+          top: dividerSide,
+          bottom: dividerSide,
+          left: dividerSide,
+          right: dividerSide,
+          horizontalInside: dividerSide2,
+          verticalInside: dividerSide2,
+        ),
+        columnSpacing: 20.w,
+        dividerThickness: 0, // Using custom TableBorder for dividers
+        sortColumnIndex: _sortColumnIndex,
+        sortAscending: _sortAscending,
+        headingTextStyle: GoogleFonts.spaceGrotesk(
+          color: Colors.white.withOpacity(0.9),
+          fontSize: 14.sp,
+          fontWeight: FontWeight.bold,
+        ),
+        dataTextStyle: GoogleFonts.spaceGrotesk(
+          color: Colors.white.withOpacity(0.8),
+          fontSize: 13.sp,
+        ),
+        // Define columns (first/last columns removed)
+        columns: [
+          DataColumn(
+            onSort: (colIndex, asc) => _onSort(colIndex, asc),
+            label: _buildColumnHeader("ID Number"),
+          ),
+          DataColumn(
+            onSort: (colIndex, asc) => _onSort(colIndex, asc),
+            label: _buildColumnHeader("Name"),
+          ),
+          DataColumn(
+            onSort: (colIndex, asc) => _onSort(colIndex, asc),
+            label: _buildColumnHeader("Vendor"),
+          ),
+          DataColumn(
+            onSort: (colIndex, asc) => _onSort(colIndex, asc),
+            label: _buildColumnHeader("Price"),
+          ),
+          DataColumn(
+            onSort: (colIndex, asc) => _onSort(colIndex, asc),
+            label: _buildColumnHeader("Stock"),
+          ),
+        ],
+        // Build table rows.
+        rows: _products.map((product) {
+          return DataRow(
+            cells: [
+              DataCell(Text("${product.id}")),
+              DataCell(Row(
+                children: [
+                  Image.asset(
+                    product.imageAsset,
+                    width: 30.w,
+                    height: 30.h,
+                    fit: BoxFit.cover,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(child: Text(product.name)),
+                ],
+              )),
+              DataCell(Text(product.vendor)),
+              DataCell(Text(product.price)),
+              DataCell(Text(product.stock)),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Builds a header widget with custom up/down arrows placed closer together.
+  Widget _buildColumnHeader(String title) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(title),
+      ],
     );
   }
 }

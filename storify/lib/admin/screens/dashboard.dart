@@ -12,6 +12,7 @@ import 'package:storify/admin/widgets/profit.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/widgets/cards.dart';
 import 'package:storify/admin/widgets/topProductsList.dart';
+import 'package:storify/admin/widgets/topStoresList.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -56,7 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
     StatsCard(
       percentage: "15 %",
-      svgIconPath: "assets/images/totalUsers.svg",
+      svgIconPath: "assets/images/image3.png",
       title: "Total User",
       value: "18,540k",
       key: UniqueKey(),
@@ -199,8 +200,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   },
                 ),
-
+                SizedBox(height: 20.h),
+                Row(
+                  children: [
+                    Text(
+                      'Top products',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 19.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 246, 246, 246),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 15.h),
                 ProductsTable(),
+                SizedBox(height: 20.h),
+                Row(
+                  children: [
+                    Text(
+                      'Top Stores',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 19.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 246, 246, 246),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 830.w,
+                    ),
+                    Text(
+                      'Best Selling Product',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 19.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 246, 246, 246),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 15.h),
+                Wrap(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SalesTableWidget(),
+                        ),
+                        SizedBox(
+                            width: 20
+                                .w), // Optional spacing between the two widgets
+                        Expanded(
+                          child: SalesTableWidget(),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+
                 SizedBox(height: 101.h),
               ],
             ),
