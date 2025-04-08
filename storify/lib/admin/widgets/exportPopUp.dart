@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-// ignore: deprecated_member_use
+// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html; // For file download on Flutter Web
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

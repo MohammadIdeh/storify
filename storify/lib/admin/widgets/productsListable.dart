@@ -434,7 +434,7 @@ class ProductslistTableState extends State<ProductslistTable> {
     final Color bgColor = isActive
         ? const Color.fromARGB(178, 0, 224, 116) // green
         : const Color.fromARGB(255, 229, 62, 62); // red
-    final String label = isActive ? "Active" : "Deactivated";
+    final String label = isActive ? "Active" : "UnActive";
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
