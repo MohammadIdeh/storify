@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/screens/productOverview.dart';
 import 'package:storify/admin/widgets/exportPopUp.dart';
+import 'package:storify/admin/widgets/product_item_Model.dart';
 
 class ProductslistTable extends StatefulWidget {
   final int selectedFilterIndex; // 0: All, 1: Active, 2: UnActive
@@ -18,8 +20,8 @@ class ProductslistTable extends StatefulWidget {
 
 class ProductslistTableState extends State<ProductslistTable> {
   // Fake data.
-  final List<ProductItem> _allProducts = [
-    ProductItem(
+  final List<ProductItemInformation> _allProducts = [
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Homedics SoundSleep',
       price: 738.35,
@@ -27,7 +29,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Health & Sleep',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Newpoint Motorized Mixer',
       price: 520.15,
@@ -35,7 +37,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Health & Sleep',
       availability: false,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Orangemonkie Foldio360 Drone',
       price: 678.99,
@@ -43,7 +45,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Health & Sleep',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Ketsicar SV 2N Kit',
       price: 943.85,
@@ -51,7 +53,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Health & Sleep',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: '3D Printer Kit Pro',
       price: 896.81,
@@ -59,7 +61,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Health & Sleep',
       availability: false,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'DIY Crafts Imaging Device',
       price: 600.99,
@@ -67,7 +69,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Crafts',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Giftana 4 in 1 Set',
       price: 106.58,
@@ -75,7 +77,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Gifts',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Odyssey Sound Machine',
       price: 805.98,
@@ -83,7 +85,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Audio',
       availability: false,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Personalized Giftana',
       price: 156.58,
@@ -91,7 +93,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Personal Gifts',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Ideh Deluxe Set',
       price: 850.00,
@@ -100,7 +102,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       availability: false,
     ),
     // Additional items for pagination:
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'محمد',
       price: 299.99,
@@ -108,7 +110,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Antiques',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Modern Lamp',
       price: 159.49,
@@ -116,7 +118,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Lighting',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Ergonomic Chair',
       price: 489.00,
@@ -124,7 +126,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Furniture',
       availability: false,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Wireless Headphones',
       price: 129.99,
@@ -132,7 +134,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Electronics',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Fitness Tracker',
       price: 79.99,
@@ -140,7 +142,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Wearables',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Smart Watch Pro',
       price: 249.99,
@@ -148,7 +150,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Wearables',
       availability: false,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Bluetooth Speaker',
       price: 59.99,
@@ -156,7 +158,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Audio',
       availability: true,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'HD Webcam',
       price: 39.99,
@@ -164,7 +166,7 @@ class ProductslistTableState extends State<ProductslistTable> {
       category: 'Computers',
       availability: false,
     ),
-    ProductItem(
+    ProductItemInformation(
       image: 'assets/images/image3.png',
       name: 'Gaming Keyboard',
       price: 89.99,
@@ -180,8 +182,8 @@ class ProductslistTableState extends State<ProductslistTable> {
   final int _itemsPerPage = 9;
 
   /// Returns filtered, searched, and sorted products.
-  List<ProductItem> get filteredProducts {
-    List<ProductItem> temp = List.from(_allProducts);
+  List<ProductItemInformation> get filteredProducts {
+    List<ProductItemInformation> temp = List.from(_allProducts);
     // Filter by availability.
     if (widget.selectedFilterIndex == 1) {
       temp = temp.where((p) => p.availability).toList();
@@ -287,6 +289,7 @@ class ProductslistTableState extends State<ProductslistTable> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
+                    showCheckboxColumn: false,
                     headingRowColor:
                         MaterialStateProperty.all<Color>(headingColor),
                     border: TableBorder(
@@ -332,6 +335,30 @@ class ProductslistTableState extends State<ProductslistTable> {
                     ],
                     rows: visibleProducts.map((product) {
                       return DataRow(
+                        onSelectChanged: (selected) async {
+                          if (selected == true) {
+                            final updatedProduct =
+                                await Navigator.push<ProductItemInformation>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    Productoverview(product: product),
+                              ),
+                            );
+
+                            // If updatedProduct is not null, update your data source.
+                            if (updatedProduct != null) {
+                              setState(() {
+                                // For example, find the index in _allProducts and update it.
+                                final index = _allProducts
+                                    .indexWhere((p) => p.name == product.name);
+                                if (index != -1) {
+                                  _allProducts[index] = updatedProduct;
+                                }
+                              });
+                            }
+                          }
+                        },
                         cells: [
                           // Image & Name cell.
                           DataCell(

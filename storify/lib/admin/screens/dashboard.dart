@@ -91,7 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: child,
               );
             },
-            transitionDuration: const Duration(milliseconds: 300),
+            transitionDuration: const Duration(milliseconds: 700),
           ),
         );
         break;

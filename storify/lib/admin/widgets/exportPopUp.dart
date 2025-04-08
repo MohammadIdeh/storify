@@ -4,30 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/widgets/product_item_Model.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xls;
-
-/// A product item model used for exporting.
-class ProductItem {
-  final String image; // E.g. 'assets/images/image3.png'
-  final String name;
-  final double price;
-  final int qty;
-  final String category;
-  final bool availability; // true means Active, false means Not Active
-
-  ProductItem({
-    required this.image,
-    required this.name,
-    required this.price,
-    required this.qty,
-    required this.category,
-    required this.availability,
-  });
-}
 
 /// The ExportPopUp widget now receives a list of ProductItem via its constructor.
 class ExportPopUp extends StatefulWidget {
-  final List<ProductItem> products;
+  final List<ProductItemInformation> products;
   const ExportPopUp({super.key, required this.products});
 
   @override
@@ -61,8 +43,8 @@ class _ExportPopUpState extends State<ExportPopUp> {
   }
 
   /// Filtering logic: only apply filters if a value other than "All" is chosen.
-  List<ProductItem> _filterProducts() {
-    List<ProductItem> filtered = List.from(widget.products);
+  List<ProductItemInformation> _filterProducts() {
+    List<ProductItemInformation> filtered = List.from(widget.products);
 
     // Availability filter – only applied if a valid option is chosen.
     if (_selectedAvailability != null) {
@@ -101,59 +83,149 @@ class _ExportPopUpState extends State<ExportPopUp> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text("Alert", style: GoogleFonts.spaceGrotesk()),
+          backgroundColor: const Color.fromARGB(255, 28, 36, 46),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Alert",
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           content: Text(
             "Please choose at least one filter criterion to export.",
-            style: GoogleFonts.spaceGrotesk(),
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 16,
+              color: Colors.white70,
+            ),
           ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                side: const BorderSide(color: Colors.white70, width: 1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK", style: GoogleFonts.spaceGrotesk()),
-            )
+              child: Text(
+                "OK",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ],
         ),
       );
+
       return;
     }
 
     // Get the filtered list.
-    List<ProductItem> filtered = _filterProducts();
+    List<ProductItemInformation> filtered = _filterProducts();
     // Note: Even if the filtered list is empty (e.g. 0 to 0 range), we allow the export.
     _askForFileNameAndExport(filtered);
   }
 
   /// Prompts for a file name and then calls export.
-  void _askForFileNameAndExport(List<ProductItem> filtered) {
+  void _askForFileNameAndExport(List<ProductItemInformation> filtered) {
     String fileName = "";
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title:
-              Text("Enter Excel File Name", style: GoogleFonts.spaceGrotesk()),
+          backgroundColor: const Color.fromARGB(255, 28, 36, 46),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Enter Excel File Name",
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           content: TextField(
             onChanged: (value) {
               fileName = value;
             },
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontSize: 16,
+            ),
             decoration: InputDecoration(
               hintText: "File name (without extension)",
-              hintStyle: GoogleFonts.spaceGrotesk(),
+              hintStyle: GoogleFonts.spaceGrotesk(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+              filled: true,
+              fillColor: const Color.fromARGB(255, 36, 50, 69),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white70, width: 1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white, width: 1.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                side: const BorderSide(
+                    color: Color.fromARGB(255, 105, 123, 123), width: 0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("Cancel", style: GoogleFonts.spaceGrotesk()),
+              child: Text(
+                "Cancel",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
             ),
             TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () {
                 if (fileName.trim().isEmpty) return;
                 _exportToExcel(filtered, fileName.trim());
                 Navigator.of(context).pop(); // Close file name dialog.
                 Navigator.of(context).pop(); // Close export popup.
               },
-              child: Text("Export", style: GoogleFonts.spaceGrotesk()),
+              child: Text(
+                "Export",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         );
@@ -162,7 +234,7 @@ class _ExportPopUpState extends State<ExportPopUp> {
   }
 
   /// Generates an Excel file using Syncfusion XLSIO and downloads it on Flutter Web.
-  void _exportToExcel(List<ProductItem> data, String fileName) {
+  void _exportToExcel(List<ProductItemInformation> data, String fileName) {
     final xls.Workbook workbook = xls.Workbook();
     final xls.Worksheet sheet = workbook.worksheets[0];
 
@@ -223,10 +295,6 @@ class _ExportPopUpState extends State<ExportPopUp> {
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(255, 28, 36, 46),
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: const Color.fromARGB(255, 42, 54, 69),
-                    width: 1.3,
-                  ),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
                 child: Column(
@@ -304,52 +372,61 @@ class _ExportPopUpState extends State<ExportPopUp> {
                         ),
                       ],
                     ),
+                    SizedBox(height: 24.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                const Color.fromARGB(255, 28, 36, 46),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 32.w, vertical: 20.h),
+                            side: const BorderSide(
+                                color: Color.fromARGB(255, 105, 123, 123),
+                                width: 0.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  8.r), // Adjust the radius as needed.
+                            ),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 105, 65, 198),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 32.w, vertical: 20.h),
+                          ),
+                          onPressed: _onSubmit,
+                          child: Text(
+                            'Submit',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              SizedBox(height: 24.h),
               // Bottom Buttons.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color.fromARGB(255, 28, 36, 46),
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 20.w, vertical: 12.h),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 16.w),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 32.w, vertical: 20.h),
-                    ),
-                    onPressed: _onSubmit,
-                    child: Text(
-                      'Submit',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),
