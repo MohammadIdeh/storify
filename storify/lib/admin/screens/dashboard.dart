@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/widgets/longPressDraggable.dart';
 
 // Import your four dashboard widgets:
@@ -57,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
     StatsCard(
       percentage: "15 %",
-      svgIconPath: "assets/images/image3.png",
+      svgIconPath: "assets/images/totalUsers.svg",
       title: "Total User",
       value: "18,540k",
       key: UniqueKey(),
@@ -77,10 +78,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     switch (index) {
       case 0:
-        // Dashboard
         break;
       case 1:
-        // Products
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const Productsscreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
+          ),
+        );
         break;
       case 2:
         // Orders

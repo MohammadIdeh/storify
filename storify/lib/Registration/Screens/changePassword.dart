@@ -51,12 +51,10 @@ class _ChangepasswordState extends State<Changepassword> {
     super.dispose();
   }
 
-  /// API call: Sends dynamic email, code, and newPassword to the endpoint.
   Future<void> _performLogin() async {
     final String newPassword = _newPasswordController.text.trim();
     final String confirmPassword = _confirmPasswordController.text.trim();
 
-    // Validate that both password fields are filled and match.
     if (newPassword.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all the fields")),
