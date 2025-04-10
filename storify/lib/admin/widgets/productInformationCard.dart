@@ -1,5 +1,6 @@
 import 'dart:html' as html; // only for Flutter Web image picking
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/widgets/product_item_Model.dart';
 
@@ -143,6 +144,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 510,
       padding: const EdgeInsets.all(20), // Increased padding
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
@@ -158,7 +160,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
               Text(
                 "Product Information",
                 style: GoogleFonts.spaceGrotesk(
-                  fontSize: 22, // Bigger title font
+                  fontSize: 30.sp, // Bigger title font
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -177,14 +179,14 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                 child: Text(
                   _isEditing ? "Save" : "Edit",
                   style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16, // larger button text
+                    fontSize: 19.sp, // larger button text
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
 
           // Drop area and image.
           LayoutBuilder(
@@ -204,11 +206,15 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                             // Image with onTap (for file selection).
                             InkWell(
                               onTap: _pickImage,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  _imageUrl,
-                                  fit: BoxFit.cover,
+                              child: Center(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    _imageUrl,
+                                    fit: BoxFit.fill,
+                                    width: 300,
+                                    height: 300,
+                                  ),
                                 ),
                               ),
                             ),
@@ -251,7 +257,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 28),
+                  SizedBox(width: 20.w),
                   // Right: Product details.
                   Expanded(
                     flex: 1,
@@ -372,7 +378,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         Text(
           title,
           style: GoogleFonts.spaceGrotesk(
-            fontSize: 14,
+            fontSize: 25.sp,
             fontWeight: FontWeight.w500,
             color: Colors.white70,
           ),
@@ -411,7 +417,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
 
   TextStyle _labelStyle() {
     return GoogleFonts.spaceGrotesk(
-      fontSize: 16,
+      fontSize: 20.sp,
       color: Colors.white,
       fontWeight: FontWeight.w500,
     );

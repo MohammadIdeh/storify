@@ -195,17 +195,17 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
     final List<String> navItems = [
       'Dashboard',
       'Products',
+      'Category',
       'Orders',
-      'Stores',
-      'Settings',
+      'Tracking',
     ];
 
     final List<String?> navIcons = [
       'assets/images/home.svg',
       'assets/images/products.svg',
+      'assets/images/category.svg',
       'assets/images/orders.svg',
-      'assets/images/stores.svg',
-      'assets/images/settings.svg',
+      'assets/images/map.svg',
     ];
 
     return navItems.asMap().entries.map((entry) {

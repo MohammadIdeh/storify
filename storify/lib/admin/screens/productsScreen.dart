@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
+import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/widgets/exportPopUp.dart';
 import 'package:storify/admin/widgets/longPressDraggable.dart';
@@ -78,7 +79,20 @@ class _ProductsscreenState extends State<Productsscreen> {
       case 1:
         break;
       case 2:
-        // Orders
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const CategoriesScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 700),
+          ),
+        );
         break;
       case 3:
         // Stores

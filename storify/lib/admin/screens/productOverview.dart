@@ -6,6 +6,8 @@ import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/widgets/product_item_Model.dart';
 import 'package:storify/admin/widgets/productInformationCard.dart';
+import 'package:storify/admin/widgets/salesOverview.dart';
+import 'package:storify/admin/widgets/sellingHistoryTable.dart';
 
 class Productoverview extends StatefulWidget {
   final ProductItemInformation product;
@@ -109,20 +111,41 @@ class _ProductoverviewState extends State<Productoverview> {
               Row(
                 children: [
                   Expanded(
+                    flex: 3, // More space for ProductInformationCard
                     child: ProductInformationCard(
                       product: _currentProduct,
                       onUpdate: _handleProductUpdate,
                     ),
                   ),
-                  SizedBox(
-                      width: 20.w), // Optional spacing between the two widgets
+                  SizedBox(width: 20.w), // spacing between the two widgets
                   Expanded(
-                      child: ProductInformationCard(
-                    product: _currentProduct,
-                    onUpdate: _handleProductUpdate,
-                  )),
+                    flex: 2, // Less space for Salesoverview
+                    child: Salesoverview(),
+                  ),
                 ],
-              )
+              ),
+              SizedBox(height: 20.h),
+              Row(
+                children: [
+                  Text(
+                    'Selling History',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: SellingHistoryWidget(),
+                  )
+                ],
+              ),
+              SizedBox(height: 40.h),
             ],
           ),
         ),

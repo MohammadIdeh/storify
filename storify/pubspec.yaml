@@ -54,4 +54,7 @@ flutter:
     - assets/images/logout.svg
     - assets/images/image3.png
     - assets/images/back.svg
+    - assets/images/category.svg
+    - assets/images/map.svg
+    - assets/images/addCat.svg
 
