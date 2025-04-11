@@ -304,10 +304,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     });
   }
 
-  void _publishCategory(String categoryName, bool isActive, String image) {
+  void _publishCategory(
+      String categoryName, bool isActive, String image, String description) {
     setState(() {
       final newCat = CategoryItem(
-        image: image, // now using the provided image
+        image: image,
         name: categoryName,
         products: 0,
         isActive: isActive,
@@ -486,8 +487,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               for (final panel in _openedPanels) ...[
                 if (panel.type == PanelType.addCat)
                   AddCategoryPanel(
-                    onPublish: (catName, isActive, image) {
-                      _publishCategory(catName, isActive, image);
+                    onPublish: (catName, isActive, image, description) {
+                      _publishCategory(catName, isActive, image, description);
                     },
                     onCancel: () {
                       setState(() {

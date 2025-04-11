@@ -131,12 +131,20 @@ class _CategoriestableState extends State<Categoriestable> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12.r),
-                                  child: Image.asset(
-                                    cat.image,
-                                    width: 40.w,
-                                    height: 40.h,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: (cat.image.startsWith('data:') ||
+                                          cat.image.startsWith('http'))
+                                      ? Image.network(
+                                          cat.image,
+                                          width: 40.w,
+                                          height: 40.h,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Image.asset(
+                                          cat.image,
+                                          width: 40.w,
+                                          height: 40.h,
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
                                 SizedBox(width: 10.w),
                                 Expanded(
