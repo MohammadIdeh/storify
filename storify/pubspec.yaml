@@ -19,6 +19,7 @@ dependencies:
   fl_chart: ^0.70.2
   http: ^1.3.0
   syncfusion_flutter_xlsio: ^29.1.35
+  percent_indicator: ^4.2.5
 
 dev_dependencies:
   flutter_test:
@@ -58,4 +59,9 @@ flutter:
     - assets/images/map.svg
     - assets/images/addCat.svg
     - assets/images/gallery.svg
+    - assets/images/Managment.svg
+    - assets/images/totalorders.svg
+    - assets/images/Activeorders.svg
+    - assets/images/completedOrders.svg
+    - assets/images/cancorders.svg
 

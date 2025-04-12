@@ -289,6 +289,9 @@ class ProductslistTableState extends State<ProductslistTable> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
+                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                      (Set<WidgetState> states) => Colors.transparent,
+                    ),
                     showCheckboxColumn: false,
                     headingRowColor:
                         MaterialStateProperty.all<Color>(headingColor),
@@ -337,19 +340,24 @@ class ProductslistTableState extends State<ProductslistTable> {
                       return DataRow(
                         onSelectChanged: (selected) async {
                           if (selected == true) {
-                            final updatedProduct =
-                                await Navigator.push<ProductItemInformation>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    Productoverview(product: product),
+                            final updatedProduct = await Navigator.of(context)
+                                .push<ProductItemInformation>(
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        Productoverview(product: product),
+                                transitionsBuilder: (context, animation,
+                                        secondaryAnimation, child) =>
+                                    FadeTransition(
+                                        opacity: animation, child: child),
+                                transitionDuration:
+                                    const Duration(milliseconds: 400),
                               ),
                             );
 
                             // If updatedProduct is not null, update your data source.
                             if (updatedProduct != null) {
                               setState(() {
-                                // For example, find the index in _allProducts and update it.
                                 final index = _allProducts
                                     .indexWhere((p) => p.name == product.name);
                                 if (index != -1) {

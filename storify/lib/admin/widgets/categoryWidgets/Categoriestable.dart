@@ -66,7 +66,7 @@ class _CategoriestableState extends State<Categoriestable> {
                     ),
                     showCheckboxColumn: false,
                     headingRowColor:
-                        MaterialStateProperty.all<Color>(headingColor),
+                        WidgetStateProperty.all<Color>(headingColor),
                     border: TableBorder(
                       top: dividerSide,
                       bottom: dividerSide,

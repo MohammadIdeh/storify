@@ -3,8 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productOverview.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
+import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/widgets/product_item_Model.dart';
 
 void main() {
@@ -22,7 +24,7 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
           debugShowCheckedModeBanner: false, // Removes the debug banner
-          home: CategoriesScreen()),
+          home: LoginScreen()),
     );
   }
 }

@@ -18,7 +18,6 @@ class Productoverview extends StatefulWidget {
 }
 
 class _ProductoverviewState extends State<Productoverview> {
-  int _currentIndex = 1;
   late ProductItemInformation _currentProduct;
 
   @override
@@ -36,24 +35,10 @@ class _ProductoverviewState extends State<Productoverview> {
     // Optionally, propagate this update to your data source.
   }
 
-  void _onNavItemTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    // Navigation actions...
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(200),
-        child: MyNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onNavItemTap,
-        ),
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),

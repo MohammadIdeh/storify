@@ -5,7 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
+import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/widgets/categoryWidgets/Categoriestable.dart';
 import 'package:storify/admin/widgets/categoryWidgets/CategoryProductsRow.dart';
 import 'package:storify/admin/widgets/categoryWidgets/addCatPanel.dart';
@@ -404,6 +406,35 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 break;
               case 2:
                 // Current Categories screen.
+                break;
+
+              case 3:
+                Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const Orders(),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 700),
+                  ),
+                );
+                break;
+              case 4:
+                Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const Rolemanegment(),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                    transitionDuration: const Duration(milliseconds: 700),
+                  ),
+                );
                 break;
             }
           },

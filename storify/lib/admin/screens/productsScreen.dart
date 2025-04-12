@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/admin/screens/orders.dart';
+import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/widgets/exportPopUp.dart';
 import 'package:storify/admin/widgets/longPressDraggable.dart';
 import 'package:storify/admin/widgets/productsCards.dart';
@@ -95,10 +97,32 @@ class _ProductsscreenState extends State<Productsscreen> {
         );
         break;
       case 3:
-        // Stores
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const Orders(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 700),
+          ),
+        );
         break;
       case 4:
-        // More
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const Rolemanegment(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) =>
+                    FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 700),
+          ),
+        );
         break;
     }
   }
@@ -262,7 +286,7 @@ class _ProductsscreenState extends State<Productsscreen> {
                   Text(
                     "Product List",
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 20.sp,
+                      fontSize: 30.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -326,7 +350,6 @@ class _ProductsscreenState extends State<Productsscreen> {
                           'assets/images/search.svg',
                           width: 20.w,
                           height: 20.h,
-                          color: Colors.white70,
                         ),
                       ],
                     ),

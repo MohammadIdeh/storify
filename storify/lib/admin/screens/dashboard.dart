@@ -3,7 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/screens/Categories.dart';
+import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
+import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/widgets/longPressDraggable.dart';
 
 // Import your four dashboard widgets:
@@ -113,10 +115,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
         break;
       case 3:
-        // Stores
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const Orders(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 700),
+          ),
+        );
         break;
       case 4:
-        // More
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const Rolemanegment(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) =>
+                    FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 700),
+          ),
+        );
         break;
     }
   }
