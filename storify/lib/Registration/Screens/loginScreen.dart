@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Screens/forgotPassword.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -53,7 +54,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://ef98-86-107-17-148.ngrok-free.app/auth/login'),
+        Uri.parse(
+            'https://infant-context-continent-acquisitions.trycloudflare.com/auth/login'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -64,13 +66,21 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         print('Login Successful: $responseData');
+
+        // Assuming your API returns a token like 'token' in responseData
+        String token =
+            responseData['token']; // Adjust if your token key is different
         String roleName = responseData['user']['roleName'];
+
+        // Save the token locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken', token);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login Successful as a $roleName')),
         );
+
         if (roleName == 'Admin') {
-          // ignore: use_build_context_synchronously
           Navigator.of(context).push(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>

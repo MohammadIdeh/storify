@@ -24,27 +24,26 @@ class Rolemanegment extends StatefulWidget {
 
 class _RolemanegmentState extends State<Rolemanegment> {
   int _currentIndex = 4;
-  int _selectedFilterIndex = 0; // 0: All Users, 1: Admins, etc.
+  int _selectedFilterIndex = 0;
   String _searchQuery = "";
 
   final List<String> _filters = [
     "All Users",
-    "Admins",
-    "Employees",
-    "Customers",
-    "Suppliers",
-    "delivery Employees"
+    "Admin",
+    "Employee",
+    "Customer",
+    "Supplier",
+    "Delivery Employee"
   ];
 
   // This list will be populated from the API.
   List<RoleItem> _roleList = [];
-
   // API endpoints.
   // Make sure your API returns the fields exactly as needed for the table.
   final String getUsersApi =
-      "https://ef98-86-107-17-148.ngrok-free.app/auth/users";
+      "https://infant-context-continent-acquisitions.trycloudflare.com/auth/users";
   final String addUserApi =
-      "https://ef98-86-107-17-148.ngrok-free.app/auth/register";
+      "https://infant-context-continent-acquisitions.trycloudflare.com/auth/register";
 
   @override
   void initState() {
@@ -52,47 +51,99 @@ class _RolemanegmentState extends State<Rolemanegment> {
     _fetchUsers();
   }
 
+  Future<RoleItem?> _updateUser(RoleItem updatedUser) async {
+    try {
+      final url = Uri.parse(
+          "https://infant-context-continent-acquisitions.trycloudflare.com/auth/${updatedUser.userId}");
+      final bodyMap = {
+        "name": updatedUser.name,
+        "email": updatedUser.email,
+        "phoneNumber": updatedUser.phoneNo,
+        "roleName": updatedUser.role,
+        // Send the active value as "1" or "0"
+        "isActive": updatedUser.isActive ? "1" : "0",
+      };
+
+      if (updatedUser.role.toLowerCase() == "customer" &&
+          updatedUser.address != null &&
+          updatedUser.address!.isNotEmpty) {
+        bodyMap["address"] = updatedUser.address!;
+      }
+
+      final body = jsonEncode(bodyMap);
+      final response = await http.put(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final json = jsonDecode(response.body);
+        // Optionally update dateAdded if needed.
+        return updatedUser.copyWith(
+          dateAdded: DateFormat("MM-dd-yyyy HH:mm").format(DateTime.now()),
+        );
+      } else {
+        throw Exception("Failed to update user: ${response.body}");
+      }
+    } catch (e) {
+      print("Error updating user: $e");
+      return null;
+    }
+  }
+
+  Future<bool> _deleteUser(String userId) async {
+    try {
+      final url = Uri.parse(
+          "https://infant-context-continent-acquisitions.trycloudflare.com/auth/$userId");
+      final response = await http.delete(url, headers: {
+        "Content-Type": "application/json",
+      });
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      print("Error deleting user: $e");
+      return false;
+    }
+  }
+
   Future<void> _fetchUsers() async {
     try {
       final response = await http.get(
         Uri.parse(getUsersApi),
-        headers: {"Accept": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+        },
       );
 
-      // Log status, headers, and body for debugging.
-      print("Status code: ${response.statusCode}");
-      print("Response headers: ${response.headers}");
-      print("Response body: ${response.body}");
-
-      // Attempt to parse JSON without checking content-type.
       final decodedJson = jsonDecode(response.body);
-
-      // Validate the structure.
+      List<dynamic> data = [];
       if (decodedJson is Map<String, dynamic> &&
           decodedJson.containsKey("users")) {
-        List<dynamic> data = decodedJson["users"] ?? [];
-
-        List<RoleItem> loadedUsers = data.map((json) {
-          return RoleItem(
-            userId: json['userId'].toString(),
-            name: json['name'] ?? "",
-            email: json['email'] ?? "",
-            phoneNo: json['phoneNumber'] ?? "",
-            dateAdded: DateFormat("MM-dd-yyyy HH:mm")
-                .format(DateTime.parse(json['registrationDate'])),
-            role: json['roleName'] ?? "",
-            address: json['address'] ?? "",
-          );
-        }).toList();
-
-        setState(() {
-          _roleList = loadedUsers;
-        });
-
-        print("Fetched ${_roleList.length} users");
+        data = decodedJson["users"] ?? [];
+      } else if (decodedJson is List) {
+        data = decodedJson;
       } else {
         throw Exception("The API did not return the expected JSON structure.");
       }
+      List<RoleItem> loadedUsers = data.map((json) {
+        return RoleItem(
+          userId: json['userId'].toString(),
+          name: json['name'] ?? "",
+          email: json['email'] ?? "",
+          phoneNo: json['phoneNumber'] ?? "",
+          dateAdded: DateFormat("MM-dd-yyyy HH:mm")
+              .format(DateTime.parse(json['registrationDate'])),
+          role: json['roleName'] ?? "",
+          isActive: parseIsActive(json['isActive']),
+          address: json['address'] ?? "",
+        );
+      }).toList();
+
+      setState(() {
+        _roleList = loadedUsers;
+      });
+
+      print("Fetched ${_roleList.length} users");
     } catch (e) {
       print("Error fetching users: $e");
     }
@@ -148,118 +199,53 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   // Function to show the Add/Edit User dialog.
   Future<RoleItem?> _showUserDialog({RoleItem? roleToEdit}) async {
+    // Initialize controllers with roleToEdit's data if editing
     final nameController = TextEditingController(text: roleToEdit?.name ?? "");
     final emailController =
         TextEditingController(text: roleToEdit?.email ?? "");
     final phoneController =
         TextEditingController(text: roleToEdit?.phoneNo ?? "");
-    // Add an address controller – used only when the role is Customers.
     final addressController =
         TextEditingController(text: roleToEdit?.address ?? "");
 
     // For the role dropdown, exclude "All Users".
-    String selectedRole = roleToEdit?.role ?? _filters[1]; // default "Admins"
-    bool isActive = true; // Not stored in RoleItem; can be used as needed
+    String selectedRole = roleToEdit?.role ?? _filters[1]; // default "Admin"
+    // Use a local variable for isActive.
+    bool localIsActive = roleToEdit?.isActive ?? true;
 
     return showDialog<RoleItem>(
       context: context,
       builder: (ctx) {
-        return Center(
-          child: SizedBox(
-            width: 550.w,
-            child: Dialog(
-              backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        roleToEdit == null ? "Add User" : "Edit User",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      TextField(
-                        controller: nameController,
-                        style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Name",
-                          labelStyle:
-                              GoogleFonts.spaceGrotesk(color: Colors.white70),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white54),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return Center(
+            child: SizedBox(
+              width: 550.w,
+              child: Dialog(
+                backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          roleToEdit == null ? "Add User" : "Edit User",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
-                      ),
-                      SizedBox(height: 16.h),
-                      TextField(
-                        controller: emailController,
-                        style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Email",
-                          labelStyle:
-                              GoogleFonts.spaceGrotesk(color: Colors.white70),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white54),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      TextField(
-                        controller: phoneController,
-                        style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Phone Number",
-                          labelStyle:
-                              GoogleFonts.spaceGrotesk(color: Colors.white70),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white54),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      // Show the address field only if the selected role is Customers.
-                      if (selectedRole.toLowerCase() == "customers")
+                        SizedBox(height: 16.h),
                         TextField(
-                          controller: addressController,
+                          controller: nameController,
                           style: GoogleFonts.spaceGrotesk(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: "Address",
-                            labelStyle:
-                                GoogleFonts.spaceGrotesk(color: Colors.white70),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                          ),
-                        )
-                      else
-                        // Optionally, still include the field if you want to allow setting address for other roles.
-                        TextField(
-                          controller: addressController,
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Address (Optional)",
+                            labelText: "Name",
                             labelStyle:
                                 GoogleFonts.spaceGrotesk(color: Colors.white70),
                             enabledBorder: UnderlineInputBorder(
@@ -270,128 +256,216 @@ class _RolemanegmentState extends State<Rolemanegment> {
                             ),
                           ),
                         ),
-                      SizedBox(height: 16.h),
-                      DropdownButtonFormField<String>(
-                        value: selectedRole,
-                        dropdownColor: const Color.fromARGB(255, 36, 50, 69),
-                        style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: "Role",
-                          labelStyle:
-                              GoogleFonts.spaceGrotesk(color: Colors.white70),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white54),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                        items: _filters
-                            .where((role) => role != "All Users")
-                            .map((role) => DropdownMenuItem(
-                                  value: role,
-                                  child: Text(role),
-                                ))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              selectedRole = val;
-                            });
-                          }
-                        },
-                      ),
-                      SizedBox(height: 16.h),
-                      // "Is Active" switch.
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Is Active",
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white70,
-                              fontSize: 16.sp,
+                        SizedBox(height: 16.h),
+                        TextField(
+                          controller: emailController,
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Email",
+                            labelStyle:
+                                GoogleFonts.spaceGrotesk(color: Colors.white70),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white54),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
                             ),
                           ),
-                          CupertinoSwitch(
-                            value: isActive,
-                            activeColor: Colors.green,
-                            onChanged: (value) {
-                              setState(() {
-                                isActive = value;
-                              });
-                            },
+                        ),
+                        SizedBox(height: 16.h),
+                        TextField(
+                          controller: phoneController,
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Phone Number",
+                            labelStyle:
+                                GoogleFonts.spaceGrotesk(color: Colors.white70),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white54),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: 20.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                        ),
+                        SizedBox(height: 16.h),
+                        // Display address field based on selectedRole.
+                        if (selectedRole.toLowerCase() == "customer")
+                          TextField(
+                            controller: addressController,
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Address",
+                              labelStyle: GoogleFonts.spaceGrotesk(
+                                  color: Colors.white70),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white54),
                               ),
-                              side:
-                                  BorderSide(color: Colors.white54, width: 1.5),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white),
+                              ),
                             ),
-                            onPressed: () => Navigator.pop(ctx),
-                            child: Text(
-                              "Cancel",
+                          )
+                        else
+                          TextField(
+                            controller: addressController,
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Address (Optional)",
+                              labelStyle: GoogleFonts.spaceGrotesk(
+                                  color: Colors.white70),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white54),
+                              ),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        SizedBox(height: 16.h),
+                        DropdownButtonFormField<String>(
+                          value: selectedRole,
+                          dropdownColor: const Color.fromARGB(255, 36, 50, 69),
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: "Role",
+                            labelStyle:
+                                GoogleFonts.spaceGrotesk(color: Colors.white70),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white54),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                          ),
+                          items: _filters
+                              .where((role) => role != "All Users")
+                              .map((role) => DropdownMenuItem(
+                                    value: role,
+                                    child: Text(role),
+                                  ))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setStateDialog(() {
+                                selectedRole = val;
+                              });
+                            }
+                          },
+                        ),
+                        SizedBox(height: 16.h),
+                        // "Is Active" switch using the dialog local state.
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Is Active",
                               style: GoogleFonts.spaceGrotesk(
                                 color: Colors.white70,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 16.sp,
                               ),
                             ),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color.fromARGB(255, 105, 65, 198),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
+                            CupertinoSwitch(
+                              value: localIsActive,
+                              activeColor: Colors.green,
+                              onChanged: (value) {
+                                setStateDialog(() {
+                                  localIsActive = value;
+                                });
+                              },
                             ),
-                            onPressed: () {
-                              final newRole = RoleItem(
-                                userId: roleToEdit?.userId ??
-                                    "new_${DateTime.now().millisecondsSinceEpoch}",
-                                name: nameController.text,
-                                email: emailController.text,
-                                phoneNo: phoneController.text,
-                                dateAdded: DateFormat("MM-dd-yyyy HH:mm")
-                                    .format(DateTime.now()),
-                                role: selectedRole,
-                                address:
-                                    selectedRole.toLowerCase() == "customers"
-                                        ? addressController.text
-                                        : addressController.text.isNotEmpty
-                                            ? addressController.text
-                                            : null,
-                              );
-                              Navigator.pop(ctx, newRole);
-                            },
-                            child: Text(
-                              roleToEdit == null ? "Add" : "Save",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
+                          ],
+                        ),
+                        SizedBox(height: 20.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: BorderSide(
+                                    color: Colors.white54, width: 1.5),
+                              ),
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text(
+                                "Cancel",
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: Colors.white70,
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromARGB(255, 105, 65, 198),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                // Validate that all required fields are filled.
+                                if (nameController.text.trim().isEmpty ||
+                                    phoneController.text.trim().isEmpty ||
+                                    selectedRole.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "Please fill all required fields",
+                                        style: GoogleFonts.spaceGrotesk(),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+                                // Create the new RoleItem object and use localIsActive
+                                final newRole = RoleItem(
+                                  userId: roleToEdit?.userId ??
+                                      "new_${DateTime.now().millisecondsSinceEpoch}",
+                                  name: nameController.text.trim(),
+                                  email: emailController.text.trim(),
+                                  phoneNo: phoneController.text.trim(),
+                                  dateAdded: DateFormat("MM-dd-yyyy HH:mm")
+                                      .format(DateTime.now()),
+                                  role: selectedRole,
+                                  address:
+                                      selectedRole.toLowerCase() == "customer"
+                                          ? addressController.text.trim()
+                                          : (addressController.text
+                                                  .trim()
+                                                  .isNotEmpty
+                                              ? addressController.text.trim()
+                                              : null),
+                                  isActive: localIsActive,
+                                );
+                                Navigator.pop(ctx, newRole);
+                              },
+                              child: Text(
+                                roleToEdit == null ? "Add" : "Save",
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
+          );
+        });
       },
     );
   }
@@ -410,17 +484,28 @@ class _RolemanegmentState extends State<Rolemanegment> {
     }
   }
 
-  // Handler for the Edit action.
   void _handleEditUser(RoleItem role) async {
     final updatedUser = await _showUserDialog(roleToEdit: role);
     if (updatedUser != null) {
-      // For editing, update local state.
-      setState(() {
-        final index = _roleList.indexWhere((r) => r.userId == role.userId);
-        if (index != -1) {
-          _roleList[index] = updatedUser;
-        }
-      });
+      final resultUser = await _updateUser(updatedUser);
+      if (resultUser != null) {
+        setState(() {
+          final index = _roleList.indexWhere((r) => r.userId == role.userId);
+          if (index != -1) {
+            _roleList[index] = resultUser;
+            // Also update the switch state mapping.
+            // For example, if _switchStates is defined in the RolesTable and provided from parent
+            // You might want to update that list as well if necessary.
+          }
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to update user",
+                style: GoogleFonts.spaceGrotesk()),
+          ),
+        );
+      }
     }
   }
 
@@ -428,15 +513,17 @@ class _RolemanegmentState extends State<Rolemanegment> {
   Future<RoleItem?> _addUser(RoleItem newUser) async {
     try {
       final url = Uri.parse(addUserApi);
-      // Build the request body. Include the address only if the role is Customers.
+      // Build the request body using the correct keys and value types.
       final bodyMap = {
         "name": newUser.name,
         "email": newUser.email,
-        "PhoneNumber": newUser.phoneNo,
+        "phoneNumber": newUser.phoneNo, // lowercase key
         "roleName": newUser.role,
-        "isActive": "Active",
+        // Send "1" if true, "0" otherwise.
+        "isActive": newUser.isActive ? "1" : "0",
       };
-      if (newUser.role.toLowerCase() == "Customers" &&
+
+      if (newUser.role.toLowerCase() == "customer" &&
           newUser.address != null &&
           newUser.address!.isNotEmpty) {
         bodyMap["address"] = newUser.address!;
@@ -636,6 +723,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
                     _roleList.removeWhere((r) => r.userId == role.userId);
                   });
                 },
+                // Pass the parent's _deleteUser method as a callback.
+                onDeleteUser: _deleteUser,
                 onEditRole: (role) {
                   _handleEditUser(role);
                 },
@@ -646,4 +735,15 @@ class _RolemanegmentState extends State<Rolemanegment> {
       ),
     );
   }
+}
+
+// Helper function to parse isActive value.
+bool parseIsActive(dynamic value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is String) {
+    return value == "1";
+  }
+  return false;
 }

@@ -6,9 +6,10 @@ import 'package:storify/admin/widgets/rolesWidget/role_item.dart';
 
 class RolesTable extends StatefulWidget {
   final List<RoleItem> roles;
-  final String filter; // e.g. "All Users", "Admins", etc.
+  final String filter;
   final String searchQuery;
   final Function(RoleItem role)? onDeleteRole;
+  final Future<bool> Function(String id) onDeleteUser; // New callback
   final Function(RoleItem updatedRole)? onEditRole;
 
   const RolesTable({
@@ -17,6 +18,7 @@ class RolesTable extends StatefulWidget {
     this.filter = "All Users",
     this.searchQuery = "",
     this.onDeleteRole,
+    required this.onDeleteUser,
     this.onEditRole,
   });
 
@@ -36,7 +38,7 @@ class _RolesTableState extends State<RolesTable> {
     super.initState();
     // Initialize the switch states for each role in widget.roles.
     for (var roleItem in widget.roles) {
-      _switchStates[roleItem.userId] = true;
+      _switchStates[roleItem.userId] = roleItem.isActive;
     }
   }
 
@@ -46,10 +48,18 @@ class _RolesTableState extends State<RolesTable> {
     super.didUpdateWidget(oldWidget);
     for (var role in widget.roles) {
       if (!_switchStates.containsKey(role.userId)) {
-        _switchStates[role.userId] = true;
+        _switchStates[role.userId] = role.isActive;
       }
     }
   }
+// @override
+// void didUpdateWidget(covariant RolesTable oldWidget) {
+//   super.didUpdateWidget(oldWidget);
+//   // Update every role's switch state with the latest isActive value.
+//   for (var role in widget.roles) {
+//     _switchStates[role.userId] = role.isActive;
+//   }
+// }
 
   /// Filters roles based on the filter string and search query using widget.roles.
   List<RoleItem> get _filteredRoles {
@@ -185,40 +195,128 @@ class _RolesTableState extends State<RolesTable> {
                           DataCell(
                             Transform.scale(
                               scale: 0.7,
-                              child: CupertinoSwitch(
-                                value: _switchStates[roleItem.userId] ?? false,
-                                activeColor:
-                                    const Color.fromARGB(255, 105, 65, 198),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _switchStates[roleItem.userId] = value;
-                                  });
-                                },
+                              child: AbsorbPointer(
+                                child: CupertinoSwitch(
+                                  value:
+                                      _switchStates[roleItem.userId] ?? false,
+                                  activeColor:
+                                      const Color.fromARGB(255, 105, 65, 198),
+                                  onChanged: (value) {
+                                    setState(() {});
+                                  },
+                                ),
                               ),
                             ),
                           ),
                           DataCell(
                             Row(
                               children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit,
-                                      color: Colors.blueAccent, size: 18.sp),
-                                  onPressed: () {
+                                // Edit Button
+                                InkWell(
+                                  onTap: () {
                                     if (widget.onEditRole != null) {
                                       widget.onEditRole!(roleItem);
                                     }
                                   },
-                                  tooltip: "Edit",
+                                  borderRadius: BorderRadius.circular(30),
+                                  child: Container(
+                                    padding: EdgeInsets.all(6.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.edit,
+                                      color: Colors.blueAccent,
+                                      size: 18.sp,
+                                    ),
+                                  ),
                                 ),
-                                IconButton(
-                                  icon: Icon(Icons.delete,
-                                      color: Colors.redAccent, size: 18.sp),
-                                  onPressed: () {
-                                    if (widget.onDeleteRole != null) {
-                                      widget.onDeleteRole!(roleItem);
+                                SizedBox(width: 8.w),
+                                // Delete Button
+                                InkWell(
+                                  onTap: () async {
+                                    // Show confirmation dialog.
+                                    bool? confirmed = await showDialog<bool>(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          backgroundColor: const Color.fromARGB(
+                                              255, 36, 50, 69),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          title: Text("Confirm Deletion",
+                                              style: GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white)),
+                                          content: Text(
+                                              "Are you sure you want to delete this user?",
+                                              style: GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white70)),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(false),
+                                              child: Text("Cancel",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                          color:
+                                                              Colors.white70)),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(true),
+                                              child: Text("Confirm",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                          color: Colors.white)),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+
+                                    if (confirmed == true) {
+                                      // Call the deletion callback from the parent.
+                                      bool success = await widget
+                                          .onDeleteUser(roleItem.userId);
+                                      if (success) {
+                                        // If deletion is successful, update the UI via the parent's onDeleteRole callback.
+                                        if (widget.onDeleteRole != null) {
+                                          widget.onDeleteRole!(roleItem);
+                                        }
+                                      } else {
+                                        // Optionally, show an error message.
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                "Failed to delete user",
+                                                style:
+                                                    GoogleFonts.spaceGrotesk()),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
                                     }
                                   },
-                                  tooltip: "Delete",
+                                  borderRadius: BorderRadius.circular(30),
+                                  child: Container(
+                                    padding: EdgeInsets.all(6.w),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.delete,
+                                      color: Colors.redAccent,
+                                      size: 18.sp,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

@@ -52,7 +52,9 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               top: 100,
               child: Material(
                 color: Colors.transparent,
-                child: const Profilepopup(),
+                child: Profilepopup(
+                  onCloseMenu: _closeMenu, // Pass the close menu callback
+                ),
               ),
             ),
           ],

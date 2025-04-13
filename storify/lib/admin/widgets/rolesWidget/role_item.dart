@@ -5,15 +5,17 @@ class RoleItem {
   final String phoneNo;
   final String dateAdded;
   final String role;
+  final bool isActive;
   final String? address;
 
   RoleItem({
-    required this.userId,
+    required this.userId, 
     required this.name,
     required this.email,
     required this.phoneNo,
     required this.dateAdded,
     required this.role,
+    required this.isActive,
     this.address,
   });
 
@@ -24,6 +26,7 @@ class RoleItem {
     String? phoneNo,
     String? dateAdded,
     String? role,
+    bool? isActive,
     String? address,
   }) {
     return RoleItem(
@@ -33,6 +36,7 @@ class RoleItem {
       phoneNo: phoneNo ?? this.phoneNo,
       dateAdded: dateAdded ?? this.dateAdded,
       role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
       address: address ?? this.address,
     );
   }

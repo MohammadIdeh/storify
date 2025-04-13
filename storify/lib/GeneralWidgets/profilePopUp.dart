@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/Registration/Screens/loginScreen.dart';
 class Profilepopup extends StatefulWidget {
-  const Profilepopup({super.key});
+  final VoidCallback onCloseMenu;
+
+  const Profilepopup({super.key, required this.onCloseMenu});
 
   @override
   State<Profilepopup> createState() => _ProfilepopupState();
@@ -24,7 +27,7 @@ class _ProfilepopupState extends State<Profilepopup> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Profile Image
+          // Profile Image, Name, Role, etc.
           Container(
             width: 60,
             height: 60,
@@ -84,7 +87,11 @@ class _ProfilepopupState extends State<Profilepopup> {
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
               onTap: () {
-                print("logogogo");
+                // First remove the overlay by calling the callback
+                widget.onCloseMenu();
+
+                // Then perform logout
+                _logout(context);
               },
               child: Row(
                 children: [
@@ -110,4 +117,14 @@ class _ProfilepopupState extends State<Profilepopup> {
       ),
     );
   }
+}
+
+Future<void> _logout(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('authToken');
+
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (context) => const LoginScreen()),
+    (route) => false,
+  );
 }

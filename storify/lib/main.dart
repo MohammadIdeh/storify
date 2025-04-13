@@ -1,30 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
-import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
-import 'package:storify/admin/screens/orders.dart';
-import 'package:storify/admin/screens/productOverview.dart';
-import 'package:storify/admin/screens/productsScreen.dart';
-import 'package:storify/admin/screens/roleManegment.dart';
-import 'package:storify/admin/widgets/product_item_Model.dart';
+// import other screens as required
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Check for token before running the app
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('authToken');
+
+  runApp(MyApp(isLoggedIn: token != null));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isLoggedIn;
+
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      designSize: Size(1920, 1080), // Set to laptop screen size
+      designSize: const Size(1920, 1080), // Set to laptop screen size
       minTextAdapt: true,
       splitScreenMode: true,
       child: MaterialApp(
-          debugShowCheckedModeBanner: false, // Removes the debug banner
-          home: LoginScreen()),
+        debugShowCheckedModeBanner: false, // Removes the debug banner
+        home: isLoggedIn ? const DashboardScreen() : const LoginScreen(),
+      ),
     );
   }
 }
