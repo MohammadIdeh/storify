@@ -1,8 +1,11 @@
 // categories_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/orders.dart';
@@ -11,15 +14,24 @@ import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/widgets/categoryWidgets/Categoriestable.dart';
 import 'package:storify/admin/widgets/categoryWidgets/CategoryProductsRow.dart';
 import 'package:storify/admin/widgets/categoryWidgets/addCatPanel.dart';
-import 'package:storify/admin/widgets/categoryWidgets/model.dart'; // Contains CategoryItem and ProductDetail
+import 'package:storify/admin/widgets/categoryWidgets/model.dart';
 
 enum PanelType { addCat, products }
 
 /// Holds data about a currently opened panel.
+// In categories_screen.dart, update PanelDescriptor class:
 class PanelDescriptor {
   final PanelType type;
   final String? categoryName; // used if type == products
-  PanelDescriptor({required this.type, this.categoryName});
+  final int? categoryID; // Added to store the category ID
+  final String? description; // Add this line for description
+
+  PanelDescriptor({
+    required this.type,
+    this.categoryName,
+    this.categoryID,
+    this.description, // Add this parameter
+  });
 }
 
 class CategoriesScreen extends StatefulWidget {
@@ -32,243 +44,162 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   // Navigation bar state.
   int _currentIndex = 2;
+  String? profilePictureUrl;
+
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
 
   // Filter state for chips.
   int _selectedFilterIndex = 0; // 0: All, 1: Active, 2: UnActive
-  final List<String> _filters = ["All", "Active", "UnActive"];
+  final List<String> _filters = ["All", "Active", "NotActive"];
 
-  // Fake master list of categories.
-  final List<CategoryItem> _allCategories = [
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Fruits',
-      products: 5,
-      isActive: true,
-    ),
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Vegetables',
-      products: 4,
-      isActive: true,
-    ),
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Candy and Chocolate',
-      products: 3,
-      isActive: false,
-    ),
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Snacks',
-      products: 6,
-      isActive: true,
-    ),
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Dairy',
-      products: 2,
-      isActive: false,
-    ),
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Beverages',
-      products: 4,
-      isActive: true,
-    ),
-    CategoryItem(
-      image: 'assets/images/image3.png',
-      name: 'Meat & Poultry',
-      products: 3,
-      isActive: false,
-    ),
-  ];
+  // API data state
+  bool _isLoading = true;
+  String? _error;
 
-  // Fake product details for each category in a map.
-  final Map<String, List<ProductDetail>> _categoryToProducts = {
-    'Fruits': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Apple",
-          costPrice: 0.50,
-          sellingPrice: 0.80,
-          myPrice: 2.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Madsngo",
-          costPrice: 1.00,
-          sellingPrice: 1.40,
-          myPrice: 3.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Mango",
-          costPrice: 1.00,
-          sellingPrice: 1.40,
-          myPrice: 3.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Orange",
-          costPrice: 0.60,
-          sellingPrice: 0.90,
-          myPrice: 2.5),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Mangdo",
-          costPrice: 1.00,
-          sellingPrice: 1.40,
-          myPrice: 3.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Banana",
-          costPrice: 0.30,
-          sellingPrice: 0.60,
-          myPrice: 1.5),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Grapes",
-          costPrice: 0.80,
-          sellingPrice: 1.20,
-          myPrice: 2.0),
-    ],
-    'Vegetables': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Carrot",
-          costPrice: 0.40,
-          sellingPrice: 0.75,
-          myPrice: 1.5),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Broccoli",
-          costPrice: 0.90,
-          sellingPrice: 1.30,
-          myPrice: 2.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Spinach",
-          costPrice: 0.70,
-          sellingPrice: 1.00,
-          myPrice: 1.8),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Pepper",
-          costPrice: 0.60,
-          sellingPrice: 1.00,
-          myPrice: 1.7),
-    ],
-    'Candy and Chocolate': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Gummy Bears",
-          costPrice: 0.70,
-          sellingPrice: 1.10,
-          myPrice: 2.5),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Lollipop",
-          costPrice: 0.30,
-          sellingPrice: 0.60,
-          myPrice: 1.2),
-    ],
-    'Snacks': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Chips",
-          costPrice: 1.00,
-          sellingPrice: 1.50,
-          myPrice: 3.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Pretzels",
-          costPrice: 0.80,
-          sellingPrice: 1.20,
-          myPrice: 2.5),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Popcorn",
-          costPrice: 0.50,
-          sellingPrice: 0.90,
-          myPrice: 2.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Nuts",
-          costPrice: 1.20,
-          sellingPrice: 1.80,
-          myPrice: 3.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Granola Bar",
-          costPrice: 0.60,
-          sellingPrice: 1.00,
-          myPrice: 2.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Crackers",
-          costPrice: 0.70,
-          sellingPrice: 1.10,
-          myPrice: 2.5),
-    ],
-    'Dairy': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Milk",
-          costPrice: 1.00,
-          sellingPrice: 1.50,
-          myPrice: 3.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Cheese",
-          costPrice: 2.00,
-          sellingPrice: 2.80,
-          myPrice: 4.0),
-    ],
-    'Beverages': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Water",
-          costPrice: 0.30,
-          sellingPrice: 0.50,
-          myPrice: 1.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Juice",
-          costPrice: 0.90,
-          sellingPrice: 1.40,
-          myPrice: 2.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Soda",
-          costPrice: 0.80,
-          sellingPrice: 1.20,
-          myPrice: 2.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Coffee",
-          costPrice: 1.20,
-          sellingPrice: 1.80,
-          myPrice: 3.0),
-    ],
-    'Meat & Poultry': [
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Chicken",
-          costPrice: 3.00,
-          sellingPrice: 4.50,
-          myPrice: 8.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Beef",
-          costPrice: 5.00,
-          sellingPrice: 7.00,
-          myPrice: 12.0),
-      ProductDetail(
-          image: 'assets/images/image3.png',
-          name: "Pork",
-          costPrice: 4.00,
-          sellingPrice: 6.00,
-          myPrice: 10.0),
-    ],
-  };
+  // List of categories from API
+  List<CategoryItem> _allCategories = [];
+
+  // Map to store products for each category by ID
+  Map<int, List<ProductDetail>> _categoryProductsMap = {};
+
+  // Track which categories are currently loading products
+  Map<int, bool> _loadingProductsForCategory = {};
+
+  // Track any errors loading products
+  Map<int, String?> _productLoadErrors = {};
+
   final List<PanelDescriptor> _openedPanels = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+    _loadProfilePicture();
+  }
+
+  Future<void> _fetchCategories() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://finalproject-a5ls.onrender.com/category/getall'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['message'] == "Categories retrieved successfully") {
+          final categoriesJson = data['categories'] as List;
+
+          setState(() {
+            _allCategories = categoriesJson
+                .map((json) => CategoryItem.fromJson(json))
+                .toList();
+            _isLoading = false;
+          });
+
+          // Add this - fetch product counts for all categories
+          for (var category in _allCategories) {
+            _fetchProductsForCategory(category.categoryID);
+          }
+        } else {
+          setState(() {
+            _error = 'Failed to load categories: ${data['message']}';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _error = 'Failed to load categories: HTTP ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error fetching categories: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+// New method to fetch products for a specific category
+  Future<void> _fetchProductsForCategory(int categoryID) async {
+    // Mark this category as loading products
+    setState(() {
+      _loadingProductsForCategory[categoryID] = true;
+      _productLoadErrors[categoryID] = null; // Clear any previous errors
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/category/$categoryID/products'),
+      );
+
+      print('API Response [GET products]: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data is Map && data.containsKey('products')) {
+          final productsJson = data['products'] as List;
+          print(
+              'Found ${productsJson.length} products for category $categoryID');
+
+          final products = productsJson.map((json) {
+            // Add debugging to see each product's ID
+            print('Product JSON: $json');
+            final product = ProductDetail.fromJson(json);
+            print('Parsed product ID: ${product.productID}');
+            return product;
+          }).toList();
+
+          setState(() {
+            _categoryProductsMap[categoryID] = products;
+            _loadingProductsForCategory[categoryID] = false;
+
+            // Update product count in category list
+            for (var cat in _allCategories) {
+              if (cat.categoryID == categoryID) {
+                cat.products = products.length;
+              }
+            }
+          });
+        } else {
+          print('Invalid response format: $data');
+          setState(() {
+            _categoryProductsMap[categoryID] = [];
+            _loadingProductsForCategory[categoryID] = false;
+            _productLoadErrors[categoryID] = 'Invalid response format';
+          });
+        }
+      } else {
+        print('Failed to load products: HTTP ${response.statusCode}');
+        setState(() {
+          _categoryProductsMap[categoryID] = [];
+          _loadingProductsForCategory[categoryID] = false;
+          _productLoadErrors[categoryID] =
+              'Failed to load products: HTTP ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      print('Error fetching products: $e');
+      setState(() {
+        _categoryProductsMap[categoryID] = [];
+        _loadingProductsForCategory[categoryID] = false;
+        _productLoadErrors[categoryID] = 'Error fetching products: $e';
+      });
+    }
+  }
 
   // Filter the master category list based on the selected filter chip.
   List<CategoryItem> get _filteredCategories {
@@ -285,13 +216,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   // This callback updates the product list for a category.
   void _updateProductsForCategory(
-      String categoryName, List<ProductDetail> updatedList) {
+      int categoryID, List<ProductDetail> updatedList) {
     setState(() {
       // Update the Map.
-      _categoryToProducts[categoryName] = updatedList;
+      _categoryProductsMap[categoryID] = updatedList;
+
       // Update category product count in _allCategories.
       for (var cat in _allCategories) {
-        if (cat.name == categoryName) {
+        if (cat.categoryID == categoryID) {
           cat.products = updatedList.length;
         }
       }
@@ -308,30 +240,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   void _publishCategory(
       String categoryName, bool isActive, String image, String description) {
+    // In a real app, this would call an API to create the category
+    // For now, we'll just add it locally and refresh the list
     setState(() {
-      final newCat = CategoryItem(
-        image: image,
-        name: categoryName,
-        products: 0,
-        isActive: isActive,
-      );
-      _allCategories.add(newCat);
-      _categoryToProducts[categoryName] = [];
       _openedPanels.removeWhere((p) => p.type == PanelType.addCat);
     });
+
+    // Refresh the category list after publishing
+    _fetchCategories();
   }
 
+// In categories_screen.dart, update _handleCategorySelected method:
   void _handleCategorySelected(CategoryItem cat) {
-    // If there's already a PanelDescriptor of type products for this cat,
-    // remove it so we can reinsert it at the bottom of the list.
     setState(() {
       _openedPanels.removeWhere(
-        (p) => p.type == PanelType.products && p.categoryName == cat.name,
+        (p) => p.type == PanelType.products && p.categoryID == cat.categoryID,
       );
-      // Add a new panel for this category.
+
+      // Add a new panel for this category, including the description
       _openedPanels.add(
-        PanelDescriptor(type: PanelType.products, categoryName: cat.name),
+        PanelDescriptor(
+          type: PanelType.products,
+          categoryName: cat.categoryName,
+          categoryID: cat.categoryID,
+          description: cat.description, // Pass the description
+        ),
       );
+
+      // Fetch products for this category if not already loaded
+      if (!_categoryProductsMap.containsKey(cat.categoryID)) {
+        _fetchProductsForCategory(cat.categoryID);
+      }
     });
   }
 
@@ -374,6 +313,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         preferredSize: const Size.fromHeight(200),
         child: MyNavigationBar(
           currentIndex: _currentIndex,
+
+          profilePictureUrl:
+              profilePictureUrl, // Pass the profile picture URL here
+
           onTap: (index) {
             setState(() {
               _currentIndex = index;
@@ -508,11 +451,49 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ],
               ),
               SizedBox(height: 30.h),
-              // Table of categories
-              Categoriestable(
-                categories: _filteredCategories,
-                onCategorySelected: _handleCategorySelected,
-              ),
+
+              // Show loading, error, or data
+              if (_isLoading)
+                Center(
+                  child: CircularProgressIndicator(
+                    color: const Color.fromARGB(255, 105, 65, 198),
+                  ),
+                )
+              else if (_error != null)
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        _error!,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          color: Colors.red,
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      ElevatedButton(
+                        onPressed: _fetchCategories,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 105, 65, 198),
+                        ),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // Table of categories
+                Categoriestable(
+                  categories: _filteredCategories,
+                  onCategorySelected: _handleCategorySelected,
+                ),
+
               SizedBox(height: 30.h),
               // Build the panels in the order they were opened
               for (final panel in _openedPanels) ...[
@@ -528,31 +509,207 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       });
                     },
                   ),
-                if (panel.type == PanelType.products)
-                  CategoryProductsRow(
-                    categoryName: panel.categoryName!,
-                    products: List<ProductDetail>.from(
-                        _categoryToProducts[panel.categoryName] ?? []),
-                    onClose: () {
-                      setState(() {
-                        _openedPanels.remove(panel);
-                      });
-                    },
-                    onProductDelete: (deletedProduct) {
-                      final currentList =
-                          _categoryToProducts[panel.categoryName] ??
-                              <ProductDetail>[];
-                      currentList.remove(deletedProduct);
-                      _updateProductsForCategory(
-                          panel.categoryName!, currentList);
-                    },
-                  ),
+                if (panel.type == PanelType.products &&
+                    panel.categoryID != null)
+                  _buildCategoryProductsPanel(panel),
               ],
               SizedBox(height: 40.h),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCategoryProductsPanel(PanelDescriptor panel) {
+    final categoryID = panel.categoryID!;
+    final categoryName = panel.categoryName ?? 'Category';
+    final description = panel.description; // Get the description
+
+    // Check if products are still loading
+    if (_loadingProductsForCategory[categoryID] == true) {
+      return Container(
+        margin: EdgeInsets.only(top: 20.h),
+        padding: EdgeInsets.all(16.r),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    categoryName,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    fixedSize: Size(100.w, 50.h),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _openedPanels.remove(panel);
+                    });
+                  },
+                  child: Text(
+                    "Close",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 32.h),
+            Center(
+              child: Column(
+                children: [
+                  CircularProgressIndicator(
+                    color: const Color.fromARGB(255, 105, 65, 198),
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    "Loading products...",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 32.h),
+          ],
+        ),
+      );
+    }
+
+    // Check if there was an error loading products
+    if (_productLoadErrors[categoryID] != null) {
+      return Container(
+        margin: EdgeInsets.only(top: 20.h),
+        padding: EdgeInsets.all(16.r),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    categoryName,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    fixedSize: Size(100.w, 50.h),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _openedPanels.remove(panel);
+                    });
+                  },
+                  child: Text(
+                    "Close",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 32.h),
+            Container(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Text(
+                      _productLoadErrors[categoryID]!,
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.red,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: () {
+                _fetchProductsForCategory(categoryID);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+              ),
+              child: Text(
+                "Try Again",
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            SizedBox(height: 32.h),
+          ],
+        ),
+      );
+    }
+
+    // Normal case: display the products
+    final products = _categoryProductsMap[categoryID] ?? [];
+
+    return CategoryProductsRow(
+      categoryName: categoryName,
+      categoryID: categoryID, // Pass the categoryID to the component
+      description: description, // Pass the description
+      products: products,
+      onClose: () {
+        setState(() {
+          _openedPanels.remove(panel);
+        });
+      },
+      onProductDelete: (deletedProduct) {
+        final currentList =
+            _categoryProductsMap[categoryID] ?? <ProductDetail>[];
+        currentList.remove(deletedProduct);
+        _updateProductsForCategory(categoryID, currentList);
+      },
     );
   }
 }

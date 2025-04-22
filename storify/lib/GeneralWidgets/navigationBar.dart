@@ -7,11 +7,13 @@ import 'package:storify/GeneralWidgets/profilePopUp.dart';
 class MyNavigationBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final String? profilePictureUrl; // Add this parameter
 
   const MyNavigationBar({
     Key? key,
     required this.currentIndex,
     required this.onTap,
+    this.profilePictureUrl, // Initialize it as optional
   }) : super(key: key);
 
   @override
@@ -160,6 +162,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               SizedBox(width: 14.w),
 
               // Profile + Arrow
+              // Profile + Arrow
               InkWell(
                 key: _profileKey,
                 onTap: _toggleProfileMenu,
@@ -168,10 +171,14 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                     Container(
                       width: 50,
                       height: 50,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         image: DecorationImage(
-                          image: AssetImage('assets/images/me.png'),
+                          image: widget.profilePictureUrl != null &&
+                                  widget.profilePictureUrl!.isNotEmpty
+                              ? NetworkImage(widget.profilePictureUrl!)
+                              : const AssetImage('assets/images/me.png')
+                                  as ImageProvider,
                           fit: BoxFit.cover,
                         ),
                       ),

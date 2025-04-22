@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
@@ -24,6 +25,7 @@ class _ProductsscreenState extends State<Productsscreen> {
   int _selectedFilterIndex = 0; // 0: All, 1: Active, 2: UnActive
   final List<String> _filters = ["All", "Active", "UnActive"];
   String _searchQuery = "";
+  String? profilePictureUrl;
 
   // Create a GlobalKey to access the ProductslistTable state.
   final GlobalKey<ProductslistTableState> _tableKey =
@@ -56,6 +58,19 @@ class _ProductsscreenState extends State<Productsscreen> {
       key: UniqueKey(),
     ),
   ];
+  @override
+  void initState() {
+    super.initState();
+
+    _loadProfilePicture();
+  }
+
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
 
   void _onNavItemTap(int index) {
     setState(() {
@@ -206,6 +221,8 @@ class _ProductsscreenState extends State<Productsscreen> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
+          profilePictureUrl:
+              profilePictureUrl, // Pass the profile picture URL here
         ),
       ),
       body: SingleChildScrollView(

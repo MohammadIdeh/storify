@@ -61,8 +61,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
 
     try {
       final response = await http.post(
-        Uri.parse(
-            'https://202b-139-190-132-141.ngrok-free.app/auth/resetPassword'),
+        Uri.parse('https://finalproject-a5ls.onrender.com/auth/resetPassword'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": _emailController.text.trim(),

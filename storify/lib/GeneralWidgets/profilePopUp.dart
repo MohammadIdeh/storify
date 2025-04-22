@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
+
 class Profilepopup extends StatefulWidget {
   final VoidCallback onCloseMenu;
 
@@ -14,6 +15,21 @@ class Profilepopup extends StatefulWidget {
 }
 
 class _ProfilepopupState extends State<Profilepopup> {
+  String? profilePictureUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilePicture();
+  }
+
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -31,10 +47,13 @@ class _ProfilepopupState extends State<Profilepopup> {
           Container(
             width: 60,
             height: 60,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               image: DecorationImage(
-                image: AssetImage('assets/images/me.png'),
+                image: profilePictureUrl != null &&
+                        profilePictureUrl!.isNotEmpty
+                    ? NetworkImage(profilePictureUrl!)
+                    : const AssetImage('assets/images/me.png') as ImageProvider,
                 fit: BoxFit.cover,
               ),
             ),
@@ -119,9 +138,11 @@ class _ProfilepopupState extends State<Profilepopup> {
   }
 }
 
+// Make sure to also clear the profilePicture when logging out
 Future<void> _logout(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.remove('authToken');
+  await prefs.remove('profilePicture'); // Also remove the profile picture
 
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute(builder: (context) => const LoginScreen()),

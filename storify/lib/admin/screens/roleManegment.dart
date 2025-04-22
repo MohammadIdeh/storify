@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
@@ -26,7 +27,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
   int _currentIndex = 4;
   int _selectedFilterIndex = 0;
   String _searchQuery = "";
-
+  String? profilePictureUrl;
   final List<String> _filters = [
     "All Users",
     "Admin",
@@ -41,20 +42,28 @@ class _RolemanegmentState extends State<Rolemanegment> {
   // API endpoints.
   // Make sure your API returns the fields exactly as needed for the table.
   final String getUsersApi =
-      "https://infant-context-continent-acquisitions.trycloudflare.com/auth/users";
+      "https://finalproject-a5ls.onrender.com/auth/users";
   final String addUserApi =
-      "https://infant-context-continent-acquisitions.trycloudflare.com/auth/register";
+      "https://finalproject-a5ls.onrender.com/auth/register";
 
   @override
   void initState() {
     super.initState();
     _fetchUsers();
+    _loadProfilePicture();
+  }
+
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
   }
 
   Future<RoleItem?> _updateUser(RoleItem updatedUser) async {
     try {
       final url = Uri.parse(
-          "https://infant-context-continent-acquisitions.trycloudflare.com/auth/${updatedUser.userId}");
+          "https://finalproject-a5ls.onrender.com/auth/${updatedUser.userId}");
       final bodyMap = {
         "name": updatedUser.name,
         "email": updatedUser.email,
@@ -94,8 +103,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   Future<bool> _deleteUser(String userId) async {
     try {
-      final url = Uri.parse(
-          "https://infant-context-continent-acquisitions.trycloudflare.com/auth/$userId");
+      final url =
+          Uri.parse("https://finalproject-a5ls.onrender.com/auth/$userId");
       final response = await http.delete(url, headers: {
         "Content-Type": "application/json",
       });
@@ -595,6 +604,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
+          profilePictureUrl:
+              profilePictureUrl, // Pass the profile picture URL here
         ),
       ),
       body: SingleChildScrollView(

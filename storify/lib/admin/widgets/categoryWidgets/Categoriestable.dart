@@ -1,9 +1,13 @@
 // categoriestable.dart
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/admin/widgets/categoryWidgets/model.dart';
+import 'package:http/http.dart' as http;
+import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/admin/widgets/categoryWidgets/model.dart'; // Add this import for CategoryItem class
 
 class Categoriestable extends StatefulWidget {
   final List<CategoryItem> categories; // Provided list from parent.
@@ -22,6 +26,73 @@ class _CategoriestableState extends State<Categoriestable> {
   // Pagination settings.
   final int _itemsPerPage = 5;
   int _currentPage = 1;
+  Future<void> _updateCategoryStatus(int categoryID, bool isActive) async {
+    try {
+      // Get token
+      final token = await AuthService.getToken();
+      if (token == null) {
+        print('No token available for category status update');
+        return;
+      }
+
+      // First, update the UI immediately for responsiveness
+      setState(() {
+        for (var i = 0; i < widget.categories.length; i++) {
+          if (widget.categories[i].categoryID == categoryID) {
+            widget.categories[i].status = isActive ? 'Active' : 'NotActive';
+          }
+        }
+      });
+
+      // Create a multipart request (similar to how you add categories)
+      final request = http.MultipartRequest(
+        'PATCH',
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/category/$categoryID'),
+      );
+
+      // Add token header
+      request.headers['token'] = token;
+
+      // Add status field
+      request.fields['status'] = isActive ? 'Active' : 'NotActive';
+
+      print(
+          'Updating category status: ID $categoryID to ${isActive ? 'Active' : 'NotActive'}');
+
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        print('Category status updated successfully');
+      } else {
+        print('Failed to update category status: ${response.statusCode}');
+        print('Response: ${response.body}');
+
+        // Revert the UI change if API fails
+        setState(() {
+          for (var i = 0; i < widget.categories.length; i++) {
+            if (widget.categories[i].categoryID == categoryID) {
+              widget.categories[i].status =
+                  isActive ? 'NotActive' : 'Active'; // Invert back
+            }
+          }
+        });
+      }
+    } catch (e) {
+      print('Error updating category status: $e');
+      // Revert the UI change if there's an error
+      setState(() {
+        for (var i = 0; i < widget.categories.length; i++) {
+          if (widget.categories[i].categoryID == categoryID) {
+            widget.categories[i].status =
+                isActive ? 'NotActive' : 'Active'; // Invert back
+          }
+        }
+      });
+    }
+  }
 
   List<CategoryItem> get _visibleCategories {
     final totalItems = widget.categories.length;
@@ -33,6 +104,11 @@ class _CategoriestableState extends State<Categoriestable> {
     final endIndex = startIndex + _itemsPerPage > totalItems
         ? totalItems
         : startIndex + _itemsPerPage;
+
+    if (startIndex >= totalItems) {
+      return [];
+    }
+
     return widget.categories.sublist(startIndex, endIndex);
   }
 
@@ -131,25 +207,26 @@ class _CategoriestableState extends State<Categoriestable> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12.r),
-                                  child: (cat.image.startsWith('data:') ||
-                                          cat.image.startsWith('http'))
-                                      ? Image.network(
-                                          cat.image,
-                                          width: 40.w,
-                                          height: 40.h,
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Image.asset(
-                                          cat.image,
-                                          width: 40.w,
-                                          height: 40.h,
-                                          fit: BoxFit.cover,
-                                        ),
+                                  child: Image.network(
+                                    cat.image,
+                                    width: 40.w,
+                                    height: 40.h,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 40.w,
+                                        height: 40.h,
+                                        color: Colors.grey,
+                                        child: Icon(Icons.image_not_supported,
+                                            size: 20.sp),
+                                      );
+                                    },
+                                  ),
                                 ),
                                 SizedBox(width: 10.w),
                                 Expanded(
                                   child: Text(
-                                    cat.name,
+                                    cat.categoryName,
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                     style: GoogleFonts.spaceGrotesk(
@@ -180,9 +257,7 @@ class _CategoriestableState extends State<Categoriestable> {
                                 activeColor:
                                     const Color.fromARGB(255, 105, 65, 198),
                                 onChanged: (value) {
-                                  setState(() {
-                                    cat.isActive = value;
-                                  });
+                                  _updateCategoryStatus(cat.categoryID, value);
                                 },
                               ),
                             ),

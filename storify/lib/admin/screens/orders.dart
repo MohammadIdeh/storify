@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // Ensure these imports point to your local files.
 import 'package:storify/GeneralWidgets/navigationBar.dart';
 import 'package:storify/admin/screens/Categories.dart';
@@ -22,6 +23,20 @@ class Orders extends StatefulWidget {
 class _OrdersState extends State<Orders> {
   // Bottom navigation index.
   int _currentIndex = 3;
+  String? profilePictureUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilePicture();
+  }
+
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
 
   // Currently selected card filter.
   // Options: "Total", "Active", "Completed", "Cancelled"
@@ -243,6 +258,8 @@ class _OrdersState extends State<Orders> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
+          profilePictureUrl:
+              profilePictureUrl, // Pass the profile picture URL here
         ),
       ),
       body: SingleChildScrollView(

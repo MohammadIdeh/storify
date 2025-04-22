@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
@@ -27,6 +28,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+  String? profilePictureUrl;
 
   // Our 4 dashboard widgets in a list (initial order).
   final List<Widget> _dashboardWidgets = [
@@ -42,6 +44,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Ordercount(key: UniqueKey()),
     Profit(key: UniqueKey()),
   ];
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilePicture();
+  }
+
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
 
   // Our 4 StatsCards in a list (initial order).
   final List<Widget> _statsCards = [
@@ -154,6 +168,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
+          profilePictureUrl:
+              profilePictureUrl, // Pass the profile picture URL here
         ),
       ),
       body: SingleChildScrollView(

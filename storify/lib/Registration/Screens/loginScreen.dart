@@ -54,8 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse(
-            'https://infant-context-continent-acquisitions.trycloudflare.com/auth/login'),
+        Uri.parse('https://finalproject-a5ls.onrender.com/auth/login'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -67,20 +66,26 @@ class _LoginScreenState extends State<LoginScreen> {
         final responseData = json.decode(response.body);
         print('Login Successful: $responseData');
 
-        // Assuming your API returns a token like 'token' in responseData
-        String token =
-            responseData['token']; // Adjust if your token key is different
+        // Extract token, roleName, and profilePicture
+        String token = responseData['token'];
         String roleName = responseData['user']['roleName'];
 
-        // Save the token locally
+        // Extract profilePicture URL (with a default if it doesn't exist)
+        String profilePicture = responseData['user']['profilePicture'] ?? '';
+
+        // Save the token and profilePicture locally
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('authToken', token);
+        await prefs.setString('profilePicture', profilePicture);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login Successful as a $roleName')),
         );
 
         if (roleName == 'Admin') {
+          print('🗝️ stored token = "$token" (length ${token.length})');
+          print('📷 stored profilePicture = "$profilePicture"');
+
           Navigator.of(context).push(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
