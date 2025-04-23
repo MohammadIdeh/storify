@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
+import 'package:storify/admin/screens/track.dart';
 // import other screens as required
 
 void main() async {
@@ -29,7 +30,7 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         debugShowCheckedModeBanner: false, // Removes the debug banner
-        home: isLoggedIn ? const Productsscreen() : const LoginScreen(),
+        home: isLoggedIn ? const Track() : const LoginScreen(),
       ),
     );
   }

@@ -8,8 +8,7 @@ import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/GeneralWidgets/longPressDraggable.dart';
-
-// Import your four dashboard widgets:
+import 'package:storify/admin/screens/track.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/ordersBySuperMarket.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/ordersOverview.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/orderCount.dart';
@@ -156,6 +155,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
         break;
+      case 5:
+        Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const Track(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 700),
+        ));
+        break;
     }
   }
 
@@ -185,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       "Dashboard",
                       style: GoogleFonts.spaceGrotesk(
-                        fontSize: 28.sp,
+                        fontSize: 35.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color.fromARGB(255, 246, 246, 246),
                       ),

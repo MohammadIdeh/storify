@@ -11,8 +11,9 @@ import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
-import 'package:storify/admin/widgets/rolesWidget/role_item.dart';
-import 'package:storify/admin/widgets/rolesWidget/rolesTable.dart';
+import 'package:storify/admin/screens/track.dart';
+import 'package:storify/admin/widgets/rolesWidgets/role_item.dart';
+import 'package:storify/admin/widgets/rolesWidgets/rolesTable.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 
@@ -202,6 +203,15 @@ class _RolemanegmentState extends State<Rolemanegment> {
         break;
       case 4:
         // Current screen.
+        break;
+      case 5:
+        Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const Track(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 700),
+        ));
         break;
     }
   }
@@ -620,7 +630,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                   Text(
                     headerText,
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 30.sp,
+                      fontSize: 35.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

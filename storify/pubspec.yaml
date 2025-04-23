@@ -21,6 +21,9 @@ dependencies:
   syncfusion_flutter_xlsio: ^29.1.35
   percent_indicator: ^4.2.5
   shared_preferences: ^2.5.3
+  google_maps_flutter: ^2.12.1
+  google_maps_flutter_web: ^0.5.12
+  geolocator: ^14.0.0
 
 dev_dependencies:
   flutter_test:
@@ -65,4 +68,5 @@ flutter:
     - assets/images/Activeorders.svg
     - assets/images/completedOrders.svg
     - assets/images/cancorders.svg
+    - assets/images/truck.svg
 

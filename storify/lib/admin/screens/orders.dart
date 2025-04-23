@@ -9,6 +9,7 @@ import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
+import 'package:storify/admin/screens/track.dart';
 import 'package:storify/admin/widgets/OrderWidgets/orderCards.dart';
 import 'package:storify/admin/widgets/OrderWidgets/orderModel.dart';
 import 'package:storify/admin/widgets/OrderWidgets/orderTable.dart';
@@ -246,6 +247,15 @@ class _OrdersState extends State<Orders> {
           ),
         );
         break;
+      case 5:
+        Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const Track(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 700),
+        ));
+        break;
     }
   }
 
@@ -274,7 +284,7 @@ class _OrdersState extends State<Orders> {
                   Text(
                     "Orders",
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 28.sp,
+                      fontSize: 35.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

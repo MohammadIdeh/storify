@@ -8,6 +8,7 @@ import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
+import 'package:storify/admin/screens/track.dart';
 import 'package:storify/admin/widgets/productsWidgets/exportPopUp.dart';
 import 'package:storify/GeneralWidgets/longPressDraggable.dart';
 import 'package:storify/admin/widgets/productsWidgets/productsCards.dart';
@@ -139,6 +140,15 @@ class _ProductsscreenState extends State<Productsscreen> {
           ),
         );
         break;
+      case 5:
+        Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const Track(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 700),
+        ));
+        break;
     }
   }
 
@@ -237,7 +247,7 @@ class _ProductsscreenState extends State<Productsscreen> {
                   Text(
                     "Products",
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 28.sp,
+                      fontSize: 35.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color.fromARGB(255, 246, 246, 246),
                     ),
