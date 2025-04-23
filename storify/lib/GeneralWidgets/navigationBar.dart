@@ -160,7 +160,6 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                 ),
               ),
               SizedBox(width: 14.w),
-
               // Profile + Arrow
               // Profile + Arrow
               InkWell(

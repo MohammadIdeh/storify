@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/screens/productOverview.dart';
-import 'package:storify/admin/widgets/exportPopUp.dart';
-import 'package:storify/admin/widgets/product_item_Model.dart';
+import 'package:storify/admin/widgets/productsWidgets/exportPopUp.dart';
+import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProductslistTable extends StatefulWidget {
   final int selectedFilterIndex; // 0: All, 1: Active, 2: UnActive
@@ -19,167 +21,60 @@ class ProductslistTable extends StatefulWidget {
 }
 
 class ProductslistTableState extends State<ProductslistTable> {
-  // Fake data.
-  final List<ProductItemInformation> _allProducts = [
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Homedics SoundSleep',
-      price: 738.35,
-      qty: 4152,
-      category: 'Health & Sleep',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Newpoint Motorized Mixer',
-      price: 520.15,
-      qty: 1577,
-      category: 'Health & Sleep',
-      availability: false,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Orangemonkie Foldio360 Drone',
-      price: 678.99,
-      qty: 865,
-      category: 'Health & Sleep',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Ketsicar SV 2N Kit',
-      price: 943.85,
-      qty: 459,
-      category: 'Health & Sleep',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: '3D Printer Kit Pro',
-      price: 896.81,
-      qty: 560,
-      category: 'Health & Sleep',
-      availability: false,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'DIY Crafts Imaging Device',
-      price: 600.99,
-      qty: 3012,
-      category: 'Crafts',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Giftana 4 in 1 Set',
-      price: 106.58,
-      qty: 4560,
-      category: 'Gifts',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Odyssey Sound Machine',
-      price: 805.98,
-      qty: 8013,
-      category: 'Audio',
-      availability: false,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Personalized Giftana',
-      price: 156.58,
-      qty: 1024,
-      category: 'Personal Gifts',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Ideh Deluxe Set',
-      price: 850.00,
-      qty: 3300,
-      category: 'Home Decor',
-      availability: false,
-    ),
-    // Additional items for pagination:
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'محمد',
-      price: 299.99,
-      qty: 150,
-      category: 'Antiques',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Modern Lamp',
-      price: 159.49,
-      qty: 325,
-      category: 'Lighting',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Ergonomic Chair',
-      price: 489.00,
-      qty: 87,
-      category: 'Furniture',
-      availability: false,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Wireless Headphones',
-      price: 129.99,
-      qty: 1120,
-      category: 'Electronics',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Fitness Tracker',
-      price: 79.99,
-      qty: 2050,
-      category: 'Wearables',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Smart Watch Pro',
-      price: 249.99,
-      qty: 874,
-      category: 'Wearables',
-      availability: false,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Bluetooth Speaker',
-      price: 59.99,
-      qty: 542,
-      category: 'Audio',
-      availability: true,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'HD Webcam',
-      price: 39.99,
-      qty: 375,
-      category: 'Computers',
-      availability: false,
-    ),
-    ProductItemInformation(
-      image: 'assets/images/image3.png',
-      name: 'Gaming Keyboard',
-      price: 89.99,
-      qty: 624,
-      category: 'Accessories',
-      availability: true,
-    ),
-  ];
+  List<ProductItemInformation> _allProducts = [];
+  bool _isLoading = true;
+  String? _error;
 
   int _currentPage = 1;
   int? _sortColumnIndex;
   bool _sortAscending = true;
   final int _itemsPerPage = 9;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://finalproject-a5ls.onrender.com/product/products'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['products'] != null) {
+          setState(() {
+            _allProducts = (data['products'] as List)
+                .map((product) => ProductItemInformation.fromJson(product))
+                .toList();
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _error = 'Invalid data format';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _error = 'Failed to load products. Error: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Network error: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   /// Returns filtered, searched, and sorted products.
   List<ProductItemInformation> get filteredProducts {
@@ -197,11 +92,13 @@ class ProductslistTableState extends State<ProductslistTable> {
               p.name.toLowerCase().startsWith(widget.searchQuery.toLowerCase()))
           .toList();
     }
-    // Apply sorting if set (1 for Price, 2 for Qty).
+    // Apply sorting if set
     if (_sortColumnIndex != null) {
       if (_sortColumnIndex == 1) {
-        temp.sort((a, b) => a.price.compareTo(b.price));
+        temp.sort((a, b) => a.costPrice.compareTo(b.costPrice));
       } else if (_sortColumnIndex == 2) {
+        temp.sort((a, b) => a.sellPrice.compareTo(b.sellPrice));
+      } else if (_sortColumnIndex == 3) {
         temp.sort((a, b) => a.qty.compareTo(b.qty));
       }
       if (!_sortAscending) {
@@ -249,6 +146,57 @@ class ProductslistTableState extends State<ProductslistTable> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          color: const Color.fromARGB(255, 105, 65, 198),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Error loading products',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              _error!,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14.sp,
+                color: Colors.white70,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: _fetchProducts,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final totalItems = filteredProducts.length;
     final totalPages = (totalItems / _itemsPerPage).ceil();
     if (_currentPage > totalPages && totalPages > 0) {
@@ -315,25 +263,34 @@ class ProductslistTableState extends State<ProductslistTable> {
                       fontSize: 13.sp,
                     ),
                     columns: [
-                      // Image & Name Column (remains unchanged).
+                      // ID Column
+                      const DataColumn(label: Text("ID")),
+                      // Image & Name Column
                       const DataColumn(label: Text("Image & Name")),
-                      // Price Column (header left-aligned, no numeric flag).
+                      // Cost Price Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Price", 1),
+                        label: _buildSortableColumnLabel("Cost Price", 1),
                         onSort: (columnIndex, _) {
                           _onSort(1);
                         },
                       ),
-                      // Qty Column (header left-aligned, no numeric flag).
+                      // Sell Price Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Qty", 2),
+                        label: _buildSortableColumnLabel("Sell Price", 2),
                         onSort: (columnIndex, _) {
                           _onSort(2);
                         },
                       ),
-                      // Category Column.
+                      // Qty Column (sortable)
+                      DataColumn(
+                        label: _buildSortableColumnLabel("Qty", 3),
+                        onSort: (columnIndex, _) {
+                          _onSort(3);
+                        },
+                      ),
+                      // Category Column
                       const DataColumn(label: Text("Category")),
-                      // Availability Column.
+                      // Availability Column
                       const DataColumn(label: Text("Availability")),
                     ],
                     rows: visibleProducts.map((product) {
@@ -354,12 +311,11 @@ class ProductslistTableState extends State<ProductslistTable> {
                                     const Duration(milliseconds: 400),
                               ),
                             );
-
                             // If updatedProduct is not null, update your data source.
                             if (updatedProduct != null) {
                               setState(() {
-                                final index = _allProducts
-                                    .indexWhere((p) => p.name == product.name);
+                                final index = _allProducts.indexWhere(
+                                    (p) => p.productId == product.productId);
                                 if (index != -1) {
                                   _allProducts[index] = updatedProduct;
                                 }
@@ -368,17 +324,31 @@ class ProductslistTableState extends State<ProductslistTable> {
                           }
                         },
                         cells: [
-                          // Image & Name cell.
+                          // ID cell
+                          DataCell(Text("${product.productId}")),
+                          // Image & Name cell
                           DataCell(
                             Row(
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8.r),
-                                  child: Image.asset(
+                                  child: Image.network(
                                     product.image,
                                     width: 50.w,
                                     height: 50.h,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 50.w,
+                                        height: 50.h,
+                                        color: Colors.grey.shade800,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.white70,
+                                          size: 24.sp,
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                                 SizedBox(width: 10.w),
@@ -392,14 +362,17 @@ class ProductslistTableState extends State<ProductslistTable> {
                               ],
                             ),
                           ),
-                          // Price cell.
-                          DataCell(
-                              Text("\$${product.price.toStringAsFixed(2)}")),
-                          // Qty cell.
+                          // Cost Price cell
+                          DataCell(Text(
+                              "\$${product.costPrice.toStringAsFixed(2)}")),
+                          // Sell Price cell
+                          DataCell(Text(
+                              "\$${product.sellPrice.toStringAsFixed(2)}")),
+                          // Qty cell
                           DataCell(Text("${product.qty}")),
-                          // Category cell.
-                          DataCell(Text(product.category)),
-                          // Availability cell.
+                          // Category cell
+                          DataCell(Text(product.categoryName)),
+                          // Availability cell
                           DataCell(
                               _buildAvailabilityPill(product.availability)),
                         ],
@@ -408,7 +381,7 @@ class ProductslistTableState extends State<ProductslistTable> {
                   ),
                 ),
               ),
-              // Pagination row.
+              // Pagination row
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
                 child: Row(
@@ -422,10 +395,8 @@ class ProductslistTableState extends State<ProductslistTable> {
                         color: Colors.white70,
                       ),
                     ),
-                    SizedBox(
-                      width: 10.w,
-                    ),
-                    // Left arrow.
+                    SizedBox(width: 10.w),
+                    // Left arrow
                     IconButton(
                       icon: Icon(Icons.arrow_back,
                           size: 20.sp, color: Colors.white70),
@@ -442,7 +413,7 @@ class ProductslistTableState extends State<ProductslistTable> {
                         return _buildPageButton(index + 1);
                       }),
                     ),
-                    // Right arrow.
+                    // Right arrow
                     IconButton(
                       icon: Icon(Icons.arrow_forward,
                           size: 20.sp, color: Colors.white70),

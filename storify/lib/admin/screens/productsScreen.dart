@@ -8,10 +8,10 @@ import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
-import 'package:storify/admin/widgets/exportPopUp.dart';
-import 'package:storify/admin/widgets/longPressDraggable.dart';
-import 'package:storify/admin/widgets/productsCards.dart';
-import 'package:storify/admin/widgets/productsListable.dart';
+import 'package:storify/admin/widgets/productsWidgets/exportPopUp.dart';
+import 'package:storify/GeneralWidgets/longPressDraggable.dart';
+import 'package:storify/admin/widgets/productsWidgets/productsCards.dart';
+import 'package:storify/admin/widgets/productsWidgets/productsListable.dart';
 
 class Productsscreen extends StatefulWidget {
   const Productsscreen({super.key});
@@ -40,15 +40,15 @@ class _ProductsscreenState extends State<Productsscreen> {
       key: UniqueKey(),
     ),
     ProductsCards(
-      title: 'New Arrivals',
+      title: 'Active Products',
       value: '5,120',
-      subtext: '+2.3% This month',
+      subtext: '',
       key: UniqueKey(),
     ),
     ProductsCards(
-      title: 'Out of Stock',
+      title: 'UnActive Products',
       value: '2,300',
-      subtext: '-1.2% Compared to last week',
+      subtext: '',
       key: UniqueKey(),
     ),
     ProductsCards(

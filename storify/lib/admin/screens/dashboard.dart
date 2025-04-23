@@ -7,17 +7,17 @@ import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
-import 'package:storify/admin/widgets/longPressDraggable.dart';
+import 'package:storify/GeneralWidgets/longPressDraggable.dart';
 
 // Import your four dashboard widgets:
-import 'package:storify/admin/widgets/ordersBySuperMarket.dart';
-import 'package:storify/admin/widgets/ordersOverview.dart';
-import 'package:storify/admin/widgets/orderCount.dart';
-import 'package:storify/admin/widgets/profit.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/ordersBySuperMarket.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/ordersOverview.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/orderCount.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/profit.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
-import 'package:storify/admin/widgets/cards.dart';
-import 'package:storify/admin/widgets/topProductsList.dart';
-import 'package:storify/admin/widgets/topStoresList.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/cards.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/topProductsList.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/topStoresList.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

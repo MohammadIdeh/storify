@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/admin/widgets/product_item_Model.dart';
+import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xls;
 
-/// The ExportPopUp widget now receives a list of ProductItem via its constructor.
+/// The ExportPopUp widget receives a list of ProductItemInformation via its constructor.
 class ExportPopUp extends StatefulWidget {
   final List<ProductItemInformation> products;
   const ExportPopUp({super.key, required this.products});
@@ -30,7 +30,7 @@ class _ExportPopUpState extends State<ExportPopUp> {
   // Get list of categories with "All" as the first option.
   List<String> _getCategoryList() {
     List<String> categories =
-        widget.products.map((p) => p.category).toSet().toList();
+        widget.products.map((p) => p.categoryName).toSet().toList();
     return ['All', ...categories];
   }
 
@@ -54,7 +54,7 @@ class _ExportPopUpState extends State<ExportPopUp> {
     // Category filter.
     if (_selectedCategory != null) {
       filtered =
-          filtered.where((p) => p.category == _selectedCategory).toList();
+          filtered.where((p) => p.categoryName == _selectedCategory).toList();
     }
 
     // Price range filter.
@@ -71,7 +71,7 @@ class _ExportPopUpState extends State<ExportPopUp> {
       }
     }
     filtered = filtered
-        .where((p) => p.price >= priceFrom && p.price <= priceTo)
+        .where((p) => p.sellPrice >= priceFrom && p.sellPrice <= priceTo)
         .toList();
     return filtered;
   }
@@ -239,14 +239,26 @@ class _ExportPopUpState extends State<ExportPopUp> {
     final xls.Worksheet sheet = workbook.worksheets[0];
 
     // Column Headers.
-    sheet.getRangeByName('A1').setText('Product Name');
-    sheet.getRangeByName('B1').setText('Price');
+    sheet.getRangeByName('A1').setText('ID');
+    sheet.getRangeByName('B1').setText('Product Name');
+    sheet.getRangeByName('C1').setText('Cost Price');
+    sheet.getRangeByName('D1').setText('Sell Price');
+    sheet.getRangeByName('E1').setText('Quantity');
+    sheet.getRangeByName('F1').setText('Category');
+    sheet.getRangeByName('G1').setText('Status');
 
-    // Fill rows (for demonstration, export name and price only).
+    // Fill rows with all available data
     for (int i = 0; i < data.length; i++) {
       final rowIndex = i + 2;
-      sheet.getRangeByName('A$rowIndex').setText(data[i].name);
-      sheet.getRangeByName('B$rowIndex').setNumber(data[i].price);
+      sheet
+          .getRangeByName('A$rowIndex')
+          .setNumber(data[i].productId.toDouble());
+      sheet.getRangeByName('B$rowIndex').setText(data[i].name);
+      sheet.getRangeByName('C$rowIndex').setNumber(data[i].costPrice);
+      sheet.getRangeByName('D$rowIndex').setNumber(data[i].sellPrice);
+      sheet.getRangeByName('E$rowIndex').setNumber(data[i].qty.toDouble());
+      sheet.getRangeByName('F$rowIndex').setText(data[i].categoryName);
+      sheet.getRangeByName('G$rowIndex').setText(data[i].status);
     }
 
     final List<int> bytes = workbook.saveAsStream();
