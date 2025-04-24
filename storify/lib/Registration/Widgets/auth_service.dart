@@ -24,14 +24,14 @@ class AuthService {
   /// Build headers for any authenticated API call.
   /// Always returns JSON content type; if a token exists,
   /// includes the Authorization header WITHOUT "Bearer "
-static Future<Map<String, String>> getAuthHeaders() async {
-  final token = await getToken();
-  final headers = {'Content-Type': 'application/json'};
-  if (token != null) {
-    headers['Authorization'] = 'Bearer $token';
+  static Future<Map<String, String>> getAuthHeaders() async {
+    final token = await getToken();
+    final headers = {'Content-Type': 'application/json'};
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
   }
-  return headers;
-}
 
   /// Convenience: check if a token is present (client‑side).
   static Future<bool> isLoggedIn() async {

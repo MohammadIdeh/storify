@@ -40,7 +40,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         name: 'Premium Coffee Beans',
         description: 'High-quality Arabica coffee beans, 500g bag',
         price: 15.99,
-        image: 'assets/images/product1.png',
+        image: 'assets/images/image3.png',
         stock: 24,
         lowPriceSupplier: 'Mohammad Trading Co.',
         lowPrice: 14.50,
@@ -50,7 +50,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         name: 'Organic Tea Selection',
         description: 'Assorted organic teas, 50 tea bags',
         price: 8.99,
-        image: 'assets/images/product2.png',
+        image: 'assets/images/image3.png',
         stock: 36,
       ),
       ProductItem(
@@ -58,7 +58,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         name: 'Chocolate Cookies',
         description: 'Premium chocolate cookies, 250g package',
         price: 4.99,
-        image: 'assets/images/product3.png',
+        image: 'assets/images/image3.png',
         stock: 48,
       ),
       ProductItem(
@@ -66,7 +66,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         name: 'Sparkling Water',
         description: 'Carbonated natural spring water, 12x500ml',
         price: 9.99,
-        image: 'assets/images/product4.png',
+        image: 'assets/images/image3.png',
         stock: 30,
       ),
       ProductItem(
@@ -86,7 +86,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         name: 'Premium Coffee Beans',
         description: 'High-quality Arabica coffee beans, 500g bag',
         price: 14.50,
-        image: 'assets/images/product1.png',
+        image: 'assets/images/image3.png',
         stock: 32,
       ),
       ProductItem(
@@ -94,7 +94,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         name: 'Pistachio Nuts',
         description: 'Roasted and salted pistachios, 200g bag',
         price: 11.99,
-        image: 'assets/images/product6.png',
+        image: 'assets/images/image3.png',
         stock: 15,
       ),
       ProductItem(

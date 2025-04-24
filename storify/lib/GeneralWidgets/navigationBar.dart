@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -172,14 +173,38 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                       height: 50,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: widget.profilePictureUrl != null &&
-                                  widget.profilePictureUrl!.isNotEmpty
-                              ? NetworkImage(widget.profilePictureUrl!)
-                              : const AssetImage('assets/images/me.png')
-                                  as ImageProvider,
-                          fit: BoxFit.cover,
-                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(25), // Make it circular
+                        child: widget.profilePictureUrl != null &&
+                                widget.profilePictureUrl!.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: widget.profilePictureUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: const Color.fromARGB(255, 36, 50, 69),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: const Color.fromARGB(
+                                            255, 105, 65, 198),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) {
+                                  print(
+                                      'Error loading profile image: $error from URL: $url');
+                                  return Image.asset('assets/images/me.png',
+                                      fit: BoxFit.cover);
+                                },
+                              )
+                            : Image.asset('assets/images/me.png',
+                                fit: BoxFit.cover),
                       ),
                     ),
                     const SizedBox(width: 2),
