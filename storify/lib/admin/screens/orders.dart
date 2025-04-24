@@ -10,9 +10,10 @@ import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/screens/track.dart';
-import 'package:storify/admin/widgets/OrderWidgets/orderCards.dart';
-import 'package:storify/admin/widgets/OrderWidgets/orderModel.dart';
-import 'package:storify/admin/widgets/OrderWidgets/orderTable.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/orderCards.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/orderTable.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/supplierOrderPopUp.dart';
 
 class Orders extends StatefulWidget {
   const Orders({super.key});
@@ -25,6 +26,9 @@ class _OrdersState extends State<Orders> {
   // Bottom navigation index.
   int _currentIndex = 3;
   String? profilePictureUrl;
+
+  // Added state to track if we're in supplier mode or customer mode
+  bool _isSupplierMode = true;
 
   @override
   void initState() {
@@ -47,8 +51,8 @@ class _OrdersState extends State<Orders> {
   // Search query from the search box.
   String _searchQuery = "";
 
-  // Fake order list (shared as the single data source).
-  final List<OrderItem> _orders = [
+  // Fake order list for suppliers (shared as the single data source).
+  final List<OrderItem> _supplierOrders = [
     OrderItem(
       orderId: "267400",
       storeName: "Ralph Edwards",
@@ -67,76 +71,80 @@ class _OrdersState extends State<Orders> {
       totalAmount: 500.55,
       status: "Accepted",
     ),
+    // ... remaining supplier orders
+  ];
+
+  // New fake order list for customers
+  final List<OrderItem> _customerOrders = [
     OrderItem(
-      orderId: "267402",
-      storeName: "momo ideh",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 15,
-      totalAmount: 278.20,
-      status: "Declined",
+      orderId: "367400",
+      storeName: "John Smith", // This will be displayed as Customer Name
+      phoneNo: "972694737111",
+      orderDate: "14-7-2024 18:30",
+      totalProducts: 8,
+      totalAmount: 156.70,
+      status: "Awaiting",
     ),
     OrderItem(
-      orderId: "267403",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 10,
-      totalAmount: 100.99,
-      status: "Declined",
+      orderId: "367400",
+      storeName: "John Smith", // This will be displayed as Customer Name
+      phoneNo: "972694737111",
+      orderDate: "14-7-2024 18:30",
+      totalProducts: 8,
+      totalAmount: 156.70,
+      status: "Awaiting",
     ),
     OrderItem(
-      orderId: "267404",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 20,
-      totalAmount: 328.85,
-      status: "Declined",
-    ),
-    OrderItem(
-      orderId: "267405",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 3,
-      totalAmount: 79.99,
+      orderId: "367401",
+      storeName: "Mary Johnson", // This will be displayed as Customer Name
+      phoneNo: "972694736222",
+      orderDate: "14-7-2024 19:45",
+      totalProducts: 12,
+      totalAmount: 210.30,
       status: "Accepted",
     ),
     OrderItem(
-      orderId: "267406",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 12,
-      totalAmount: 230.45,
+      orderId: "367402",
+      storeName: "Robert Davis", // This will be displayed as Customer Name
+      phoneNo: "972694735333",
+      orderDate: "14-7-2024 20:15",
+      totalProducts: 6,
+      totalAmount: 98.50,
       status: "Declined",
     ),
     OrderItem(
-      orderId: "267407",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 13,
-      totalAmount: 185.35,
-      status: "Declined",
-    ),
-    OrderItem(
-      orderId: "267408",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 22,
-      totalAmount: 442.45,
+      orderId: "367403",
+      storeName: "Patricia Brown", // This will be displayed as Customer Name
+      phoneNo: "972694734444",
+      orderDate: "15-7-2024 09:20",
+      totalProducts: 15,
+      totalAmount: 275.90,
       status: "Awaiting",
+    ),
+    OrderItem(
+      orderId: "367404",
+      storeName: "James Wilson", // This will be displayed as Customer Name
+      phoneNo: "972694733555",
+      orderDate: "15-7-2024 10:40",
+      totalProducts: 10,
+      totalAmount: 180.25,
+      status: "Accepted",
     ),
   ];
 
+  // Get the active orders list based on mode
+  List<OrderItem> get _activeOrdersList {
+    return _isSupplierMode ? _supplierOrders : _customerOrders;
+  }
+
   // Compute counts based on orders list.
-  int get totalOrdersCount => _orders.length;
-  int get activeCount => _orders.where((o) => o.status == "Awaiting").length;
-  int get completedCount => _orders.where((o) => o.status == "Accepted").length;
-  int get cancelledCount => _orders.where((o) => o.status == "Declined").length;
+  int get totalOrdersCount => _activeOrdersList.length;
+  int get activeCount =>
+      _activeOrdersList.where((o) => o.status == "Awaiting").length;
+  int get completedCount =>
+      _activeOrdersList.where((o) => o.status == "Accepted").length;
+  int get cancelledCount =>
+      _activeOrdersList.where((o) => o.status == "Declined").length;
 
   // Build card data dynamically.
   List<_OrderCardData> get _ordersData {
@@ -190,7 +198,15 @@ class _OrdersState extends State<Orders> {
     });
   }
 
-  // Navigation using bottom nav bar.
+  // Toggle between supplier and customer mode
+  void _toggleOrderMode(bool isSupplier) {
+    if (isSupplier != _isSupplierMode) {
+      setState(() {
+        _isSupplierMode = isSupplier;
+      });
+    }
+  }
+
   void _onNavItemTap(int index) {
     setState(() {
       _currentIndex = index;
@@ -268,8 +284,7 @@ class _OrdersState extends State<Orders> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
-          profilePictureUrl:
-              profilePictureUrl, // Pass the profile picture URL here
+          profilePictureUrl: profilePictureUrl,
         ),
       ),
       body: SingleChildScrollView(
@@ -278,37 +293,104 @@ class _OrdersState extends State<Orders> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top header row.
+              // Top header row with added filter
               Row(
                 children: [
                   Text(
-                    "Orders",
+                    _isSupplierMode ? "Supplier Orders" : "Customer Orders",
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 35.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      fixedSize: Size(250.w, 50.h),
-                      elevation: 1,
+                  SizedBox(width: 20.w),
+                  // Add filter toggle
+                  Container(
+                    height: 40.h,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 36, 50, 69),
+                      borderRadius: BorderRadius.circular(20.r),
                     ),
-                    onPressed: () {},
-                    child: Text(
-                      'Order From Supplier',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Suppliers tab
+                        GestureDetector(
+                          onTap: () => _toggleOrderMode(true),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 16.w),
+                            height: 40.h,
+                            decoration: BoxDecoration(
+                              color: _isSupplierMode
+                                  ? const Color.fromARGB(255, 105, 65, 198)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "Suppliers",
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Customers tab
+                        GestureDetector(
+                          onTap: () => _toggleOrderMode(false),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 16.w),
+                            height: 40.h,
+                            decoration: BoxDecoration(
+                              color: !_isSupplierMode
+                                  ? const Color.fromARGB(255, 105, 65, 198)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "Customers",
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const Spacer(),
+                  // Show "Order From Supplier" button only in supplier mode
+                  if (_isSupplierMode)
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            const Color.fromARGB(255, 105, 65, 198),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(250.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: () {
+                        showSupplierOrderPopup(context);
+                      },
+                      child: Text(
+                        'Order From Supplier',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 17.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               SizedBox(height: 40.h),
@@ -419,11 +501,12 @@ class _OrdersState extends State<Orders> {
                 ],
               ),
               SizedBox(height: 25.w),
-              // Order table: pass the orders list, the current filter, and search query.
+              // Modified Order table: pass mode, orders list, filter, and search query
               Ordertable(
-                orders: _orders,
+                orders: _activeOrdersList,
                 filter: _selectedFilter,
                 searchQuery: _searchQuery,
+                isSupplierMode: _isSupplierMode, // Pass the mode to table
               ),
             ],
           ),

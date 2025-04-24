@@ -10,10 +10,13 @@ import 'dart:convert';
 class ProductslistTable extends StatefulWidget {
   final int selectedFilterIndex; // 0: All, 1: Active, 2: UnActive
   final String searchQuery;
+  final VoidCallback? onOperationCompleted; // New callback for notifying parent
+  
   const ProductslistTable({
     super.key,
     required this.selectedFilterIndex,
     required this.searchQuery,
+    this.onOperationCompleted, // Optional callback
   });
 
   @override
@@ -36,6 +39,18 @@ class ProductslistTableState extends State<ProductslistTable> {
     _fetchProducts();
   }
 
+  // Public method to refresh products (can be called from parent)
+  void refreshProducts() {
+    _fetchProducts();
+  }
+
+  // Helper method to notify parent when operations complete
+  void _notifyOperationCompleted() {
+    if (widget.onOperationCompleted != null) {
+      widget.onOperationCompleted!();
+    }
+  }
+
   Future<void> _fetchProducts() async {
     setState(() {
       _isLoading = true;
@@ -56,6 +71,10 @@ class ProductslistTableState extends State<ProductslistTable> {
                 .toList();
             _isLoading = false;
           });
+          
+          // Notify parent that products have been loaded
+          // This ensures dashboard stats are in sync with product list
+          _notifyOperationCompleted();
         } else {
           setState(() {
             _error = 'Invalid data format';
@@ -320,6 +339,10 @@ class ProductslistTableState extends State<ProductslistTable> {
                                   _allProducts[index] = updatedProduct;
                                 }
                               });
+                              
+                              // Notify parent that a product was updated
+                              // This will trigger the dashboard stats refresh
+                              _notifyOperationCompleted();
                             }
                           }
                         },

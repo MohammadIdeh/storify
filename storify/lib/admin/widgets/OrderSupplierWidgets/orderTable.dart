@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/admin/widgets/OrderWidgets/orderModel.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
 import '../../screens/vieworder.dart' show Vieworder;
 
 class Ordertable extends StatefulWidget {
   final List<OrderItem> orders;
   final String filter; // "Total", "Active", "Completed", "Cancelled"
   final String searchQuery;
+  final bool isSupplierMode; // Added parameter to determine the mode
+  
   const Ordertable({
     Key? key,
     required this.orders,
     this.filter = "Total",
     this.searchQuery = "",
+    this.isSupplierMode = true, // Default to supplier mode
   }) : super(key: key);
 
   @override
@@ -119,14 +122,15 @@ class _OrdertableState extends State<Ordertable> {
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 13.sp,
                     ),
-                    columns: const [
-                      DataColumn(label: Text("Order ID")),
-                      DataColumn(label: Text("Store Name")),
-                      DataColumn(label: Text("Phone No")),
-                      DataColumn(label: Text("Order Date")),
-                      DataColumn(label: Text("Total Products")),
-                      DataColumn(label: Text("Total Amount")),
-                      DataColumn(label: Text("Status")),
+                    columns: [
+                      const DataColumn(label: Text("Order ID")),
+                      // Change column name based on mode
+                      DataColumn(label: Text(widget.isSupplierMode ? "Supplier Name" : "Customer Name")),
+                      const DataColumn(label: Text("Phone No")),
+                      const DataColumn(label: Text("Order Date")),
+                      const DataColumn(label: Text("Total Products")),
+                      const DataColumn(label: Text("Total Amount")),
+                      const DataColumn(label: Text("Status")),
                     ],
                     rows: _visibleOrders.map((order) {
                       return DataRow(
@@ -139,8 +143,9 @@ class _OrdertableState extends State<Ordertable> {
                                 pageBuilder: (context, animation,
                                         secondaryAnimation) =>
                                     Vieworder(
-                                        order:
-                                            order), // pass the current row's order
+                                      order: order,
+                                      isSupplierMode: widget.isSupplierMode, // Pass the mode
+                                    ),
                                 transitionsBuilder: (context, animation,
                                         secondaryAnimation, child) =>
                                     FadeTransition(

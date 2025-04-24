@@ -27,69 +27,66 @@ class _CategoriestableState extends State<Categoriestable> {
   final int _itemsPerPage = 5;
   int _currentPage = 1;
   Future<void> _updateCategoryStatus(int categoryID, bool isActive) async {
+    // Store current categories state to allow modification
+    List<CategoryItem> currentCategories = List.from(widget.categories);
+
+    // Find the category to update
+    int categoryIndex = -1;
+    for (int i = 0; i < currentCategories.length; i++) {
+      if (currentCategories[i].categoryID == categoryID) {
+        categoryIndex = i;
+        break;
+      }
+    }
+
+    if (categoryIndex == -1) return; // Category not found
+
+    // Store original status for potential revert
+    final String originalStatus = currentCategories[categoryIndex].status;
+
+    // Update local state immediately
+    setState(() {
+      // Create a copy of the category with updated status
+      currentCategories[categoryIndex].status =
+          isActive ? 'Active' : 'NotActive';
+    });
+
     try {
       // Get token
       final token = await AuthService.getToken();
       if (token == null) {
         print('No token available for category status update');
+
+        // Revert on error
+        setState(() {
+          currentCategories[categoryIndex].status = originalStatus;
+        });
         return;
       }
 
-      // First, update the UI immediately for responsiveness
-      setState(() {
-        for (var i = 0; i < widget.categories.length; i++) {
-          if (widget.categories[i].categoryID == categoryID) {
-            widget.categories[i].status = isActive ? 'Active' : 'NotActive';
-          }
-        }
-      });
-
-      // Create a multipart request (similar to how you add categories)
-      final request = http.MultipartRequest(
-        'PATCH',
+      // Perform API request to update status
+      final response = await http.put(
         Uri.parse(
             'https://finalproject-a5ls.onrender.com/category/$categoryID'),
+        headers: {'Content-Type': 'application/json', 'token': token},
+        body: json.encode({'status': isActive ? 'Active' : 'NotActive'}),
       );
 
-      // Add token header
-      request.headers['token'] = token;
-
-      // Add status field
-      request.fields['status'] = isActive ? 'Active' : 'NotActive';
-
-      print(
-          'Updating category status: ID $categoryID to ${isActive ? 'Active' : 'NotActive'}');
-
-      // Send the request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        print('Category status updated successfully');
-      } else {
+      if (response.statusCode != 200) {
         print('Failed to update category status: ${response.statusCode}');
         print('Response: ${response.body}');
 
-        // Revert the UI change if API fails
+        // If the API call fails, revert to original status
         setState(() {
-          for (var i = 0; i < widget.categories.length; i++) {
-            if (widget.categories[i].categoryID == categoryID) {
-              widget.categories[i].status =
-                  isActive ? 'NotActive' : 'Active'; // Invert back
-            }
-          }
+          currentCategories[categoryIndex].status = originalStatus;
         });
       }
     } catch (e) {
       print('Error updating category status: $e');
-      // Revert the UI change if there's an error
+
+      // Revert on error
       setState(() {
-        for (var i = 0; i < widget.categories.length; i++) {
-          if (widget.categories[i].categoryID == categoryID) {
-            widget.categories[i].status =
-                isActive ? 'NotActive' : 'Active'; // Invert back
-          }
-        }
+        currentCategories[categoryIndex].status = originalStatus;
       });
     }
   }
@@ -250,15 +247,31 @@ class _CategoriestableState extends State<Categoriestable> {
                             ),
                           ),
                           DataCell(
-                            Transform.scale(
-                              scale: 0.7,
-                              child: CupertinoSwitch(
-                                value: cat.isActive,
-                                activeColor:
-                                    const Color.fromARGB(255, 105, 65, 198),
-                                onChanged: (value) {
-                                  _updateCategoryStatus(cat.categoryID, value);
+                            // Wrap in a Container to increase tap area
+                            Container(
+                              width: 60, // Give it some width
+                              alignment: Alignment.center,
+                              child: GestureDetector(
+                                // Add explicit GestureDetector to handle taps
+                                onTap: () {
+                                  // Toggle status directly on tap
+                                  final newValue = !cat.isActive;
+                                  _updateCategoryStatus(
+                                      cat.categoryID, newValue);
                                 },
+                                child: Transform.scale(
+                                  scale: 0.7,
+                                  child: CupertinoSwitch(
+                                    value: cat.isActive,
+                                    activeColor:
+                                        const Color.fromARGB(255, 105, 65, 198),
+                                    // Keep this for when the switch itself is interacted with
+                                    onChanged: (value) {
+                                      _updateCategoryStatus(
+                                          cat.categoryID, value);
+                                    },
+                                  ),
+                                ),
                               ),
                             ),
                           ),

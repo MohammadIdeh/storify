@@ -30,10 +30,11 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       child: MaterialApp(
         debugShowCheckedModeBanner: false, // Removes the debug banner
-        home: isLoggedIn ? const Track() : const LoginScreen(),
+        home: isLoggedIn ? const DashboardScreen() : const LoginScreen(),
       ),
     );
   }
 }
 // hamode.sh889@gmail.com
 // o83KUqRz-UIroMoI
+// id: 84

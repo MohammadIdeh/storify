@@ -37,7 +37,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
   late double _sellPrice;
   late int _quantity;
   late bool _isActive;
-  late String? _warranty;
+
   late String? _description;
   late String? _barcode;
   late DateTime? _prodDate;
@@ -77,7 +77,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     }
 
     _isActive = widget.product.status == 'Active';
-    _warranty = widget.product.warranty;
+
     _barcode = widget.product.barcode;
     _description = widget.product.description;
 
@@ -96,7 +96,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _sellPriceController =
         TextEditingController(text: _sellPrice.toStringAsFixed(2));
     _quantityController = TextEditingController(text: _quantity.toString());
-    _warrantyController = TextEditingController(text: _warranty ?? '');
+
     _descriptionController = TextEditingController(text: _description ?? '');
     _prodDateController = TextEditingController(
         text: _prodDate != null
@@ -235,8 +235,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _costPrice = double.tryParse(_costPriceController.text) ?? _costPrice;
     _sellPrice = double.tryParse(_sellPriceController.text) ?? _sellPrice;
     _quantity = int.tryParse(_quantityController.text) ?? _quantity;
-    _warranty =
-        _warrantyController.text.isEmpty ? null : _warrantyController.text;
+  
     _description = _descriptionController.text.isEmpty
         ? null
         : _descriptionController.text;
@@ -276,8 +275,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
       }
 
       // Add optional fields only if they have values
-      if (_warranty != null && _warranty!.isNotEmpty)
-        updateData['warranty'] = _warranty;
+
       if (_description != null && _description!.isNotEmpty)
         updateData['description'] = _description;
       if (_prodDate != null)
@@ -338,7 +336,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
           category: widget.product.category,
           status: _isActive ? 'Active' : 'NotActive', // Match API format
           barcode: _barcode,
-          warranty: _warranty,
+
           prodDate: _prodDate != null
               ? DateFormat('yyyy-MM-dd').format(_prodDate!)
               : null,
@@ -739,22 +737,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                 ),
                               ),
                       ),
-                      SizedBox(height: 12.h),
-                      _buildDetailRow(
-                        title: "Warranty",
-                        child: _isEditing
-                            ? TextField(
-                                controller: _warrantyController,
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
-                                decoration:
-                                    _inputDecoration("Enter warranty info"),
-                              )
-                            : Text(
-                                _warranty ?? "Not specified",
-                                style: _labelStyle(),
-                              ),
-                      ),
+          
+                   
                       SizedBox(height: 12.h),
                       _buildDetailRow(
                         title: "Production Date",

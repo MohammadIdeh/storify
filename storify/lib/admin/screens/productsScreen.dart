@@ -4,15 +4,19 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/GeneralWidgets/navigationBar.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/screens/track.dart';
+import 'package:storify/admin/widgets/productsWidgets/addNewProductPopUp.dart';
+import 'package:storify/admin/widgets/productsWidgets/cardsModel.dart';
 import 'package:storify/admin/widgets/productsWidgets/exportPopUp.dart';
 import 'package:storify/GeneralWidgets/longPressDraggable.dart';
 import 'package:storify/admin/widgets/productsWidgets/productsCards.dart';
 import 'package:storify/admin/widgets/productsWidgets/productsListable.dart';
+// Import the new service
 
 class Productsscreen extends StatefulWidget {
   const Productsscreen({super.key});
@@ -32,45 +36,112 @@ class _ProductsscreenState extends State<Productsscreen> {
   final GlobalKey<ProductslistTableState> _tableKey =
       GlobalKey<ProductslistTableState>();
 
-  // Four ProductsCards in a list.
-  final List<Widget> _productCards = [
-    ProductsCards(
-      title: 'Total Products',
-      value: '25,430',
-      subtext: '+1.5% Since last week',
-      key: UniqueKey(),
-    ),
-    ProductsCards(
-      title: 'Active Products',
-      value: '5,120',
-      subtext: '',
-      key: UniqueKey(),
-    ),
-    ProductsCards(
-      title: 'UnActive Products',
-      value: '2,300',
-      subtext: '',
-      key: UniqueKey(),
-    ),
-    ProductsCards(
-      title: 'Total Categories',
-      value: '45',
-      subtext: 'Stable',
-      key: UniqueKey(),
-    ),
-  ];
+  // Service instance
+  final ProductStatsService _statsService = ProductStatsService();
+
+  // Dashboard stats
+  late ProductStats _stats = ProductStats.empty();
+
+  // List to track the order of cards
+  late List<int> _cardOrder = [0, 1, 2, 3];
+
+  // List of product card widgets
+  late List<Widget> _productCards = [];
+
   @override
   void initState() {
     super.initState();
-
-    _loadProfilePicture();
+    _loadData();
   }
 
+  // Load all necessary data
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadProfilePicture(),
+      _loadCardOrder(),
+      _loadDashboardStats(),
+    ]);
+  }
+
+  // Load profile picture from SharedPreferences
   Future<void> _loadProfilePicture() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       profilePictureUrl = prefs.getString('profilePicture');
     });
+  }
+
+  // Load card order from SharedPreferences
+  Future<void> _loadCardOrder() async {
+    final order = await _statsService.getCardOrder();
+    setState(() {
+      _cardOrder = order;
+    });
+    _updateProductCards();
+  }
+
+  // Fetch dashboard stats from API
+  Future<void> _loadDashboardStats() async {
+    try {
+      final stats = await _statsService.fetchProductStats();
+      setState(() {
+        _stats = stats;
+      });
+      _updateProductCards();
+    } catch (e) {
+      // Handle error - maybe show a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load dashboard stats: $e')),
+      );
+    }
+  }
+
+  // Update product cards with latest stats
+  void _updateProductCards() {
+    final List<Widget> cards = [
+      ProductsCards(
+        title: 'Total Products',
+        value: _stats.totalProducts.toString(),
+        subtext: '',
+        key: UniqueKey(),
+      ),
+      ProductsCards(
+        title: 'Active Products',
+        value: _stats.activeProducts.toString(),
+        subtext: '',
+        key: UniqueKey(),
+      ),
+      ProductsCards(
+        title: 'UnActive Products',
+        value: _stats.inactiveProducts.toString(),
+        subtext: '',
+        key: UniqueKey(),
+      ),
+      ProductsCards(
+        title: 'Total Categories',
+        value: _stats.totalCategories.toString(),
+        subtext: '',
+        key: UniqueKey(),
+      ),
+    ];
+
+    // Reorder cards based on saved order
+    final orderedCards = List<Widget>.filled(cards.length, Container());
+    for (int i = 0; i < _cardOrder.length; i++) {
+      final originalIndex = _cardOrder[i];
+      if (originalIndex < cards.length) {
+        orderedCards[i] = cards[originalIndex];
+      }
+    }
+
+    setState(() {
+      _productCards = orderedCards;
+    });
+  }
+
+  // Refresh stats after operations that might change them
+  Future<void> refreshStats() async {
+    await _loadDashboardStats();
   }
 
   void _onNavItemTap(int index) {
@@ -212,9 +283,19 @@ class _ProductsscreenState extends State<Productsscreen> {
           onWillAccept: (oldIndex) => oldIndex != index,
           onAccept: (oldIndex) {
             setState(() {
+              // Swap the widgets in the UI
               final temp = _productCards[oldIndex];
               _productCards[oldIndex] = _productCards[index];
               _productCards[index] = temp;
+
+              // Update the order tracking
+              final oldCardType = _cardOrder[oldIndex];
+              final newCardType = _cardOrder[index];
+              _cardOrder[oldIndex] = newCardType;
+              _cardOrder[index] = oldCardType;
+
+              // Save the updated order to SharedPreferences
+              _statsService.saveCardOrder(_cardOrder);
             });
           },
         ),
@@ -231,8 +312,7 @@ class _ProductsscreenState extends State<Productsscreen> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
-          profilePictureUrl:
-              profilePictureUrl, // Pass the profile picture URL here
+          profilePictureUrl: profilePictureUrl,
         ),
       ),
       body: SingleChildScrollView(
@@ -287,23 +367,27 @@ class _ProductsscreenState extends State<Productsscreen> {
               SizedBox(height: 40.h),
 
               /// --- Draggable ProductsCards (in a single-row Wrap) ---
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final availableWidth = constraints.maxWidth;
-                  const numberOfCards = 4;
-                  const spacing = 40.0;
-                  final cardWidth =
-                      (availableWidth - ((numberOfCards - 1) * spacing)) /
-                          numberOfCards;
-                  return Wrap(
-                    spacing: spacing,
-                    runSpacing: 20,
-                    children: List.generate(_productCards.length, (index) {
-                      return _buildDraggableProductCardItem(index, cardWidth);
-                    }),
-                  );
-                },
-              ),
+              _productCards.isEmpty
+                  ? Center(child: CircularProgressIndicator())
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final availableWidth = constraints.maxWidth;
+                        const numberOfCards = 4;
+                        const spacing = 40.0;
+                        final cardWidth =
+                            (availableWidth - ((numberOfCards - 1) * spacing)) /
+                                numberOfCards;
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: 20,
+                          children:
+                              List.generate(_productCards.length, (index) {
+                            return _buildDraggableProductCardItem(
+                                index, cardWidth);
+                          }),
+                        );
+                      },
+                    ),
               SizedBox(height: 40.h),
 
               /// --- Row Under the Cards (Product List + Filters + Search + Buttons) ---
@@ -338,7 +422,65 @@ class _ProductsscreenState extends State<Productsscreen> {
                     ),
                   ),
                   const Spacer(),
-                  // Search box.
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      fixedSize: Size(180.w, 55.h),
+                      elevation: 1,
+                    ),
+                    onPressed: () async {
+                      // Check if user is authenticated before showing the popup
+                      final isLoggedIn = await AuthService.isLoggedIn();
+                      if (!isLoggedIn) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'You must be logged in to add products')),
+                        );
+                        return;
+                      }
+
+                      // Show the add product popup
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AddProductPopUp(),
+                      ).then((result) {
+                        // If the product was added successfully, refresh both the product list and stats
+                        if (result == true) {
+                          // Refresh the table by calling the fetchProducts method
+                          _tableKey.currentState?.refreshProducts();
+
+                          // Refresh the dashboard stats
+                          refreshStats();
+                        }
+                      });
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add,
+                          size: 20.sp,
+                          color: const Color.fromARGB(255, 105, 123, 123),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          'Add Product',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 105, 123, 123),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 15.w,
+                  ),
                   Container(
                     width: 300.w,
                     height: 55.h,
@@ -424,6 +566,10 @@ class _ProductsscreenState extends State<Productsscreen> {
                 key: _tableKey,
                 selectedFilterIndex: _selectedFilterIndex,
                 searchQuery: _searchQuery,
+                onOperationCompleted: () {
+                  // Refresh stats when any operation completes in the table
+                  refreshStats();
+                },
               ),
               SizedBox(height: 40.h),
             ],

@@ -69,8 +69,7 @@ class ProductsCards extends StatelessWidget {
                   ),
                   SizedBox(height: spacingBetween),
                   // Main value text.
-                  Padding(
-                    padding: const EdgeInsets.only(left: 30.0),
+                  Center(
                     child: Text(
                       value,
                       style: GoogleFonts.spaceGrotesk(
