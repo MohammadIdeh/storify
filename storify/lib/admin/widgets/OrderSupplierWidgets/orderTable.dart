@@ -9,7 +9,7 @@ class Ordertable extends StatefulWidget {
   final String filter; // "Total", "Active", "Completed", "Cancelled"
   final String searchQuery;
   final bool isSupplierMode; // Added parameter to determine the mode
-  
+
   const Ordertable({
     Key? key,
     required this.orders,
@@ -27,20 +27,22 @@ class _OrdertableState extends State<Ordertable> {
   int _currentPage = 1;
   final int _itemsPerPage = 5;
 
-  // Apply filter based on the selected filter value.
+  // Apply filter based on the selected filter value with the new status mappings.
   List<OrderItem> get _filteredOrders {
     List<OrderItem> filtered = widget.orders;
     if (widget.filter != "Total") {
-      String targetStatus = "";
       if (widget.filter == "Active") {
-        targetStatus = "Awaiting";
+        filtered = filtered
+            .where((order) =>
+                order.status == "Accepted" || order.status == "Pending")
+            .toList();
       } else if (widget.filter == "Completed") {
-        targetStatus = "Accepted";
+        filtered =
+            filtered.where((order) => order.status == "Delivered").toList();
       } else if (widget.filter == "Cancelled") {
-        targetStatus = "Declined";
+        filtered =
+            filtered.where((order) => order.status == "Declined").toList();
       }
-      filtered =
-          filtered.where((order) => order.status == targetStatus).toList();
     }
     // Filter by search query on orderId.
     if (widget.searchQuery.isNotEmpty) {
@@ -49,7 +51,7 @@ class _OrdertableState extends State<Ordertable> {
           .toList();
     }
     return filtered;
-  }
+  } 
 
   // Calculate which orders are shown on the current page.
   List<OrderItem> get _visibleOrders {
@@ -62,6 +64,12 @@ class _OrdertableState extends State<Ordertable> {
     final endIndex = startIndex + _itemsPerPage > totalItems
         ? totalItems
         : startIndex + _itemsPerPage;
+
+    // Check if there are any orders before trying to slice
+    if (totalItems == 0) {
+      return [];
+    }
+
     return _filteredOrders.sublist(startIndex, endIndex);
   }
 
@@ -91,179 +99,232 @@ class _OrdertableState extends State<Ordertable> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Table with horizontal scrolling.
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-                      (Set<WidgetState> states) => Colors.transparent,
+              // Empty state for no orders
+              if (widget.orders.isEmpty)
+                Container(
+                  height: 300.h,
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 36, 50, 69),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30.r),
+                      topRight: Radius.circular(30.r),
                     ),
-                    showCheckboxColumn: false,
-                    headingRowColor:
-                        MaterialStateProperty.all<Color>(headingColor),
-                    border: TableBorder(
-                      top: dividerSide,
-                      bottom: dividerSide,
-                      left: dividerSide,
-                      right: dividerSide,
-                      horizontalInside: dividerSide2,
-                      verticalInside: dividerSide2,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64.sp,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'No orders found',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'There are no orders to display',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            color: Colors.white38,
+                          ),
+                        ),
+                      ],
                     ),
-                    columnSpacing: 20.w,
-                    dividerThickness: 0,
-                    headingTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    dataTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 13.sp,
-                    ),
-                    columns: [
-                      const DataColumn(label: Text("Order ID")),
-                      // Change column name based on mode
-                      DataColumn(label: Text(widget.isSupplierMode ? "Supplier Name" : "Customer Name")),
-                      const DataColumn(label: Text("Phone No")),
-                      const DataColumn(label: Text("Order Date")),
-                      const DataColumn(label: Text("Total Products")),
-                      const DataColumn(label: Text("Total Amount")),
-                      const DataColumn(label: Text("Status")),
-                    ],
-                    rows: _visibleOrders.map((order) {
-                      return DataRow(
-                        onSelectChanged: (selected) async {
-                          if (selected == true) {
-                            // Push the details screen with a fade transition.
-                            final updatedOrder =
-                                await Navigator.of(context).push<OrderItem>(
-                              PageRouteBuilder(
-                                pageBuilder: (context, animation,
-                                        secondaryAnimation) =>
-                                    Vieworder(
-                                      order: order,
-                                      isSupplierMode: widget.isSupplierMode, // Pass the mode
-                                    ),
-                                transitionsBuilder: (context, animation,
-                                        secondaryAnimation, child) =>
-                                    FadeTransition(
-                                        opacity: animation, child: child),
-                                transitionDuration:
-                                    const Duration(milliseconds: 400),
-                              ),
-                            );
+                  ),
+                )
+              else
+                // Table with horizontal scrolling.
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                        (Set<WidgetState> states) => Colors.transparent,
+                      ),
+                      showCheckboxColumn: false,
+                      headingRowColor:
+                          MaterialStateProperty.all<Color>(headingColor),
+                      border: TableBorder(
+                        top: dividerSide,
+                        bottom: dividerSide,
+                        left: dividerSide,
+                        right: dividerSide,
+                        horizontalInside: dividerSide2,
+                        verticalInside: dividerSide2,
+                      ),
+                      columnSpacing: 20.w,
+                      dividerThickness: 0,
+                      headingTextStyle: GoogleFonts.spaceGrotesk(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      dataTextStyle: GoogleFonts.spaceGrotesk(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 13.sp,
+                      ),
+                      columns: [
+                        const DataColumn(label: Text("Order ID")),
+                        // Change column name based on mode
+                        DataColumn(
+                            label: Text(widget.isSupplierMode
+                                ? "Supplier Name"
+                                : "Customer Name")),
+                        const DataColumn(label: Text("Phone No")),
+                        const DataColumn(label: Text("Order Date")),
+                        const DataColumn(label: Text("Total Products")),
+                        const DataColumn(label: Text("Total Amount")),
+                        const DataColumn(label: Text("Status")),
+                      ],
+                      rows: _visibleOrders.map((order) {
+                        // Pre-format total amount string
+                        final String totalAmountStr =
+                            "\$" + order.totalAmount.toStringAsFixed(2);
 
-                            // If the order status was changed, update the orders list.
-                            if (updatedOrder != null) {
-                              setState(() {
-                                final index = widget.orders.indexWhere(
-                                    (o) => o.orderId == order.orderId);
-                                if (index != -1) {
-                                  widget.orders[index] = updatedOrder;
-                                }
-                              });
+                        return DataRow(
+                          onSelectChanged: (selected) async {
+                            if (selected == true) {
+                              // Push the details screen with a fade transition.
+                              final updatedOrder =
+                                  await Navigator.of(context).push<OrderItem>(
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation,
+                                          secondaryAnimation) =>
+                                      Vieworder(
+                                    order: order,
+                                    isSupplierMode:
+                                        widget.isSupplierMode, // Pass the mode
+                                  ),
+                                  transitionsBuilder: (context, animation,
+                                          secondaryAnimation, child) =>
+                                      FadeTransition(
+                                          opacity: animation, child: child),
+                                  transitionDuration:
+                                      const Duration(milliseconds: 400),
+                                ),
+                              );
+
+                              // If the order status was changed, update the orders list.
+                              if (updatedOrder != null) {
+                                setState(() {
+                                  final index = widget.orders.indexWhere(
+                                      (o) => o.orderId == order.orderId);
+                                  if (index != -1) {
+                                    widget.orders[index] = updatedOrder;
+                                  }
+                                });
+                              }
                             }
-                          }
-                        },
-                        cells: [
-                          DataCell(Text(order.orderId)),
-                          DataCell(Text(order.storeName)),
-                          DataCell(Text(order.phoneNo)),
-                          DataCell(Text(order.orderDate)),
-                          DataCell(Text("${order.totalProducts}")),
-                          DataCell(Text(
-                              "\$${order.totalAmount.toStringAsFixed(2)}")),
-                          DataCell(_buildStatusPill(order.status)),
-                        ],
-                      );
-                    }).toList(),
+                          },
+                          cells: [
+                            DataCell(Text(order.orderId)),
+                            DataCell(Text(order.storeName)),
+                            DataCell(Text(order.phoneNo)),
+                            DataCell(Text(order.orderDate)),
+                            DataCell(Text(order.totalProducts.toString())),
+                            DataCell(Text(totalAmountStr)),
+                            DataCell(_buildStatusPill(order.status)),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
-              ),
-              // Pagination Row.
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    Text(
-                      "Total $totalItems Orders",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
+
+              // Pagination Row - only show if there are orders
+              if (widget.orders.isNotEmpty)
+                Padding(
+                  padding:
+                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+                  child: Row(
+                    children: [
+                      const Spacer(),
+                      Text(
+                        "Total $totalItems Orders",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 10.w),
-                    // Left arrow button.
-                    IconButton(
-                      icon: Icon(Icons.arrow_back,
-                          size: 20.sp, color: Colors.white70),
-                      onPressed: _currentPage > 1
-                          ? () {
-                              setState(() {
-                                _currentPage--;
-                              });
-                            }
-                          : null,
-                    ),
-                    // Page buttons.
-                    Row(
-                      children: List.generate(totalPages, (index) {
-                        final pageIndex = index + 1;
-                        final bool isSelected = (pageIndex == _currentPage);
-                        return Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4.w),
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: isSelected
-                                  ? const Color.fromARGB(255, 105, 65, 198)
-                                  : Colors.transparent,
-                              side: BorderSide(
-                                color: const Color.fromARGB(255, 34, 53, 62),
-                                width: 1.5,
+                      SizedBox(width: 10.w),
+                      // Left arrow button.
+                      IconButton(
+                        icon: Icon(Icons.arrow_back,
+                            size: 20.sp, color: Colors.white70),
+                        onPressed: _currentPage > 1
+                            ? () {
+                                setState(() {
+                                  _currentPage--;
+                                });
+                              }
+                            : null,
+                      ),
+                      // Page buttons.
+                      Row(
+                        children: List.generate(totalPages, (index) {
+                          final pageIndex = index + 1;
+                          final bool isSelected = (pageIndex == _currentPage);
+                          return Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4.w),
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: isSelected
+                                    ? const Color.fromARGB(255, 105, 65, 198)
+                                    : Colors.transparent,
+                                side: BorderSide(
+                                  color: const Color.fromARGB(255, 34, 53, 62),
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 14.w, vertical: 10.h),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.r),
+                              onPressed: () {
+                                setState(() {
+                                  _currentPage = pageIndex;
+                                });
+                              },
+                              child: Text(
+                                "$pageIndex",
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.white70,
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 14.w, vertical: 10.h),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _currentPage = pageIndex;
-                              });
-                            },
-                            child: Text(
-                              "$pageIndex",
-                              style: GoogleFonts.spaceGrotesk(
-                                color:
-                                    isSelected ? Colors.white : Colors.white70,
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                    // Right arrow button.
-                    IconButton(
-                      icon: Icon(Icons.arrow_forward,
-                          size: 20.sp, color: Colors.white70),
-                      onPressed: _currentPage < totalPages
-                          ? () {
-                              setState(() {
-                                _currentPage++;
-                              });
-                            }
-                          : null,
-                    ),
-                  ],
+                          );
+                        }),
+                      ),
+                      // Right arrow button.
+                      IconButton(
+                        icon: Icon(Icons.arrow_forward,
+                            size: 20.sp, color: Colors.white70),
+                        onPressed: _currentPage < totalPages
+                            ? () {
+                                setState(() {
+                                  _currentPage++;
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         );
@@ -276,13 +337,16 @@ class _OrdertableState extends State<Ordertable> {
     Color textColor;
     Color borderColor;
     if (status == "Accepted") {
-      textColor = const Color.fromARGB(178, 0, 224, 116);
+      textColor = const Color.fromARGB(255, 0, 196, 255); // cyan
+      borderColor = textColor;
+    } else if (status == "Pending") {
+      textColor = const Color.fromARGB(255, 255, 232, 29); // yellow
+      borderColor = textColor;
+    } else if (status == "Delivered") {
+      textColor = const Color.fromARGB(178, 0, 224, 116); // green
       borderColor = textColor;
     } else if (status == "Declined") {
-      textColor = const Color.fromARGB(255, 229, 62, 62);
-      borderColor = textColor;
-    } else if (status == "Awaiting") {
-      textColor = const Color.fromARGB(255, 255, 177, 62);
+      textColor = const Color.fromARGB(255, 229, 62, 62); // red
       borderColor = textColor;
     } else {
       textColor = Colors.white70;

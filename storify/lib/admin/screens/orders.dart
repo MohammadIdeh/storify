@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 // Ensure these imports point to your local files.
 import 'package:storify/GeneralWidgets/navigationBar.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/productsScreen.dart';
@@ -30,10 +33,73 @@ class _OrdersState extends State<Orders> {
   // Added state to track if we're in supplier mode or customer mode
   bool _isSupplierMode = true;
 
+  // Added loading state
+  bool _isLoading = true;
+
+  // Error message for failed API calls
+  String? _errorMessage;
+
+  // Lists for orders from API
+  List<OrderItem> _supplierOrders = [];
+  List<OrderItem> _customerOrders = [];
+
   @override
   void initState() {
     super.initState();
     _loadProfilePicture();
+    _fetchOrders();
+  }
+
+  // Fetch orders from the API
+  Future<void> _fetchOrders() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Get auth headers
+      final headers = await AuthService.getAuthHeaders();
+
+      // Fetch supplier orders
+      final response = await http.get(
+        Uri.parse('https://finalproject-a5ls.onrender.com/supplierOrders/'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['message'] == 'Orders retrieved successfully') {
+          final List<dynamic> ordersJson = data['orders'];
+
+          setState(() {
+            _supplierOrders = ordersJson
+                .map((orderJson) => OrderItem.fromJson(orderJson))
+                .toList();
+
+            // For now, we'll keep customer orders empty or you can add another API endpoint for customer orders
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'Failed to load orders: ${data['message']}';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to load orders. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error fetching orders: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadProfilePicture() async {
@@ -51,98 +117,21 @@ class _OrdersState extends State<Orders> {
   // Search query from the search box.
   String _searchQuery = "";
 
-  // Fake order list for suppliers (shared as the single data source).
-  final List<OrderItem> _supplierOrders = [
-    OrderItem(
-      orderId: "267400",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 20,
-      totalAmount: 328.85,
-      status: "Awaiting",
-    ),
-    OrderItem(
-      orderId: "267401",
-      storeName: "Ralph Edwards",
-      phoneNo: "972694737544",
-      orderDate: "12-7-2024 22:16",
-      totalProducts: 25,
-      totalAmount: 500.55,
-      status: "Accepted",
-    ),
-    // ... remaining supplier orders
-  ];
-
-  // New fake order list for customers
-  final List<OrderItem> _customerOrders = [
-    OrderItem(
-      orderId: "367400",
-      storeName: "John Smith", // This will be displayed as Customer Name
-      phoneNo: "972694737111",
-      orderDate: "14-7-2024 18:30",
-      totalProducts: 8,
-      totalAmount: 156.70,
-      status: "Awaiting",
-    ),
-    OrderItem(
-      orderId: "367400",
-      storeName: "John Smith", // This will be displayed as Customer Name
-      phoneNo: "972694737111",
-      orderDate: "14-7-2024 18:30",
-      totalProducts: 8,
-      totalAmount: 156.70,
-      status: "Awaiting",
-    ),
-    OrderItem(
-      orderId: "367401",
-      storeName: "Mary Johnson", // This will be displayed as Customer Name
-      phoneNo: "972694736222",
-      orderDate: "14-7-2024 19:45",
-      totalProducts: 12,
-      totalAmount: 210.30,
-      status: "Accepted",
-    ),
-    OrderItem(
-      orderId: "367402",
-      storeName: "Robert Davis", // This will be displayed as Customer Name
-      phoneNo: "972694735333",
-      orderDate: "14-7-2024 20:15",
-      totalProducts: 6,
-      totalAmount: 98.50,
-      status: "Declined",
-    ),
-    OrderItem(
-      orderId: "367403",
-      storeName: "Patricia Brown", // This will be displayed as Customer Name
-      phoneNo: "972694734444",
-      orderDate: "15-7-2024 09:20",
-      totalProducts: 15,
-      totalAmount: 275.90,
-      status: "Awaiting",
-    ),
-    OrderItem(
-      orderId: "367404",
-      storeName: "James Wilson", // This will be displayed as Customer Name
-      phoneNo: "972694733555",
-      orderDate: "15-7-2024 10:40",
-      totalProducts: 10,
-      totalAmount: 180.25,
-      status: "Accepted",
-    ),
-  ];
-
   // Get the active orders list based on mode
   List<OrderItem> get _activeOrdersList {
     return _isSupplierMode ? _supplierOrders : _customerOrders;
   }
 
-  // Compute counts based on orders list.
+  // Compute counts based on orders list with new status mappings
   int get totalOrdersCount => _activeOrdersList.length;
-  int get activeCount =>
-      _activeOrdersList.where((o) => o.status == "Awaiting").length;
+
+  int get activeCount => _activeOrdersList
+      .where((o) => o.status == "Accepted" || o.status == "Pending")
+      .length;
+
   int get completedCount =>
-      _activeOrdersList.where((o) => o.status == "Accepted").length;
+      _activeOrdersList.where((o) => o.status == "Delivered").length;
+
   int get cancelledCount =>
       _activeOrdersList.where((o) => o.status == "Declined").length;
 
@@ -161,7 +150,7 @@ class _OrdersState extends State<Orders> {
         title: 'Active Orders',
         count: activeCount.toString(),
         percentage: totalOrdersCount > 0 ? activeCount / totalOrdersCount : 0.0,
-        circleColor: const Color.fromARGB(255, 255, 232, 29), // purple
+        circleColor: const Color.fromARGB(255, 255, 232, 29), // yellow
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/completedOrders.svg',
@@ -182,7 +171,7 @@ class _OrdersState extends State<Orders> {
     ];
   }
 
-  // When a card is tapped update the filter.
+  // When a card is tapped update the filter with the new status mappings.
   void _onCardTap(int index) {
     setState(() {
       _selectedCardIndex = index;
@@ -379,8 +368,15 @@ class _OrdersState extends State<Orders> {
                         fixedSize: Size(250.w, 50.h),
                         elevation: 1,
                       ),
-                      onPressed: () {
-                        showSupplierOrderPopup(context);
+                      onPressed: () async {
+                        // Show the popup and wait for the result
+                        final shouldRefresh =
+                            await showSupplierOrderPopup(context);
+
+                        // If orders were placed, refresh the orders list
+                        if (shouldRefresh) {
+                          _fetchOrders(); // Refresh orders list immediately
+                        }
                       },
                       child: Text(
                         'Order From Supplier',
@@ -391,6 +387,15 @@ class _OrdersState extends State<Orders> {
                         ),
                       ),
                     ),
+                  // Add refresh button
+                  IconButton(
+                    icon: Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 24.sp,
+                    ),
+                    onPressed: _fetchOrders,
+                  ),
                 ],
               ),
               SizedBox(height: 40.h),
@@ -501,13 +506,58 @@ class _OrdersState extends State<Orders> {
                 ],
               ),
               SizedBox(height: 25.w),
-              // Modified Order table: pass mode, orders list, filter, and search query
-              Ordertable(
-                orders: _activeOrdersList,
-                filter: _selectedFilter,
-                searchQuery: _searchQuery,
-                isSupplierMode: _isSupplierMode, // Pass the mode to table
-              ),
+
+              // Loading indicator or error message
+              if (_isLoading)
+                Center(
+                  child: CircularProgressIndicator(
+                    color: const Color.fromARGB(255, 105, 65, 198),
+                  ),
+                )
+              else if (_errorMessage != null)
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.redAccent,
+                        size: 48.sp,
+                      ),
+                      SizedBox(height: 16.h),
+                      Text(
+                        _errorMessage!,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 16.h),
+                      ElevatedButton(
+                        onPressed: _fetchOrders,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 105, 65, 198),
+                        ),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // Modified Order table: pass mode, orders list, filter, and search query
+                Ordertable(
+                  orders: _activeOrdersList,
+                  filter: _selectedFilter,
+                  searchQuery: _searchQuery,
+                  isSupplierMode: _isSupplierMode, // Pass the mode to table
+                ),
             ],
           ),
         ),

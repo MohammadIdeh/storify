@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Model class for dashboard statistics
+// Model class for products statistics
 class ProductStats {
   final int totalProducts;
   final int activeProducts;
@@ -36,52 +36,54 @@ class ProductStats {
   }
 }
 
-// Class to handle API calls and manage dashboard statistics
+// Class to handle API calls and manage product statistics
 class ProductStatsService {
-  static const String _apiUrl = 'https://finalproject-a5ls.onrender.com/product/stats/dashboard';
+  static const String _apiUrl =
+      'https://finalproject-a5ls.onrender.com/product/stats/dashboard';
   static const String _cardOrderKey = 'product_cards_order';
-  
+
   // Singleton pattern
   static final ProductStatsService _instance = ProductStatsService._internal();
-  
+
   factory ProductStatsService() {
     return _instance;
   }
-  
+
   ProductStatsService._internal();
-  
-  // Fetch dashboard statistics from API
+
+  // Fetch product statistics from API
   Future<ProductStats> fetchProductStats() async {
     try {
       final response = await http.get(Uri.parse(_apiUrl));
-      
+
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return ProductStats.fromJson(jsonData['stats']);
       } else {
-        throw Exception('Failed to load dashboard stats: ${response.statusCode}');
+        throw Exception(
+            'Failed to load dashboard stats: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching dashboard stats: $e');
     }
   }
-  
+
   // Save card order to SharedPreferences
   Future<void> saveCardOrder(List<int> order) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_cardOrderKey, json.encode(order));
   }
-  
+
   // Get card order from SharedPreferences
   Future<List<int>> getCardOrder() async {
     final prefs = await SharedPreferences.getInstance();
     final orderString = prefs.getString(_cardOrderKey);
-    
+
     if (orderString == null) {
       // Default order: 0, 1, 2, 3
       return [0, 1, 2, 3];
     }
-    
+
     try {
       final List<dynamic> decodedOrder = json.decode(orderString);
       return decodedOrder.map((item) => item as int).toList();

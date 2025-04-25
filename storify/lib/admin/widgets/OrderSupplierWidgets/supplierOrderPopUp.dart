@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/supplier_models.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/supplier_service.dart';
 
 class SupplierOrderPopup extends StatefulWidget {
   const SupplierOrderPopup({super.key});
@@ -11,210 +13,298 @@ class SupplierOrderPopup extends StatefulWidget {
 }
 
 class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
+  // Loading states
+  bool _isLoadingSuppliers = true;
+  bool _isLoadingProducts = false;
+  bool _isPlacingOrder = false;
+  String? _errorMessage;
+
   // Selected supplier
-  String? _selectedSupplier;
+  Supplier? _selectedSupplier;
 
   // Selected product
-  ProductItem? _selectedProduct;
+  SupplierProduct? _selectedProduct;
 
-  // Cart items
-  final List<CartItem> _cartItems = [];
+  // Cart items (now grouped by supplier)
+  final Map<int, List<CartItem>> _cartItemsBySupplierId = {};
+
+  // All products from all suppliers - used for price comparison
+  final Map<int, List<SupplierProduct>> _allProductsMap = {};
+
+  // All suppliers
+  List<Supplier> _suppliers = [];
+
+  // Products for the selected supplier
+  List<SupplierProduct> _products = [];
 
   // Quantity for the selected product
   int _quantity = 1;
 
-  // List of suppliers (will come from API)
-  final List<String> _suppliers = [
-    'Ralph Edwards Supplies',
-    'Mohammad Trading Co.',
-    'Global Distributors Ltd.',
-    'Quality Essentials Inc.',
-    'Premium Merchant Supply'
-  ];
+  // Order queue - track pending orders
+  final List<OrderRequest> _orderQueue = [];
 
-  // Fake products per supplier (will come from API)
-  final Map<String, List<ProductItem>> _productsMap = {
-    'Ralph Edwards Supplies': [
-      ProductItem(
-        id: '1',
-        name: 'Premium Coffee Beans',
-        description: 'High-quality Arabica coffee beans, 500g bag',
-        price: 15.99,
-        image: 'assets/images/image3.png',
-        stock: 24,
-        lowPriceSupplier: 'Mohammad Trading Co.',
-        lowPrice: 14.50,
-      ),
-      ProductItem(
-        id: '2',
-        name: 'Organic Tea Selection',
-        description: 'Assorted organic teas, 50 tea bags',
-        price: 8.99,
-        image: 'assets/images/image3.png',
-        stock: 36,
-      ),
-      ProductItem(
-        id: '3',
-        name: 'Chocolate Cookies',
-        description: 'Premium chocolate cookies, 250g package',
-        price: 4.99,
-        image: 'assets/images/image3.png',
-        stock: 48,
-      ),
-      ProductItem(
-        id: '4',
-        name: 'Sparkling Water',
-        description: 'Carbonated natural spring water, 12x500ml',
-        price: 9.99,
-        image: 'assets/images/image3.png',
-        stock: 30,
-      ),
-      ProductItem(
-        id: '5',
-        name: 'Honey Jar',
-        description: 'Pure organic honey, 500g jar',
-        price: 7.50,
-        image: 'assets/images/product5.png',
-        stock: 20,
-        lowPriceSupplier: 'Global Distributors Ltd.',
-        lowPrice: 6.99,
-      ),
-    ],
-    'Mohammad Trading Co.': [
-      ProductItem(
-        id: '6',
-        name: 'Premium Coffee Beans',
-        description: 'High-quality Arabica coffee beans, 500g bag',
-        price: 14.50,
-        image: 'assets/images/image3.png',
-        stock: 32,
-      ),
-      ProductItem(
-        id: '7',
-        name: 'Pistachio Nuts',
-        description: 'Roasted and salted pistachios, 200g bag',
-        price: 11.99,
-        image: 'assets/images/image3.png',
-        stock: 15,
-      ),
-      ProductItem(
-        id: '8',
-        name: 'Cashew Nuts',
-        description: 'Premium cashew nuts, 300g package',
-        price: 12.99,
-        image: 'assets/images/product7.png',
-        stock: 25,
-      ),
-    ],
-    'Global Distributors Ltd.': [
-      ProductItem(
-        id: '9',
-        name: 'Honey Jar',
-        description: 'Pure organic honey, 500g jar',
-        price: 6.99,
-        image: 'assets/images/product5.png',
-        stock: 40,
-      ),
-      ProductItem(
-        id: '10',
-        name: 'Olive Oil',
-        description: 'Extra virgin olive oil, 750ml bottle',
-        price: 16.50,
-        image: 'assets/images/product8.png',
-        stock: 18,
-      ),
-    ],
-    'Quality Essentials Inc.': [
-      ProductItem(
-        id: '11',
-        name: 'Almond Milk',
-        description: 'Unsweetened almond milk, 1L carton',
-        price: 3.99,
-        image: 'assets/images/product9.png',
-        stock: 50,
-      ),
-      ProductItem(
-        id: '12',
-        name: 'Mixed Nuts',
-        description: 'Assorted premium nuts, 400g container',
-        price: 15.99,
-        image: 'assets/images/product10.png',
-        stock: 22,
-      ),
-    ],
-    'Premium Merchant Supply': [
-      ProductItem(
-        id: '13',
-        name: 'Dark Chocolate',
-        description: '70% cacao dark chocolate, 100g bar',
-        price: 4.50,
-        image: 'assets/images/product11.png',
-        stock: 60,
-      ),
-      ProductItem(
-        id: '14',
-        name: 'Dried Apricots',
-        description: 'Sun-dried organic apricots, 250g package',
-        price: 7.25,
-        image: 'assets/images/product12.png',
-        stock: 28,
-      ),
-      ProductItem(
-        id: '15',
-        name: 'Granola Mix',
-        description: 'Artisanal granola with nuts and berries, 350g',
-        price: 8.75,
-        image: 'assets/images/product13.png',
-        stock: 35,
-      ),
-    ],
-  };
-
-  // Get the list of products for the selected supplier
-  List<ProductItem> get _productsList {
-    if (_selectedSupplier == null) {
-      return [];
-    }
-    return _productsMap[_selectedSupplier!] ?? [];
+  @override
+  void initState() {
+    super.initState();
+    _fetchSuppliers();
   }
 
-  // Calculate the total price of the cart
-  double get _cartTotal {
-    return _cartItems.fold(
-        0, (total, item) => total + (item.price * item.quantity));
+  // Fetch list of suppliers
+  Future<void> _fetchSuppliers() async {
+    setState(() {
+      _isLoadingSuppliers = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final suppliers = await SupplierService.getSuppliers();
+      setState(() {
+        _suppliers = suppliers;
+        _isLoadingSuppliers = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load suppliers: $e';
+        _isLoadingSuppliers = false;
+      });
+    }
+  }
+
+  // Fetch products for selected supplier
+  Future<void> _fetchProducts(int supplierId) async {
+    setState(() {
+      _isLoadingProducts = true;
+      _errorMessage = null;
+      _selectedProduct = null;
+    });
+
+    try {
+      final products = await SupplierService.getSupplierProducts(supplierId);
+      setState(() {
+        _products = products;
+        // Store products for future price comparison
+        _allProductsMap[supplierId] = products;
+        _isLoadingProducts = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load products: $e';
+        _isLoadingProducts = false;
+      });
+    }
+  }
+
+  // Check if a product has a better price from another supplier
+  Future<void> _checkForBetterPrice(SupplierProduct product) async {
+    try {
+      final result = await SupplierService.findLowerPriceProduct(
+          product, _selectedSupplier!.id);
+
+      if (result != null) {
+        final lowerPriceProduct = result['product'] as SupplierProduct;
+        final lowerPriceSupplier = result['supplier'] as Supplier;
+
+        // Show the alert
+        if (mounted) {
+          _showBetterPriceAlert(
+            product,
+            lowerPriceProduct,
+            lowerPriceSupplier,
+          );
+        }
+      }
+    } catch (e) {
+      print('Error checking for better price: $e');
+    }
+  }
+
+  // Show alert for better price
+  void _showBetterPriceAlert(
+    SupplierProduct currentProduct,
+    SupplierProduct betterProduct,
+    Supplier betterSupplier,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final priceDifference =
+            currentProduct.costPrice - betterProduct.costPrice;
+        final percentageSaving =
+            (priceDifference / currentProduct.costPrice) * 100;
+
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          title: Text(
+            'Better Price Available!',
+            style: GoogleFonts.spaceGrotesk(
+              color: const Color.fromARGB(255, 255, 232, 29),
+              fontWeight: FontWeight.bold,
+              fontSize: 20.sp,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This product is available at a lower price:',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              _buildPriceComparisonRow(
+                'Current: ${_selectedSupplier!.name}',
+                '\$${currentProduct.costPrice.toStringAsFixed(2)}',
+              ),
+              _buildPriceComparisonRow(
+                'Better: ${betterSupplier.name}',
+                '\$${betterProduct.costPrice.toStringAsFixed(2)}',
+                isHighlighted: true,
+              ),
+              Divider(color: Colors.white24),
+              _buildPriceComparisonRow(
+                'You Save:',
+                '\$${priceDifference.toStringAsFixed(2)} (${percentageSaving.toStringAsFixed(0)}%)',
+                isHighlighted: true,
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Would you like to switch suppliers for this product?',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text(
+                'Keep Current',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Switch to the better supplier
+                _selectSupplier(betterSupplier);
+              },
+              child: Text(
+                'Switch Supplier',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPriceComparisonRow(String label, String price,
+      {bool isHighlighted = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white70,
+              fontWeight: FontWeight.w500,
+              fontSize: 15.sp,
+            ),
+          ),
+          Text(
+            price,
+            style: GoogleFonts.spaceGrotesk(
+              color: isHighlighted
+                  ? const Color.fromARGB(255, 0, 224, 116)
+                  : Colors.white,
+              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
+              fontSize: 15.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Select a supplier from the dropdown
+  void _selectSupplier(Supplier supplier) {
+    setState(() {
+      _selectedSupplier = supplier;
+      _selectedProduct = null;
+    });
+    _fetchProducts(supplier.id);
   }
 
   // Select a product
-  void _selectProduct(ProductItem product) {
+  void _selectProduct(SupplierProduct product) {
     setState(() {
       _selectedProduct = product;
       _quantity = 1; // Reset quantity when selecting a new product
     });
+
+    // Check if this product is available at a better price
+    _checkForBetterPrice(product);
   }
 
   // Add product to cart
   void _addToCart() {
-    if (_selectedProduct != null && _quantity > 0) {
+    if (_selectedProduct != null &&
+        _quantity > 0 &&
+        _selectedSupplier != null) {
       setState(() {
+        // Get the cart for this supplier or create a new one
+        final supplierCart =
+            _cartItemsBySupplierId[_selectedSupplier!.id] ?? [];
+
         // Check if product already exists in cart
-        final existingItemIndex =
-            _cartItems.indexWhere((item) => item.id == _selectedProduct!.id);
+        final existingItemIndex = supplierCart.indexWhere(
+            (item) => item.productId == _selectedProduct!.productId);
 
         if (existingItemIndex >= 0) {
           // Update quantity if product already in cart
-          _cartItems[existingItemIndex] = _cartItems[existingItemIndex]
-              .copyWith(
-                  quantity: _cartItems[existingItemIndex].quantity + _quantity);
+          final updatedItem = supplierCart[existingItemIndex].copyWith(
+              quantity: supplierCart[existingItemIndex].quantity + _quantity);
+          supplierCart[existingItemIndex] = updatedItem;
         } else {
           // Add new item to cart
-          _cartItems.add(CartItem(
-            id: _selectedProduct!.id,
+          supplierCart.add(CartItem(
+            productId: _selectedProduct!.productId,
             name: _selectedProduct!.name,
-            price: _selectedProduct!.price,
+            price: _selectedProduct!.costPrice,
             quantity: _quantity,
             image: _selectedProduct!.image,
+            supplierId: _selectedSupplier!.id,
+            supplierName: _selectedSupplier!.name,
           ));
         }
+
+        // Update the cart for this supplier
+        _cartItemsBySupplierId[_selectedSupplier!.id] = supplierCart;
 
         // Reset quantity
         _quantity = 1;
@@ -223,9 +313,19 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
   }
 
   // Remove item from cart
-  void _removeFromCart(String id) {
+  void _removeFromCart(int supplierId, int productId) {
     setState(() {
-      _cartItems.removeWhere((item) => item.id == id);
+      final supplierCart = _cartItemsBySupplierId[supplierId];
+      if (supplierCart != null) {
+        supplierCart.removeWhere((item) => item.productId == productId);
+
+        // If cart is empty after removal, remove the supplier entry
+        if (supplierCart.isEmpty) {
+          _cartItemsBySupplierId.remove(supplierId);
+        } else {
+          _cartItemsBySupplierId[supplierId] = supplierCart;
+        }
+      }
     });
   }
 
@@ -238,12 +338,129 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
     }
   }
 
-  // Place the order
-  void _placeOrder() {
-    if (_cartItems.isNotEmpty) {
-      // Here you would send the order to your API
-      // For now, we'll just close the dialog and show a confirmation
-      Navigator.of(context).pop(_cartItems);
+  // Calculate total for a specific supplier's cart
+  double _getSupplierCartTotal(int supplierId) {
+    final supplierCart = _cartItemsBySupplierId[supplierId];
+    if (supplierCart == null || supplierCart.isEmpty) {
+      return 0.0;
+    }
+
+    return supplierCart.fold(
+        0.0, (total, item) => total + (item.price * item.quantity));
+  }
+
+  // Calculate grand total across all suppliers
+  double get _grandTotal {
+    double total = 0.0;
+    _cartItemsBySupplierId.forEach((supplierId, items) {
+      total += _getSupplierCartTotal(supplierId);
+    });
+    return total;
+  }
+
+  // Place order for a specific supplier
+  Future<bool> _placeSupplierOrder(int supplierId) async {
+    final supplierCart = _cartItemsBySupplierId[supplierId];
+    if (supplierCart == null || supplierCart.isEmpty) {
+      return false;
+    }
+
+    try {
+      final orderItems = supplierCart
+          .map((item) => OrderItem(
+                productId: item.productId,
+                quantity: item.quantity,
+              ))
+          .toList();
+
+      final orderRequest = OrderRequest(
+        supplierId: supplierId,
+        items: orderItems,
+      );
+
+      final success = await SupplierService.placeOrder(orderRequest);
+
+      if (success) {
+        // Remove this supplier's items from cart
+        setState(() {
+          _cartItemsBySupplierId.remove(supplierId);
+        });
+
+        // If this was the last supplier in the cart, close with refresh signal
+        if (_cartItemsBySupplierId.isEmpty) {
+          Navigator.of(context).pop(true); // Return true to trigger refresh
+        }
+
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print('Error placing order: $e');
+      return false;
+    }
+  }
+
+  // Place all orders sequentially
+  Future<void> _placeAllOrders() async {
+    if (_cartItemsBySupplierId.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isPlacingOrder = true;
+      _orderQueue.clear();
+    });
+
+    // Create order queue
+    _cartItemsBySupplierId.forEach((supplierId, items) {
+      final orderItems = items
+          .map((item) => OrderItem(
+                productId: item.productId,
+                quantity: item.quantity,
+              ))
+          .toList();
+
+      _orderQueue.add(OrderRequest(
+        supplierId: supplierId,
+        items: orderItems,
+      ));
+    });
+
+    // Process each order sequentially
+    bool hasError = false;
+    String? errorMsg;
+
+    for (var order in _orderQueue) {
+      try {
+        final success = await SupplierService.placeOrder(order);
+        if (success) {
+          // Remove this supplier's items from cart
+          setState(() {
+            _cartItemsBySupplierId.remove(order.supplierId);
+          });
+        } else {
+          hasError = true;
+          errorMsg = 'Failed to place order for supplier #${order.supplierId}';
+          break;
+        }
+      } catch (e) {
+        hasError = true;
+        errorMsg = 'Error placing order: $e';
+        break;
+      }
+    }
+
+    setState(() {
+      _isPlacingOrder = false;
+      if (hasError) {
+        _errorMessage = errorMsg;
+      }
+    });
+
+    // If no errors and all orders placed, close the dialog with refresh signal
+    if (!hasError && _cartItemsBySupplierId.isEmpty) {
+      Navigator.of(context).pop(true); // Return true to trigger refresh
     }
   }
 
@@ -296,6 +513,49 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
               ),
             ),
 
+            // Error message if any
+            if (_errorMessage != null)
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 20.w),
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red[300],
+                      size: 20.sp,
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.red[300],
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.red[300],
+                        size: 16.sp,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _errorMessage = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
             // Main content
             Expanded(
               child: Padding(
@@ -330,48 +590,57 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                 width: 1,
                               ),
                             ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedSupplier,
-                                hint: Text(
-                                  'Please choose a supplier',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white70,
+                            child: _isLoadingSuppliers
+                                ? Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.w),
+                                      child: CircularProgressIndicator(
+                                        color: const Color.fromARGB(
+                                            255, 105, 65, 198),
+                                      ),
+                                    ),
+                                  )
+                                : DropdownButtonHideUnderline(
+                                    child: DropdownButton<Supplier>(
+                                      value: _selectedSupplier,
+                                      hint: Text(
+                                        'Please choose a supplier',
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                      icon: Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.white70,
+                                        size: 24.sp,
+                                      ),
+                                      isExpanded: true,
+                                      dropdownColor:
+                                          const Color.fromARGB(255, 36, 50, 69),
+                                      style: GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        color: Colors.white,
+                                      ),
+                                      items: _suppliers
+                                          .map<DropdownMenuItem<Supplier>>(
+                                              (Supplier supplier) {
+                                        return DropdownMenuItem<Supplier>(
+                                          value: supplier,
+                                          child: Text(supplier.name),
+                                        );
+                                      }).toList(),
+                                      onChanged: (Supplier? newValue) {
+                                        if (newValue != null) {
+                                          _selectSupplier(newValue);
+                                        }
+                                      },
+                                    ),
                                   ),
-                                ),
-                                icon: Icon(
-                                  Icons.arrow_drop_down,
-                                  color: Colors.white70,
-                                  size: 24.sp,
-                                ),
-                                isExpanded: true,
-                                dropdownColor:
-                                    const Color.fromARGB(255, 36, 50, 69),
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 16.sp,
-                                  color: Colors.white,
-                                ),
-                                items: _suppliers.map<DropdownMenuItem<String>>(
-                                    (String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    _selectedSupplier = newValue;
-                                    _selectedProduct =
-                                        null; // Clear selected product
-                                  });
-                                },
-                              ),
-                            ),
                           ),
 
                           SizedBox(height: 30.h),
 
-                          // Cart
+                          // Cart - Now with sections by supplier
                           Expanded(
                             child: Container(
                               width: double.infinity,
@@ -408,7 +677,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                       ),
                                       SizedBox(width: 8.w),
                                       Text(
-                                        '(${_cartItems.length} items)',
+                                        '(${_cartItemsBySupplierId.values.fold<int>(0, (total, items) => total + items.length)} items)',
                                         style: GoogleFonts.spaceGrotesk(
                                           fontSize: 14.sp,
                                           color: Colors.white70,
@@ -419,9 +688,9 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
 
                                   SizedBox(height: 16.h),
 
-                                  // Cart items
+                                  // Cart items (grouped by supplier)
                                   Expanded(
-                                    child: _cartItems.isEmpty
+                                    child: _cartItemsBySupplierId.isEmpty
                                         ? _buildEmptyState(
                                             icon:
                                                 'assets/images/empty_cart.svg',
@@ -431,132 +700,41 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                             placeholderIcon:
                                                 Icons.shopping_cart_outlined,
                                           )
-                                        : ListView.separated(
-                                            itemCount: _cartItems.length,
-                                            separatorBuilder:
-                                                (context, index) => Divider(
-                                              color:
-                                                  Colors.white.withOpacity(0.1),
-                                              height: 20.h,
-                                            ),
-                                            itemBuilder: (context, index) {
-                                              final item = _cartItems[index];
-                                              return Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  // Product image
-                                                  Container(
-                                                    width: 50.w,
-                                                    height: 50.h,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8.r),
-                                                    ),
-                                                    child: Center(
-                                                      child: Image.asset(
-                                                        item.image,
-                                                        width: 40.w,
-                                                        height: 40.h,
-                                                        errorBuilder: (context,
-                                                            error, stackTrace) {
-                                                          return Icon(
-                                                            Icons.image,
-                                                            size: 24.sp,
-                                                            color:
-                                                                Colors.white70,
-                                                          );
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
+                                        : ListView(
+                                            children: _cartItemsBySupplierId
+                                                .entries
+                                                .map((entry) {
+                                              final supplierId = entry.key;
+                                              final supplierItems = entry.value;
+                                              final supplierName =
+                                                  supplierItems.isNotEmpty
+                                                      ? supplierItems
+                                                          .first.supplierName
+                                                      : 'Unknown Supplier';
 
-                                                  SizedBox(width: 12.w),
-
-                                                  // Product details
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          item.name,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            fontSize: 16.sp,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color: Colors.white,
-                                                          ),
-                                                        ),
-                                                        SizedBox(height: 4.h),
-                                                        Row(
-                                                          children: [
-                                                            Text(
-                                                              '${item.quantity} × \$${item.price.toStringAsFixed(2)}',
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                fontSize: 14.sp,
-                                                                color: Colors
-                                                                    .white70,
-                                                              ),
-                                                            ),
-                                                            const Spacer(),
-                                                            Text(
-                                                              '\$${(item.price * item.quantity).toStringAsFixed(2)}',
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                fontSize: 16.sp,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-
-                                                  SizedBox(width: 8.w),
-
-                                                  // Remove button
-                                                  IconButton(
-                                                    icon: Icon(
-                                                      Icons.delete_outline,
-                                                      color: Colors.red[300],
-                                                      size: 20.sp,
-                                                    ),
-                                                    onPressed: () =>
-                                                        _removeFromCart(
-                                                            item.id),
-                                                  ),
-                                                ],
+                                              return _buildSupplierCartSection(
+                                                supplierId,
+                                                supplierName,
+                                                supplierItems,
                                               );
-                                            },
+                                            }).toList(),
                                           ),
                                   ),
 
-                                  // Cart summary and confirm button
-                                  if (_cartItems.isNotEmpty) ...[
+                                  // Cart summary and confirm button for all orders
+                                  if (_cartItemsBySupplierId.isNotEmpty) ...[
                                     Divider(
                                       color: Colors.white.withOpacity(0.1),
                                       height: 24.h,
                                     ),
 
-                                    // Total
+                                    // Grand Total
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          'Total',
+                                          'Grand Total',
                                           style: GoogleFonts.spaceGrotesk(
                                             fontSize: 18.sp,
                                             fontWeight: FontWeight.w600,
@@ -564,7 +742,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                           ),
                                         ),
                                         Text(
-                                          '\$${_cartTotal.toStringAsFixed(2)}',
+                                          '\$${_grandTotal.toStringAsFixed(2)}',
                                           style: GoogleFonts.spaceGrotesk(
                                             fontSize: 20.sp,
                                             fontWeight: FontWeight.w700,
@@ -577,7 +755,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
 
                                     SizedBox(height: 16.h),
 
-                                    // Confirm button
+                                    // Confirm all orders button
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton(
@@ -591,15 +769,44 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                           padding: EdgeInsets.symmetric(
                                               vertical: 14.h),
                                         ),
-                                        onPressed: _placeOrder,
-                                        child: Text(
-                                          'Confirm Order',
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
-                                          ),
-                                        ),
+                                        onPressed: _isPlacingOrder
+                                            ? null
+                                            : _placeAllOrders,
+                                        child: _isPlacingOrder
+                                            ? Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  SizedBox(
+                                                    width: 20.w,
+                                                    height: 20.h,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2.w,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10.w),
+                                                  Text(
+                                                    'Processing Orders...',
+                                                    style: GoogleFonts
+                                                        .spaceGrotesk(
+                                                      fontSize: 16.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            : Text(
+                                                'Confirm All Orders',
+                                                style: GoogleFonts.spaceGrotesk(
+                                                  fontSize: 16.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ],
@@ -621,7 +828,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                         children: [
                           // Products list
                           Text(
-                            'Products ${_selectedSupplier != null ? "(${_productsList.length})" : ""}',
+                            'Products ${_selectedSupplier != null ? "(${_products.length})" : ""}',
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w600,
@@ -637,121 +844,146 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                               color: const Color.fromARGB(255, 36, 50, 69),
                               borderRadius: BorderRadius.circular(16.r),
                             ),
-                            child: _selectedSupplier == null
-                                ? _buildEmptyState(
-                                    icon: 'assets/images/choose_supplier.svg',
-                                    message: 'No products to display',
-                                    description:
-                                        'Please select a supplier first',
-                                    placeholderIcon: Icons.inventory_2_outlined,
+                            child: _isLoadingProducts
+                                ? Center(
+                                    child: CircularProgressIndicator(
+                                      color: const Color.fromARGB(
+                                          255, 105, 65, 198),
+                                    ),
                                   )
-                                : _productsList.isEmpty
+                                : _selectedSupplier == null
                                     ? _buildEmptyState(
-                                        icon: 'assets/images/no_products.svg',
-                                        message: 'No products available',
+                                        icon:
+                                            'assets/images/choose_supplier.svg',
+                                        message: 'No products to display',
                                         description:
-                                            'This supplier has no products listed',
+                                            'Please select a supplier first',
                                         placeholderIcon:
                                             Icons.inventory_2_outlined,
                                       )
-                                    : GridView.builder(
-                                        gridDelegate:
-                                            SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 3,
-                                          childAspectRatio: 1.2,
-                                          crossAxisSpacing: 16.w,
-                                          mainAxisSpacing: 16.h,
-                                        ),
-                                        itemCount: _productsList.length,
-                                        itemBuilder: (context, index) {
-                                          final product = _productsList[index];
-                                          final isSelected =
-                                              _selectedProduct?.id ==
-                                                  product.id;
-
-                                          return GestureDetector(
-                                            onTap: () =>
-                                                _selectProduct(product),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: isSelected
-                                                    ? const Color.fromARGB(
-                                                            255, 105, 65, 198)
-                                                        .withOpacity(0.2)
-                                                    : Colors.white
-                                                        .withOpacity(0.05),
-                                                borderRadius:
-                                                    BorderRadius.circular(12.r),
-                                                border: Border.all(
-                                                  color: isSelected
-                                                      ? const Color.fromARGB(
-                                                          255, 105, 65, 198)
-                                                      : Colors.transparent,
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              padding: EdgeInsets.all(12.w),
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  // Product image
-                                                  Expanded(
-                                                    child: Image.asset(
-                                                      product.image,
-                                                      errorBuilder: (context,
-                                                          error, stackTrace) {
-                                                        return Icon(
-                                                          Icons.image,
-                                                          size: 40.sp,
-                                                          color: Colors.white70,
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-
-                                                  SizedBox(height: 8.h),
-
-                                                  // Product name
-                                                  Text(
-                                                    product.name,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    textAlign: TextAlign.center,
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      fontSize: 14.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-
-                                                  SizedBox(height: 4.h),
-
-                                                  // Price
-                                                  Text(
-                                                    '\$${product.price.toStringAsFixed(2)}',
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      fontSize: 14.sp,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255,
-                                                              105,
-                                                              65,
-                                                              198),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                    : _products.isEmpty
+                                        ? _buildEmptyState(
+                                            icon:
+                                                'assets/images/no_products.svg',
+                                            message: 'No products available',
+                                            description:
+                                                'This supplier has no products listed',
+                                            placeholderIcon:
+                                                Icons.inventory_2_outlined,
+                                          )
+                                        : GridView.builder(
+                                            gridDelegate:
+                                                SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 3,
+                                              childAspectRatio: 1.2,
+                                              crossAxisSpacing: 16.w,
+                                              mainAxisSpacing: 16.h,
                                             ),
-                                          );
-                                        },
-                                      ),
+                                            itemCount: _products.length,
+                                            itemBuilder: (context, index) {
+                                              final product = _products[index];
+                                              final isSelected =
+                                                  _selectedProduct?.productId ==
+                                                      product.productId;
+
+                                              return GestureDetector(
+                                                onTap: () =>
+                                                    _selectProduct(product),
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? const Color.fromARGB(
+                                                                255,
+                                                                105,
+                                                                65,
+                                                                198)
+                                                            .withOpacity(0.2)
+                                                        : Colors.white
+                                                            .withOpacity(0.05),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12.r),
+                                                    border: Border.all(
+                                                      color: isSelected
+                                                          ? const Color
+                                                              .fromARGB(
+                                                              255, 105, 65, 198)
+                                                          : Colors.transparent,
+                                                      width: 1.5,
+                                                    ),
+                                                  ),
+                                                  padding: EdgeInsets.all(12.w),
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      // Product image
+                                                      Expanded(
+                                                        child: product.image !=
+                                                                null
+                                                            ? Image.network(
+                                                                product.image!,
+                                                                errorBuilder:
+                                                                    (context,
+                                                                        error,
+                                                                        stackTrace) {
+                                                                  return Icon(
+                                                                    Icons.image,
+                                                                    size: 40.sp,
+                                                                    color: Colors
+                                                                        .white70,
+                                                                  );
+                                                                },
+                                                              )
+                                                            : Icon(
+                                                                Icons.image,
+                                                                size: 40.sp,
+                                                                color: Colors
+                                                                    .white70,
+                                                              ),
+                                                      ),
+
+                                                      SizedBox(height: 8.h),
+
+                                                      // Product name
+                                                      Text(
+                                                        product.name,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
+                                                          fontSize: 14.sp,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+
+                                                      SizedBox(height: 4.h),
+
+                                                      // Price
+                                                      Text(
+                                                        '\$${product.costPrice.toStringAsFixed(2)}',
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
+                                                          fontSize: 14.sp,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: const Color
+                                                              .fromARGB(255,
+                                                              105, 65, 198),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
                           ),
 
                           SizedBox(height: 20.h),
@@ -798,17 +1030,23 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                                 BorderRadius.circular(12.r),
                                           ),
                                           padding: EdgeInsets.all(12.w),
-                                          child: Image.asset(
-                                            _selectedProduct!.image,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return Icon(
-                                                Icons.image,
-                                                size: 60.sp,
-                                                color: Colors.white70,
-                                              );
-                                            },
-                                          ),
+                                          child: _selectedProduct!.image != null
+                                              ? Image.network(
+                                                  _selectedProduct!.image!,
+                                                  errorBuilder: (context, error,
+                                                      stackTrace) {
+                                                    return Icon(
+                                                      Icons.image,
+                                                      size: 60.sp,
+                                                      color: Colors.white70,
+                                                    );
+                                                  },
+                                                )
+                                              : Icon(
+                                                  Icons.image,
+                                                  size: 60.sp,
+                                                  color: Colors.white70,
+                                                ),
                                         ),
 
                                         SizedBox(width: 20.w),
@@ -832,7 +1070,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                               Row(
                                                 children: [
                                                   Text(
-                                                    '\$${_selectedProduct!.price.toStringAsFixed(2)}',
+                                                    '\$${_selectedProduct!.costPrice.toStringAsFixed(2)}',
                                                     style: GoogleFonts
                                                         .spaceGrotesk(
                                                       fontSize: 20.sp,
@@ -866,7 +1104,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                                               6.r),
                                                     ),
                                                     child: Text(
-                                                      'In Stock: ${_selectedProduct!.stock}',
+                                                      'In Stock: ${_selectedProduct!.quantity}',
                                                       style: GoogleFonts
                                                           .spaceGrotesk(
                                                         fontSize: 14.sp,
@@ -894,67 +1132,13 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                               ),
                                               SizedBox(height: 4.h),
                                               Text(
-                                                _selectedProduct!.description,
+                                                _selectedProduct!.description ??
+                                                    'No description available',
                                                 style: GoogleFonts.spaceGrotesk(
                                                   fontSize: 14.sp,
                                                   color: Colors.white70,
                                                 ),
                                               ),
-
-                                              SizedBox(height: 16.h),
-
-                                              // Better price indicator
-                                              if (_selectedProduct!
-                                                      .lowPriceSupplier !=
-                                                  null) ...[
-                                                Container(
-                                                  width: double.infinity,
-                                                  padding: EdgeInsets.all(10.w),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color.fromARGB(
-                                                            255, 255, 232, 29)
-                                                        .withOpacity(0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8.r),
-                                                    border: Border.all(
-                                                      color:
-                                                          const Color.fromARGB(
-                                                                  255,
-                                                                  255,
-                                                                  232,
-                                                                  29)
-                                                              .withOpacity(0.3),
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.info_outline,
-                                                        color: const Color
-                                                            .fromARGB(
-                                                            255, 255, 232, 29),
-                                                        size: 18.sp,
-                                                      ),
-                                                      SizedBox(width: 8.w),
-                                                      Expanded(
-                                                        child: Text(
-                                                          'This product is available for \$${_selectedProduct!.lowPrice!.toStringAsFixed(2)} from ${_selectedProduct!.lowPriceSupplier}',
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            fontSize: 14.sp,
-                                                            color: const Color
-                                                                .fromARGB(255,
-                                                                255, 232, 29),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                SizedBox(height: 16.h),
-                                              ],
 
                                               const Spacer(),
 
@@ -1090,23 +1274,18 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                                                       ),
                                                       onPressed: _addToCart,
                                                       icon: Icon(
-                                                        color: Color.fromARGB(
-                                                            255, 255, 255, 255),
                                                         Icons.add_shopping_cart,
                                                         size: 18.sp,
+                                                        color: Colors.white,
                                                       ),
                                                       label: Text(
                                                         'Add to Cart',
                                                         style: GoogleFonts
                                                             .spaceGrotesk(
-                                                          color: Color.fromARGB(
-                                                              255,
-                                                              255,
-                                                              255,
-                                                              255),
                                                           fontSize: 16.sp,
                                                           fontWeight:
                                                               FontWeight.w600,
+                                                          color: Colors.white,
                                                         ),
                                                       ),
                                                     ),
@@ -1129,6 +1308,245 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Build a supplier cart section
+  Widget _buildSupplierCartSection(
+    int supplierId,
+    String supplierName,
+    List<CartItem> items,
+  ) {
+    final supplierTotal = _getSupplierCartTotal(supplierId);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Supplier header
+          Padding(
+            padding: EdgeInsets.all(12.w),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.store,
+                  size: 18.sp,
+                  color: const Color.fromARGB(255, 105, 65, 198),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    supplierName,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Text(
+                  '\$${supplierTotal.toStringAsFixed(2)}',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color.fromARGB(255, 105, 65, 198),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Cart items for this supplier
+          Container(
+            constraints: BoxConstraints(
+              maxHeight: 200.h,
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
+              itemCount: items.length,
+              separatorBuilder: (context, index) => Divider(
+                color: Colors.white.withOpacity(0.1),
+                height: 12.h,
+              ),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Product image
+                    Container(
+                      width: 40.w,
+                      height: 40.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: item.image != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8.r),
+                              child: Image.network(
+                                item.image!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.image,
+                                    size: 20.sp,
+                                    color: Colors.white70,
+                                  );
+                                },
+                              ),
+                            )
+                          : Icon(
+                              Icons.image,
+                              size: 20.sp,
+                              color: Colors.white70,
+                            ),
+                    ),
+
+                    SizedBox(width: 12.w),
+
+                    // Product details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Row(
+                            children: [
+                              Text(
+                                '${item.quantity} × \$${item.price.toStringAsFixed(2)}',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 12.sp,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '\$${(item.price * item.quantity).toStringAsFixed(2)}',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(width: 8.w),
+
+                    // Remove button
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Colors.red[300],
+                        size: 18.sp,
+                      ),
+                      onPressed: () =>
+                          _removeFromCart(supplierId, item.productId),
+                      constraints: BoxConstraints(
+                        minWidth: 30.w,
+                        minHeight: 30.h,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+
+          // Confirm order button for this supplier
+          Padding(
+            padding: EdgeInsets.all(12.w),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 0, 224, 116),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                ),
+                onPressed: _isPlacingOrder
+                    ? null
+                    : () async {
+                        setState(() {
+                          _isPlacingOrder = true;
+                        });
+
+                        try {
+                          final success = await _placeSupplierOrder(supplierId);
+
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Order placed successfully for $supplierName',
+                                  style: GoogleFonts.spaceGrotesk(),
+                                ),
+                                backgroundColor:
+                                    const Color.fromARGB(255, 0, 224, 116),
+                              ),
+                            );
+                          } else {
+                            setState(() {
+                              _errorMessage =
+                                  'Failed to place order for $supplierName';
+                            });
+                          }
+                        } catch (e) {
+                          setState(() {
+                            _errorMessage = 'Error placing order: $e';
+                          });
+                        } finally {
+                          setState(() {
+                            _isPlacingOrder = false;
+                          });
+                        }
+                      },
+                child: _isPlacingOrder
+                    ? SizedBox(
+                        width: 16.w,
+                        height: 16.h,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.w,
+                        ),
+                      )
+                    : Text(
+                        'Confirm Order',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1178,69 +1596,16 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
   }
 }
 
-// Model for product
-class ProductItem {
-  final String id;
-  final String name;
-  final String description;
-  final double price;
-  final String image;
-  final int stock;
-  final String? lowPriceSupplier;
-  final double? lowPrice;
-
-  ProductItem({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.image,
-    required this.stock,
-    this.lowPriceSupplier,
-    this.lowPrice,
-  });
-}
-
-// Model for cart item
-class CartItem {
-  final String id;
-  final String name;
-  final double price;
-  final int quantity;
-  final String image;
-
-  CartItem({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.quantity,
-    required this.image,
-  });
-
-  CartItem copyWith({
-    String? id,
-    String? name,
-    double? price,
-    int? quantity,
-    String? image,
-  }) {
-    return CartItem(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      price: price ?? this.price,
-      quantity: quantity ?? this.quantity,
-      image: image ?? this.image,
-    );
-  }
-}
-
-// Helper method to show the popup
-void showSupplierOrderPopup(BuildContext context) {
-  showDialog(
+Future<bool> showSupplierOrderPopup(BuildContext context) async {
+  // Show the dialog and wait for the result
+  final shouldRefresh = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
       return const SupplierOrderPopup();
     },
   );
+
+  // Return true if orders were placed, false otherwise
+  return shouldRefresh ?? false;
 }
