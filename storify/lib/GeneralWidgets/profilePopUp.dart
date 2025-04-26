@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 
 class Profilepopup extends StatefulWidget {
   final VoidCallback onCloseMenu;
@@ -17,17 +18,21 @@ class Profilepopup extends StatefulWidget {
 
 class _ProfilepopupState extends State<Profilepopup> {
   String? profilePictureUrl;
+  String? userName;
+  String? userRole;
 
   @override
   void initState() {
     super.initState();
-    _loadProfilePicture();
+    _loadUserData();
   }
 
-  Future<void> _loadProfilePicture() async {
+  Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       profilePictureUrl = prefs.getString('profilePicture');
+      userName = prefs.getString('name');
+      userRole = prefs.getString('currentRole');
     });
   }
 
@@ -61,7 +66,7 @@ class _ProfilepopupState extends State<Profilepopup> {
           ),
           SizedBox(height: 12.h),
           Text(
-            'Abu Ideh',
+            userName ?? 'User',
             style: GoogleFonts.spaceGrotesk(
               color: Colors.white,
               fontSize: 17.sp,
@@ -69,7 +74,7 @@ class _ProfilepopupState extends State<Profilepopup> {
             ),
           ),
           Text(
-            'Admin',
+            userRole ?? 'Guest',
             style: GoogleFonts.spaceGrotesk(
                 color: Colors.white70,
                 fontSize: 15.sp,
@@ -141,9 +146,13 @@ class _ProfilepopupState extends State<Profilepopup> {
 
 // Make sure to also clear the profilePicture when logging out
 Future<void> _logout(BuildContext context) async {
+  // Use AuthService to logout from all roles
+  await AuthService.logoutFromAllRoles();
+
+  // Clear profile data
   final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('authToken');
-  await prefs.remove('profilePicture'); // Also remove the profile picture
+  await prefs.remove('profilePicture');
+  await prefs.remove('name');
 
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute(builder: (context) => const LoginScreen()),

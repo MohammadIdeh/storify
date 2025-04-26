@@ -1,41 +1,138 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  /// Save raw JWT (no "Bearer ") into SharedPreferences.
-  static Future<void> saveToken(String token) async {
+  // Constants for SharedPreferences keys
+  static const String _currentRoleKey = 'currentRole';
+
+  /// Save token with role-specific key
+  static Future<void> saveToken(String token, String roleName) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = token.trim();
-    await prefs.setString('authToken', raw);
-    print('🗝️ Saved token: $raw');
+
+    // Store the token with a role-specific key
+    final roleKey = 'authToken_$roleName';
+    await prefs.setString(roleKey, raw);
+
+    // Save the current active role
+    await prefs.setString(_currentRoleKey, roleName);
+
+    print('🗝️ Saved $roleName token: $raw');
   }
 
-  /// Retrieve raw JWT from SharedPreferences.
-  static Future<String?> getToken() async {
+  /// Get current active role
+  static Future<String?> getCurrentRole() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken')?.trim();
+    return prefs.getString(_currentRoleKey);
+  }
+
+  /// Retrieve token for a specific role
+  static Future<String?> getTokenForRole(String roleName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final roleKey = 'authToken_$roleName';
+    final token = prefs.getString(roleKey)?.trim();
+
     if (token == null || token.isEmpty) {
-      print('⚠️ No token in storage.');
+      print('⚠️ No token found for role: $roleName');
       return null;
     }
-    print('🔍 Retrieved token: $token');
+
+    print('🔍 Retrieved $roleName token: $token');
     return token;
   }
 
-  /// Build headers for any authenticated API call.
-  /// Always returns JSON content type; if a token exists,
-  /// includes the Authorization header WITHOUT "Bearer "
-  static Future<Map<String, String>> getAuthHeaders() async {
-    final token = await getToken();
+  /// Get token for the current active role
+  static Future<String?> getToken() async {
+    final currentRole = await getCurrentRole();
+    if (currentRole == null) {
+      print('⚠️ No current role set.');
+      return null;
+    }
+
+    return getTokenForRole(currentRole);
+  }
+
+  /// Build headers for the current role or a specific role
+  static Future<Map<String, String>> getAuthHeaders({String? role}) async {
     final headers = {'Content-Type': 'application/json'};
+
+    String? token;
+    if (role != null) {
+      token = await getTokenForRole(role);
+    } else {
+      token = await getToken();
+    }
+
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
+
     return headers;
   }
 
-  /// Convenience: check if a token is present (client‑side).
+  /// Check if user is logged in with any role
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null;
+  }
+
+  /// Check if user is logged in with a specific role
+  static Future<bool> isLoggedInAsRole(String roleName) async {
+    final token = await getTokenForRole(roleName);
+    return token != null;
+  }
+
+  /// Get all roles the user is logged in as
+  static Future<List<String>> getLoggedInRoles() async {
+    final prefs = await SharedPreferences.getInstance();
+    final allKeys = prefs.getKeys();
+
+    List<String> roles = [];
+    for (var key in allKeys) {
+      if (key.startsWith('authToken_')) {
+        roles.add(key.replaceFirst('authToken_', ''));
+      }
+    }
+
+    return roles;
+  }
+
+  /// Switch to a different role (if logged in with that role)
+  static Future<bool> switchToRole(String roleName) async {
+    if (await isLoggedInAsRole(roleName)) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_currentRoleKey, roleName);
+      print('🔄 Switched to role: $roleName');
+      return true;
+    }
+    return false;
+  }
+
+  /// Logout from a specific role
+  static Future<void> logoutFromRole(String roleName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final roleKey = 'authToken_$roleName';
+    await prefs.remove(roleKey);
+
+    // If this was the current role, clear the current role
+    final currentRole = await getCurrentRole();
+    if (currentRole == roleName) {
+      await prefs.remove(_currentRoleKey);
+    }
+
+    print('🚪 Logged out from role: $roleName');
+  }
+
+  /// Logout from all roles
+  static Future<void> logoutFromAllRoles() async {
+    final prefs = await SharedPreferences.getInstance();
+    final roles = await getLoggedInRoles();
+
+    for (var role in roles) {
+      final roleKey = 'authToken_$role';
+      await prefs.remove(roleKey);
+    }
+
+    await prefs.remove(_currentRoleKey);
+    print('🚪 Logged out from all roles');
   }
 }

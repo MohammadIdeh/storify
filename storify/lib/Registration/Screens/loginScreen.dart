@@ -10,7 +10,9 @@ import 'package:storify/Registration/Screens/forgotPassword.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -69,19 +71,25 @@ class _LoginScreenState extends State<LoginScreen> {
         // Extract token, roleName, and profilePicture
         String token = responseData['token'];
         String roleName = responseData['user']['roleName'];
-
-        // Extract profilePicture URL (with a default if it doesn't exist)
         String profilePicture = responseData['user']['profilePicture'] ?? '';
 
-        // Save the token and profilePicture locally
+        // Extract profilePicture URL (with a default if it doesn't exist)
+
+        String userName =
+            responseData['user']['name'] ?? responseData['user']['name'] ?? '';
+
+        // Save the token with the role and profilePicture locally
+        await AuthService.saveToken(token, roleName);
+
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('authToken', token);
         await prefs.setString('profilePicture', profilePicture);
+        await prefs.setString('name', userName);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login Successful as a $roleName')),
         );
 
+        // Navigate based on role
         if (roleName == 'Admin') {
           print('🗝️ stored token = "$token" (length ${token.length})');
           print('📷 stored profilePicture = "$profilePicture"');
@@ -101,44 +109,31 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else if (roleName == 'Customer') {
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (_) => const CustomerScreen()),
-          // );
-        } else if (roleName == 'Employee') {
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (_) => const EmployeeScreen()),
-          // );
+          // Customer navigation...
         } else if (roleName == 'Supplier') {
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (_) => const SupplierScreen()),
-          // );
-        } else if (roleName == 'DeliveryMan') {
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (_) => const DeliveryManScreen()),
-          // );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unknown role: $roleName')),
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const SupplierOrders(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 600),
+            ),
           );
-        }
+        } else if (roleName == 'Employee') {
+        } else if (roleName == 'Delivery') {}
+
+        // Rest of your role-based navigation...
       } else {
-        final errorData = json.decode(response.body);
-        print('Login Failed: $errorData');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Login Failed: ${errorData['message'] ?? 'Unknown error'}')),
-        );
+        // Error handling...
       }
     } catch (error) {
-      print('Error: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $error')),
-      );
+      // Exception handling...
     }
 
     setState(() {

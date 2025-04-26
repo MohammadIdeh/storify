@@ -1,31 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/admin/screens/productOverview.dart';
-import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
-class ProductslistTable extends StatefulWidget {
-  final int selectedFilterIndex; // 0: All, 1: Active, 2: UnActive
+// Product model for the table
+class ProductModel {
+  final int productId;
+  final String name;
+  final String image;
+  final double costPrice;
+  final double sellPrice;
+
+  final String categoryName;
+  final bool availability;
+
+  ProductModel({
+    required this.productId,
+    required this.name,
+    required this.image,
+    required this.costPrice,
+    required this.sellPrice,
+    required this.categoryName,
+    required this.availability,
+  });
+}
+
+class ProductsTableSupplier extends StatefulWidget {
+  final int selectedFilterIndex; // 0: All, 1: Active, 2: Not Active
   final String searchQuery;
-  final VoidCallback? onOperationCompleted; // New callback for notifying parent
-  
-  const ProductslistTable({
+
+  const ProductsTableSupplier({
     super.key,
     required this.selectedFilterIndex,
     required this.searchQuery,
-    this.onOperationCompleted, // Optional callback
   });
 
   @override
-  State<ProductslistTable> createState() => ProductslistTableState();
+  State<ProductsTableSupplier> createState() => _ProductsTableSupplierState();
 }
 
-class ProductslistTableState extends State<ProductslistTable> {
-  List<ProductItemInformation> _allProducts = [];
+class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
+  List<ProductModel> _allProducts = [];
   bool _isLoading = true;
-  String? _error;
 
   int _currentPage = 1;
   int? _sortColumnIndex;
@@ -35,68 +50,133 @@ class ProductslistTableState extends State<ProductslistTable> {
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+    // Instead of fetching, load fake data
+    _loadFakeData();
   }
 
-  // Public method to refresh products (can be called from parent)
-  void refreshProducts() {
-    _fetchProducts();
-  }
+  void _loadFakeData() {
+    // Simulate loading delay
+    Future.delayed(const Duration(seconds: 1), () {
+      _allProducts = [
+        ProductModel(
+          productId: 1001,
+          name: "Premium T-Shirt",
+          image: "https://picsum.photos/200",
+          costPrice: 15.99,
+          sellPrice: 29.99,
+          categoryName: "Clothing",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1002,
+          name: "Wireless Headphones",
+          image: "https://picsum.photos/201",
+          costPrice: 45.50,
+          sellPrice: 89.99,
+          categoryName: "Electronics",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1003,
+          name: "Ceramic Coffee Mug",
+          image: "https://picsum.photos/202",
+          costPrice: 4.25,
+          sellPrice: 12.99,
+          categoryName: "Kitchenware",
+          availability: false,
+        ),
+        ProductModel(
+          productId: 1004,
+          name: "Leather Wallet",
+          image: "https://picsum.photos/203",
+          costPrice: 18.75,
+          sellPrice: 39.99,
+          categoryName: "Accessories",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1005,
+          name: "Fitness Tracker",
+          image: "https://picsum.photos/204",
+          costPrice: 35.00,
+          sellPrice: 79.99,
+          categoryName: "Electronics",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1006,
+          name: "Stainless Water Bottle",
+          image: "https://picsum.photos/205",
+          costPrice: 8.50,
+          sellPrice: 24.99,
+          categoryName: "Kitchenware",
+          availability: false,
+        ),
+        ProductModel(
+          productId: 1007,
+          name: "Cotton Hoodie",
+          image: "https://picsum.photos/206",
+          costPrice: 22.99,
+          sellPrice: 49.99,
+          categoryName: "Clothing",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1008,
+          name: "Bluetooth Speaker",
+          image: "https://picsum.photos/207",
+          costPrice: 32.50,
+          sellPrice: 69.99,
+          categoryName: "Electronics",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1009,
+          name: "Smartphone Case",
+          image: "https://picsum.photos/208",
+          costPrice: 5.99,
+          sellPrice: 19.99,
+          categoryName: "Accessories",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1010,
+          name: "Canvas Backpack",
+          image: "https://picsum.photos/209",
+          costPrice: 25.00,
+          sellPrice: 54.99,
+          categoryName: "Accessories",
+          availability: false,
+        ),
+        ProductModel(
+          productId: 1011,
+          name: "Yoga Mat",
+          image: "https://picsum.photos/210",
+          costPrice: 12.75,
+          sellPrice: 29.99,
+          categoryName: "Fitness",
+          availability: true,
+        ),
+        ProductModel(
+          productId: 1012,
+          name: "Desk Lamp",
+          image: "https://picsum.photos/211",
+          costPrice: 15.25,
+          sellPrice: 34.99,
+          categoryName: "Home Decor",
+          availability: true,
+        ),
+      ];
 
-  // Helper method to notify parent when operations complete
-  void _notifyOperationCompleted() {
-    if (widget.onOperationCompleted != null) {
-      widget.onOperationCompleted!();
-    }
-  }
-
-  Future<void> _fetchProducts() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final response = await http.get(
-        Uri.parse('https://finalproject-a5ls.onrender.com/product/products'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['products'] != null) {
-          setState(() {
-            _allProducts = (data['products'] as List)
-                .map((product) => ProductItemInformation.fromJson(product))
-                .toList();
-            _isLoading = false;
-          });
-          
-          // Notify parent that products have been loaded
-          // This ensures dashboard stats are in sync with product list
-          _notifyOperationCompleted();
-        } else {
-          setState(() {
-            _error = 'Invalid data format';
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _error = 'Failed to load products. Error: ${response.statusCode}';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
       setState(() {
-        _error = 'Network error: $e';
         _isLoading = false;
       });
-    }
+    });
   }
 
   /// Returns filtered, searched, and sorted products.
-  List<ProductItemInformation> get filteredProducts {
-    List<ProductItemInformation> temp = List.from(_allProducts);
+  List<ProductModel> get filteredProducts {
+    List<ProductModel> temp = List.from(_allProducts);
     // Filter by availability.
     if (widget.selectedFilterIndex == 1) {
       temp = temp.where((p) => p.availability).toList();
@@ -116,8 +196,6 @@ class ProductslistTableState extends State<ProductslistTable> {
         temp.sort((a, b) => a.costPrice.compareTo(b.costPrice));
       } else if (_sortColumnIndex == 2) {
         temp.sort((a, b) => a.sellPrice.compareTo(b.sellPrice));
-      } else if (_sortColumnIndex == 3) {
-        temp.sort((a, b) => a.qty.compareTo(b.qty));
       }
       if (!_sortAscending) {
         temp = temp.reversed.toList();
@@ -137,7 +215,6 @@ class ProductslistTableState extends State<ProductslistTable> {
         color: Colors.white,
       );
     }
-    // Changed mainAxisAlignment to start so everything is left-aligned.
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -168,49 +245,6 @@ class ProductslistTableState extends State<ProductslistTable> {
       return Center(
         child: CircularProgressIndicator(
           color: const Color.fromARGB(255, 105, 65, 198),
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Error loading products',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              _error!,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(height: 16.h),
-            ElevatedButton(
-              onPressed: _fetchProducts,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-              child: Text(
-                'Retry',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
         ),
       );
     }
@@ -300,49 +334,26 @@ class ProductslistTableState extends State<ProductslistTable> {
                         },
                       ),
                       // Qty Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Qty", 3),
-                        onSort: (columnIndex, _) {
-                          _onSort(3);
-                        },
-                      ),
+
                       // Category Column
                       const DataColumn(label: Text("Category")),
                       // Availability Column
                       const DataColumn(label: Text("Availability")),
+                      // Actions Column (Edit, Delete)
+                      const DataColumn(label: Text("Actions")),
                     ],
                     rows: visibleProducts.map((product) {
                       return DataRow(
-                        onSelectChanged: (selected) async {
+                        onSelectChanged: (selected) {
                           if (selected == true) {
-                            final updatedProduct = await Navigator.of(context)
-                                .push<ProductItemInformation>(
-                              PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        Productoverview(product: product),
-                                transitionsBuilder: (context, animation,
-                                        secondaryAnimation, child) =>
-                                    FadeTransition(
-                                        opacity: animation, child: child),
-                                transitionDuration:
-                                    const Duration(milliseconds: 400),
+                            // For now just show a snackbar to indicate row was clicked
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Product ${product.name} selected'),
+                                duration: const Duration(seconds: 1),
                               ),
                             );
-                            // If updatedProduct is not null, update your data source.
-                            if (updatedProduct != null) {
-                              setState(() {
-                                final index = _allProducts.indexWhere(
-                                    (p) => p.productId == product.productId);
-                                if (index != -1) {
-                                  _allProducts[index] = updatedProduct;
-                                }
-                              });
-                              
-                              // Notify parent that a product was updated
-                              // This will trigger the dashboard stats refresh
-                              _notifyOperationCompleted();
-                            }
                           }
                         },
                         cells: [
@@ -391,12 +402,52 @@ class ProductslistTableState extends State<ProductslistTable> {
                           DataCell(Text(
                               "\$${product.sellPrice.toStringAsFixed(2)}")),
                           // Qty cell
-                          DataCell(Text("${product.qty}")),
+
                           // Category cell
                           DataCell(Text(product.categoryName)),
                           // Availability cell
                           DataCell(
-                              _buildAvailabilityPill(product.availability)),
+                            _buildAvailabilityPill(product.availability),
+                          ),
+                          // Actions cell
+                          DataCell(
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: Colors.blue,
+                                    size: 20.sp,
+                                  ),
+                                  onPressed: () {
+                                    // Show edit dialog/page
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Edit ${product.name}'),
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 20.sp,
+                                  ),
+                                  onPressed: () {
+                                    // Show delete confirmation
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Delete ${product.name}'),
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       );
                     }).toList(),
@@ -462,7 +513,7 @@ class ProductslistTableState extends State<ProductslistTable> {
     final Color bgColor = isActive
         ? const Color.fromARGB(178, 0, 224, 116) // green
         : const Color.fromARGB(255, 229, 62, 62); // red
-    final String label = isActive ? "Active" : "UnActive";
+    final String label = isActive ? "Active" : "Not Active";
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
