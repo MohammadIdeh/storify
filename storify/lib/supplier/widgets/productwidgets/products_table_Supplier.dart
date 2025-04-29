@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 
 // Product model for the table
 class ProductModel {
@@ -9,9 +13,11 @@ class ProductModel {
   final String image;
   final double costPrice;
   final double sellPrice;
-
   final String categoryName;
-  final bool availability;
+  final String status;
+  final int? quantity;
+  final String? description;
+  final double? priceSupplier;
 
   ProductModel({
     required this.productId,
@@ -20,8 +26,29 @@ class ProductModel {
     required this.costPrice,
     required this.sellPrice,
     required this.categoryName,
-    required this.availability,
+    required this.status,
+    this.quantity,
+    this.description,
+    this.priceSupplier,
   });
+
+  // Factory constructor to create a ProductModel from JSON
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      productId: json['productId'],
+      name: json['name'],
+      image: json['image'] ?? 'https://picsum.photos/200',
+      costPrice: double.parse(json['costPrice'].toString()),
+      sellPrice: double.parse(json['sellPrice'].toString()),
+      categoryName: json['category']['categoryName'] ?? 'Unknown',
+      status: json['status'] ?? 'Not Active',
+      quantity: json['quantity'],
+      description: json['description'],
+      priceSupplier: json['priceSupplier'] != null
+          ? double.parse(json['priceSupplier'].toString())
+          : null,
+    );
+  }
 }
 
 class ProductsTableSupplier extends StatefulWidget {
@@ -29,178 +56,360 @@ class ProductsTableSupplier extends StatefulWidget {
   final String searchQuery;
 
   const ProductsTableSupplier({
-    super.key,
+    super.key, // Make sure key is passed to super
     required this.selectedFilterIndex,
     required this.searchQuery,
   });
 
   @override
-  State<ProductsTableSupplier> createState() => _ProductsTableSupplierState();
+  // ignore: library_private_types_in_public_api
+  ProductsTableSupplierState createState() => ProductsTableSupplierState();
 }
 
-class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
+class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   List<ProductModel> _allProducts = [];
   bool _isLoading = true;
+  int? _supplierId;
 
   int _currentPage = 1;
   int? _sortColumnIndex;
   bool _sortAscending = true;
   final int _itemsPerPage = 9;
+  TextEditingController _priceController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Instead of fetching, load fake data
-    _loadFakeData();
+    _loadSupplierId().then((_) => _fetchProducts());
   }
 
-  void _loadFakeData() {
-    // Simulate loading delay
-    Future.delayed(const Duration(seconds: 1), () {
-      _allProducts = [
-        ProductModel(
-          productId: 1001,
-          name: "Premium T-Shirt",
-          image: "https://picsum.photos/200",
-          costPrice: 15.99,
-          sellPrice: 29.99,
-          categoryName: "Clothing",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1002,
-          name: "Wireless Headphones",
-          image: "https://picsum.photos/201",
-          costPrice: 45.50,
-          sellPrice: 89.99,
-          categoryName: "Electronics",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1003,
-          name: "Ceramic Coffee Mug",
-          image: "https://picsum.photos/202",
-          costPrice: 4.25,
-          sellPrice: 12.99,
-          categoryName: "Kitchenware",
-          availability: false,
-        ),
-        ProductModel(
-          productId: 1004,
-          name: "Leather Wallet",
-          image: "https://picsum.photos/203",
-          costPrice: 18.75,
-          sellPrice: 39.99,
-          categoryName: "Accessories",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1005,
-          name: "Fitness Tracker",
-          image: "https://picsum.photos/204",
-          costPrice: 35.00,
-          sellPrice: 79.99,
-          categoryName: "Electronics",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1006,
-          name: "Stainless Water Bottle",
-          image: "https://picsum.photos/205",
-          costPrice: 8.50,
-          sellPrice: 24.99,
-          categoryName: "Kitchenware",
-          availability: false,
-        ),
-        ProductModel(
-          productId: 1007,
-          name: "Cotton Hoodie",
-          image: "https://picsum.photos/206",
-          costPrice: 22.99,
-          sellPrice: 49.99,
-          categoryName: "Clothing",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1008,
-          name: "Bluetooth Speaker",
-          image: "https://picsum.photos/207",
-          costPrice: 32.50,
-          sellPrice: 69.99,
-          categoryName: "Electronics",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1009,
-          name: "Smartphone Case",
-          image: "https://picsum.photos/208",
-          costPrice: 5.99,
-          sellPrice: 19.99,
-          categoryName: "Accessories",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1010,
-          name: "Canvas Backpack",
-          image: "https://picsum.photos/209",
-          costPrice: 25.00,
-          sellPrice: 54.99,
-          categoryName: "Accessories",
-          availability: false,
-        ),
-        ProductModel(
-          productId: 1011,
-          name: "Yoga Mat",
-          image: "https://picsum.photos/210",
-          costPrice: 12.75,
-          sellPrice: 29.99,
-          categoryName: "Fitness",
-          availability: true,
-        ),
-        ProductModel(
-          productId: 1012,
-          name: "Desk Lamp",
-          image: "https://picsum.photos/211",
-          costPrice: 15.25,
-          sellPrice: 34.99,
-          categoryName: "Home Decor",
-          availability: true,
-        ),
-      ];
+  void refreshProducts() {
+    print('Refreshing products table, clearing existing data...');
 
+    // Clear existing products first
+    setState(() {
+      _allProducts = [];
+      _isLoading = true;
+    });
+
+    // Force a clean fetch with a longer delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _fetchProducts().then((_) {
+        print(
+            'Products refresh completed. Found ${_allProducts.length} products');
+        // If no products found, try one more time after a delay
+        if (_allProducts.isEmpty) {
+          print('No products found, trying once more...');
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            _fetchProducts().then((_) {
+              print(
+                  'Second refresh completed. Found ${_allProducts.length} products');
+            });
+          });
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  // Load supplierId from SharedPreferences
+  Future<void> _loadSupplierId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _supplierId = prefs.getInt('supplierId');
+    });
+    print(
+        '📦 Loaded supplierId for table: $_supplierId - Products will be fetched for this ID');
+
+    // Print the token to check if it contains the correct supplier ID
+    final token = await AuthService.getToken();
+    print(
+        '🔑 Using auth token: ${token?.substring(0, 20)}... (${token?.length} chars)');
+  }
+
+  // Fetch products from the API
+  Future<void> _fetchProducts() async {
+    if (_supplierId == null) {
+      print('⚠️ No supplierId found, cannot fetch products');
       setState(() {
         _isLoading = false;
       });
-    });
+      return;
+    }
+
+    try {
+      final headers = await AuthService.getAuthHeaders();
+      print('📤 Fetching products for supplier ID: $_supplierId');
+
+      final response = await http.get(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/supplierOrders/supplier/$_supplierId/products'),
+        headers: headers,
+      );
+
+      print('📥 Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('📦 Data received: ${data['products']?.length ?? 0} products');
+
+        if (data['products'] != null && data['products'] is List) {
+          List<ProductModel> products = [];
+
+          for (var product in data['products']) {
+            products.add(ProductModel.fromJson(product));
+          }
+
+          setState(() {
+            _allProducts = products;
+            _isLoading = false;
+          });
+          print('✅ Table updated with ${products.length} products');
+        } else {
+          print('⚠️ Invalid response format: ${response.body}');
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      } else {
+        print(
+            '⚠️ Error fetching products: ${response.statusCode}, Body: ${response.body}');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Exception fetching products: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Update product price
+  Future<void> _updateProductPrice(int productId, double price) async {
+    if (_supplierId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Supplier ID not found')),
+      );
+      return;
+    }
+
+    try {
+      // Get auth headers and add Content-Type
+      final headers = await AuthService.getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      // Log request details for debugging
+      print(
+          '🔄 Updating price for product $productId with supplier $_supplierId');
+      print('📤 Request body: ${json.encode({'priceSupplier': price})}');
+      print('🔑 Request headers: $headers');
+
+      final url = Uri.parse(
+          'https://finalproject-a5ls.onrender.com/supplierOrders/$_supplierId/products/$productId/price');
+      print('🌐 Request URL: $url');
+
+      // Make the API call
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: json.encode({'priceSupplier': price}),
+      );
+
+      // Log full response for debugging
+      print('📥 Response status code: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Price updated: ${data['message']}');
+
+        // Refresh products list
+        await _fetchProducts();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Price updated successfully')),
+        );
+      } else {
+        print(
+            '⚠️ Error updating price: ${response.statusCode}, ${response.body}');
+
+        // Show more detailed error message
+        String errorMessage = 'Failed to update price';
+
+        try {
+          // Try to extract error message from response body
+          final errorData = json.decode(response.body);
+          if (errorData['message'] != null) {
+            errorMessage = errorData['message'];
+          }
+        } catch (e) {
+          // If parsing fails, use the default message
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
+    } catch (e) {
+      print('⚠️ Exception updating price: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  // Show update price dialog
+  Future<void> _showUpdatePriceDialog(ProductModel product) async {
+    // Initialize with current price (or cost price if no supplier price set)
+    _priceController.text =
+        product.priceSupplier?.toString() ?? product.costPrice.toString();
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+          title: Text(
+            'Update Price',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                  'Product: ${product.name} (ID: ${product.productId})',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'Current Cost Price: \$${product.costPrice.toStringAsFixed(2)}',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white70,
+                  ),
+                ),
+                if (product.priceSupplier != null)
+                  Text(
+                    'Current Supplier Price: \$${product.priceSupplier!.toStringAsFixed(2)}',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                    ),
+                  ),
+                SizedBox(height: 16.h),
+                Text(
+                  'New Supplier Price',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                TextField(
+                  controller: _priceController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                  ),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color.fromARGB(255, 29, 41, 57),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    prefixText: '\$ ',
+                    prefixStyle: GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Update',
+                style: GoogleFonts.spaceGrotesk(
+                  color: const Color.fromARGB(255, 105, 65, 198),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                final priceText = _priceController.text.trim();
+                final newPrice = double.tryParse(priceText);
+                if (newPrice != null) {
+                  print(
+                      '💲 Updating product ${product.productId} price to: $newPrice');
+                  _updateProductPrice(product.productId, newPrice);
+                  Navigator.of(context).pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter a valid price')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Returns filtered, searched, and sorted products.
   List<ProductModel> get filteredProducts {
     List<ProductModel> temp = List.from(_allProducts);
-    // Filter by availability.
+
+    // Filter by status
     if (widget.selectedFilterIndex == 1) {
-      temp = temp.where((p) => p.availability).toList();
+      // Active
+      temp = temp.where((p) => p.status == "Active").toList();
     } else if (widget.selectedFilterIndex == 2) {
-      temp = temp.where((p) => !p.availability).toList();
+      // Not Active
+      temp = temp.where((p) => p.status == "Not Active").toList();
     }
-    // Search by name (case-insensitive, starts with).
+
+    // Search by name or product ID
     if (widget.searchQuery.isNotEmpty) {
       temp = temp
           .where((p) =>
-              p.name.toLowerCase().startsWith(widget.searchQuery.toLowerCase()))
+              p.name.toLowerCase().contains(widget.searchQuery.toLowerCase()) ||
+              p.productId.toString().contains(widget.searchQuery))
           .toList();
     }
+
     // Apply sorting if set
     if (_sortColumnIndex != null) {
       if (_sortColumnIndex == 1) {
         temp.sort((a, b) => a.costPrice.compareTo(b.costPrice));
-      } else if (_sortColumnIndex == 2) {
-        temp.sort((a, b) => a.sellPrice.compareTo(b.sellPrice));
       }
       if (!_sortAscending) {
         temp = temp.reversed.toList();
       }
     }
+
     return temp;
   }
 
@@ -258,7 +467,9 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
     final endIndex = startIndex + _itemsPerPage > totalItems
         ? totalItems
         : startIndex + _itemsPerPage;
-    final visibleProducts = filteredProducts.sublist(startIndex, endIndex);
+    final visibleProducts = filteredProducts.isEmpty
+        ? []
+        : filteredProducts.sublist(startIndex, endIndex);
 
     // Heading row color
     final Color headingColor = const Color.fromARGB(255, 36, 50, 69);
@@ -326,20 +537,13 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
                           _onSort(1);
                         },
                       ),
-                      // Sell Price Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Sell Price", 2),
-                        onSort: (columnIndex, _) {
-                          _onSort(2);
-                        },
-                      ),
-                      // Qty Column (sortable)
-
                       // Category Column
                       const DataColumn(label: Text("Category")),
-                      // Availability Column
-                      const DataColumn(label: Text("Availability")),
-                      // Actions Column (Edit, Delete)
+                      // Status Column
+                      const DataColumn(label: Text("Status")),
+                      // Supplier Price Column
+                      const DataColumn(label: Text("Supplier Price")),
+                      // Actions Column (Update Price icon)
                       const DataColumn(label: Text("Actions")),
                     ],
                     rows: visibleProducts.map((product) {
@@ -398,16 +602,21 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
                           // Cost Price cell
                           DataCell(Text(
                               "\$${product.costPrice.toStringAsFixed(2)}")),
-                          // Sell Price cell
-                          DataCell(Text(
-                              "\$${product.sellPrice.toStringAsFixed(2)}")),
-                          // Qty cell
-
                           // Category cell
                           DataCell(Text(product.categoryName)),
-                          // Availability cell
+                          // Status cell
                           DataCell(
-                            _buildAvailabilityPill(product.availability),
+                            _buildStatusPill(product.status),
+                          ),
+                          // Supplier Price cell
+                          DataCell(
+                            product.priceSupplier != null
+                                ? Text(
+                                    "\$${product.priceSupplier!.toStringAsFixed(2)}")
+                                : Text("Not set",
+                                    style: TextStyle(
+                                        fontStyle: FontStyle.italic,
+                                        color: Colors.grey)),
                           ),
                           // Actions cell
                           DataCell(
@@ -415,35 +624,14 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
                               children: [
                                 IconButton(
                                   icon: Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
+                                    Icons.push_pin,
+                                    color: Colors.amber,
                                     size: 20.sp,
                                   ),
                                   onPressed: () {
-                                    // Show edit dialog/page
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Edit ${product.name}'),
-                                        duration: const Duration(seconds: 1),
-                                      ),
-                                    );
+                                    _showUpdatePriceDialog(product);
                                   },
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                    size: 20.sp,
-                                  ),
-                                  onPressed: () {
-                                    // Show delete confirmation
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Delete ${product.name}'),
-                                        duration: const Duration(seconds: 1),
-                                      ),
-                                    );
-                                  },
+                                  tooltip: "Update Supplier Price",
                                 ),
                               ],
                             ),
@@ -455,52 +643,54 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
                 ),
               ),
               // Pagination row
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
-                child: Row(
-                  children: [
-                    Spacer(),
-                    Text(
-                      "Total $totalItems items",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
+              if (filteredProducts.isNotEmpty)
+                Padding(
+                  padding:
+                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+                  child: Row(
+                    children: [
+                      Spacer(),
+                      Text(
+                        "Total $totalItems items",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 10.w),
-                    // Left arrow
-                    IconButton(
-                      icon: Icon(Icons.arrow_back,
-                          size: 20.sp, color: Colors.white70),
-                      onPressed: _currentPage > 1
-                          ? () {
-                              setState(() {
-                                _currentPage--;
-                              });
-                            }
-                          : null,
-                    ),
-                    Row(
-                      children: List.generate(totalPages, (index) {
-                        return _buildPageButton(index + 1);
-                      }),
-                    ),
-                    // Right arrow
-                    IconButton(
-                      icon: Icon(Icons.arrow_forward,
-                          size: 20.sp, color: Colors.white70),
-                      onPressed: _currentPage < totalPages
-                          ? () {
-                              setState(() {
-                                _currentPage++;
-                              });
-                            }
-                          : null,
-                    ),
-                  ],
+                      SizedBox(width: 10.w),
+                      // Left arrow
+                      IconButton(
+                        icon: Icon(Icons.arrow_back,
+                            size: 20.sp, color: Colors.white70),
+                        onPressed: _currentPage > 1
+                            ? () {
+                                setState(() {
+                                  _currentPage--;
+                                });
+                              }
+                            : null,
+                      ),
+                      Row(
+                        children: List.generate(totalPages, (index) {
+                          return _buildPageButton(index + 1);
+                        }),
+                      ),
+                      // Right arrow
+                      IconButton(
+                        icon: Icon(Icons.arrow_forward,
+                            size: 20.sp, color: Colors.white70),
+                        onPressed: _currentPage < totalPages
+                            ? () {
+                                setState(() {
+                                  _currentPage++;
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         );
@@ -508,12 +698,20 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
     );
   }
 
-  /// Availability pill.
-  Widget _buildAvailabilityPill(bool isActive) {
-    final Color bgColor = isActive
-        ? const Color.fromARGB(178, 0, 224, 116) // green
-        : const Color.fromARGB(255, 229, 62, 62); // red
-    final String label = isActive ? "Active" : "Not Active";
+  /// Status pill with different colors based on status.
+  Widget _buildStatusPill(String status) {
+    late Color bgColor;
+
+    switch (status) {
+      case "Active":
+        bgColor = const Color.fromARGB(178, 0, 224, 116); // green
+        break;
+      case "Not Active":
+        bgColor = const Color.fromARGB(255, 229, 62, 62); // red
+        break;
+      default:
+        bgColor = Colors.grey; // default
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
@@ -523,7 +721,7 @@ class _ProductsTableSupplierState extends State<ProductsTableSupplier> {
         border: Border.all(color: bgColor),
       ),
       child: Text(
-        label,
+        status,
         style: GoogleFonts.spaceGrotesk(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,

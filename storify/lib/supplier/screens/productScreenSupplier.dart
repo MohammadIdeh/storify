@@ -4,8 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
-import 'package:storify/supplier/widgets/orderwidgets/OrderDetails_Model.dart';
-import 'package:storify/supplier/widgets/orderwidgets/apiService.dart';
 import 'package:storify/supplier/widgets/navbar.dart';
 import 'package:storify/supplier/widgets/productwidgets/addNewProductWidget.dart';
 import 'package:storify/supplier/widgets/productwidgets/products_table_Supplier.dart';
@@ -18,13 +16,14 @@ class SupplierProducts extends StatefulWidget {
 }
 
 class _SupplierProductsState extends State<SupplierProducts> {
-  // API Service
+  final _tableKey = GlobalKey<ProductsTableSupplierState>();
 
   // Bottom navigation index.
   int _currentIndex = 1;
   String? profilePictureUrl;
+  int? supplierId;
 
-  bool _isLoading = false; // Changed to false since we're using fake data
+  bool _isLoading = false;
   int _selectedFilterIndex = 0;
   String _searchQuery = "";
   bool _showAddProductForm = false; // Control visibility of add product form
@@ -34,14 +33,17 @@ class _SupplierProductsState extends State<SupplierProducts> {
   @override
   void initState() {
     super.initState();
-    _loadProfilePicture();
+    _loadProfileAndSupplierId();
   }
 
-  Future<void> _loadProfilePicture() async {
+  Future<void> _loadProfileAndSupplierId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       profilePictureUrl = prefs.getString('profilePicture');
+      supplierId = prefs.getInt('supplierId');
     });
+    print(
+        '📦 Loaded supplierId: $supplierId and profilePic: $profilePictureUrl');
   }
 
   void _onNavItemTap(int index) {
@@ -70,6 +72,33 @@ class _SupplierProductsState extends State<SupplierProducts> {
     setState(() {
       _searchQuery = query;
     });
+  }
+
+  void _onProductAdded(Map<String, dynamic> newProduct) {
+    setState(() {
+      _showAddProductForm = false;
+    });
+
+    print('Product added, refreshing table after delay...');
+
+    // Increase the delay to 2 seconds to ensure API has time to process
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (_tableKey.currentState != null) {
+        _tableKey.currentState!.refreshProducts();
+        print('Table refresh called');
+      } else {
+        print('Table state is null, cannot refresh');
+      }
+    });
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Product added successfully'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3), // Increase duration
+      ),
+    );
   }
 
   @override
@@ -202,6 +231,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
 
               // Add the ProductsTableSupplier widget here
               ProductsTableSupplier(
+                key: _tableKey,
                 selectedFilterIndex: _selectedFilterIndex,
                 searchQuery: _searchQuery,
               ),
@@ -214,20 +244,8 @@ class _SupplierProductsState extends State<SupplierProducts> {
                       _showAddProductForm = false;
                     });
                   },
-                  onAddProduct: (newProduct) {
-                    // In a real app, you would add this product to your data source
-                    // For now, just show a success message and hide the form
-                    setState(() {
-                      _showAddProductForm = false;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Product "${newProduct['name']}" added successfully'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  },
+                  onAddProduct: _onProductAdded,
+                  supplierId: supplierId ?? 0,
                 ),
             ],
           ),

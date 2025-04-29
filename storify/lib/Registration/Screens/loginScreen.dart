@@ -72,11 +72,18 @@ class _LoginScreenState extends State<LoginScreen> {
         String token = responseData['token'];
         String roleName = responseData['user']['roleName'];
         String profilePicture = responseData['user']['profilePicture'] ?? '';
-
-        // Extract profilePicture URL (with a default if it doesn't exist)
-
         String userName =
             responseData['user']['name'] ?? responseData['user']['name'] ?? '';
+
+        // Extract supplierId if role is Supplier
+        if (roleName == 'Supplier' &&
+            responseData['user']['supplierId'] != null) {
+          int supplierId = responseData['user']['supplierId'];
+          // Save supplierId to SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('supplierId', supplierId);
+          print('📦 stored supplierId = "$supplierId"');
+        }
 
         // Save the token with the role and profilePicture locally
         await AuthService.saveToken(token, roleName);
@@ -108,9 +115,12 @@ class _LoginScreenState extends State<LoginScreen> {
               transitionDuration: const Duration(milliseconds: 600),
             ),
           );
-        } else if (roleName == 'Customer') {
-          // Customer navigation...
         } else if (roleName == 'Supplier') {
+          // Get the saved supplierId for confirmation
+          final prefs = await SharedPreferences.getInstance();
+          int? supplierId = prefs.getInt('supplierId');
+          print('🔄 using supplierId = "$supplierId" for navigation');
+
           Navigator.of(context).push(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>

@@ -107,11 +107,30 @@ class AuthService {
     return false;
   }
 
-  /// Logout from a specific role
+  static Future<int?> getSupplierId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final supplierId = prefs.getInt('supplierId');
+
+    if (supplierId == null) {
+      print('⚠️ No supplierId found.');
+      return null;
+    }
+
+    print('🔍 Retrieved supplierId: $supplierId');
+    return supplierId;
+  }
+
+  /// Clear supplierId when logging out from Supplier role
   static Future<void> logoutFromRole(String roleName) async {
     final prefs = await SharedPreferences.getInstance();
     final roleKey = 'authToken_$roleName';
     await prefs.remove(roleKey);
+
+    // Clear supplierId if logging out from Supplier role
+    if (roleName == 'Supplier') {
+      await prefs.remove('supplierId');
+      print('📦 Removed supplierId from storage');
+    }
 
     // If this was the current role, clear the current role
     final currentRole = await getCurrentRole();
@@ -122,7 +141,6 @@ class AuthService {
     print('🚪 Logged out from role: $roleName');
   }
 
-  /// Logout from all roles
   static Future<void> logoutFromAllRoles() async {
     final prefs = await SharedPreferences.getInstance();
     final roles = await getLoggedInRoles();
@@ -132,7 +150,9 @@ class AuthService {
       await prefs.remove(roleKey);
     }
 
+    // Clear supplierId as well
+    await prefs.remove('supplierId');
     await prefs.remove(_currentRoleKey);
-    print('🚪 Logged out from all roles');
+    print('🚪 Logged out from all roles and cleared supplierId');
   }
 }

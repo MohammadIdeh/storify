@@ -25,6 +25,40 @@
 </head>
 
 <body>
+  <!-- Firebase SDK - Add these before flutter_bootstrap.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-messaging-compat.js"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlDlnG_03TqqjNr-bZB9QTAkin1L6F2-8",
+      authDomain: "storify-32241.firebaseapp.com",
+      projectId: "storify-32241",
+      storageBucket: "storify-32241.firebasestorage.app",
+      messagingSenderId: "236339805910",
+      appId: "1:236339805910:web:15f97918bb5385c1b09377",
+      measurementId: "G-PN0H7TT9PS"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Request notification permission when appropriate (you can customize this logic)
+    if (firebase.messaging.isSupported()) {
+      const messaging = firebase.messaging();
+
+      // Optional: You can request permission and get the token here
+      // or handle it through your Flutter code
+      messaging.getToken().then((token) => {
+        console.log('FCM Token (from web):', token);
+        // You might want to send this token to your server
+      }).catch((err) => {
+        console.log('Failed to get token:', err);
+      });
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 
