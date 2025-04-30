@@ -14,7 +14,7 @@ class ProductModel {
   final double costPrice;
   final double sellPrice;
   final String categoryName;
-  final String status;
+  String status; // Changed to non-final to allow direct updates
   final int? quantity;
   final String? description;
   final double? priceSupplier;
@@ -74,8 +74,11 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   int _currentPage = 1;
   int? _sortColumnIndex;
   bool _sortAscending = true;
-  final int _itemsPerPage = 9;
+  final int _itemsPerPage = 5;
+
+  // Controllers for the edit dialog
   TextEditingController _priceController = TextEditingController();
+  bool _statusSwitch = false;
 
   @override
   void initState() {
@@ -86,28 +89,13 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   void refreshProducts() {
     print('Refreshing products table, clearing existing data...');
 
-    // Clear existing products first
     setState(() {
       _allProducts = [];
       _isLoading = true;
     });
 
-    // Force a clean fetch with a longer delay
     Future.delayed(const Duration(milliseconds: 500), () {
-      _fetchProducts().then((_) {
-        print(
-            'Products refresh completed. Found ${_allProducts.length} products');
-        // If no products found, try one more time after a delay
-        if (_allProducts.isEmpty) {
-          print('No products found, trying once more...');
-          Future.delayed(const Duration(milliseconds: 1000), () {
-            _fetchProducts().then((_) {
-              print(
-                  'Second refresh completed. Found ${_allProducts.length} products');
-            });
-          });
-        }
-      });
+      _fetchProducts();
     });
   }
 
@@ -123,16 +111,10 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     setState(() {
       _supplierId = prefs.getInt('supplierId');
     });
-    print(
-        '📦 Loaded supplierId for table: $_supplierId - Products will be fetched for this ID');
-
-    // Print the token to check if it contains the correct supplier ID
-    final token = await AuthService.getToken();
-    print(
-        '🔑 Using auth token: ${token?.substring(0, 20)}... (${token?.length} chars)');
+    print('📦 Loaded supplierId for table: $_supplierId');
   }
 
-  // Fetch products from the API
+  // Fetch products from the API with cache-busting
   Future<void> _fetchProducts() async {
     if (_supplierId == null) {
       print('⚠️ No supplierId found, cannot fetch products');
@@ -144,15 +126,20 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
     try {
       final headers = await AuthService.getAuthHeaders();
-      print('📤 Fetching products for supplier ID: $_supplierId');
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      headers['Pragma'] = 'no-cache';
+      headers['Expires'] = '0';
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final url = Uri.parse(
+          'https://finalproject-a5ls.onrender.com/supplierOrders/supplier/$_supplierId/products?t=$timestamp');
+
+      print('🌐 Fetching products from: $url');
 
       final response = await http.get(
-        Uri.parse(
-            'https://finalproject-a5ls.onrender.com/supplierOrders/supplier/$_supplierId/products'),
+        url,
         headers: headers,
       );
-
-      print('📥 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -162,6 +149,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
           List<ProductModel> products = [];
 
           for (var product in data['products']) {
+            print('Product ${product['name']} status: ${product['status']}');
             products.add(ProductModel.fromJson(product));
           }
 
@@ -169,6 +157,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
             _allProducts = products;
             _isLoading = false;
           });
+
           print('✅ Table updated with ${products.length} products');
         } else {
           print('⚠️ Invalid response format: ${response.body}');
@@ -191,191 +180,363 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
-  // Update product price
-  Future<void> _updateProductPrice(int productId, double price) async {
-    if (_supplierId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Supplier ID not found')),
-      );
-      return;
-    }
-
-    try {
-      // Get auth headers and add Content-Type
-      final headers = await AuthService.getAuthHeaders();
-      headers['Content-Type'] = 'application/json';
-
-      // Log request details for debugging
-      print(
-          '🔄 Updating price for product $productId with supplier $_supplierId');
-      print('📤 Request body: ${json.encode({'priceSupplier': price})}');
-      print('🔑 Request headers: $headers');
-
-      final url = Uri.parse(
-          'https://finalproject-a5ls.onrender.com/supplierOrders/$_supplierId/products/$productId/price');
-      print('🌐 Request URL: $url');
-
-      // Make the API call
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: json.encode({'priceSupplier': price}),
-      );
-
-      // Log full response for debugging
-      print('📥 Response status code: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print('✅ Price updated: ${data['message']}');
-
-        // Refresh products list
-        await _fetchProducts();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Price updated successfully')),
-        );
-      } else {
-        print(
-            '⚠️ Error updating price: ${response.statusCode}, ${response.body}');
-
-        // Show more detailed error message
-        String errorMessage = 'Failed to update price';
-
-        try {
-          // Try to extract error message from response body
-          final errorData = json.decode(response.body);
-          if (errorData['message'] != null) {
-            errorMessage = errorData['message'];
-          }
-        } catch (e) {
-          // If parsing fails, use the default message
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      }
-    } catch (e) {
-      print('⚠️ Exception updating price: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
-
-  // Show update price dialog
-  Future<void> _showUpdatePriceDialog(ProductModel product) async {
-    // Initialize with current price (or cost price if no supplier price set)
+  // Show combined edit dialog for price and status
+  Future<void> _showEditDialog(ProductModel product) async {
+    // Initialize price controller with current value or cost price
     _priceController.text =
         product.priceSupplier?.toString() ?? product.costPrice.toString();
+
+    // Initialize status switch
+    _statusSwitch = product.status == "Active";
 
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-          title: Text(
-            'Update Price',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+            title: Text(
+              'Edit Product',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                  'Product: ${product.name} (ID: ${product.productId})',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 16.h),
-                Text(
-                  'Current Cost Price: \$${product.costPrice.toStringAsFixed(2)}',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white70,
-                  ),
-                ),
-                if (product.priceSupplier != null)
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  // Product Details
                   Text(
-                    'Current Supplier Price: \$${product.priceSupplier!.toStringAsFixed(2)}',
+                    'Product: ${product.name}',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                  Text(
+                    'ID: ${product.productId}',
                     style: GoogleFonts.spaceGrotesk(
                       color: Colors.white70,
                     ),
                   ),
-                SizedBox(height: 16.h),
-                Text(
-                  'New Supplier Price',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                TextField(
-                  controller: _priceController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                  ),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color.fromARGB(255, 29, 41, 57),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                      borderSide: BorderSide.none,
+                  SizedBox(height: 24.h),
+
+                  // Supplier Price Section
+                  Text(
+                    'Supplier Price',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
                     ),
-                    prefixText: '\$ ',
-                    prefixStyle: GoogleFonts.spaceGrotesk(
+                  ),
+                  SizedBox(height: 8.h),
+                  if (product.priceSupplier != null)
+                    Text(
+                      'Current Supplier Price: \$${product.priceSupplier!.toStringAsFixed(2)}',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  SizedBox(height: 8.h),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType:
+                        TextInputType.numberWithOptions(decimal: true),
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                    ),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 29, 41, 57),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                        borderSide: BorderSide.none,
+                      ),
+                      hintText: 'Enter new price',
+                      hintStyle: GoogleFonts.spaceGrotesk(
+                        color: Colors.white38,
+                      ),
+                      prefixText: '\$ ',
+                      prefixStyle: GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+
+                  // Status Section
+                  Text(
+                    'Product Status',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'Current Status: ${product.status}',
+                    style: GoogleFonts.spaceGrotesk(
                       color: Colors.white70,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                ),
+                  SizedBox(height: 16.h),
+
+                  // Status Switch with custom appearance
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Set Product Active:',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                        ),
+                      ),
+                      Switch(
+                        value: _statusSwitch,
+                        activeColor: Colors.green,
+                        activeTrackColor: Colors.green.withOpacity(0.3),
+                        inactiveThumbColor: Colors.red,
+                        inactiveTrackColor: Colors.red.withOpacity(0.3),
+                        onChanged: (value) {
+                          setState(() {
+                            _statusSwitch = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+
+                  // Status explanation
+                  Text(
+                    _statusSwitch
+                        ? 'Product will be visible to customers'
+                        : 'Product will be hidden from customers',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: _statusSwitch ? Colors.green : Colors.red,
+                      fontSize: 13.sp,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
             ),
-            TextButton(
-              child: Text(
-                'Update',
-                style: GoogleFonts.spaceGrotesk(
-                  color: const Color.fromARGB(255, 105, 65, 198),
-                  fontWeight: FontWeight.bold,
+            actions: <Widget>[
+              TextButton(
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white70,
+                  ),
                 ),
-              ),
-              onPressed: () {
-                final priceText = _priceController.text.trim();
-                final newPrice = double.tryParse(priceText);
-                if (newPrice != null) {
-                  print(
-                      '💲 Updating product ${product.productId} price to: $newPrice');
-                  _updateProductPrice(product.productId, newPrice);
+                onPressed: () {
                   Navigator.of(context).pop();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please enter a valid price')),
-                  );
-                }
-              },
-            ),
-          ],
-        );
+                },
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                child: Text(
+                  'Save Changes',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () {
+                  // Get new values from dialog
+                  final priceText = _priceController.text.trim();
+                  final newPrice = double.tryParse(priceText);
+                  final newStatus = _statusSwitch ? "Active" : "NotActive";
+
+                  // Status has changed?
+                  final statusChanged =
+                      (product.status == "Active") != _statusSwitch;
+
+                  // Price has changed?
+                  final priceChanged = newPrice != null &&
+                      (product.priceSupplier == null ||
+                          newPrice != product.priceSupplier);
+
+                  // Close dialog
+                  Navigator.of(context).pop();
+
+                  // Process updates
+                  if (priceChanged && statusChanged) {
+                    _updateBoth(product.productId, newPrice!, newStatus);
+                  } else if (priceChanged) {
+                    _updatePrice(product.productId, newPrice!);
+                  } else if (statusChanged) {
+                    _updateStatus(product.productId, newStatus);
+                  } else {
+                    // No changes
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('No changes were made')),
+                    );
+                  }
+                },
+              ),
+            ],
+          );
+        });
       },
     );
+  }
+
+  // Update both price and status in sequence
+  Future<void> _updateBoth(int productId, double price, String status) async {
+    setState(() {
+      _isLoading = true; // Show loading indicator
+    });
+
+    try {
+      // First update price
+      await _updatePriceApi(productId, price);
+
+      // Then update status
+      await _updateStatusApi(productId, status);
+
+      // Refresh the products list
+      await _fetchProducts();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Product updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating product: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Update just the price
+  Future<void> _updatePrice(int productId, double price) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _updatePriceApi(productId, price);
+      await _fetchProducts();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Price updated successfully')),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating price: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Update just the status
+  Future<void> _updateStatus(int productId, String status) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _updateStatusApi(productId, status);
+      await _fetchProducts();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Status updated to $status'),
+          backgroundColor: status == "Active" ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // API call to update price
+  Future<void> _updatePriceApi(int productId, double price) async {
+    if (_supplierId == null) {
+      throw Exception('Supplier ID not found');
+    }
+
+    final headers = await AuthService.getAuthHeaders();
+    headers['Content-Type'] = 'application/json';
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+
+    print('🔄 Updating price for product $productId to $price');
+
+    final url = Uri.parse(
+        'https://finalproject-a5ls.onrender.com/supplierOrders/$_supplierId/products/$productId/price');
+
+    final response = await http.patch(
+      url,
+      headers: headers,
+      body: json.encode({'priceSupplier': price}),
+    );
+
+    print('📥 Price update response: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      final message =
+          json.decode(response.body)['message'] ?? 'Failed to update price';
+      throw Exception(message);
+    }
+  }
+
+  // API call to update status
+  Future<void> _updateStatusApi(int productId, String status) async {
+    if (_supplierId == null) {
+      throw Exception('Supplier ID not found');
+    }
+
+    final headers = await AuthService.getAuthHeaders();
+    headers['Content-Type'] = 'application/json';
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+
+    print('🔄 Updating status for product $productId to $status');
+
+    final url = Uri.parse(
+        'https://finalproject-a5ls.onrender.com/supplierOrders/$_supplierId/products/$productId/price');
+
+    final response = await http.patch(
+      url,
+      headers: headers,
+      body: json.encode({'status': status}),
+    );
+
+    print('📥 Status update response: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      final message =
+          json.decode(response.body)['message'] ?? 'Failed to update status';
+      throw Exception(message);
+    }
   }
 
   /// Returns filtered, searched, and sorted products.
@@ -387,8 +548,10 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       // Active
       temp = temp.where((p) => p.status == "Active").toList();
     } else if (widget.selectedFilterIndex == 2) {
-      // Not Active
-      temp = temp.where((p) => p.status == "Not Active").toList();
+      // Not Active - handle both formats
+      temp = temp
+          .where((p) => p.status == "Not Active" || p.status == "NotActive")
+          .toList();
     }
 
     // Search by name or product ID
@@ -403,7 +566,14 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     // Apply sorting if set
     if (_sortColumnIndex != null) {
       if (_sortColumnIndex == 1) {
-        temp.sort((a, b) => a.costPrice.compareTo(b.costPrice));
+        // Modified to sort by supplier price instead of cost price
+        temp.sort((a, b) {
+          // Handle null supplier prices (sort them to the end)
+          if (a.priceSupplier == null && b.priceSupplier == null) return 0;
+          if (a.priceSupplier == null) return 1;
+          if (b.priceSupplier == null) return -1;
+          return a.priceSupplier!.compareTo(b.priceSupplier!);
+        });
       }
       if (!_sortAscending) {
         temp = temp.reversed.toList();
@@ -482,8 +652,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
-          clipBehavior:
-              Clip.antiAlias, // Ensures rounded corners clip child content
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(30.r),
@@ -530,9 +699,9 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                       const DataColumn(label: Text("ID")),
                       // Image & Name Column
                       const DataColumn(label: Text("Image & Name")),
-                      // Cost Price Column (sortable)
+                      // Supplier Price Column (sortable) - replacing Cost Price
                       DataColumn(
-                        label: _buildSortableColumnLabel("Cost Price", 1),
+                        label: _buildSortableColumnLabel("Supplier Price", 1),
                         onSort: (columnIndex, _) {
                           _onSort(1);
                         },
@@ -541,25 +710,11 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                       const DataColumn(label: Text("Category")),
                       // Status Column
                       const DataColumn(label: Text("Status")),
-                      // Supplier Price Column
-                      const DataColumn(label: Text("Supplier Price")),
-                      // Actions Column (Update Price icon)
+                      // Actions Column (single Edit icon)
                       const DataColumn(label: Text("Actions")),
                     ],
                     rows: visibleProducts.map((product) {
                       return DataRow(
-                        onSelectChanged: (selected) {
-                          if (selected == true) {
-                            // For now just show a snackbar to indicate row was clicked
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Product ${product.name} selected'),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          }
-                        },
                         cells: [
                           // ID cell
                           DataCell(Text("${product.productId}")),
@@ -599,15 +754,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                               ],
                             ),
                           ),
-                          // Cost Price cell
-                          DataCell(Text(
-                              "\$${product.costPrice.toStringAsFixed(2)}")),
-                          // Category cell
-                          DataCell(Text(product.categoryName)),
-                          // Status cell
-                          DataCell(
-                            _buildStatusPill(product.status),
-                          ),
                           // Supplier Price cell
                           DataCell(
                             product.priceSupplier != null
@@ -618,22 +764,22 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                                         fontStyle: FontStyle.italic,
                                         color: Colors.grey)),
                           ),
-                          // Actions cell
+                          // Category cell
+                          DataCell(Text(product.categoryName)),
+                          // Status cell
+                          DataCell(_buildStatusPill(product.status)),
+                          // Actions cell with single Edit button
                           DataCell(
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.push_pin,
-                                    color: Colors.amber,
-                                    size: 20.sp,
-                                  ),
-                                  onPressed: () {
-                                    _showUpdatePriceDialog(product);
-                                  },
-                                  tooltip: "Update Supplier Price",
-                                ),
-                              ],
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit,
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                                size: 22.sp,
+                              ),
+                              onPressed: () {
+                                _showEditDialog(product);
+                              },
+                              tooltip: "Edit Product",
                             ),
                           ),
                         ],
@@ -701,16 +847,18 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   /// Status pill with different colors based on status.
   Widget _buildStatusPill(String status) {
     late Color bgColor;
+    String displayStatus;
 
-    switch (status) {
-      case "Active":
-        bgColor = const Color.fromARGB(178, 0, 224, 116); // green
-        break;
-      case "Not Active":
-        bgColor = const Color.fromARGB(255, 229, 62, 62); // red
-        break;
-      default:
-        bgColor = Colors.grey; // default
+    // Handle both status formats and normalize display
+    if (status == "Active") {
+      bgColor = const Color.fromARGB(178, 0, 224, 116); // green
+      displayStatus = "Active";
+    } else if (status == "Not Active" || status == "NotActive") {
+      bgColor = const Color.fromARGB(255, 229, 62, 62); // red
+      displayStatus = "Not Active";
+    } else {
+      bgColor = Colors.grey; // default
+      displayStatus = status;
     }
 
     return Container(
@@ -721,7 +869,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
         border: Border.all(color: bgColor),
       ),
       child: Text(
-        status,
+        displayStatus,
         style: GoogleFonts.spaceGrotesk(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,

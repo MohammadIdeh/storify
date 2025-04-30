@@ -4,6 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
+import 'package:storify/utilis/notificationModel.dart';
+import 'package:storify/utilis/notificationPopUp.dart';
 
 class MyNavigationBar extends StatefulWidget {
   final int currentIndex;
@@ -20,6 +22,11 @@ class MyNavigationBar extends StatefulWidget {
   @override
   State<MyNavigationBar> createState() => _MyNavigationBarState();
 }
+
+OverlayEntry? _notificationOverlayEntry;
+bool _isNotificationMenuOpen = false;
+List<NotificationItem> _notifications =
+    []; // This will store your notifications
 
 class _MyNavigationBarState extends State<MyNavigationBar> {
   // (Optional) Key for the profile section
@@ -140,9 +147,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
               // Notifications
               InkWell(
-                onTap: () {
-                  // Handle notification
-                },
+                onTap: _toggleNotificationMenu,
                 child: Container(
                   width: 50.w,
                   height: 52.h,
@@ -150,13 +155,33 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                     color: const Color.fromARGB(255, 36, 50, 69),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(13.0),
-                    child: SvgPicture.asset(
-                      'assets/images/noti.svg',
-                      width: 20.w,
-                      height: 20.h,
-                    ),
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(13.0),
+                        child: SvgPicture.asset(
+                          'assets/images/noti.svg',
+                          width: 20.w,
+                          height: 20.h,
+                          color: _isNotificationMenuOpen
+                              ? const Color.fromARGB(255, 105, 65, 198)
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        ),
+                      ),
+                      if (_notifications.where((n) => !n.isRead).isNotEmpty)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Container(
+                            width: 10.w,
+                            height: 10.h,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -297,5 +322,62 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         ),
       );
     }).toList();
+  }
+
+  void _toggleNotificationMenu() {
+    if (_isNotificationMenuOpen) {
+      _closeNotificationMenu();
+    } else {
+      _openNotificationMenu();
+    }
+  }
+
+  void _openNotificationMenu() {
+    // Close profile menu if open
+    if (_isMenuOpen) {
+      _closeMenu();
+    }
+
+    _notificationOverlayEntry = OverlayEntry(
+      builder: (BuildContext context) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: _closeNotificationMenu,
+              behavior: HitTestBehavior.translucent,
+              child: Container(
+                color: Colors.transparent,
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+              ),
+            ),
+            Positioned(
+              right: 100, // Adjust position as needed
+              top: 100,
+              child: Material(
+                color: Colors.transparent,
+                child: NotificationPopup(
+                  onCloseMenu: _closeNotificationMenu,
+                  notifications: _notifications,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_notificationOverlayEntry!);
+    setState(() {
+      _isNotificationMenuOpen = true;
+    });
+  }
+
+  void _closeNotificationMenu() {
+    _notificationOverlayEntry?.remove();
+    _notificationOverlayEntry = null;
+    setState(() {
+      _isNotificationMenuOpen = false;
+    });
   }
 }

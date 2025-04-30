@@ -1,46 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/admin/screens/productOverview.dart';
-import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/admin/widgets/productsWidgets/RequestedProductDetail.dart';
+import 'package:storify/admin/widgets/productsWidgets/RequestedProductModel.dart';
 
-class ProductslistTable extends StatefulWidget {
-  final int selectedFilterIndex; // 0: All, 1: Active, 2: UnActive
+class RequestedProductsTable extends StatefulWidget {
+  final int selectedFilterIndex; // 0: All, 1: Pending, 2: Accepted, 3: Declined
   final String searchQuery;
-  final VoidCallback? onOperationCompleted; // New callback for notifying parent
+  final VoidCallback? onOperationCompleted; // Callback for notifying parent
 
-  const ProductslistTable({
+  const RequestedProductsTable({
     super.key,
     required this.selectedFilterIndex,
     required this.searchQuery,
-    this.onOperationCompleted, // Optional callback
+    this.onOperationCompleted,
   });
 
   @override
-  State<ProductslistTable> createState() => ProductslistTableState();
+  State<RequestedProductsTable> createState() => RequestedProductsTableState();
 }
 
-class ProductslistTableState extends State<ProductslistTable> {
-  List<ProductItemInformation> _allProducts = [];
+class RequestedProductsTableState extends State<RequestedProductsTable> {
+  List<RequestedProductModel> _allProducts = [];
   bool _isLoading = true;
   String? _error;
 
   int _currentPage = 1;
   int? _sortColumnIndex;
   bool _sortAscending = true;
-  final int _itemsPerPage = 9;
+  final int _itemsPerPage = 5; // Show 5 items per page
+
+  final List<String> _statusFilters = [
+    "All",
+    "Pending",
+    "Accepted",
+    "Declined"
+  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+    _fetchRequestedProducts();
   }
 
   // Public method to refresh products (can be called from parent)
   void refreshProducts() {
-    _fetchProducts();
+    _fetchRequestedProducts();
   }
 
   // Helper method to notify parent when operations complete
@@ -50,29 +58,34 @@ class ProductslistTableState extends State<ProductslistTable> {
     }
   }
 
-  Future<void> _fetchProducts() async {
+  Future<void> _fetchRequestedProducts() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
+      // Get auth headers from AuthService
+      final headers = await AuthService.getAuthHeaders();
+      print('📤 Fetching requested products');
+      print('🔑 Using auth headers: $headers');
+
       final response = await http.get(
-        Uri.parse('https://finalproject-a5ls.onrender.com/product/products'),
+        Uri.parse('https://finalproject-a5ls.onrender.com/request-product/'),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['products'] != null) {
+        if (data['productRequests'] != null) {
           setState(() {
-            _allProducts = (data['products'] as List)
-                .map((product) => ProductItemInformation.fromJson(product))
+            _allProducts = (data['productRequests'] as List)
+                .map((product) => RequestedProductModel.fromJson(product))
                 .toList();
             _isLoading = false;
           });
 
           // Notify parent that products have been loaded
-          // This ensures dashboard stats are in sync with product list
           _notifyOperationCompleted();
         } else {
           setState(() {
@@ -82,7 +95,8 @@ class ProductslistTableState extends State<ProductslistTable> {
         }
       } else {
         setState(() {
-          _error = 'Failed to load products. Error: ${response.statusCode}';
+          _error =
+              'Failed to load requested products. Error: ${response.statusCode}';
           _isLoading = false;
         });
       }
@@ -95,34 +109,48 @@ class ProductslistTableState extends State<ProductslistTable> {
   }
 
   /// Returns filtered, searched, and sorted products.
-  List<ProductItemInformation> get filteredProducts {
-    List<ProductItemInformation> temp = List.from(_allProducts);
-    // Filter by availability.
-    if (widget.selectedFilterIndex == 1) {
-      temp = temp.where((p) => p.availability).toList();
-    } else if (widget.selectedFilterIndex == 2) {
-      temp = temp.where((p) => !p.availability).toList();
+  List<RequestedProductModel> get filteredProducts {
+    List<RequestedProductModel> temp = List.from(_allProducts);
+
+    // Filter by status
+    if (widget.selectedFilterIndex > 0 &&
+        widget.selectedFilterIndex < _statusFilters.length) {
+      String statusFilter = _statusFilters[widget.selectedFilterIndex];
+      temp = temp.where((p) => p.status == statusFilter).toList();
     }
-    // Search by name (case-insensitive, starts with).
+
+    // Search by name or ID (case-insensitive)
     if (widget.searchQuery.isNotEmpty) {
       temp = temp
           .where((p) =>
-              p.name.toLowerCase().startsWith(widget.searchQuery.toLowerCase()))
+              p.name.toLowerCase().contains(widget.searchQuery.toLowerCase()) ||
+              p.id.toString().contains(widget.searchQuery))
           .toList();
     }
+
     // Apply sorting if set
     if (_sortColumnIndex != null) {
-      if (_sortColumnIndex == 1) {
-        temp.sort((a, b) => a.costPrice.compareTo(b.costPrice));
-      } else if (_sortColumnIndex == 2) {
-        temp.sort((a, b) => a.sellPrice.compareTo(b.sellPrice));
+      if (_sortColumnIndex == 0) {
+        // Sort by ID
+        temp.sort((a, b) => a.id.compareTo(b.id));
+      } else if (_sortColumnIndex == 1) {
+        // Sort by Date
+        temp.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       } else if (_sortColumnIndex == 3) {
-        temp.sort((a, b) => a.qty.compareTo(b.qty));
+        // Sort by Cost Price
+        temp.sort((a, b) => a.costPrice.compareTo(b.costPrice));
+      } else if (_sortColumnIndex == 4) {
+        // Sort by Sell Price
+        temp.sort((a, b) => a.sellPrice.compareTo(b.sellPrice));
       }
       if (!_sortAscending) {
         temp = temp.reversed.toList();
       }
+    } else {
+      // Default sort by newest first if no sorting is specified
+      temp.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
+
     return temp;
   }
 
@@ -137,7 +165,6 @@ class ProductslistTableState extends State<ProductslistTable> {
         color: Colors.white,
       );
     }
-    // Changed mainAxisAlignment to start so everything is left-aligned.
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -178,7 +205,7 @@ class ProductslistTableState extends State<ProductslistTable> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Error loading products',
+              'Error loading requested products',
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
@@ -195,7 +222,7 @@ class ProductslistTableState extends State<ProductslistTable> {
             ),
             SizedBox(height: 16.h),
             ElevatedButton(
-              onPressed: _fetchProducts,
+              onPressed: _fetchRequestedProducts,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 105, 65, 198),
                 shape: RoundedRectangleBorder(
@@ -224,7 +251,9 @@ class ProductslistTableState extends State<ProductslistTable> {
     final endIndex = startIndex + _itemsPerPage > totalItems
         ? totalItems
         : startIndex + _itemsPerPage;
-    final visibleProducts = filteredProducts.sublist(startIndex, endIndex);
+    final visibleProducts = filteredProducts.isEmpty
+        ? []
+        : filteredProducts.sublist(startIndex, endIndex);
 
     // Heading row color
     final Color headingColor = const Color.fromARGB(255, 36, 50, 69);
@@ -237,8 +266,7 @@ class ProductslistTableState extends State<ProductslistTable> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
-          clipBehavior:
-              Clip.antiAlias, // Ensures rounded corners clip child content
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(30.r),
@@ -281,46 +309,53 @@ class ProductslistTableState extends State<ProductslistTable> {
                       fontSize: 13.sp,
                     ),
                     columns: [
-                      // ID Column
-                      const DataColumn(label: Text("ID")),
-                      // Image & Name Column
-                      const DataColumn(label: Text("Image & Name")),
-                      // Cost Price Column (sortable)
+                      // ID Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Cost Price", 1),
+                        label: _buildSortableColumnLabel("ID", 0),
+                        onSort: (columnIndex, _) {
+                          _onSort(0);
+                        },
+                      ),
+                      // Date Column (sortable)
+                      DataColumn(
+                        label: _buildSortableColumnLabel("Date Requested", 1),
                         onSort: (columnIndex, _) {
                           _onSort(1);
                         },
                       ),
-                      // Sell Price Column (sortable)
+                      // Image & Name Column
+                      const DataColumn(label: Text("Image & Name")),
+                      // Cost Price Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Sell Price", 2),
-                        onSort: (columnIndex, _) {
-                          _onSort(2);
-                        },
-                      ),
-                      // Qty Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Qty", 3),
+                        label: _buildSortableColumnLabel("Cost Price", 3),
                         onSort: (columnIndex, _) {
                           _onSort(3);
                         },
                       ),
+                      // Sell Price Column (sortable)
+                      DataColumn(
+                        label: _buildSortableColumnLabel("Sell Price", 4),
+                        onSort: (columnIndex, _) {
+                          _onSort(4);
+                        },
+                      ),
                       // Category Column
                       const DataColumn(label: Text("Category")),
-                      // Availability Column
-                      const DataColumn(label: Text("Availability")),
+                      // Supplier Column
+                      const DataColumn(label: Text("Supplier")),
+                      // Status Column
+                      const DataColumn(label: Text("Status")),
                     ],
                     rows: visibleProducts.map((product) {
                       return DataRow(
                         onSelectChanged: (selected) async {
                           if (selected == true) {
                             final updatedProduct = await Navigator.of(context)
-                                .push<ProductItemInformation>(
+                                .push<RequestedProductModel>(
                               PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        Productoverview(product: product),
+                                pageBuilder: (context, animation,
+                                        secondaryAnimation) =>
+                                    RequestedProductDetail(product: product),
                                 transitionsBuilder: (context, animation,
                                         secondaryAnimation, child) =>
                                     FadeTransition(
@@ -329,49 +364,65 @@ class ProductslistTableState extends State<ProductslistTable> {
                                     const Duration(milliseconds: 400),
                               ),
                             );
+
                             // If updatedProduct is not null, update your data source.
                             if (updatedProduct != null) {
                               setState(() {
-                                final index = _allProducts.indexWhere(
-                                    (p) => p.productId == product.productId);
+                                final index = _allProducts
+                                    .indexWhere((p) => p.id == product.id);
                                 if (index != -1) {
                                   _allProducts[index] = updatedProduct;
                                 }
                               });
 
                               // Notify parent that a product was updated
-                              // This will trigger the dashboard stats refresh
                               _notifyOperationCompleted();
                             }
                           }
                         },
                         cells: [
                           // ID cell
-                          DataCell(Text("${product.productId}")),
+                          DataCell(Text("${product.id}")),
+                          // Date cell
+                          DataCell(Text(
+                            "${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}",
+                          )),
                           // Image & Name cell
                           DataCell(
                             Row(
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8.r),
-                                  child: Image.network(
-                                    product.image,
-                                    width: 50.w,
-                                    height: 50.h,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        width: 50.w,
-                                        height: 50.h,
-                                        color: Colors.grey.shade800,
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.white70,
-                                          size: 24.sp,
+                                  child: product.image != null
+                                      ? Image.network(
+                                          product.image!,
+                                          width: 50.w,
+                                          height: 50.h,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              width: 50.w,
+                                              height: 50.h,
+                                              color: Colors.grey.shade800,
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.white70,
+                                                size: 24.sp,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          width: 50.w,
+                                          height: 50.h,
+                                          color: Colors.grey.shade800,
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.white70,
+                                            size: 24.sp,
+                                          ),
                                         ),
-                                      );
-                                    },
-                                  ),
                                 ),
                                 SizedBox(width: 10.w),
                                 Expanded(
@@ -390,13 +441,13 @@ class ProductslistTableState extends State<ProductslistTable> {
                           // Sell Price cell
                           DataCell(Text(
                               "\$${product.sellPrice.toStringAsFixed(2)}")),
-                          // Qty cell
-                          DataCell(Text("${product.qty}")),
                           // Category cell
-                          DataCell(Text(product.categoryName)),
-                          // Availability cell
-                          DataCell(
-                              _buildAvailabilityPill(product.availability)),
+                          DataCell(Text(product.category.categoryName)),
+                          // Supplier cell
+                          DataCell(Text(product.supplier.user.name)),
+                          // Status cell with admin note tooltip if exists
+                          DataCell(_buildStatusPill(
+                              product.status, product.adminNote)),
                         ],
                       );
                     }).toList(),
@@ -404,52 +455,54 @@ class ProductslistTableState extends State<ProductslistTable> {
                 ),
               ),
               // Pagination row
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
-                child: Row(
-                  children: [
-                    Spacer(),
-                    Text(
-                      "Total $totalItems items",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
+              if (visibleProducts.isNotEmpty)
+                Padding(
+                  padding:
+                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+                  child: Row(
+                    children: [
+                      Spacer(),
+                      Text(
+                        "Total $totalItems items",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 10.w),
-                    // Left arrow
-                    IconButton(
-                      icon: Icon(Icons.arrow_back,
-                          size: 20.sp, color: Colors.white70),
-                      onPressed: _currentPage > 1
-                          ? () {
-                              setState(() {
-                                _currentPage--;
-                              });
-                            }
-                          : null,
-                    ),
-                    Row(
-                      children: List.generate(totalPages, (index) {
-                        return _buildPageButton(index + 1);
-                      }),
-                    ),
-                    // Right arrow
-                    IconButton(
-                      icon: Icon(Icons.arrow_forward,
-                          size: 20.sp, color: Colors.white70),
-                      onPressed: _currentPage < totalPages
-                          ? () {
-                              setState(() {
-                                _currentPage++;
-                              });
-                            }
-                          : null,
-                    ),
-                  ],
+                      SizedBox(width: 10.w),
+                      // Left arrow
+                      IconButton(
+                        icon: Icon(Icons.arrow_back,
+                            size: 20.sp, color: Colors.white70),
+                        onPressed: _currentPage > 1
+                            ? () {
+                                setState(() {
+                                  _currentPage--;
+                                });
+                              }
+                            : null,
+                      ),
+                      Row(
+                        children: List.generate(totalPages, (index) {
+                          return _buildPageButton(index + 1);
+                        }),
+                      ),
+                      // Right arrow
+                      IconButton(
+                        icon: Icon(Icons.arrow_forward,
+                            size: 20.sp, color: Colors.white70),
+                        onPressed: _currentPage < totalPages
+                            ? () {
+                                setState(() {
+                                  _currentPage++;
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         );
@@ -457,14 +510,25 @@ class ProductslistTableState extends State<ProductslistTable> {
     );
   }
 
-  /// Availability pill.
-  Widget _buildAvailabilityPill(bool isActive) {
-    final Color bgColor = isActive
-        ? const Color.fromARGB(178, 0, 224, 116) // green
-        : const Color.fromARGB(255, 229, 62, 62); // red
-    final String label = isActive ? "Active" : "UnActive";
+  /// Status pill with different colors based on status and tooltip for admin note.
+  Widget _buildStatusPill(String status, String? adminNote) {
+    late Color bgColor;
 
-    return Container(
+    switch (status) {
+      case "Pending":
+        bgColor = Colors.amber; // amber/yellow for pending
+        break;
+      case "Accepted":
+        bgColor = const Color.fromARGB(178, 0, 224, 116); // green for accepted
+        break;
+      case "Declined":
+        bgColor = const Color.fromARGB(255, 229, 62, 62); // red for declined
+        break;
+      default:
+        bgColor = Colors.grey; // default
+    }
+
+    final statusPill = Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: bgColor.withOpacity(0.15),
@@ -472,7 +536,7 @@ class ProductslistTableState extends State<ProductslistTable> {
         border: Border.all(color: bgColor),
       ),
       child: Text(
-        label,
+        status,
         style: GoogleFonts.spaceGrotesk(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,
@@ -480,6 +544,32 @@ class ProductslistTableState extends State<ProductslistTable> {
         ),
       ),
     );
+
+    // If there's an admin note, wrap the status pill with a tooltip
+    if (adminNote != null && adminNote.isNotEmpty) {
+      return Tooltip(
+        message: "Admin Note: $adminNote",
+        preferBelow: true,
+        showDuration: const Duration(seconds: 3),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(230, 36, 50, 69),
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: const Color.fromARGB(255, 105, 65, 198),
+            width: 1.5,
+          ),
+        ),
+        textStyle: GoogleFonts.spaceGrotesk(
+          color: Colors.white,
+          fontSize: 14.sp,
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        child: statusPill,
+      );
+    }
+
+    // If no admin note, just return the status pill
+    return statusPill;
   }
 
   /// Pagination button builder.
