@@ -3,17 +3,17 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/supplier_models.dart';
-
+import 'package:storify/utilis/notification_service.dart'; // Import NotificationService
 
 class SupplierService {
   static const String baseUrl = 'https://finalproject-a5ls.onrender.com';
 
-  // Fetch all suppliers - UPDATED with correct endpoint
+  // Fetch all suppliers
   static Future<List<Supplier>> getSuppliers() async {
     try {
       final headers = await AuthService.getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/supplier/suppliers'), // Updated endpoint
+        Uri.parse('$baseUrl/supplier/suppliers'),
         headers: headers,
       );
 
@@ -34,7 +34,6 @@ class SupplierService {
     }
   }
 
-  // Rest of the methods remain the same
   static Future<List<SupplierProduct>> getSupplierProducts(int supplierId) async {
     try {
       final headers = await AuthService.getAuthHeaders();
@@ -63,6 +62,8 @@ class SupplierService {
   static Future<bool> placeOrder(OrderRequest order) async {
     try {
       final headers = await AuthService.getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+      
       final response = await http.post(
         Uri.parse('$baseUrl/supplierOrders/'),
         headers: headers,
@@ -72,6 +73,17 @@ class SupplierService {
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         if (data['message'] == 'Order created successfully') {
+          // Extract order ID from response if available, or generate a temporary one
+          final String orderId = data['data']?['_id'] ?? 
+                              'ORDER-${DateTime.now().millisecondsSinceEpoch}';
+          
+          // Send notification to supplier
+          await _sendOrderNotificationToSupplier(
+            order.supplierId,
+            orderId,
+            order.items.length
+          );
+          
           return true;
         } else {
           throw Exception('Failed to create order: ${data['message']}');
@@ -80,7 +92,39 @@ class SupplierService {
         throw Exception('Failed to create order. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error creating order: $e');
+      print('Error creating order: $e');
+      return false;
+    }
+  }
+
+  // New method to send notification to supplier about new order
+  static Future<void> _sendOrderNotificationToSupplier(
+    int supplierId, 
+    String orderId,
+    int itemCount
+  ) async {
+    try {
+      final title = "New Order Received";
+      final message = "You have received a new order (#$orderId) with $itemCount item${itemCount > 1 ? 's' : ''}.";
+      
+      // Additional data to include with notification
+      final additionalData = {
+        'orderId': orderId,
+        'type': 'new_order',
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      
+      // Send notification to supplier
+      await NotificationService().sendNotificationToSupplier(
+        supplierId,
+        title,
+        message,
+        additionalData
+      );
+      
+      print('Notification sent to supplier ID: $supplierId');
+    } catch (e) {
+      print('Error sending notification to supplier: $e');
     }
   }
 

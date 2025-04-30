@@ -51,7 +51,7 @@ class _OrdertableState extends State<Ordertable> {
           .toList();
     }
     return filtered;
-  } 
+  }
 
   // Calculate which orders are shown on the current page.
   List<OrderItem> get _visibleOrders {

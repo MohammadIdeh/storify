@@ -7,6 +7,8 @@ import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/supplier/screens/productScreenSupplier.dart';
 import 'package:storify/utilis/fire_base.dart';
+import 'package:storify/utilis/notificationModel.dart';
+import 'package:storify/utilis/notification_service.dart'; // Add NotificationModel import
 
 // This must be a top-level function
 @pragma('vm:entry-point')
@@ -18,6 +20,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print("Background notification title: ${message.notification!.title}");
     print("Background notification body: ${message.notification!.body}");
   }
+
+  // Store notification for later processing
+  // This will be processed when the app is opened
+  final notification = NotificationItem.fromFirebaseMessage(message);
+  // We can't directly access NotificationService's instance methods here
+  // The storage will happen in NotificationService.initialize() when app starts
 }
 
 void main() async {
@@ -31,64 +39,69 @@ void main() async {
   // Set up background messaging handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Request permission for notifications (important for web & iOS)
-  NotificationSettings settings =
-      await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-    provisional: false,
-  );
+  // Initialize our NotificationService which will handle permissions, etc.
+  await NotificationService.initialize();
 
-  print('User granted permission: ${settings.authorizationStatus}');
-
-  // Set up foreground message handler
+  // Set up foreground message handler through NotificationService
+  // We're removing the direct handler since NotificationService will handle it
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print("Foreground message received: ${message.messageId}");
-    print("Message data: ${message.data}");
 
+    // The actual handling is done inside NotificationService
+    // It's registered during NotificationService.initialize()
+
+    // For debugging:
+    print("Message data: ${message.data}");
     if (message.notification != null) {
       print("Message notification title: ${message.notification!.title}");
       print("Message notification body: ${message.notification!.body}");
-
-      // Here you could show a custom in-app notification
-      // For example with a custom dialog or a snackbar
     }
   });
 
-  // Handle notification clicks when app was terminated
+  // Handle notification clicks using our NotificationService
   FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
     if (message != null) {
       print("App opened from terminated state by notification");
-      // You could navigate to a specific screen based on the notification data
-      // For example: Navigator.pushNamed(context, '/notification_details', arguments: message.data);
+      // Create notification item from the message
+      final notification = NotificationItem.fromFirebaseMessage(message);
+
+      // Process notification - this will happen after UI is initialized
+      Future.delayed(Duration(seconds: 1), () {
+        handleNotificationNavigation(message.data);
+      });
     }
   });
 
   // Handle notification clicks when app was in background
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     print("App opened from background state by notification");
-    // You could navigate to a specific screen based on the notification data
-    // For example: Navigator.pushNamed(context, '/notification_details', arguments: message.data);
+    // Navigate based on notification data
+    handleNotificationNavigation(message.data);
   });
-
-  // Get FCM token (you'll later send this to your backend)
-  String? token = await FirebaseMessaging.instance.getToken();
-  print("🔔 FCM Token: $token");
-
-  // Optional: Set up token refresh listener
-  FirebaseMessaging.instance.onTokenRefresh.listen((String newToken) {
-    print("🔔 FCM Token refreshed: $newToken");
-    // Here you would send the new token to your backend
-  });
-
-  // Optional: Subscribe to topics
-  // await FirebaseMessaging.instance.subscribeToTopic('general');
 
   final isLoggedIn = await AuthService.isLoggedIn();
   final currentRole = await AuthService.getCurrentRole();
 
   runApp(MyApp(isLoggedIn: isLoggedIn, currentRole: currentRole));
+}
+
+// Helper function to handle navigation based on notification data
+void handleNotificationNavigation(Map<String, dynamic> data) {
+  final notificationType = data['type'] as String?;
+  final orderId = data['orderId'] as String?;
+
+  // We'll implement navigation logic when we have a global navigator key
+  // or through state management like Provider/Bloc
+
+  print("Should navigate to: type=$notificationType, orderId=$orderId");
+
+  // Example:
+  // if (notificationType == 'new_order' && navigatorKey.currentContext != null) {
+  //   Navigator.of(navigatorKey.currentContext!).pushNamed(
+  //     '/supplier/orders',
+  //     arguments: {'orderId': orderId},
+  //   );
+  // }
 }
 
 class MyApp extends StatelessWidget {
@@ -129,7 +142,6 @@ class MyApp extends StatelessWidget {
     }
   }
 }
-
 //admin
 // hamode.sh889@gmail.com
 // o83KUqRz-UIroMoI

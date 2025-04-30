@@ -1,9 +1,10 @@
-// lib/supplier/widgets/OrderDetailsWidget.dart
+// lib/supplier/widgets/orderwidgets/OrderDetailsWidget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/supplier/widgets/orderwidgets/OrderDetails_Model.dart';
 import 'package:storify/supplier/widgets/orderwidgets/apiService.dart';
+import 'package:storify/utilis/notification_service.dart';
 
 class OrderDetailsWidget extends StatelessWidget {
   final Order orderDetails;
@@ -519,6 +520,9 @@ class OrderDetailsWidget extends StatelessWidget {
       }
 
       if (success) {
+        // Send notification to admin
+        await _sendStatusUpdateNotification(status, note);
+
         // Show success message
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -565,6 +569,40 @@ class OrderDetailsWidget extends StatelessWidget {
         );
       }
     }
+  }
+
+  // Method to send notification to admin about order status update
+  Future<void> _sendStatusUpdateNotification(
+      String status, String? note) async {
+    String title = '';
+    String message = '';
+
+    if (status == "Accepted") {
+      title = "Order Accepted";
+      message = "Order ${orderDetails.orderId} has been accepted by supplier.";
+    } else if (status == "Declined") {
+      title = "Order Declined";
+      message = "Order ${orderDetails.orderId} has been declined by supplier.";
+      if (note != null && note.isNotEmpty) {
+        message += " Reason: $note";
+      }
+    } else if (status == "Delivered") {
+      title = "Order Delivered";
+      message = "Order ${orderDetails.orderId} has been marked as delivered.";
+    }
+
+    // Create additional data to include with notification
+    Map<String, dynamic> additionalData = {
+      'orderId': orderDetails.orderId,
+      'status': status,
+      'type': 'order_status',
+      'timestamp': DateTime.now().toIso8601String(),
+      if (note != null && note.isNotEmpty) 'note': note,
+    };
+
+    // Send notification to admin
+    await NotificationService()
+        .sendNotificationToAdmin(title, message, additionalData);
   }
 
 // Method to show decline dialog with note field

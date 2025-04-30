@@ -5,7 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
 import 'package:storify/utilis/notificationModel.dart';
-import 'package:storify/utilis/notificationPopUp.dart';
+import 'package:storify/utilis/notificationPopUpAdmin.dart';
 
 class MyNavigationBar extends StatefulWidget {
   final int currentIndex;

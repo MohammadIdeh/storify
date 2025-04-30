@@ -34,6 +34,19 @@ class ProductModel {
 
   // Factory constructor to create a ProductModel from JSON
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    // Normalize status when creating model
+    String normalizedStatus = json['status'] ?? 'notActive';
+
+    // Ensure consistent status format
+    if (normalizedStatus == "notActive") {
+      normalizedStatus = "notActive";
+    } else if (normalizedStatus == "active") {
+      normalizedStatus = "Active";
+    }
+
+    print(
+        '📊 Parsing product: ${json['name']} with status: ${json['status']} → normalized to: $normalizedStatus');
+
     return ProductModel(
       productId: json['productId'],
       name: json['name'],
@@ -41,7 +54,7 @@ class ProductModel {
       costPrice: double.parse(json['costPrice'].toString()),
       sellPrice: double.parse(json['sellPrice'].toString()),
       categoryName: json['category']['categoryName'] ?? 'Unknown',
-      status: json['status'] ?? 'Not Active',
+      status: normalizedStatus,
       quantity: json['quantity'],
       description: json['description'],
       priceSupplier: json['priceSupplier'] != null
@@ -149,7 +162,8 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
           List<ProductModel> products = [];
 
           for (var product in data['products']) {
-            print('Product ${product['name']} status: ${product['status']}');
+            print(
+                'Product ${product['name']} raw status: ${product['status']}');
             products.add(ProductModel.fromJson(product));
           }
 
@@ -187,7 +201,13 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
         product.priceSupplier?.toString() ?? product.costPrice.toString();
 
     // Initialize status switch
-    _statusSwitch = product.status == "Active";
+    // _statusSwitch = product.status == "Active";
+    print('🔍 Current product status before dialog: ${product.status}');
+    bool isProductActive = (product.status == "Active");
+    _statusSwitch = isProductActive;
+
+    print(
+        '🔄 Setting status switch to: $_statusSwitch (Active: $isProductActive)');
 
     return showDialog<void>(
       context: context,
@@ -357,8 +377,10 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                   final newStatus = _statusSwitch ? "Active" : "NotActive";
 
                   // Status has changed?
-                  final statusChanged =
-                      (product.status == "Active") != _statusSwitch;
+                  final statusChanged = (newStatus != product.status);
+
+                  print(
+                      '🔄 Status changed: $statusChanged (Original: ${product.status}, New: $newStatus)');
 
                   // Price has changed?
                   final priceChanged = newPrice != null &&
@@ -452,28 +474,67 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   }
 
   // Update just the status
+// 1. First, modify the Update Status function to directly update the model:
   Future<void> _updateStatus(int productId, String status) async {
+    // Find the product in our local list
+    ProductModel? productToUpdate;
+    for (var product in _allProducts) {
+      if (product.productId == productId) {
+        productToUpdate = product;
+        break;
+      }
+    }
+
+    if (productToUpdate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: Product not found'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Save old status for comparison
+    final oldStatus = productToUpdate.status;
+
+    // Update the status locally BEFORE API call
     setState(() {
+      productToUpdate?.status = status;
       _isLoading = true;
     });
 
     try {
+      // API call to update status - whether it works or not, we keep our local update
       await _updateStatusApi(productId, status);
-      await _fetchProducts();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Status updated to $status'),
-          backgroundColor: status == "Active" ? Colors.green : Colors.red,
-        ),
-      );
-    } catch (e) {
+
+      // Set loading to false but preserve our local update
       setState(() {
         _isLoading = false;
       });
+
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error updating status: $e'),
-          backgroundColor: Colors.red,
+          content: Text('Status updated from $oldStatus to $status'),
+          backgroundColor: status == "Active" ? Colors.green : Colors.red,
+        ),
+      );
+
+      // Optional: You can still trigger a background refresh
+      // But don't wait for it or let it affect the UI
+    } catch (e) {
+      // On API error, we STILL keep our local change
+      // (this is the key difference from before)
+      setState(() {
+        _isLoading = false;
+        // DON'T revert the status change - keep what user requested
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Warning: Status may not be saved on server: $e'),
+          backgroundColor: Colors.orange, // warning color
         ),
       );
     }
