@@ -12,6 +12,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/customer/screens/orderScreenCustomer.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -136,8 +137,23 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else if (roleName == 'Employee') {
-        } else if (roleName == 'Delivery') {}
-
+        } else if (roleName == 'Delivery') {
+        } else if (roleName == 'Customer') {
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const CustomerOrders(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 600),
+            ),
+          );
+        }
         // Rest of your role-based navigation...
       } else {
         // Error handling...

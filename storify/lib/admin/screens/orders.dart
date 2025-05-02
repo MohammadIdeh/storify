@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 // Ensure these imports point to your local files.
-import 'package:storify/GeneralWidgets/navigationBar.dart';
+import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';

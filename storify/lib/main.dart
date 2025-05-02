@@ -5,6 +5,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/customer/screens/orderScreenCustomer.dart';
+import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 import 'package:storify/supplier/screens/productScreenSupplier.dart';
 import 'package:storify/utilis/fire_base.dart';
 import 'package:storify/utilis/notificationModel.dart';
@@ -132,9 +134,11 @@ class MyApp extends StatelessWidget {
       case 'Admin':
         return const DashboardScreen();
       case 'Supplier':
-        return const SupplierProducts();
+        return const SupplierOrders();
       case 'Customer':
+        return const CustomerOrders();
       case 'Employee':
+        return const LoginScreen(); // placeholder
       case 'DeliveryMan':
         return const LoginScreen(); // placeholder
       default:
@@ -147,7 +151,13 @@ class MyApp extends StatelessWidget {
 // o83KUqRz-UIroMoI
 // id: 84
 
+
 //supplier
 // hamode.sh334@gmail.com
 // yism5huFJGy6SfI-
-// GET    https://finalproject-a5ls.onrender.com/request-product/
+//
+
+// customer
+// momoideh.123@yahoo.com
+// dHaeo_HFzzUEcYFH
+//

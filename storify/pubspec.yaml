@@ -72,4 +72,5 @@ flutter:
     - assets/images/completedOrders.svg
     - assets/images/cancorders.svg
     - assets/images/truck.svg
+    - assets/images/history.svg
 

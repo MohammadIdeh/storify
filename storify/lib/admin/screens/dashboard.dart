@@ -13,7 +13,7 @@ import 'package:storify/admin/widgets/dashboardWidgets/ordersBySuperMarket.dart'
 import 'package:storify/admin/widgets/dashboardWidgets/ordersOverview.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/orderCount.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/profit.dart';
-import 'package:storify/GeneralWidgets/navigationBar.dart';
+import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/cards.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/topProductsList.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/topStoresList.dart';

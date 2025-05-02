@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:storify/GeneralWidgets/navigationBar.dart';
+import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/Categories.dart';
 import 'package:storify/admin/screens/dashboard.dart';
