@@ -13,6 +13,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
+import 'package:storify/customer/widgets/LocationService.dart';
+import 'package:storify/customer/widgets/mapPopUp.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -137,9 +139,18 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else if (roleName == 'Employee') {
+          // Handle Employee role
         } else if (roleName == 'Delivery') {
+          // Handle Delivery role
         } else if (roleName == 'Customer') {
-          Navigator.of(context).push(
+          // For Customer role, check if they're a new customer who needs to set location
+          setState(() {
+            _isLoading = false;
+          });
+
+          // First navigate to the main Customer screen
+          final navigator = Navigator.of(context);
+          navigator.push(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
                   const CustomerOrders(),
@@ -153,18 +164,80 @@ class _LoginScreenState extends State<LoginScreen> {
               transitionDuration: const Duration(milliseconds: 600),
             ),
           );
+
+          // Then check if location needs to be set
+          _debugCustomerLocationAPI(context);
         }
-        // Rest of your role-based navigation...
       } else {
-        // Error handling...
+        final responseData = json.decode(response.body);
+        String errorMessage = 'Login failed';
+        if (responseData.containsKey('message')) {
+          errorMessage = responseData['message'];
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+        setState(() {
+          _isLoading = false;
+        });
       }
     } catch (error) {
-      // Exception handling...
+      print('Error during login: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Network error. Please try again.')),
+      );
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
 
-    setState(() {
-      _isLoading = false;
-    });
+  /// Check if the customer needs to set their location
+// Update this section in your LoginScreen class
+
+  /// Check if the customer needs to set their location
+// Updated _checkAndSetCustomerLocation method for LoginScreen
+// Make this change to ensure we don't show the popup after logging out and back in
+
+  // Update to the _checkAndSetCustomerLocation method in LoginScreen
+
+// Replace the _checkAndSetCustomerLocation method in LoginScreen
+
+  Future<void> _checkAndSetCustomerLocation(NavigatorState navigator) async {
+    try {
+      print('Checking if customer location is set...');
+
+      // Add a temporary flag to force popup (for testing)
+      // Set this to false when everything is working correctly
+      final forcePopup = false;
+
+      // Check the database for location data
+      final locationIsSet =
+          forcePopup ? false : await LocationService.isLocationSetInDatabase();
+
+      if (!locationIsSet) {
+        print('Location is NOT set in database, showing popup');
+
+        // Wait a moment for the main screen to build
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        // Show the location selection popup
+        if (navigator.context.mounted) {
+          showDialog(
+            context: navigator.context,
+            barrierDismissible: false, // User must interact with the dialog
+            builder: (BuildContext context) {
+              return const LocationSelectionPopup();
+            },
+          );
+        }
+      } else {
+        print('Location is already set in database, skipping popup');
+      }
+    } catch (e) {
+      print('Error checking customer location status: $e');
+      // If there's an error, we err on the side of not showing the popup
+    }
   }
 
   @override
@@ -608,5 +681,108 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
+  }
+}
+
+Future<void> _debugCustomerLocationAPI(BuildContext context) async {
+  try {
+    // Get the auth token
+    final token = await AuthService.getToken();
+    if (token == null) {
+      print('DEBUG: Auth token is null');
+      return;
+    }
+
+    print('DEBUG: Token exists, length: ${token.length}');
+
+    // Make the API call directly
+    final response = await http.get(
+      Uri.parse(
+          'https://finalproject-a5ls.onrender.com/customer-details/profile'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('DEBUG: API response status: ${response.statusCode}');
+    print('DEBUG: API response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      // Parse the response
+      final data = json.decode(response.body);
+      print('DEBUG: Parsed data: $data');
+
+      // Try to find latitude and longitude values
+      var latitude, longitude;
+
+      // Check top level
+      if (data['latitude'] != null) {
+        latitude = data['latitude'];
+        print('DEBUG: Found latitude at top level: $latitude');
+      }
+
+      if (data['longitude'] != null) {
+        longitude = data['longitude'];
+        print('DEBUG: Found longitude at top level: $longitude');
+      }
+
+      // Check if customer field exists
+      if (data['customer'] != null) {
+        final customer = data['customer'];
+        print('DEBUG: Found customer object: $customer');
+
+        if (customer['latitude'] != null) {
+          latitude = customer['latitude'];
+          print('DEBUG: Found latitude in customer: $latitude');
+        }
+
+        if (customer['longitude'] != null) {
+          longitude = customer['longitude'];
+          print('DEBUG: Found longitude in customer: $longitude');
+        }
+      }
+
+      // Check if user field exists
+      if (data['user'] != null) {
+        final user = data['user'];
+        print('DEBUG: Found user object: $user');
+
+        if (user['latitude'] != null) {
+          latitude = user['latitude'];
+          print('DEBUG: Found latitude in user: $latitude');
+        }
+
+        if (user['longitude'] != null) {
+          longitude = user['longitude'];
+          print('DEBUG: Found longitude in user: $longitude');
+        }
+      }
+
+      // Final check
+      if (latitude != null && longitude != null) {
+        print('DEBUG: Location is set! Lat: $latitude, Lng: $longitude');
+
+        // Don't show popup
+        print('DEBUG: Would NOT show popup');
+      } else {
+        print('DEBUG: Location is NOT set!');
+
+        // Show popup
+        print('DEBUG: Would show popup');
+
+        // Show the popup for testing
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return const LocationSelectionPopup();
+          },
+        );
+      }
+    } else {
+      print('DEBUG: API call failed');
+    }
+  } catch (e) {
+    print('DEBUG: Error during check: $e');
   }
 }
