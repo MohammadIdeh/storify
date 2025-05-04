@@ -1,3 +1,4 @@
+// lib/admin/widgets/OrderSupplierWidgets/orderTable.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,14 +35,21 @@ class _OrdertableState extends State<Ordertable> {
       if (widget.filter == "Active") {
         filtered = filtered
             .where((order) =>
-                order.status == "Accepted" || order.status == "Pending")
+                order.status == "Accepted" ||
+                order.status == "Pending" ||
+                order.status == "Prepared" ||
+                order.status == "on_theway")
             .toList();
       } else if (widget.filter == "Completed") {
-        filtered =
-            filtered.where((order) => order.status == "Delivered").toList();
+        filtered = filtered
+            .where((order) =>
+                order.status == "Delivered" || order.status == "Shipped")
+            .toList();
       } else if (widget.filter == "Cancelled") {
-        filtered =
-            filtered.where((order) => order.status == "Declined").toList();
+        filtered = filtered
+            .where((order) =>
+                order.status == "Declined" || order.status == "Rejected")
+            .toList();
       }
     }
     // Filter by search query on orderId.
@@ -336,22 +344,40 @@ class _OrdertableState extends State<Ordertable> {
   Widget _buildStatusPill(String status) {
     Color textColor;
     Color borderColor;
-    if (status == "Accepted") {
-      textColor = const Color.fromARGB(255, 0, 196, 255); // cyan
-      borderColor = textColor;
-    } else if (status == "Pending") {
-      textColor = const Color.fromARGB(255, 255, 232, 29); // yellow
-      borderColor = textColor;
-    } else if (status == "Delivered") {
-      textColor = const Color.fromARGB(178, 0, 224, 116); // green
-      borderColor = textColor;
-    } else if (status == "Declined") {
-      textColor = const Color.fromARGB(255, 229, 62, 62); // red
-      borderColor = textColor;
-    } else {
-      textColor = Colors.white70;
-      borderColor = Colors.white54;
+
+    switch (status) {
+      case "Accepted":
+        textColor = const Color.fromARGB(255, 0, 196, 255); // cyan
+        borderColor = textColor;
+        break;
+      case "Pending":
+        textColor = const Color.fromARGB(255, 255, 232, 29); // yellow
+        borderColor = textColor;
+        break;
+      case "Delivered":
+      case "Shipped":
+        textColor = const Color.fromARGB(178, 0, 224, 116); // green
+        borderColor = textColor;
+        break;
+      case "Declined":
+      case "Rejected":
+        textColor = const Color.fromARGB(255, 229, 62, 62); // red
+        borderColor = textColor;
+        break;
+      case "Prepared":
+        textColor = const Color.fromARGB(255, 255, 150, 30); // orange
+        borderColor = textColor;
+        break;
+      case "on_theway":
+        textColor = const Color.fromARGB(255, 130, 80, 223); // purple
+        borderColor = textColor;
+        break;
+      default:
+        textColor = Colors.white70;
+        borderColor = Colors.white54;
+        break;
     }
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(

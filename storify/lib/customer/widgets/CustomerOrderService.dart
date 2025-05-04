@@ -1,6 +1,7 @@
 // lib/customer/services/customer_order_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/customer/widgets/modelCustomer.dart';
 
@@ -86,6 +87,44 @@ class CustomerOrderService {
       return data['orders'];
     } else {
       throw Exception('Failed to load order history: ${response.statusCode}');
+    }
+  }
+
+  // In CustomerOrderService.dart, replace the isLocationSet() method with this:
+  static Future<bool> isLocationSet() async {
+    final headers = await AuthService.getAuthHeaders(role: 'Customer');
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/customer-details/profile'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Check for location in the CUSTOMER object (not at top level)
+        if (data.containsKey('customer') && data['customer'] != null) {
+          final customer = data['customer'];
+          final hasLatitude =
+              customer.containsKey('latitude') && customer['latitude'] != null;
+          final hasLongitude = customer.containsKey('longitude') &&
+              customer['longitude'] != null;
+
+          print(
+              '📍 LOCATION CHECK - hasLat: $hasLatitude, hasLng: $hasLongitude');
+          return hasLatitude && hasLongitude;
+        }
+
+        return false;
+      } else {
+        print('❌ Profile API error: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Exception in isLocationSet: $e');
+      return false;
     }
   }
 }

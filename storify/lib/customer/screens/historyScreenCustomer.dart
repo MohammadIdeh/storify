@@ -7,6 +7,7 @@ import 'package:storify/customer/widgets/navbarCus.dart';
 
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HistoryScreenCustomer extends StatefulWidget {
   const HistoryScreenCustomer({super.key});
@@ -18,13 +19,17 @@ class HistoryScreenCustomer extends StatefulWidget {
 class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
   int _currentIndex = 1;
   String? profilePictureUrl;
-  String _searchQuery = "";
+
+  // Date range filter
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   // Selected order for details view
   Map<String, dynamic>? _selectedOrder;
 
   // Orders data
   List<dynamic> _orders = [];
+  List<dynamic> _filteredOrders = [];
   bool _isLoading = true;
 
   @override
@@ -50,6 +55,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
       final orders = await CustomerOrderService.getOrderHistory();
       setState(() {
         _orders = orders;
+        _filteredOrders = orders; // Initialize filtered orders with all orders
         if (orders.isNotEmpty) {
           _selectedOrder = orders[0];
         }
@@ -66,7 +72,10 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: GoogleFonts.spaceGrotesk(),
+        ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -108,10 +117,112 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
     return DateFormat('dd MMM, yyyy').format(date);
   }
 
+  // Apply date filter
+  void _applyDateFilter() {
+    setState(() {
+      if (_startDate == null && _endDate == null) {
+        // No filter applied, show all orders
+        _filteredOrders = _orders;
+      } else {
+        _filteredOrders = _orders.where((order) {
+          final orderDate = DateTime.parse(order['createdAt']);
+
+          // Check start date
+          if (_startDate != null && orderDate.isBefore(_startDate!)) {
+            return false;
+          }
+
+          // Check end date (include orders from the entire end date)
+          if (_endDate != null) {
+            final endDatePlusOne = _endDate!.add(const Duration(days: 1));
+            if (orderDate.isAfter(endDatePlusOne)) {
+              return false;
+            }
+          }
+
+          return true;
+        }).toList();
+      }
+
+      // Update selected order if filtered list isn't empty
+      if (_filteredOrders.isNotEmpty) {
+        _selectedOrder = _filteredOrders[0];
+      } else {
+        _selectedOrder = null;
+      }
+    });
+  }
+
+  // Clear date filter
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+      _filteredOrders = _orders;
+      if (_filteredOrders.isNotEmpty) {
+        _selectedOrder = _filteredOrders[0];
+      }
+    });
+  }
+
+  // Show date picker and set date
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isStartDate
+          ? _startDate ?? DateTime.now()
+          : _endDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF7B5CFA),
+              onPrimary: Colors.white,
+              surface: Color(0xFF283548),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF1D2939),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+              ),
+            ),
+            textTheme: Theme.of(context).textTheme.apply(
+                  fontFamily: GoogleFonts.spaceGrotesk().fontFamily,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStartDate) {
+          _startDate = picked;
+          // If end date is before start date, reset end date
+          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+            _endDate = null;
+          }
+        } else {
+          _endDate = picked;
+          // If start date is after end date, reset start date
+          if (_startDate != null && _startDate!.isAfter(_endDate!)) {
+            _startDate = null;
+          }
+        }
+      });
+      _applyDateFilter();
+    }
+  }
+
   Widget _buildOrderStatusBadge(String status) {
     Color badgeColor;
+    final lowerStatus = status.toLowerCase();
 
-    switch (status.toLowerCase()) {
+    switch (lowerStatus) {
       case "delivered":
         badgeColor = Colors.green;
         break;
@@ -120,6 +231,12 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
         break;
       case "cancelled":
         badgeColor = Colors.red;
+        break;
+      case "rejected":
+        badgeColor = Colors.red;
+        break;
+      case "accepted":
+        badgeColor = Colors.green;
         break;
       default:
         badgeColor = Colors.blue;
@@ -133,7 +250,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
       ),
       child: Text(
         status,
-        style: const TextStyle(
+        style: GoogleFonts.spaceGrotesk(
           color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.bold,
@@ -183,9 +300,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               "Order History",
-                              style: TextStyle(
+                              style: GoogleFonts.spaceGrotesk(
                                 color: Colors.white,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -204,8 +321,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Search bar
+                        // Date Range Filter
                         Container(
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: const Color(0xFF283548),
                             borderRadius: BorderRadius.circular(15),
@@ -217,29 +335,147 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                               ),
                             ],
                           ),
-                          child: TextField(
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                            },
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: "Search Orders",
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              prefixIcon:
-                                  Icon(Icons.search, color: Colors.grey[400]),
-                              border: InputBorder.none,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 15),
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Filter by Date Range",
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _selectDate(context, true),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12, horizontal: 16),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1D2939),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.grey[700]!,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.calendar_today,
+                                                size: 16,
+                                                color: Colors.grey[400]),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _startDate == null
+                                                  ? "Start Date"
+                                                  : _formatDate(_startDate!),
+                                              style: GoogleFonts.spaceGrotesk(
+                                                color: _startDate == null
+                                                    ? Colors.grey[400]
+                                                    : Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => _selectDate(context, false),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12, horizontal: 16),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1D2939),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.grey[700]!,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.calendar_today,
+                                                size: 16,
+                                                color: Colors.grey[400]),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _endDate == null
+                                                  ? "End Date"
+                                                  : _formatDate(_endDate!),
+                                              style: GoogleFonts.spaceGrotesk(
+                                                color: _endDate == null
+                                                    ? Colors.grey[400]
+                                                    : Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: _applyDateFilter,
+                                      icon: const Icon(Icons.filter_list),
+                                      label: Text(
+                                        "Apply Filter",
+                                        style: GoogleFonts.spaceGrotesk(),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF7B5CFA),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: _clearDateFilter,
+                                    icon: const Icon(Icons.clear),
+                                    label: Text(
+                                      "Clear",
+                                      style: GoogleFonts.spaceGrotesk(),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey[800],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 24),
 
                         // Orders list
                         Expanded(
-                          child: _orders.isEmpty
+                          child: _filteredOrders.isEmpty
                               ? Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -252,15 +488,15 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                       const SizedBox(height: 16),
                                       Text(
                                         "No orders found",
-                                        style: TextStyle(
+                                        style: GoogleFonts.spaceGrotesk(
                                           color: Colors.grey[400],
                                           fontSize: 16,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        "Your order history will appear here",
-                                        style: TextStyle(
+                                        "Try adjusting your filter criteria",
+                                        style: GoogleFonts.spaceGrotesk(
                                           color: Colors.grey[400],
                                           fontSize: 14,
                                         ),
@@ -269,11 +505,11 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                   ),
                                 )
                               : ListView.separated(
-                                  itemCount: _orders.length,
+                                  itemCount: _filteredOrders.length,
                                   separatorBuilder: (context, index) =>
                                       const SizedBox(height: 16),
                                   itemBuilder: (context, index) {
-                                    final order = _orders[index];
+                                    final order = _filteredOrders[index];
                                     final isSelected = _selectedOrder != null &&
                                         _selectedOrder!['id'] == order['id'];
 
@@ -317,7 +553,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   children: [
                                                     Text(
                                                       "Order #${order['id']}",
-                                                      style: const TextStyle(
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
                                                         color: Colors.white,
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -327,7 +564,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                     const SizedBox(height: 5),
                                                     Text(
                                                       "Date: ${_formatDate(DateTime.parse(order['createdAt']))}",
-                                                      style: TextStyle(
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
                                                         color: Colors.grey[400],
                                                         fontSize: 14,
                                                       ),
@@ -336,7 +574,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                 ),
                                                 Text(
                                                   "\$${order['totalCost'].toStringAsFixed(2)}",
-                                                  style: const TextStyle(
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 18,
@@ -354,7 +593,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                               children: [
                                                 Text(
                                                   "${order['items'].length} items",
-                                                  style: TextStyle(
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
                                                     color: Colors.grey[400],
                                                     fontSize: 14,
                                                   ),
@@ -385,7 +625,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                         ? Center(
                             child: Text(
                               "Select an order to view details",
-                              style: TextStyle(
+                              style: GoogleFonts.spaceGrotesk(
                                 color: Colors.grey[400],
                                 fontSize: 18,
                               ),
@@ -414,9 +654,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Text(
+                                        Text(
                                           "Order Details",
-                                          style: TextStyle(
+                                          style: GoogleFonts.spaceGrotesk(
                                             color: Colors.white,
                                             fontSize: 24,
                                             fontWeight: FontWeight.bold,
@@ -430,8 +670,11 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                             ElevatedButton.icon(
                                               onPressed: () {},
                                               icon: const Icon(Icons.print),
-                                              label:
-                                                  const Text("Print Invoice"),
+                                              label: Text(
+                                                "Print Invoice",
+                                                style:
+                                                    GoogleFonts.spaceGrotesk(),
+                                              ),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
                                                     const Color(0xFF7B5CFA),
@@ -482,9 +725,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
+                                          Text(
                                             "Order Items",
-                                            style: TextStyle(
+                                            style: GoogleFonts.spaceGrotesk(
                                               color: Colors.white,
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -509,7 +752,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   flex: 5,
                                                   child: Text(
                                                     "Product",
-                                                    style: TextStyle(
+                                                    style: GoogleFonts
+                                                        .spaceGrotesk(
                                                       color: Colors.grey[400],
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -520,7 +764,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   flex: 2,
                                                   child: Text(
                                                     "Price",
-                                                    style: TextStyle(
+                                                    style: GoogleFonts
+                                                        .spaceGrotesk(
                                                       color: Colors.grey[400],
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -532,7 +777,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   flex: 2,
                                                   child: Text(
                                                     "Quantity",
-                                                    style: TextStyle(
+                                                    style: GoogleFonts
+                                                        .spaceGrotesk(
                                                       color: Colors.grey[400],
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -544,7 +790,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   flex: 2,
                                                   child: Text(
                                                     "Total",
-                                                    style: TextStyle(
+                                                    style: GoogleFonts
+                                                        .spaceGrotesk(
                                                       color: Colors.grey[400],
                                                       fontWeight:
                                                           FontWeight.bold,
@@ -648,8 +895,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                           Expanded(
                                                             child: Text(
                                                               product['name'],
-                                                              style:
-                                                                  const TextStyle(
+                                                              style: GoogleFonts
+                                                                  .spaceGrotesk(
                                                                 color: Colors
                                                                     .white,
                                                                 fontWeight:
@@ -670,7 +917,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                       flex: 2,
                                                       child: Text(
                                                         "\$${price.toStringAsFixed(2)}",
-                                                        style: const TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color: Colors.white,
                                                         ),
                                                         textAlign:
@@ -683,7 +931,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                       flex: 2,
                                                       child: Text(
                                                         quantity.toString(),
-                                                        style: const TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color: Colors.white,
                                                         ),
                                                         textAlign:
@@ -696,7 +945,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                       flex: 2,
                                                       child: Text(
                                                         "\$${subtotal.toStringAsFixed(2)}",
-                                                        style: const TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color: Colors.white,
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -729,13 +979,15 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   children: [
                                                     Text(
                                                       "Subtotal",
-                                                      style: TextStyle(
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
                                                         color: Colors.grey[300],
                                                       ),
                                                     ),
                                                     Text(
                                                       "\$${_calculateSubtotal(_selectedOrder!['items']).toStringAsFixed(2)}",
-                                                      style: const TextStyle(
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
                                                         color: Colors.white,
                                                       ),
                                                     ),
@@ -752,14 +1004,16 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                     children: [
                                                       Text(
                                                         "Discount",
-                                                        style: TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color:
                                                               Colors.grey[300],
                                                         ),
                                                       ),
                                                       Text(
                                                         "\$${_selectedOrder!['discount'].toStringAsFixed(2)}",
-                                                        style: const TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color: Colors.white,
                                                         ),
                                                       ),
@@ -777,7 +1031,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   children: [
                                                     Text(
                                                       "Total",
-                                                      style: TextStyle(
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
                                                         color: Colors.white,
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -786,7 +1041,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                     ),
                                                     Text(
                                                       "\$${_selectedOrder!['totalCost'].toStringAsFixed(2)}",
-                                                      style: TextStyle(
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
                                                         color: Colors.white,
                                                         fontWeight:
                                                             FontWeight.bold,
@@ -806,14 +1062,16 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                     children: [
                                                       Text(
                                                         "Amount Paid",
-                                                        style: TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color:
                                                               Colors.grey[300],
                                                         ),
                                                       ),
                                                       Text(
                                                         "\$${_selectedOrder!['amountPaid'].toStringAsFixed(2)}",
-                                                        style: const TextStyle(
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
                                                           color: Colors.green,
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -875,9 +1133,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const Text(
+                                            Text(
                                               "Order Note",
-                                              style: TextStyle(
+                                              style: GoogleFonts.spaceGrotesk(
                                                 color: Colors.white,
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold,
@@ -886,7 +1144,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                             const SizedBox(height: 12),
                                             Text(
                                               _selectedOrder!['note'],
-                                              style: const TextStyle(
+                                              style: GoogleFonts.spaceGrotesk(
                                                 color: Colors.white,
                                               ),
                                             ),
@@ -930,7 +1188,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: GoogleFonts.spaceGrotesk(
                     color: Colors.grey[400],
                     fontSize: 12,
                   ),
@@ -938,7 +1196,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: GoogleFonts.spaceGrotesk(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -972,7 +1230,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: GoogleFonts.spaceGrotesk(
                     color: Colors.grey[400],
                     fontSize: 12,
                   ),
@@ -980,7 +1238,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: GoogleFonts.spaceGrotesk(
                     color: Colors.white,
                     fontSize: 14,
                   ),

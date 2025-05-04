@@ -1,12 +1,19 @@
 // lib/customer/screens/customer_orders_screen.dart
+import 'dart:convert';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/customer/screens/historyScreenCustomer.dart';
 import 'package:storify/customer/widgets/CustomerOrderService.dart';
+import 'package:storify/customer/widgets/mapPopUp.dart';
 import 'package:storify/customer/widgets/modelCustomer.dart'
     show CartItem, Category, Order, Product;
 import 'package:storify/customer/widgets/navbarCus.dart';
 import 'package:storify/customer/widgets/uiWidgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomerOrders extends StatefulWidget {
   const CustomerOrders({Key? key}) : super(key: key);
@@ -141,7 +148,10 @@ class _CustomerOrdersState extends State<CustomerOrders> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${item.product.name} added to cart'),
+        content: Text(
+          '${item.product.name} added to cart',
+          style: GoogleFonts.spaceGrotesk(),
+        ),
         duration: const Duration(seconds: 1),
         backgroundColor: const Color(0xFF7B5CFA),
         behavior: SnackBarBehavior.floating,
@@ -165,6 +175,15 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   Future<void> _placeOrder() async {
     if (_cartItems.isEmpty) {
       _showErrorSnackbar("Your cart is empty");
+      return;
+    }
+
+    // Check if location is set using backend API
+    final bool locationSet = await CustomerOrderService.isLocationSet();
+
+    if (!locationSet) {
+      // Show location popup if location is not set
+      _showLocationPopup();
       return;
     }
 
@@ -193,17 +212,33 @@ class _CustomerOrdersState extends State<CustomerOrders> {
         ),
       );
     } catch (e) {
+      // Error handling remains the same
       setState(() {
         _isPlacingOrder = false;
       });
 
-      // Handle insufficient stock exception
       if (e is InsufficientStockException) {
         _showStockLimitDialog(e);
       } else {
         _showErrorSnackbar("Failed to place order: $e");
       }
     }
+  }
+
+  // UI Helpers for showing dialogs and popups
+  void _showLocationPopup() {
+    print('📍 Showing location popup');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => LocationSelectionPopup(
+        onLocationSaved: () {
+          print('📍 Location saved callback - placing order again');
+          // After saving location, try placing order again
+          _placeOrder();
+        },
+      ),
+    );
   }
 
   void _showStockLimitDialog(InsufficientStockException exception) {
@@ -215,9 +250,9 @@ class _CustomerOrdersState extends State<CustomerOrders> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: Text(
             "Insufficient Stock",
-            style: TextStyle(
+            style: GoogleFonts.spaceGrotesk(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
@@ -228,27 +263,27 @@ class _CustomerOrdersState extends State<CustomerOrders> {
             children: [
               Text(
                 "Product: ${exception.productName}",
-                style: const TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 "Available: ${exception.available}",
-                style: const TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                 ),
               ),
               Text(
                 "Requested: ${exception.requested}",
-                style: const TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 "Would you like to update the quantity to the maximum available?",
-                style: TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                 ),
               ),
@@ -259,9 +294,9 @@ class _CustomerOrdersState extends State<CustomerOrders> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text(
+              child: Text(
                 "Cancel",
-                style: TextStyle(
+                style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                 ),
               ),
@@ -285,7 +320,10 @@ class _CustomerOrdersState extends State<CustomerOrders> {
 
                 Navigator.of(context).pop();
               },
-              child: const Text("Update Quantity"),
+              child: Text(
+                "Update Quantity",
+                style: GoogleFonts.spaceGrotesk(),
+              ),
             ),
           ],
         );
@@ -296,7 +334,10 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: GoogleFonts.spaceGrotesk(),
+        ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -306,7 +347,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
     );
   }
 
-  // Search
+  // Search helper
   List<Product> _getFilteredProducts() {
     if (_searchQuery.isEmpty) {
       return _products;
@@ -320,6 +361,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
 
   @override
   Widget build(BuildContext context) {
+    // Build method implementation remains unchanged
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: PreferredSize(
@@ -345,9 +387,9 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         "New Order",
-                        style: TextStyle(
+                        style: GoogleFonts.spaceGrotesk(
                           color: Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -385,10 +427,11 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                           _searchQuery = value;
                         });
                       },
-                      style: const TextStyle(color: Colors.white),
+                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: "Search products",
-                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        hintStyle:
+                            GoogleFonts.spaceGrotesk(color: Colors.grey[400]),
                         prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
                         border: InputBorder.none,
                         contentPadding:
@@ -398,13 +441,13 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Categories section - Now at top horizontally
+                  // Categories section
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Categories",
-                        style: TextStyle(
+                        style: GoogleFonts.spaceGrotesk(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -412,14 +455,14 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                       ),
                       const SizedBox(height: 15),
 
-                      // Categories list - Horizontal scrolling
+                      // Horizontal scrollable categories
                       _isLoadingCategories
                           ? Center(
                               child: CircularProgressIndicator(
                                 color: const Color(0xFF7B5CFA),
                               ),
                             )
-                          : SizedBox(
+                          : Container(
                               height: 120,
                               child: CategoryList(
                                 categories: _categories,
@@ -429,19 +472,20 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                             ),
                     ],
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
                   // Products section
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Products header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               "Products",
-                              style: TextStyle(
+                              style: GoogleFonts.spaceGrotesk(
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -457,7 +501,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                                 ),
                                 child: Text(
                                   "${_getFilteredProducts().length} items",
-                                  style: TextStyle(
+                                  style: GoogleFonts.spaceGrotesk(
                                     color: Colors.grey[300],
                                     fontSize: 14,
                                   ),
@@ -465,15 +509,56 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
 
                         // Products grid
                         Expanded(
-                          child: ProductGrid(
-                            products: _getFilteredProducts(),
-                            onAddToCart: _addToCart,
-                            isLoading: _isLoadingProducts,
-                          ),
+                          child: _isLoadingProducts
+                              ? Center(
+                                  child: CircularProgressIndicator(
+                                    color: const Color(0xFF7B5CFA),
+                                  ),
+                                )
+                              : _getFilteredProducts().isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.inventory_2_outlined,
+                                            size: 64,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            textAlign: TextAlign.center,
+                                            "No products in this Category\navailbile",
+                                            style: GoogleFonts.spaceGrotesk(
+                                              color: Colors.grey[400],
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : GridView.builder(
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 4,
+                                        childAspectRatio: 0.9,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 16,
+                                      ),
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      itemCount: _getFilteredProducts().length,
+                                      itemBuilder: (context, index) {
+                                        final product =
+                                            _getFilteredProducts()[index];
+                                        return _buildProductItem(product);
+                                      },
+                                    ),
                         ),
                       ],
                     ),
@@ -494,6 +579,122 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                 updateQuantity: _updateCartItemQuantity,
                 placeOrder: _placeOrder,
                 isPlacingOrder: _isPlacingOrder,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductItem(Product product) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF283548),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product Image
+          Expanded(
+            flex: 5,
+            child: ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              child: CachedNetworkImage(
+                imageUrl: product.image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                placeholder: (context, url) => Center(
+                  child: CircularProgressIndicator(
+                    color: const Color(0xFF7B5CFA),
+                    strokeWidth: 2,
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[800],
+                  child: Icon(
+                    Icons.image_not_supported,
+                    color: Colors.grey[400],
+                    size: 40,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Product Details
+          Expanded(
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Name and Price
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "\$${product.sellPrice.toStringAsFixed(2)}",
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Add to Cart Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final cartItem = CartItem(
+                          product: product,
+                          quantity: 1,
+                        );
+                        _addToCart(cartItem);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7B5CFA),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: const Color(0xFF7B5CFA).withOpacity(0.5),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        "Add to Cart",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

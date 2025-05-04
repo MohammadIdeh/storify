@@ -66,8 +66,7 @@ class OrdersCard extends StatelessWidget {
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w500,
-                            color:
-                                const Color.fromARGB(255, 196, 196, 196),
+                            color: const Color.fromARGB(255, 196, 196, 196),
                           ),
                         ),
                       ],

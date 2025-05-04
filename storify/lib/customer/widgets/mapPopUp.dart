@@ -244,13 +244,13 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         },
         body: json.encode(locationData),
       );
-
+// At the bottom of _saveLocation() method in LocationSelectionPopup
       if (response.statusCode == 200) {
         // Save location to shared preferences for future use
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setDouble('latitude', _selectedLocation!.latitude);
-        await prefs.setDouble('longitude', _selectedLocation!.longitude);
-        await prefs.setBool('locationSet', true);
+        // final prefs = await SharedPreferences.getInstance();
+        // await prefs.setDouble('latitude', _selectedLocation!.latitude);
+        // await prefs.setDouble('longitude', _selectedLocation!.longitude);
+        // await prefs.setBool('locationSet', true); // Key flag!
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Location saved successfully')),

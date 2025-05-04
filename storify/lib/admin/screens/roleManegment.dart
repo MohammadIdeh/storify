@@ -88,7 +88,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final json = jsonDecode(response.body);
+        jsonDecode(response.body);
         // Optionally update dateAdded if needed.
         return updatedUser.copyWith(
           dateAdded: DateFormat("MM-dd-yyyy HH:mm").format(DateTime.now()),

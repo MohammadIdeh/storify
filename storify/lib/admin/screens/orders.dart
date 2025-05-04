@@ -1,3 +1,4 @@
+// lib/admin/screens/orders.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -51,6 +52,8 @@ class _OrdersState extends State<Orders> {
   }
 
   // Fetch orders from the API
+  // Fix for the Orders.dart class - update the _fetchOrders method
+
   Future<void> _fetchOrders() async {
     setState(() {
       _isLoading = true;
@@ -62,13 +65,20 @@ class _OrdersState extends State<Orders> {
       final headers = await AuthService.getAuthHeaders();
 
       // Fetch supplier orders
-      final response = await http.get(
+      final supplierResponse = await http.get(
         Uri.parse('https://finalproject-a5ls.onrender.com/supplierOrders/'),
         headers: headers,
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      // Fetch customer orders
+      final customerResponse = await http.get(
+        Uri.parse('https://finalproject-a5ls.onrender.com/customer-order/'),
+        headers: headers,
+      );
+
+      // Process supplier orders
+      if (supplierResponse.statusCode == 200) {
+        final data = json.decode(supplierResponse.body);
 
         if (data['message'] == 'Orders retrieved successfully') {
           final List<dynamic> ordersJson = data['orders'];
@@ -77,24 +87,54 @@ class _OrdersState extends State<Orders> {
             _supplierOrders = ordersJson
                 .map((orderJson) => OrderItem.fromJson(orderJson))
                 .toList();
-
-            // For now, we'll keep customer orders empty or you can add another API endpoint for customer orders
-            _isLoading = false;
           });
         } else {
-          setState(() {
-            _errorMessage = 'Failed to load orders: ${data['message']}';
-            _isLoading = false;
-          });
+          print('Failed to load supplier orders: ${data['message']}');
         }
       } else {
+        print(
+            'Failed to load supplier orders. Status code: ${supplierResponse.statusCode}');
+      }
+
+      // Process customer orders - FIX THE JSON PARSING HERE
+      if (customerResponse.statusCode == 200) {
+        final data = json.decode(customerResponse.body);
+
+        // Check if data is a map with 'orders' key or directly a list
+        if (data is Map && data.containsKey('orders')) {
+          // If it's a map with 'orders' key
+          final List<dynamic> ordersJson = data['orders'];
+          setState(() {
+            _customerOrders = ordersJson
+                .map((orderJson) => OrderItem.fromCustomerJson(orderJson))
+                .toList();
+          });
+        } else if (data is List) {
+          // If it's directly a list
+          setState(() {
+            _customerOrders = (data as List)
+                .map((orderJson) => OrderItem.fromCustomerJson(orderJson))
+                .toList();
+          });
+        } else {
+          // If it's neither a list nor a map with 'orders' key
+          setState(() {
+            _errorMessage = 'Unexpected customer orders response format';
+          });
+        }
+
         setState(() {
-          _errorMessage =
-              'Failed to load orders. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      } else {
+        print(
+            'Failed to load customer orders. Status code: ${customerResponse.statusCode}');
+        setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('Error fetching orders: $e');
       setState(() {
         _errorMessage = 'Error fetching orders: $e';
         _isLoading = false;
@@ -126,14 +166,20 @@ class _OrdersState extends State<Orders> {
   int get totalOrdersCount => _activeOrdersList.length;
 
   int get activeCount => _activeOrdersList
-      .where((o) => o.status == "Accepted" || o.status == "Pending")
+      .where((o) =>
+          o.status == "Accepted" ||
+          o.status == "Pending" ||
+          o.status == "Prepared" ||
+          o.status == "on_theway")
       .length;
 
-  int get completedCount =>
-      _activeOrdersList.where((o) => o.status == "Delivered").length;
+  int get completedCount => _activeOrdersList
+      .where((o) => o.status == "Delivered" || o.status == "Shipped")
+      .length;
 
-  int get cancelledCount =>
-      _activeOrdersList.where((o) => o.status == "Declined").length;
+  int get cancelledCount => _activeOrdersList
+      .where((o) => o.status == "Declined" || o.status == "Rejected")
+      .length;
 
   // Build card data dynamically.
   List<_OrderCardData> get _ordersData {

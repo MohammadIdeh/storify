@@ -27,14 +27,16 @@ class SupplierService {
           throw Exception('Failed to load suppliers: ${data['message']}');
         }
       } else {
-        throw Exception('Failed to load suppliers. Status code: ${response.statusCode}');
+        throw Exception(
+            'Failed to load suppliers. Status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching suppliers: $e');
     }
   }
 
-  static Future<List<SupplierProduct>> getSupplierProducts(int supplierId) async {
+  static Future<List<SupplierProduct>> getSupplierProducts(
+      int supplierId) async {
     try {
       final headers = await AuthService.getAuthHeaders();
       final response = await http.get(
@@ -46,13 +48,16 @@ class SupplierService {
         final data = json.decode(response.body);
         if (data['message'] == 'Supplier products retrieved successfully') {
           return (data['products'] as List)
-              .map((productJson) => SupplierProduct.fromJson(productJson, supplierId))
+              .map((productJson) =>
+                  SupplierProduct.fromJson(productJson, supplierId))
               .toList();
         } else {
-          throw Exception('Failed to load supplier products: ${data['message']}');
+          throw Exception(
+              'Failed to load supplier products: ${data['message']}');
         }
       } else {
-        throw Exception('Failed to load supplier products. Status code: ${response.statusCode}');
+        throw Exception(
+            'Failed to load supplier products. Status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching supplier products: $e');
@@ -63,7 +68,7 @@ class SupplierService {
     try {
       final headers = await AuthService.getAuthHeaders();
       headers['Content-Type'] = 'application/json';
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/supplierOrders/'),
         headers: headers,
@@ -74,22 +79,20 @@ class SupplierService {
         final data = json.decode(response.body);
         if (data['message'] == 'Order created successfully') {
           // Extract order ID from response if available, or generate a temporary one
-          final String orderId = data['data']?['_id'] ?? 
-                              'ORDER-${DateTime.now().millisecondsSinceEpoch}';
-          
+          final String orderId = data['data']?['_id'] ??
+              'ORDER-${DateTime.now().millisecondsSinceEpoch}';
+
           // Send notification to supplier
           await _sendOrderNotificationToSupplier(
-            order.supplierId,
-            orderId,
-            order.items.length
-          );
-          
+              order.supplierId, orderId, order.items.length);
+
           return true;
         } else {
           throw Exception('Failed to create order: ${data['message']}');
         }
       } else {
-        throw Exception('Failed to create order. Status code: ${response.statusCode}');
+        throw Exception(
+            'Failed to create order. Status code: ${response.statusCode}');
       }
     } catch (e) {
       print('Error creating order: $e');
@@ -99,29 +102,23 @@ class SupplierService {
 
   // New method to send notification to supplier about new order
   static Future<void> _sendOrderNotificationToSupplier(
-    int supplierId, 
-    String orderId,
-    int itemCount
-  ) async {
+      int supplierId, String orderId, int itemCount) async {
     try {
       final title = "New Order Received";
-      final message = "You have received a new order (#$orderId) with $itemCount item${itemCount > 1 ? 's' : ''}.";
-      
+      final message =
+          "You have received a new order (#$orderId) with $itemCount item${itemCount > 1 ? 's' : ''}.";
+
       // Additional data to include with notification
       final additionalData = {
         'orderId': orderId,
         'type': 'new_order',
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
+
       // Send notification to supplier
       await NotificationService().sendNotificationToSupplier(
-        supplierId,
-        title,
-        message,
-        additionalData
-      );
-      
+          supplierId, title, message, additionalData);
+
       print('Notification sent to supplier ID: $supplierId');
     } catch (e) {
       print('Error sending notification to supplier: $e');
@@ -135,21 +132,21 @@ class SupplierService {
     try {
       // Get all suppliers
       final suppliers = await getSuppliers();
-      
+
       SupplierProduct? lowerPriceProduct;
       Supplier? lowerPriceSupplier;
-      
+
       // Check each supplier except the current one
       for (var supplier in suppliers) {
         if (supplier.id != currentSupplierId) {
           final products = await getSupplierProducts(supplier.id);
-          
+
           // Find products with the same name but lower price
           for (var otherProduct in products) {
             if (otherProduct.name.toLowerCase() == product.name.toLowerCase() &&
                 otherProduct.costPrice < product.costPrice) {
               // If we found a lower price, or if this is lower than our previous find
-              if (lowerPriceProduct == null || 
+              if (lowerPriceProduct == null ||
                   otherProduct.costPrice < lowerPriceProduct.costPrice) {
                 lowerPriceProduct = otherProduct;
                 lowerPriceSupplier = supplier;
@@ -158,14 +155,14 @@ class SupplierService {
           }
         }
       }
-      
+
       if (lowerPriceProduct != null && lowerPriceSupplier != null) {
         return {
           'product': lowerPriceProduct,
           'supplier': lowerPriceSupplier,
         };
       }
-      
+
       return null;
     } catch (e) {
       print('Error finding lower price product: $e');

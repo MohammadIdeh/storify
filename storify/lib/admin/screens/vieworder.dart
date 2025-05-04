@@ -42,6 +42,7 @@ class _VieworderState extends State<Vieworder> {
   late OrderItem _localOrder;
   bool _isLoading = true;
   String? _errorMessage;
+  final TextEditingController _noteController = TextEditingController();
 
   // Detailed order info
   Map<String, dynamic>? _orderDetails;
@@ -53,6 +54,9 @@ class _VieworderState extends State<Vieworder> {
   int _lineItemsCurrentPage = 1;
   final int _lineItemsPerPage = 7;
 
+  // Flag to check if we're in customer mode
+  bool get isCustomerOrder => !widget.isSupplierMode;
+
   @override
   void initState() {
     super.initState();
@@ -60,12 +64,30 @@ class _VieworderState extends State<Vieworder> {
     _fetchOrderDetails();
   }
 
+  // Fetch appropriate order details based on mode
   Future<void> _fetchOrderDetails() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
+    try {
+      if (widget.isSupplierMode) {
+        await _fetchSupplierOrderDetails();
+      } else {
+        await _fetchCustomerOrderDetails();
+      }
+    } catch (e) {
+      print("Error in fetch order details: $e");
+      setState(() {
+        _errorMessage = 'Error fetching order details: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Fetch supplier order details
+  Future<void> _fetchSupplierOrderDetails() async {
     try {
       // Get auth headers
       final headers = await AuthService.getAuthHeaders();
@@ -186,16 +208,128 @@ class _VieworderState extends State<Vieworder> {
         });
       }
     } catch (e) {
-      print("Error in fetch order details: $e"); // Debug
+      print("Error in fetch supplier order details: $e"); // Debug
+      rethrow;
+    }
+  }
+
+  // Fetch customer order details
+// Update the _fetchCustomerOrderDetails method in the Vieworder class
+  Future<void> _fetchCustomerOrderDetails() async {
+    try {
+      // Get auth headers
+      final headers = await AuthService.getAuthHeaders();
+
+      // Fetch order details
+      final response = await http.get(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/customer-order/${widget.order.orderId}'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        print("API Response: $responseData"); // Debug output
+
+        // Extract the order data from the nested 'order' property
+        final orderData = responseData['order'];
+        if (orderData == null) {
+          throw Exception('Order data not found in response');
+        }
+
+        print("Customer order data: $orderData"); // Debug output
+
+        // Extract totalCost directly from the API response
+        double totalCost = 0.0;
+        if (orderData['totalCost'] != null) {
+          if (orderData['totalCost'] is num) {
+            totalCost = (orderData['totalCost'] as num).toDouble();
+          } else {
+            totalCost =
+                double.tryParse(orderData['totalCost'].toString()) ?? 0.0;
+          }
+        }
+        print("Total cost from API: $totalCost");
+
+        // Process items
+        List<OrderLineItem> processedItems = [];
+
+        if (orderData['items'] != null && orderData['items'] is List) {
+          final itemsList = orderData['items'] as List;
+          print("Found ${itemsList.length} items");
+
+          for (var item in itemsList) {
+            // Get product information
+            final product = item['product'] ?? {};
+            final String productName = product['name'] ?? 'Unknown Product';
+            final String? imageUrl = product['image'];
+
+            // Extract price - note the capital 'P' in 'Price'
+            double price = 0.0;
+            if (item['Price'] != null) {
+              // Capital 'P' as in your data
+              price = item['Price'] is num
+                  ? (item['Price'] as num).toDouble()
+                  : double.tryParse(item['Price'].toString()) ?? 0.0;
+            }
+
+            // Extract quantity
+            int quantity = 0;
+            if (item['quantity'] != null) {
+              quantity = item['quantity'] is num
+                  ? (item['quantity'] as num).toInt()
+                  : int.tryParse(item['quantity'].toString()) ?? 0;
+            }
+
+            // Extract subtotal
+            double subtotal = 0.0;
+            if (item['subtotal'] != null) {
+              subtotal = item['subtotal'] is num
+                  ? (item['subtotal'] as num).toDouble()
+                  : double.tryParse(item['subtotal'].toString()) ?? 0.0;
+            }
+
+            print(
+                "Item: $productName, Price: $price, Quantity: $quantity, Subtotal: $subtotal");
+
+            // Create the line item
+            processedItems.add(OrderLineItem(
+              name: productName,
+              imageUrl: imageUrl,
+              unitPrice: price,
+              quantity: quantity,
+              total: subtotal,
+            ));
+          }
+        }
+
+        setState(() {
+          _orderDetails = orderData;
+          _lineItems = processedItems;
+
+          // Create a new order with the updated total amount from API
+          _localOrder = widget.order.copyWith(totalAmount: totalCost);
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to load customer order details. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error in fetch customer order details: $e"); // Debug error
       setState(() {
-        _errorMessage = 'Error fetching order details: $e';
+        _errorMessage = 'Error fetching customer order details: $e';
         _isLoading = false;
       });
     }
   }
 
-  // Update order status
-  Future<void> _updateOrderStatus(String newStatus) async {
+  // Accept customer order
+  Future<void> _acceptCustomerOrder() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -204,62 +338,119 @@ class _VieworderState extends State<Vieworder> {
     try {
       // Get auth headers
       final headers = await AuthService.getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
 
-      // Use the same status value for API - no need to map anymore since
-      // we're using the API status names directly
-      String apiStatus = newStatus;
+      // Create request body - only include note if it's not empty
+      final Map<String, dynamic> requestBody = {
+        'status': 'Accepted',
+      };
+
+      // Only add note field if it's not empty
+      if (_noteController.text.isNotEmpty) {
+        requestBody['note'] = _noteController.text;
+      }
 
       // Update order status
       final response = await http.put(
         Uri.parse(
-            'https://finalproject-a5ls.onrender.com/supplierOrders/${widget.order.orderId}'),
+            'https://finalproject-a5ls.onrender.com/customer-order/${widget.order.orderId}/status'),
         headers: headers,
-        body: json.encode({
-          'status': apiStatus,
-        }),
+        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order accepted successfully'),
+            backgroundColor: const Color.fromARGB(178, 0, 224, 116),
+          ),
+        );
 
-        if (data['message'] == 'Order updated successfully') {
-          // Create a new order with the updated status
-          final updatedOrder = OrderItem(
-            orderId: _localOrder.orderId,
-            storeName: _localOrder.storeName,
-            phoneNo: _localOrder.phoneNo,
-            orderDate: _localOrder.orderDate,
-            totalProducts: _localOrder.totalProducts,
-            totalAmount: _localOrder.totalAmount,
-            status: newStatus,
-            note: _localOrder.note,
-            supplierId: _localOrder.supplierId,
-            items: _localOrder.items,
-          );
+        // Refresh the entire screen with latest data
 
-          setState(() {
-            _localOrder = updatedOrder;
-            _isLoading = false;
-          });
-
-          // Return updated order to the previous screen
-          Navigator.pop(context, updatedOrder);
-        } else {
-          setState(() {
-            _errorMessage = 'Failed to update order: ${data['message']}';
-            _isLoading = false;
-          });
-        }
+        // Only after refresh is complete, pass back the updated order to previous screen
+        Future.delayed(Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.pop(context, _localOrder);
+          }
+        });
       } else {
         setState(() {
           _errorMessage =
-              'Failed to update order. Status code: ${response.statusCode}';
+              'Failed to accept order. Status code: ${response.statusCode}';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error updating order: $e';
+        _errorMessage = 'Error accepting order: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Reject customer order
+  Future<void> _rejectCustomerOrder() async {
+    // Check if note is empty - require note for rejection
+    if (_noteController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please provide a reason for rejecting this order'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return; // Stop if note is empty
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Get auth headers
+      final headers = await AuthService.getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      // Use the existing note from the text field (required)
+      final response = await http.put(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/customer-order/${widget.order.orderId}/status'),
+        headers: headers,
+        body: json.encode({
+          'status': 'Rejected',
+          'note': _noteController.text, // Required for rejection
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order rejected successfully'),
+            backgroundColor: const Color.fromARGB(255, 229, 62, 62),
+          ),
+        );
+
+        // Refresh the entire screen with latest data
+
+        // Only after refresh is complete, pass back the updated order to previous screen
+        Future.delayed(Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.pop(context, _localOrder);
+          }
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to reject order. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error rejecting order: $e';
         _isLoading = false;
       });
     }
@@ -717,7 +908,7 @@ class _VieworderState extends State<Vieworder> {
                                 ),
                               ),
                               SizedBox(width: 20.w),
-                              // Right side: Order Info and Supplier Info
+                              // Right side: Order Info and Supplier/Customer Info
                               Expanded(
                                 flex: 1,
                                 child: Container(
@@ -770,75 +961,103 @@ class _VieworderState extends State<Vieworder> {
                                           ),
                                           SizedBox(width: 10.w),
                                           _buildStatusPill(_localOrder.status),
-                                          SizedBox(width: 20.w),
-                                          // Only show confirm/decline buttons for Customer orders and Awaiting status
-                                          if (!widget.isSupplierMode &&
-                                              _localOrder.status ==
-                                                  "Awaiting") ...[
-                                            Row(
-                                              children: [
-                                                ElevatedButton(
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        const Color.fromARGB(
-                                                            255, 0, 224, 116),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    elevation: 0,
-                                                  ),
-                                                  onPressed: () {
-                                                    _updateOrderStatus(
-                                                        "Accepted");
-                                                  },
-                                                  child: Text(
-                                                    "Confirm",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(width: 10.w),
-                                                ElevatedButton(
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        const Color.fromARGB(
-                                                            255, 229, 62, 62),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    elevation: 0,
-                                                  ),
-                                                  onPressed: () {
-                                                    _updateOrderStatus(
-                                                        "Declined");
-                                                  },
-                                                  child: Text(
-                                                    "Decline",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
                                         ],
                                       ),
+
+                                      // Show customer order action buttons for pending orders
+                                      if (!widget.isSupplierMode &&
+                                          _localOrder.status == "Pending") ...[
+                                        SizedBox(height: 20.h),
+                                        Text(
+                                          "Order Actions:",
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                        SizedBox(height: 10.h),
+                                        // Add note field for actions
+                                        // Update the note field UI label to be clear
+                                        TextField(
+                                          controller: _noteController,
+                                          maxLines: 3,
+                                          style: GoogleFonts.spaceGrotesk(
+                                              color: Colors.white),
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                'Add a note for this order (optional)...',
+                                            hintStyle: GoogleFonts.spaceGrotesk(
+                                                color: Colors.white38),
+                                            filled: true,
+                                            fillColor:
+                                                Colors.white.withOpacity(0.05),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.r),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            contentPadding:
+                                                EdgeInsets.all(12.w),
+                                          ),
+                                        ),
+                                        SizedBox(height: 16.h),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color.fromARGB(
+                                                          255, 0, 224, 116),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12.r),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(
+                                                      vertical: 12.h),
+                                                ),
+                                                onPressed: _acceptCustomerOrder,
+                                                child: Text(
+                                                  "Accept Order",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 10.w),
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color.fromARGB(
+                                                          255, 229, 62, 62),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12.r),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(
+                                                      vertical: 12.h),
+                                                ),
+                                                onPressed: _rejectCustomerOrder,
+                                                child: Text(
+                                                  "Reject Order",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
 
                                       // Show note if available
                                       if (_localOrder.note != null &&
@@ -890,15 +1109,41 @@ class _VieworderState extends State<Vieworder> {
                                           "Phone", _localOrder.phoneNo),
                                       _buildInfoRow(
                                           "Email",
-                                          _orderDetails != null &&
-                                                  _orderDetails!['supplier'] !=
-                                                      null &&
-                                                  _orderDetails!['supplier']
-                                                          ['user'] !=
-                                                      null
-                                              ? _orderDetails!['supplier']
-                                                  ['user']['email']
-                                              : "N/A"),
+                                          widget.isSupplierMode
+                                              ? (_orderDetails != null &&
+                                                      _orderDetails![
+                                                              'supplier'] !=
+                                                          null &&
+                                                      _orderDetails!['supplier']
+                                                              ['user'] !=
+                                                          null
+                                                  ? _orderDetails!['supplier']
+                                                      ['user']['email']
+                                                  : "N/A")
+                                              : (_orderDetails != null &&
+                                                      _orderDetails![
+                                                              'customer'] !=
+                                                          null &&
+                                                      _orderDetails!['customer']
+                                                              ['user'] !=
+                                                          null
+                                                  ? _orderDetails!['customer']
+                                                      ['user']['email']
+                                                  : "N/A")),
+                                      _buildInfoRow(
+                                          "Address",
+                                          widget.isSupplierMode
+                                              ? "N/A"
+                                              : (_orderDetails != null &&
+                                                      _orderDetails![
+                                                              'customer'] !=
+                                                          null &&
+                                                      _orderDetails!['customer']
+                                                              ['address'] !=
+                                                          null
+                                                  ? _orderDetails!['customer']
+                                                      ['address']
+                                                  : "N/A")),
                                     ],
                                   ),
                                 ),
@@ -947,21 +1192,37 @@ class _VieworderState extends State<Vieworder> {
     Color borderColor;
 
     // Use the same color scheme as in the OrderTable
-    if (status == "Accepted") {
-      textColor = const Color.fromARGB(255, 0, 196, 255); // cyan
-      borderColor = textColor;
-    } else if (status == "Pending") {
-      textColor = const Color.fromARGB(255, 255, 232, 29); // yellow
-      borderColor = textColor;
-    } else if (status == "Delivered") {
-      textColor = const Color.fromARGB(178, 0, 224, 116); // green
-      borderColor = textColor;
-    } else if (status == "Declined") {
-      textColor = const Color.fromARGB(255, 229, 62, 62); // red
-      borderColor = textColor;
-    } else {
-      textColor = Colors.white70;
-      borderColor = Colors.white54;
+    switch (status) {
+      case "Accepted":
+        textColor = const Color.fromARGB(255, 0, 196, 255); // cyan
+        borderColor = textColor;
+        break;
+      case "Pending":
+        textColor = const Color.fromARGB(255, 255, 232, 29); // yellow
+        borderColor = textColor;
+        break;
+      case "Delivered":
+      case "Shipped":
+        textColor = const Color.fromARGB(178, 0, 224, 116); // green
+        borderColor = textColor;
+        break;
+      case "Declined":
+      case "Rejected":
+        textColor = const Color.fromARGB(255, 229, 62, 62); // red
+        borderColor = textColor;
+        break;
+      case "Prepared":
+        textColor = const Color.fromARGB(255, 255, 150, 30); // orange
+        borderColor = textColor;
+        break;
+      case "on_theway":
+        textColor = const Color.fromARGB(255, 130, 80, 223); // purple
+        borderColor = textColor;
+        break;
+      default:
+        textColor = Colors.white70;
+        borderColor = Colors.white54;
+        break;
     }
 
     return Container(

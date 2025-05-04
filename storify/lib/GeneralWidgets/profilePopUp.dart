@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/GeneralWidgets/settingsWidget.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 
@@ -34,6 +35,53 @@ class _ProfilepopupState extends State<Profilepopup> {
       userName = prefs.getString('name');
       userRole = prefs.getString('currentRole');
     });
+  }
+
+  // Handle logout - moved inside class and improved
+  Future<void> _logout(BuildContext context) async {
+    // First call the callback to close the popup
+    widget.onCloseMenu();
+
+    try {
+      // Use AuthService to logout from all roles
+      await AuthService.logoutFromAllRoles();
+
+      // Clear ALL shared preferences data
+      final prefs = await SharedPreferences.getInstance();
+
+      // Clear profile data
+      await prefs.remove('profilePicture');
+      await prefs.remove('name');
+      await prefs.remove('currentRole');
+
+      // Clear auth data
+      await prefs.remove('token');
+      await prefs.remove('supplierId');
+
+      // Clear location data
+      await prefs.remove('latitude');
+      await prefs.remove('longitude');
+      await prefs.remove('locationSet');
+
+      // Optional: clear all data with clear() instead of individual removes
+      // await prefs.clear();
+
+      // Navigate to login screen and prevent going back with the back button
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false, // Remove all previous routes
+        );
+      }
+    } catch (e) {
+      print('Error during logout: $e');
+      // Show error message if logout fails
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -85,7 +133,21 @@ class _ProfilepopupState extends State<Profilepopup> {
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
               onTap: () {
-                print("settings");
+                // Close the profile popup first
+                widget.onCloseMenu();
+
+                // Then show the settings dialog
+                showDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  builder: (BuildContext context) {
+                    return SettingsWidget(
+                      onClose: () {
+                        Navigator.of(context).pop();
+                      },
+                    );
+                  },
+                );
               },
               child: Row(
                 children: [
@@ -111,13 +173,7 @@ class _ProfilepopupState extends State<Profilepopup> {
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: () {
-                // First remove the overlay by calling the callback
-                widget.onCloseMenu();
-
-                // Then perform logout
-                _logout(context);
-              },
+              onTap: () => _logout(context),
               child: Row(
                 children: [
                   SizedBox(width: 8.w),
@@ -142,20 +198,4 @@ class _ProfilepopupState extends State<Profilepopup> {
       ),
     );
   }
-}
-
-// Make sure to also clear the profilePicture when logging out
-Future<void> _logout(BuildContext context) async {
-  // Use AuthService to logout from all roles
-  await AuthService.logoutFromAllRoles();
-
-  // Clear profile data
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('profilePicture');
-  await prefs.remove('name');
-
-  Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute(builder: (context) => const LoginScreen()),
-    (route) => false,
-  );
 }
