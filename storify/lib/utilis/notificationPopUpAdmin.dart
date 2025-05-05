@@ -21,7 +21,7 @@ class NotificationPopup extends StatelessWidget {
       width: 380.w,
       constraints: BoxConstraints(maxHeight: 500.h),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 36, 50, 69),
+        color: const Color.fromARGB(255, 46, 123, 231),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(

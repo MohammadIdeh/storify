@@ -11,12 +11,11 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDlDlnG_03TqqjNr-bZB9QTAkin1L6F2-8',
-    appId: '1:236339805910:web:15f97918bb5385c1b09377',
-    messagingSenderId: '236339805910',
-    projectId: 'storify-32241',
-    authDomain: 'storify-32241.firebaseapp.com',
-    storageBucket: 'storify-32241.firebasestorage.app',
-    measurementId: 'G-PN0H7TT9PS',
-  );
+      apiKey: "AIzaSyD8vlQPEkPL5BgZbYpJw7qXQm5kJnKddZs",
+      authDomain: "flutter-notifications01-c1b4a.firebaseapp.com",
+      projectId: "flutter-notifications01-c1b4a",
+      storageBucket: "flutter-notifications01-c1b4a.firebasestorage.app",
+      messagingSenderId: "286672759586",
+      appId: "1:286672759586:web:8bf79a23956b0c35c0137b",
+      measurementId: "G-9480RWV50L");
 }
