@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/supplier_models.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/supplier_service.dart';
+import 'package:storify/utilis/notification_service.dart';
+import 'package:storify/utilis/notificationModel.dart';
 
 class SupplierOrderPopup extends StatefulWidget {
   const SupplierOrderPopup({super.key});
@@ -358,46 +360,61 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
     return total;
   }
 
-  // Place order for a specific supplier
-  Future<bool> _placeSupplierOrder(int supplierId) async {
-    final supplierCart = _cartItemsBySupplierId[supplierId];
-    if (supplierCart == null || supplierCart.isEmpty) {
-      return false;
-    }
+  // Place order for a supplier
+  Future<void> _placeOrder(Supplier supplier, List<CartItem> items) async {
+    setState(() {
+      _isPlacingOrder = true;
+      _errorMessage = null;
+    });
 
     try {
-      final orderItems = supplierCart
-          .map((item) => OrderItem(
-                productId: item.productId,
-                quantity: item.quantity,
-              ))
-          .toList();
-
+      // Create order request
       final orderRequest = OrderRequest(
-        supplierId: supplierId,
-        items: orderItems,
+        supplierId: supplier.id,
+        items: items.map((item) => OrderItem(
+          productId: item.productId,
+          quantity: item.quantity,
+        )).toList(),
       );
 
-      final success = await SupplierService.placeOrder(orderRequest);
+      // Send order to API
+      await SupplierService.placeOrder(orderRequest);
 
-      if (success) {
-        // Remove this supplier's items from cart
-        setState(() {
-          _cartItemsBySupplierId.remove(supplierId);
-        });
+      // Create and send notification
+      final notification = NotificationItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: 'New Order Received',
+        message: 'You have received a new order from ${supplier.name}',
+        timeAgo: 'Just now',
+        supplierId: supplier.id,
+        supplierName: supplier.name,
+      );
 
-        // If this was the last supplier in the cart, close with refresh signal
-        if (_cartItemsBySupplierId.isEmpty) {
-          Navigator.of(context).pop(true); // Return true to trigger refresh
-        }
+      // Save notification using the public method
+      await NotificationService().saveNotification(notification);
 
-        return true;
-      } else {
-        return false;
+      // Clear cart for this supplier
+      setState(() {
+        _cartItemsBySupplierId.remove(supplier.id);
+      });
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order placed successfully for ${supplier.name}'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
-      print('Error placing order: $e');
-      return false;
+      setState(() {
+        _errorMessage = 'Failed to place order: $e';
+      });
+    } finally {
+      setState(() {
+        _isPlacingOrder = false;
+      });
     }
   }
 
@@ -1497,28 +1514,10 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                         });
 
                         try {
-                          final success = await _placeSupplierOrder(supplierId);
-
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Order placed successfully for $supplierName',
-                                  style: GoogleFonts.spaceGrotesk(),
-                                ),
-                                backgroundColor:
-                                    const Color.fromARGB(255, 0, 224, 116),
-                              ),
-                            );
-                          } else {
-                            setState(() {
-                              _errorMessage =
-                                  'Failed to place order for $supplierName';
-                            });
-                          }
+                          await _placeOrder(_selectedSupplier!, _cartItemsBySupplierId[supplierId]!);
                         } catch (e) {
                           setState(() {
-                            _errorMessage = 'Error placing order: $e';
+                            _errorMessage = 'Failed to place order: $e';
                           });
                         } finally {
                           setState(() {

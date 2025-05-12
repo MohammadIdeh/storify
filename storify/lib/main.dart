@@ -7,10 +7,9 @@ import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
-import 'package:storify/supplier/screens/productScreenSupplier.dart';
-import 'package:storify/utilis/fire_base.dart';
+import 'package:storify/utilis/firebase_options.dart';
 import 'package:storify/utilis/notificationModel.dart';
-import 'package:storify/utilis/notification_service.dart'; // Add NotificationModel import
+import 'package:storify/utilis/notification_service.dart';
 
 // This must be a top-level function
 @pragma('vm:entry-point')
@@ -24,7 +23,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 
   // Store notification for later processing
-  // This will be processed when the app is opened
   final notification = NotificationItem.fromFirebaseMessage(message);
   // We can't directly access NotificationService's instance methods here
   // The storage will happen in NotificationService.initialize() when app starts
@@ -38,19 +36,23 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  print('Firebase initialized successfully');
+
   // Set up background messaging handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Initialize our NotificationService which will handle permissions, etc.
   await NotificationService.initialize();
+  
+  // Process any background notifications
+  await NotificationService().processBackgroundNotifications();
+  
+  // Force load notifications from Firestore
+  await NotificationService().loadNotificationsFromFirestore();
 
   // Set up foreground message handler through NotificationService
-  // We're removing the direct handler since NotificationService will handle it
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print("Foreground message received: ${message.messageId}");
-
-    // The actual handling is done inside NotificationService
-    // It's registered during NotificationService.initialize()
 
     // For debugging:
     print("Message data: ${message.data}");
@@ -92,18 +94,7 @@ void handleNotificationNavigation(Map<String, dynamic> data) {
   final notificationType = data['type'] as String?;
   final orderId = data['orderId'] as String?;
 
-  // We'll implement navigation logic when we have a global navigator key
-  // or through state management like Provider/Bloc
-
   print("Should navigate to: type=$notificationType, orderId=$orderId");
-
-  // Example:
-  // if (notificationType == 'new_order' && navigatorKey.currentContext != null) {
-  //   Navigator.of(navigatorKey.currentContext!).pushNamed(
-  //     '/supplier/orders',
-  //     arguments: {'orderId': orderId},
-  //   );
-  // }
 }
 
 class MyApp extends StatelessWidget {
@@ -146,19 +137,3 @@ class MyApp extends StatelessWidget {
     }
   }
 }
-// admin
-// hamode.sh889@gmail.com
-// o83KUqRz-UIroMoI
-// id: 84
-
-// supplier
-// hamode.sh334@gmail.com
-// yism5huFJGy6SfI-
-//
-
-// customer
-// momoideh.123@yahoo.com
-// dHaeo_HFzzUEcYFH
-///////////////
-// momoideh@yahoo.com
-// moQErFtTIHODBayH

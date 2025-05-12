@@ -17,6 +17,7 @@ import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/cards.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/topProductsList.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/topStoresList.dart';
+import 'package:storify/utilis/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -200,27 +201,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const Spacer(),
                     ElevatedButton(
+                      onPressed: () {
+                        NotificationService().debugAdminNotifications();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Debug Notifications',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 36, 50, 69),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        fixedSize: Size(138.w, 50.h),
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                         elevation: 1,
                       ),
                       onPressed: () {},
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           SvgPicture.asset(
                             'assets/images/filter.svg',
-                            width: 18.w,
-                            height: 18.h,
+                            width: 16.w,
+                            height: 16.h,
                           ),
-                          SizedBox(width: 12.w),
+                          SizedBox(width: 8.w),
                           Text(
                             'Filter',
                             style: GoogleFonts.spaceGrotesk(
-                              fontSize: 17.sp,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
                               color: const Color.fromARGB(255, 105, 123, 123),
                             ),
@@ -331,6 +353,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     )
                   ],
+                ),
+
+                SizedBox(height: 40.h),
+                
+                // Debug Buttons Section
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 20.h),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 36, 50, 69),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          NotificationService().debugAdminNotifications();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Debug Notifications',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      ElevatedButton(
+                        onPressed: () {
+                          NotificationService().testDatabaseConnection();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 46, 123, 231),
+                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Test Database',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 SizedBox(height: 101.h),

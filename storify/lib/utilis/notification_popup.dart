@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notification_service.dart';
 
-class NotificationPopup extends StatefulWidget {
+class NotificationPopup extends StatelessWidget {
   final Function() onCloseMenu;
   final List<NotificationItem> notifications;
 
@@ -15,44 +15,12 @@ class NotificationPopup extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<NotificationPopup> createState() => _NotificationPopupState();
-}
-
-class _NotificationPopupState extends State<NotificationPopup> {
-  late List<NotificationItem> _notifications;
-  
-  @override
-  void initState() {
-    super.initState();
-    _notifications = widget.notifications;
-    
-    // Register for notification updates
-    NotificationService().registerNotificationsListChangedCallback(_updateNotifications);
-  }
-  
-  @override
-  void dispose() {
-    // Unregister when the widget is disposed
-    NotificationService().unregisterNotificationsListChangedCallback(_updateNotifications);
-    super.dispose();
-  }
-  
-  void _updateNotifications(List<NotificationItem> notifications) {
-    if (mounted) {
-      setState(() {
-        _notifications = notifications;
-        print('NotificationPopup updated with ${_notifications.length} notifications');
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Container(
       width: 380.w,
       constraints: BoxConstraints(maxHeight: 500.h),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 29, 41, 57),
+        color: const Color.fromARGB(255, 46, 123, 231),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
@@ -79,20 +47,42 @@ class _NotificationPopupState extends State<NotificationPopup> {
                     color: Colors.white,
                   ),
                 ),
-                if (_notifications.isNotEmpty)
-                  TextButton(
-                    onPressed: () {
-                      NotificationService().markAllAsRead();
-                      widget.onCloseMenu();
-                    },
-                    child: Text(
-                      'Mark all as read',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14.sp,
-                        color: Colors.white,
+                Row(
+                  children: [
+                    if (notifications.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          NotificationService().markAllAsRead();
+                          onCloseMenu();
+                        },
+                        child: Text(
+                          'Mark all as read',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    SizedBox(width: 8.w),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await NotificationService().checkFirestoreConnection();
+                        await NotificationService().testDatabaseConnection();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 46, 123, 231),
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      ),
+                      child: Text(
+                        'Test Database',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -101,77 +91,41 @@ class _NotificationPopupState extends State<NotificationPopup> {
           Divider(color: Colors.grey.withOpacity(0.2), height: 1),
 
           // Notification List
-          _notifications.isEmpty
+          notifications.isEmpty
               ? Padding(
                   padding: EdgeInsets.all(24.w),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.notifications_none,
-                        size: 48.sp,
-                        color: Colors.white.withOpacity(0.5),
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        'No notifications yet',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          size: 48.sp,
                           color: Colors.white.withOpacity(0.5),
                         ),
-                      ),
-                      SizedBox(height: 20.h),
-                      // Add a test button for debugging
-                      ElevatedButton(
-                        onPressed: () async {
-                          await NotificationService().addManualNotification(
-                            'Test Notification',
-                            'This is a test notification added manually'
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                        ),
-                        child: Text(
-                          'Add Test Notification',
+                        SizedBox(height: 16.h),
+                        Text(
+                          'No notifications yet',
                           style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            color: Colors.white,
+                            fontSize: 16.sp,
+                            color: Colors.white.withOpacity(0.5),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 10.h),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await NotificationService().testDatabaseConnection();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 46, 123, 231),
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                        ),
-                        child: Text(
-                          'Test Database',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 )
               : Flexible(
                   child: ListView.separated(
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
-                    itemCount: _notifications.length,
+                    itemCount: notifications.length,
                     separatorBuilder: (context, index) => Divider(
                       color: Colors.grey.withOpacity(0.2),
                       height: 1,
                     ),
                     itemBuilder: (context, index) {
-                      return _buildNotificationItem(_notifications[index]);
+                      return _buildNotificationItem(notifications[index]);
                     },
                   ),
                 ),
