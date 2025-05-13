@@ -371,10 +371,12 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
       // Create order request
       final orderRequest = OrderRequest(
         supplierId: supplier.id,
-        items: items.map((item) => OrderItem(
-          productId: item.productId,
-          quantity: item.quantity,
-        )).toList(),
+        items: items
+            .map((item) => OrderItem(
+                  productId: item.productId,
+                  quantity: item.quantity,
+                ))
+            .toList(),
       );
 
       // Send order to API
@@ -1514,7 +1516,8 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
                         });
 
                         try {
-                          await _placeOrder(_selectedSupplier!, _cartItemsBySupplierId[supplierId]!);
+                          await _placeOrder(_selectedSupplier!,
+                              _cartItemsBySupplierId[supplierId]!);
                         } catch (e) {
                           setState(() {
                             _errorMessage = 'Failed to place order: $e';

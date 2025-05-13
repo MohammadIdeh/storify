@@ -205,8 +205,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         NotificationService().debugAdminNotifications();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        backgroundColor:
+                            const Color.fromARGB(255, 105, 65, 198),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 8.h),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -226,7 +228,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 8.h),
                         elevation: 1,
                       ),
                       onPressed: () {},
@@ -356,7 +359,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
 
                 SizedBox(height: 40.h),
-                
+
                 // Debug Buttons Section
                 Container(
                   padding: EdgeInsets.symmetric(vertical: 20.h),
@@ -372,8 +375,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           NotificationService().debugAdminNotifications();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                          backgroundColor:
+                              const Color.fromARGB(255, 105, 65, 198),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 20.w, vertical: 10.h),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -392,8 +397,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           NotificationService().testDatabaseConnection();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 46, 123, 231),
-                          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                          backgroundColor:
+                              const Color.fromARGB(255, 46, 123, 231),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 20.w, vertical: 10.h),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),

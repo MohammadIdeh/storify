@@ -36,9 +36,13 @@ class ApiService {
     }
   }
 
-  // Update order status - this endpoint likely also needs updating
-  Future<bool> updateOrderStatus(int orderId, String status,
-      {String? note}) async {
+  // Updated method to handle partial acceptance
+  Future<bool> updateOrderStatus(
+    int orderId,
+    String status, {
+    String? note,
+    List<Map<String, dynamic>>? declinedItems,
+  }) async {
     try {
       final headers = await AuthService.getAuthHeaders();
 
@@ -46,11 +50,15 @@ class ApiService {
         'status': status,
       };
 
-      if (status == 'Declined' && note != null) {
+      if (note != null && note.isNotEmpty) {
         body['note'] = note;
       }
 
-      // This endpoint might also need to be updated
+      // Add declined items if provided (for partial acceptance)
+      if (declinedItems != null && declinedItems.isNotEmpty) {
+        body['items'] = declinedItems;
+      }
+
       final response = await http.put(
         Uri.parse('$baseUrl/supplierOrders/$orderId/status'),
         headers: {

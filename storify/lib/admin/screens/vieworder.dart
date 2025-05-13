@@ -14,6 +14,7 @@ class OrderLineItem {
   final double unitPrice;
   final int quantity;
   final double total;
+  final String? status; // Add status for partially accepted orders
 
   OrderLineItem({
     required this.name,
@@ -21,6 +22,7 @@ class OrderLineItem {
     required this.unitPrice,
     required this.quantity,
     required this.total,
+    this.status,
   });
 }
 
@@ -131,6 +133,8 @@ class _VieworderState extends State<Vieworder> {
               double costPrice = 0.0;
               int quantity = 0;
               double subtotal = 0.0;
+              String? itemStatus = item[
+                  'status']; // Get item status for partially accepted orders
 
               // Process costPrice
               if (item['costPrice'] != null) {
@@ -162,7 +166,7 @@ class _VieworderState extends State<Vieworder> {
               }
 
               print(
-                  "Item: ${product['name']} - Price: $costPrice, Qty: $quantity, Total: $subtotal"); // Debug
+                  "Item: ${product['name']} - Price: $costPrice, Qty: $quantity, Total: $subtotal, Status: $itemStatus"); // Debug
 
               processedItems.add(OrderLineItem(
                 name: product['name'] ?? 'Unknown Product',
@@ -170,6 +174,7 @@ class _VieworderState extends State<Vieworder> {
                 unitPrice: costPrice,
                 quantity: quantity,
                 total: subtotal,
+                status: itemStatus, // Include item status in OrderLineItem
               ));
             }
           }
@@ -214,7 +219,6 @@ class _VieworderState extends State<Vieworder> {
   }
 
   // Fetch customer order details
-// Update the _fetchCustomerOrderDetails method in the Vieworder class
   Future<void> _fetchCustomerOrderDetails() async {
     try {
       // Get auth headers
@@ -263,6 +267,7 @@ class _VieworderState extends State<Vieworder> {
             final product = item['product'] ?? {};
             final String productName = product['name'] ?? 'Unknown Product';
             final String? imageUrl = product['image'];
+            final String? itemStatus = item['status']; // Get item status
 
             // Extract price - note the capital 'P' in 'Price'
             double price = 0.0;
@@ -290,7 +295,7 @@ class _VieworderState extends State<Vieworder> {
             }
 
             print(
-                "Item: $productName, Price: $price, Quantity: $quantity, Subtotal: $subtotal");
+                "Item: $productName, Price: $price, Quantity: $quantity, Subtotal: $subtotal, Status: $itemStatus");
 
             // Create the line item
             processedItems.add(OrderLineItem(
@@ -299,6 +304,7 @@ class _VieworderState extends State<Vieworder> {
               unitPrice: price,
               quantity: quantity,
               total: subtotal,
+              status: itemStatus, // Include item status
             ));
           }
         }
@@ -323,6 +329,142 @@ class _VieworderState extends State<Vieworder> {
       print("Error in fetch customer order details: $e"); // Debug error
       setState(() {
         _errorMessage = 'Error fetching customer order details: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Accept supplier order for admin
+  Future<void> _acceptSupplierOrder() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Get auth headers
+      final headers = await AuthService.getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      // Create request body - only include note if it's not empty
+      final Map<String, dynamic> requestBody = {
+        'status': 'Accepted', // Change to fully accepted
+      };
+
+      // Only add note field if it's not empty
+      if (_noteController.text.isNotEmpty) {
+        requestBody['note'] = _noteController.text;
+      }
+
+      // Update order status
+      final response = await http.put(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/supplierOrders/${widget.order.orderId}/status'),
+        headers: headers,
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order accepted successfully'),
+            backgroundColor: const Color.fromARGB(178, 0, 224, 116),
+          ),
+        );
+
+        // Update local order status
+        setState(() {
+          _localOrder = _localOrder.copyWith(status: "Accepted");
+          _isLoading = false;
+        });
+
+        // Pass back the updated order to previous screen after a short delay
+        Future.delayed(Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.pop(context, _localOrder);
+          }
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to accept order. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error accepting order: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Decline supplier order for admin
+  Future<void> _declineSupplierOrder() async {
+    // Check if note is empty - require note for rejection
+    if (_noteController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please provide a reason for declining this order'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return; // Stop if note is empty
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Get auth headers
+      final headers = await AuthService.getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      // Use the existing note from the text field (required)
+      final response = await http.put(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/supplierOrders/${widget.order.orderId}/status'),
+        headers: headers,
+        body: json.encode({
+          'status': 'Declined', // API expects Declined
+          'note': _noteController.text, // Required for rejection
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order declined successfully'),
+            backgroundColor: const Color.fromARGB(255, 229, 62, 62),
+          ),
+        );
+
+        // Update local order status to DeclinedByAdmin for UI display
+        setState(() {
+          _localOrder = _localOrder.copyWith(status: "DeclinedByAdmin");
+          _isLoading = false;
+        });
+
+        // Pass back the updated order to previous screen after a short delay
+        Future.delayed(Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.pop(context, _localOrder);
+          }
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to decline order. Status code: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error declining order: $e';
         _isLoading = false;
       });
     }
@@ -367,9 +509,13 @@ class _VieworderState extends State<Vieworder> {
           ),
         );
 
-        // Refresh the entire screen with latest data
+        // Update local order status
+        setState(() {
+          _localOrder = _localOrder.copyWith(status: "Accepted");
+          _isLoading = false;
+        });
 
-        // Only after refresh is complete, pass back the updated order to previous screen
+        // Pass back the updated order to previous screen after a short delay
         Future.delayed(Duration(seconds: 1), () {
           if (mounted) {
             Navigator.pop(context, _localOrder);
@@ -433,9 +579,13 @@ class _VieworderState extends State<Vieworder> {
           ),
         );
 
-        // Refresh the entire screen with latest data
+        // Update local order status
+        setState(() {
+          _localOrder = _localOrder.copyWith(status: "Rejected");
+          _isLoading = false;
+        });
 
-        // Only after refresh is complete, pass back the updated order to previous screen
+        // Pass back the updated order to previous screen after a short delay
         Future.delayed(Duration(seconds: 2), () {
           if (mounted) {
             Navigator.pop(context, _localOrder);
@@ -725,6 +875,19 @@ class _VieworderState extends State<Vieworder> {
                                               ),
                                               numeric: true,
                                             ),
+                                            // Only show Status column for PartiallyAccepted orders
+                                            if (_localOrder.status ==
+                                                "PartiallyAccepted")
+                                              DataColumn(
+                                                label: Text(
+                                                  "Status",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
                                           ],
                                           rows: _visibleLineItems.map((item) {
                                             // Pre-format all strings for display
@@ -815,6 +978,13 @@ class _VieworderState extends State<Vieworder> {
                                                     color: Colors.white,
                                                   ),
                                                 )),
+                                                // Status cell (only for PartiallyAccepted orders)
+                                                if (_localOrder.status ==
+                                                    "PartiallyAccepted")
+                                                  DataCell(
+                                                      _buildProductStatusPill(
+                                                          item.status ??
+                                                              "Unknown")),
                                               ],
                                             );
                                           }).toList(),
@@ -946,7 +1116,7 @@ class _VieworderState extends State<Vieworder> {
                                               : "N/A"),
                                       SizedBox(height: 6.h),
                                       _buildInfoRow(
-                                          "Payment Status", _localOrder.status),
+                                          "Payment Status", "System Order"),
                                       Divider(
                                           color: Colors.white24, height: 20.h),
                                       Row(
@@ -964,6 +1134,102 @@ class _VieworderState extends State<Vieworder> {
                                         ],
                                       ),
 
+                                      // Show action buttons for partially accepted orders when in supplier mode
+                                      if (widget.isSupplierMode &&
+                                          _localOrder.status ==
+                                              "PartiallyAccepted") ...[
+                                        SizedBox(height: 20.h),
+                                        Text(
+                                          "Order Actions:",
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                        SizedBox(height: 10.h),
+                                        // Add note field for actions
+                                        TextField(
+                                          controller: _noteController,
+                                          maxLines: 3,
+                                          style: GoogleFonts.spaceGrotesk(
+                                              color: Colors.white),
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                'Add a note (required for declining)...',
+                                            hintStyle: GoogleFonts.spaceGrotesk(
+                                                color: Colors.white38),
+                                            filled: true,
+                                            fillColor:
+                                                Colors.white.withOpacity(0.05),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.r),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            contentPadding:
+                                                EdgeInsets.all(12.w),
+                                          ),
+                                        ),
+                                        SizedBox(height: 16.h),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color.fromARGB(
+                                                          255, 0, 224, 116),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12.r),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(
+                                                      vertical: 12.h),
+                                                ),
+                                                onPressed: _acceptSupplierOrder,
+                                                child: Text(
+                                                  "Accept Entire Order",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 10.w),
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color.fromARGB(
+                                                          255, 229, 62, 62),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12.r),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(
+                                                      vertical: 12.h),
+                                                ),
+                                                onPressed:
+                                                    _declineSupplierOrder,
+                                                child: Text(
+                                                  "Decline Order",
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+
                                       // Show customer order action buttons for pending orders
                                       if (!widget.isSupplierMode &&
                                           _localOrder.status == "Pending") ...[
@@ -978,7 +1244,6 @@ class _VieworderState extends State<Vieworder> {
                                         ),
                                         SizedBox(height: 10.h),
                                         // Add note field for actions
-                                        // Update the note field UI label to be clear
                                         TextField(
                                           controller: _noteController,
                                           maxLines: 3,
@@ -1211,6 +1476,14 @@ class _VieworderState extends State<Vieworder> {
         textColor = const Color.fromARGB(255, 229, 62, 62); // red
         borderColor = textColor;
         break;
+      case "DeclinedByAdmin":
+        textColor = const Color.fromARGB(255, 255, 70, 70); // bright red
+        borderColor = textColor;
+        break;
+      case "PartiallyAccepted":
+        textColor = const Color.fromARGB(255, 255, 136, 0); // orange
+        borderColor = textColor;
+        break;
       case "Prepared":
         textColor = const Color.fromARGB(255, 255, 150, 30); // orange
         borderColor = textColor;
@@ -1225,19 +1498,54 @@ class _VieworderState extends State<Vieworder> {
         break;
     }
 
+    // Change display text for DeclinedByAdmin
+    String displayStatus = status;
+    if (status == "DeclinedByAdmin") {
+      displayStatus = "Declined by Admin";
+    }
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: textColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: borderColor),
       ),
       child: Text(
-        status,
+        displayStatus,
         style: GoogleFonts.spaceGrotesk(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,
           color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductStatusPill(String status) {
+    Color color;
+
+    if (status == "Accepted") {
+      color = const Color.fromARGB(178, 0, 224, 116); // green
+    } else if (status == "Declined") {
+      color = const Color.fromARGB(255, 229, 62, 62); // red
+    } else {
+      color = Colors.white70;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        status,
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
       ),
     );

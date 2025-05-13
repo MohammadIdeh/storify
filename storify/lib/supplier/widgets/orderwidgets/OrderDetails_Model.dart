@@ -1,4 +1,4 @@
-// lib/models/order_model.dart
+// lib/supplier/widgets/orderwidgets/OrderDetails_Model.dart
 class Order {
   final int id;
   final int supplierId;
@@ -17,7 +17,6 @@ class Order {
   double get subtotal => totalAmount;
   double get deliveryFee => 0.0; // Could be calculated or from API
   String get orderDate => _formatDate(createdAt);
-
 
   Order({
     required this.id,
@@ -69,6 +68,7 @@ class OrderProduct {
   final double subtotal;
   final String name;
   final String? imageUrl;
+  final String? status; // Add status field to track item-level status
 
   OrderProduct({
     required this.id,
@@ -80,6 +80,7 @@ class OrderProduct {
     required this.subtotal,
     required this.name,
     this.imageUrl,
+    this.status,
   });
 
   factory OrderProduct.fromJson(Map<String, dynamic> json) {
@@ -93,6 +94,7 @@ class OrderProduct {
       subtotal: json['subtotal'].toDouble(),
       name: json['product']?['name'] ?? "Product #${json['productId']}",
       imageUrl: json['product']?['image'],
+      status: json['status'], // Get item status if available
     );
   }
 

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'firestore_service.dart';
 
 class CollectionScreen extends StatefulWidget {
@@ -12,7 +12,8 @@ class CollectionScreen extends StatefulWidget {
 class _CollectionScreenState extends State<CollectionScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
-  final TextEditingController _collectionNameController = TextEditingController();
+  final TextEditingController _collectionNameController =
+      TextEditingController();
   final TextEditingController _fieldNameController = TextEditingController();
   final TextEditingController _fieldValueController = TextEditingController();
 
@@ -36,7 +37,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
   }
 
   void _addField() {
-    if (_fieldNameController.text.isNotEmpty && _fieldValueController.text.isNotEmpty) {
+    if (_fieldNameController.text.isNotEmpty &&
+        _fieldValueController.text.isNotEmpty) {
       setState(() {
         _newDocument[_fieldNameController.text] = _fieldValueController.text;
         _fieldNameController.clear();
@@ -109,7 +111,9 @@ class _CollectionScreenState extends State<CollectionScreen> {
                   if (_collectionNameController.text.isNotEmpty) {
                     try {
                       // Create a document in the new collection to ensure it exists
-                      await _firestore.collection(_collectionNameController.text).add({
+                      await _firestore
+                          .collection(_collectionNameController.text)
+                          .add({
                         'created': FieldValue.serverTimestamp(),
                       });
 
@@ -121,13 +125,15 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Collection created successfully')),
+                          const SnackBar(
+                              content: Text('Collection created successfully')),
                         );
                       }
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error creating collection: $e')),
+                          SnackBar(
+                              content: Text('Error creating collection: $e')),
                         );
                       }
                     }

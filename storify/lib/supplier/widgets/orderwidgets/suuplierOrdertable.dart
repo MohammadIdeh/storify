@@ -35,7 +35,9 @@ class _SupplierOrderTableState extends State<SupplierOrderTable> {
       if (widget.filter == "Active") {
         filtered = filtered
             .where((order) =>
-                order.status == "Accepted" || order.status == "Pending")
+                order.status == "Accepted" ||
+                order.status == "Pending" ||
+                order.status == "PartiallyAccepted")
             .toList();
       } else if (widget.filter == "Completed") {
         filtered =
@@ -76,6 +78,7 @@ class _SupplierOrderTableState extends State<SupplierOrderTable> {
 
   @override
   Widget build(BuildContext context) {
+    // Rest of the build method remains the same
     final totalItems = _filteredOrders.length;
     final totalPages = (totalItems / _itemsPerPage).ceil();
 
@@ -313,6 +316,9 @@ class _SupplierOrderTableState extends State<SupplierOrderTable> {
       borderColor = textColor;
     } else if (status == "Declined") {
       textColor = const Color.fromARGB(255, 229, 62, 62); // red
+      borderColor = textColor;
+    } else if (status == "PartiallyAccepted") {
+      textColor = const Color.fromARGB(255, 255, 136, 0); // orange
       borderColor = textColor;
     } else {
       textColor = Colors.white70;

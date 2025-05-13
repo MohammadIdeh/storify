@@ -54,7 +54,7 @@ class OrderItem {
         "${createdDate.day}-${createdDate.month}-${createdDate.year} ${createdDate.hour}:${createdDate.minute}";
 
     // Use the API status directly without mapping
-    // The API statuses are: "Accepted", "Delivered", "Declined", "Pending"
+    // The API statuses are: "Accepted", "Delivered", "Declined", "Pending", "PartiallyAccepted"
     String status = json['status'] ?? 'Unknown';
 
     // Extract total cost

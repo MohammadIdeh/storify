@@ -38,7 +38,9 @@ class _OrdertableState extends State<Ordertable> {
                 order.status == "Accepted" ||
                 order.status == "Pending" ||
                 order.status == "Prepared" ||
-                order.status == "on_theway")
+                order.status == "on_theway" ||
+                order.status ==
+                    "PartiallyAccepted") // Add PartiallyAccepted to Active filter
             .toList();
       } else if (widget.filter == "Completed") {
         filtered = filtered
@@ -48,7 +50,10 @@ class _OrdertableState extends State<Ordertable> {
       } else if (widget.filter == "Cancelled") {
         filtered = filtered
             .where((order) =>
-                order.status == "Declined" || order.status == "Rejected")
+                order.status == "Declined" ||
+                order.status == "Rejected" ||
+                order.status ==
+                    "DeclinedByAdmin") // Add DeclinedByAdmin to Cancelled filter
             .toList();
       }
     }
@@ -364,6 +369,14 @@ class _OrdertableState extends State<Ordertable> {
         textColor = const Color.fromARGB(255, 229, 62, 62); // red
         borderColor = textColor;
         break;
+      case "DeclinedByAdmin":
+        textColor = const Color.fromARGB(255, 255, 70, 70); // bright red
+        borderColor = textColor;
+        break;
+      case "PartiallyAccepted":
+        textColor = const Color.fromARGB(255, 255, 136, 0); // orange
+        borderColor = textColor;
+        break;
       case "Prepared":
         textColor = const Color.fromARGB(255, 255, 150, 30); // orange
         borderColor = textColor;
@@ -378,6 +391,12 @@ class _OrdertableState extends State<Ordertable> {
         break;
     }
 
+    // Change display text for DeclinedByAdmin
+    String displayStatus = status;
+    if (status == "DeclinedByAdmin") {
+      displayStatus = "Declined by Admin";
+    }
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
@@ -386,7 +405,7 @@ class _OrdertableState extends State<Ordertable> {
         border: Border.all(color: borderColor),
       ),
       child: Text(
-        status,
+        displayStatus,
         style: GoogleFonts.spaceGrotesk(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,

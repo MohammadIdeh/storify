@@ -1,9 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 
 class FirebaseService {
-  static final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  // static final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   static final FirebaseMessaging messaging = FirebaseMessaging.instance;
 
   static Future<void> initialize() async {
@@ -41,4 +40,4 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // make sure you call `initializeApp` before using other Firebase services.
   await Firebase.initializeApp();
   print('Handling a background message: ${message.messageId}');
-} 
+}
