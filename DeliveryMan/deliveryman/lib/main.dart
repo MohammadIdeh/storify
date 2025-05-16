@@ -36,6 +36,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<AuthService>(
         builder: (ctx, authService, _) {
           return MaterialApp(
+            debugShowCheckedModeBanner: false,
             title: 'Delivery App',
             theme: AppTheme.darkTheme,
             home: FutureBuilder(
@@ -51,7 +52,7 @@ class MyApp extends StatelessWidget {
 
                 return authService.isLoggedIn
                     ? const HomeScreen()
-                    : const LoginScreen();
+                    : const HomeScreen();
               },
             ),
           );

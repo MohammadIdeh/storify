@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/Categories.dart';
@@ -19,8 +20,20 @@ class Track extends StatefulWidget {
 }
 
 class _TrackScreenState extends State<Track> {
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilePicture();
+  }
+
   int _currentIndex = 5;
   String? profilePictureUrl;
+  Future<void> _loadProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      profilePictureUrl = prefs.getString('profilePicture');
+    });
+  }
 
   final List<Map<String, String>> _trackData = [
     {
@@ -52,7 +65,7 @@ class _TrackScreenState extends State<Track> {
               return FadeTransition(
                 opacity: animation,
                 child: child,
-              );  
+              );
             },
             transitionDuration: const Duration(milliseconds: 700),
           ),
