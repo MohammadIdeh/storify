@@ -14,6 +14,7 @@ import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
 import 'package:storify/customer/widgets/mapPopUp.dart';
+import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -138,8 +139,21 @@ class _LoginScreenState extends State<LoginScreen> {
               transitionDuration: const Duration(milliseconds: 600),
             ),
           );
-        } else if (roleName == 'Employee') {
-          // Handle Employee role
+        } else if (roleName == 'WareHouseEmployee') {
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const Orders_employee(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 600),
+            ),
+          );
         } else if (roleName == 'Delivery') {
           // Handle Delivery role
         } else if (roleName == 'Customer') {

@@ -6,6 +6,7 @@ import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
+import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 import 'package:storify/utilis/firebase_options.dart';
 import 'package:storify/utilis/notificationModel.dart';
@@ -128,8 +129,8 @@ class MyApp extends StatelessWidget {
         return const SupplierOrders();
       case 'Customer':
         return const CustomerOrders();
-      case 'Employee':
-        return const LoginScreen(); // placeholder
+      case 'WareHouseEmployee':
+        return const Orders_employee(); // placeholder
       case 'DeliveryMan':
         return const LoginScreen(); // placeholder
       default:
@@ -142,13 +143,17 @@ class MyApp extends StatelessWidget {
 // hamode.sh889@gmail.com
 // o83KUqRz-UIroMoI
 // id: 84
-
+//_________________________
 // supplier
 // hamode.sh334@gmail.com
 // yism5huFJGy6SfI-
-// id:4 
-
+// id: 4 
+//_________________________
 // customer
 // momoideh.123@yahoo.com
 // dHaeo_HFzzUEcYFH
 // 
+//_________________________
+// warhouse worker
+// mohammad.shaheen0808@gmail.com
+// 0S_1NPyVo-CQ5-EO
