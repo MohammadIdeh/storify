@@ -292,11 +292,8 @@ class _OrdersState extends State<Orders_employee> {
           o.status == "Shipped")
       .length;
 
-  int get cancelledCount => _activeOrdersList
-      .where((o) => o.status == "Declined" || o.status == "Rejected")
-      .length;
-
   // Build card data dynamically (same as original)
+// Build card data dynamically
   List<Map<String, dynamic>> get _ordersData {
     return [
       {
@@ -322,14 +319,7 @@ class _OrdersState extends State<Orders_employee> {
             totalOrdersCount > 0 ? completedCount / totalOrdersCount : 0.0,
         'circleColor': const Color.fromARGB(255, 0, 224, 116), // green
       },
-      {
-        'svgIconPath': 'assets/images/cancorders.svg',
-        'title': 'Cancelled Orders',
-        'count': cancelledCount.toString(),
-        'percentage':
-            totalOrdersCount > 0 ? cancelledCount / totalOrdersCount : 0.0,
-        'circleColor': const Color.fromARGB(255, 255, 62, 142), // pink
-      },
+      // Removed the cancelled orders card
     ];
   }
 
@@ -353,13 +343,12 @@ class _OrdersState extends State<Orders_employee> {
         _selectedFilter = "Active";
       } else if (index == 2) {
         _selectedFilter = "Completed";
-      } else if (index == 3) {
-        _selectedFilter = "Cancelled";
       }
     });
   }
 
   // Apply filter based on the selected filter value
+// Apply filter based on the selected filter value
   List<OrderItem> get _filteredOrders {
     List<OrderItem> filtered = _activeOrdersList;
     if (_selectedFilter != "Total") {
@@ -377,12 +366,8 @@ class _OrdersState extends State<Orders_employee> {
                 order.status == "Prepared" ||
                 order.status == "Shipped")
             .toList();
-      } else if (_selectedFilter == "Cancelled") {
-        filtered = filtered
-            .where((order) =>
-                order.status == "Declined" || order.status == "Rejected")
-            .toList();
       }
+      // Removed "Cancelled" filter case
     }
     // Filter by search query on orderId
     if (_searchQuery.isNotEmpty) {

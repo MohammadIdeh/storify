@@ -392,6 +392,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   // Update supplier order status
+// Update supplier order status
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
     // Check if order is already in this status
     if (_localOrder.status == newStatus) {
@@ -418,7 +419,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         updatedItems = _editedQuantities.entries.map((entry) {
           return {
             'id': entry.key,
-            'quantity': entry.value,
+            'receivedQuantity':
+                entry.value, // Changed from 'quantity' to 'receivedQuantity'
           };
         }).toList();
       }
