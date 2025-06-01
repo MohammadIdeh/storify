@@ -36,9 +36,11 @@ class _LoginScreenState extends State<LoginScreen> {
     FocusScope.of(context).unfocus();
 
     // Clear previous errors
-    setState(() {
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
 
     // Validate form
     if (!_formKey.currentState!.validate()) {
@@ -46,21 +48,37 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    final success = await authService.login(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
 
-    if (success) {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+    try {
+      final success = await authService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
-    } else {
-      setState(() {
-        _errorMessage =
-            'Invalid credentials or you are not authorized as a delivery person.';
-      });
+
+      // Check if widget is still mounted before proceeding
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        // Add mounted check before setState
+        if (mounted) {
+          setState(() {
+            _errorMessage = authService.lastError ??
+                'Invalid credentials or you are not authorized as a delivery person.';
+          });
+        }
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'An error occurred during login. Please try again.';
+        });
+      }
+      print('Login error: $e');
     }
   }
 

@@ -1,25 +1,35 @@
 class DeliveryPerson {
-  final int id;
-  final String name;
+  final int userId;
   final String email;
-  final String? profileImage;
-  final String? phoneNumber;
+  final String roleName;
+  final String? profilePicture;
+  final String name;
 
   DeliveryPerson({
-    required this.id,
-    required this.name,
+    required this.userId,
     required this.email,
-    this.profileImage,
-    this.phoneNumber,
+    required this.roleName,
+    this.profilePicture,
+    required this.name,
   });
 
   factory DeliveryPerson.fromJson(Map<String, dynamic> json) {
     return DeliveryPerson(
-      id: json['id'],
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      profileImage: json['profilePicture'],
-      phoneNumber: json['phoneNumber'],
+      userId: json['userId'] as int,
+      email: json['email'] as String,
+      roleName: json['roleName'] as String,
+      profilePicture: json['profilePicture'] as String?,
+      name: json['name'] as String,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'email': email,
+      'roleName': roleName,
+      'profilePicture': profilePicture,
+      'name': name,
+    };
   }
 }

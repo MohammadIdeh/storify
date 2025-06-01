@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
 
                 return authService.isLoggedIn
                     ? const HomeScreen()
-                    : const HomeScreen();
+                    : const LoginScreen();
               },
             ),
           );
@@ -65,3 +65,7 @@ class MyApp extends StatelessWidget {
     await authService.init();
   }
 }
+
+//  "email": "mohammad.shaheen080599@gmail.com",
+////   "password": "7QkOCS2CP1UC1kbb"
+//
