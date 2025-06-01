@@ -33,39 +33,66 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocationService()),
         ChangeNotifierProvider(create: (_) => OrderService()),
       ],
-      child: Consumer<AuthService>(
-        builder: (ctx, authService, _) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Delivery App',
-            theme: AppTheme.darkTheme,
-            home: FutureBuilder(
-              future: _initializeApp(authService),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
+      child: const AppWrapper(),
+    );
+  }
+}
 
+class AppWrapper extends StatefulWidget {
+  const AppWrapper({Key? key}) : super(key: key);
+
+  @override
+  State<AppWrapper> createState() => _AppWrapperState();
+}
+
+class _AppWrapperState extends State<AppWrapper> {
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    await authService.init();
+
+    if (mounted) {
+      setState(() {
+        _isInitialized = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Delivery App',
+      theme: AppTheme.darkTheme,
+      home: _isInitialized
+          ? Consumer<AuthService>(
+              builder: (ctx, authService, _) {
                 return authService.isLoggedIn
                     ? const HomeScreen()
                     : const LoginScreen();
               },
-            ),
-          );
-        },
-      ),
+            )
+          : const SplashScreen(),
     );
-  }
-
-  Future<void> _initializeApp(AuthService authService) async {
-    await authService.init();
   }
 }
 
-//  "email": "mohammad.shaheen080599@gmail.com",
-////   "password": "7QkOCS2CP1UC1kbb"
-//
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}

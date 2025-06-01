@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../utils/constants.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -36,7 +37,7 @@ class CustomTextField extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             label,
-            style: const TextStyle(
+            style: GoogleFonts.spaceGrotesk(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.white,
@@ -51,7 +52,7 @@ class CustomTextField extends StatelessWidget {
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           cursorColor: AppColors.primary,
-          style: const TextStyle(color: Colors.white),
+          style: GoogleFonts.spaceGrotesk(color: Colors.white),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(

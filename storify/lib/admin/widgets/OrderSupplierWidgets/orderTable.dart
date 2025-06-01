@@ -10,6 +10,7 @@ class Ordertable extends StatefulWidget {
   final String filter; // "Total", "Active", "Completed", "Cancelled"
   final String searchQuery;
   final bool isSupplierMode; // Added parameter to determine the mode
+  final String? selectedActiveStatus; // NEW: Selected active status for customer orders
 
   const Ordertable({
     Key? key,
@@ -17,6 +18,7 @@ class Ordertable extends StatefulWidget {
     this.filter = "Total",
     this.searchQuery = "",
     this.isSupplierMode = true, // Default to supplier mode
+    this.selectedActiveStatus, // NEW parameter
   }) : super(key: key);
 
   @override
@@ -31,17 +33,38 @@ class _OrdertableState extends State<Ordertable> {
   // Apply filter based on the selected filter value with the new status mappings.
   List<OrderItem> get _filteredOrders {
     List<OrderItem> filtered = widget.orders;
+    
     if (widget.filter != "Total") {
       if (widget.filter == "Active") {
-        filtered = filtered
-            .where((order) =>
-                order.status == "Accepted" ||
-                order.status == "Pending" ||
-                order.status == "Prepared" ||
-                order.status == "on_theway" ||
-                order.status ==
-                    "PartiallyAccepted") // Add PartiallyAccepted to Active filter
-            .toList();
+        if (widget.isSupplierMode) {
+          // Supplier mode: use original logic
+          filtered = filtered
+              .where((order) =>
+                  order.status == "Accepted" ||
+                  order.status == "Pending" ||
+                  order.status == "Prepared" ||
+                  order.status == "on_theway" ||
+                  order.status == "PartiallyAccepted")
+              .toList();
+        } else {
+          // Customer mode: check if specific active status is selected
+          if (widget.selectedActiveStatus != null) {
+            // Filter by specific active status
+            filtered = filtered
+                .where((order) => order.status == widget.selectedActiveStatus)
+                .toList();
+          } else {
+            // Show all active statuses
+            filtered = filtered
+                .where((order) =>
+                    order.status == "Accepted" ||
+                    order.status == "Assigned" ||
+                    order.status == "Preparing" ||
+                    order.status == "Prepared" ||
+                    order.status == "on_theway")
+                .toList();
+          }
+        }
       } else if (widget.filter == "Completed") {
         filtered = filtered
             .where((order) =>
@@ -52,17 +75,18 @@ class _OrdertableState extends State<Ordertable> {
             .where((order) =>
                 order.status == "Declined" ||
                 order.status == "Rejected" ||
-                order.status ==
-                    "DeclinedByAdmin") // Add DeclinedByAdmin to Cancelled filter
+                order.status == "DeclinedByAdmin")
             .toList();
       }
     }
+    
     // Filter by search query on orderId.
     if (widget.searchQuery.isNotEmpty) {
       filtered = filtered
           .where((order) => order.orderId.contains(widget.searchQuery))
           .toList();
     }
+    
     return filtered;
   }
 
@@ -144,6 +168,49 @@ class _OrdertableState extends State<Ordertable> {
                         SizedBox(height: 8.h),
                         Text(
                           'There are no orders to display',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            color: Colors.white38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              // Empty state for filtered results
+              else if (_filteredOrders.isEmpty)
+                Container(
+                  height: 300.h,
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 36, 50, 69),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30.r),
+                      topRight: Radius.circular(30.r),
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.filter_list_off,
+                          size: 64.sp,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'No orders match your filter',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          widget.selectedActiveStatus != null
+                              ? 'No orders with status "${widget.selectedActiveStatus}"'
+                              : 'Try adjusting your search or filter criteria',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 14.sp,
                             color: Colors.white38,
@@ -254,7 +321,7 @@ class _OrdertableState extends State<Ordertable> {
                 ),
 
               // Pagination Row - only show if there are orders
-              if (widget.orders.isNotEmpty)
+              if (widget.orders.isNotEmpty && _filteredOrders.isNotEmpty)
                 Padding(
                   padding:
                       EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
@@ -383,6 +450,15 @@ class _OrdertableState extends State<Ordertable> {
         break;
       case "on_theway":
         textColor = const Color.fromARGB(255, 130, 80, 223); // purple
+        borderColor = textColor;
+        break;
+      // NEW: Additional customer order statuses
+      case "Assigned":
+        textColor = const Color.fromARGB(255, 76, 175, 80); // green
+        borderColor = textColor;
+        break;
+      case "Preparing":
+        textColor = const Color.fromARGB(255, 255, 193, 7); // amber
         borderColor = textColor;
         break;
       default:

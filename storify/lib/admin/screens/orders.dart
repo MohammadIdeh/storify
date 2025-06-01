@@ -18,6 +18,7 @@ import 'package:storify/admin/widgets/OrderSupplierWidgets/orderCards.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderTable.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/supplierOrderPopUp.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/assignOrderPopup.dart';
 
 class Orders extends StatefulWidget {
   const Orders({super.key});
@@ -44,6 +45,16 @@ class _OrdersState extends State<Orders> {
   List<OrderItem> _supplierOrders = [];
   List<OrderItem> _customerOrders = [];
 
+  // NEW: Active status filter for customer orders
+  String? _selectedActiveStatus;
+  final List<String> _activeStatusOptions = [
+    'Accepted',
+    'Assigned',
+    'Preparing',
+    'Prepared',
+    'on_theway'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -52,8 +63,6 @@ class _OrdersState extends State<Orders> {
   }
 
   // Fetch orders from the API
-  // Fix for the Orders.dart class - update the _fetchOrders method
-
   Future<void> _fetchOrders() async {
     setState(() {
       _isLoading = true;
@@ -162,16 +171,37 @@ class _OrdersState extends State<Orders> {
     return _isSupplierMode ? _supplierOrders : _customerOrders;
   }
 
+  // NEW: Updated active count to consider the selected active status
+  int get activeCount {
+    if (_isSupplierMode) {
+      return _supplierOrders
+          .where((o) =>
+              o.status == "Accepted" ||
+              o.status == "Pending" ||
+              o.status == "Prepared" ||
+              o.status == "on_theway")
+          .length;
+    } else {
+      // For customer orders, if a specific active status is selected, count only those
+      if (_selectedActiveStatus != null) {
+        return _customerOrders
+            .where((o) => o.status == _selectedActiveStatus)
+            .length;
+      }
+      // Otherwise count all active statuses
+      return _customerOrders
+          .where((o) =>
+              o.status == "Accepted" ||
+              o.status == "Assigned" ||
+              o.status == "Preparing" ||
+              o.status == "Prepared" ||
+              o.status == "on_theway")
+          .length;
+    }
+  }
+
   // Compute counts based on orders list with new status mappings
   int get totalOrdersCount => _activeOrdersList.length;
-
-  int get activeCount => _activeOrdersList
-      .where((o) =>
-          o.status == "Accepted" ||
-          o.status == "Pending" ||
-          o.status == "Prepared" ||
-          o.status == "on_theway")
-      .length;
 
   int get completedCount => _activeOrdersList
       .where((o) => o.status == "Delivered" || o.status == "Shipped")
@@ -190,6 +220,7 @@ class _OrdersState extends State<Orders> {
         count: totalOrdersCount.toString(),
         percentage: 1.0, // Always full for Total Orders.
         circleColor: const Color.fromARGB(255, 0, 196, 255), // cyan
+        hasDropdown: false,
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/Activeorders.svg',
@@ -197,6 +228,7 @@ class _OrdersState extends State<Orders> {
         count: activeCount.toString(),
         percentage: totalOrdersCount > 0 ? activeCount / totalOrdersCount : 0.0,
         circleColor: const Color.fromARGB(255, 255, 232, 29), // yellow
+        hasDropdown: !_isSupplierMode, // Only show dropdown for customer mode
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/completedOrders.svg',
@@ -205,6 +237,7 @@ class _OrdersState extends State<Orders> {
         percentage:
             totalOrdersCount > 0 ? completedCount / totalOrdersCount : 0.0,
         circleColor: const Color.fromARGB(255, 0, 224, 116), // green
+        hasDropdown: false,
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/cancorders.svg',
@@ -213,6 +246,7 @@ class _OrdersState extends State<Orders> {
         percentage:
             totalOrdersCount > 0 ? cancelledCount / totalOrdersCount : 0.0,
         circleColor: const Color.fromARGB(255, 255, 62, 142), // pink
+        hasDropdown: false,
       ),
     ];
   }
@@ -233,11 +267,29 @@ class _OrdersState extends State<Orders> {
     });
   }
 
+  // NEW: Handle active status dropdown selection
+  void _onActiveStatusSelected(String? status) {
+    setState(() {
+      _selectedActiveStatus = status;
+    });
+  }
+
+  // NEW: Show assign orders popup
+  void _showAssignOrdersPopup() async {
+    final shouldRefresh =
+        await showAssignOrderPopup(context, existingOrders: _customerOrders);
+    if (shouldRefresh == true) {
+      _fetchOrders(); // Refresh orders after assignment
+    }
+  }
+
   // Toggle between supplier and customer mode
   void _toggleOrderMode(bool isSupplier) {
     if (isSupplier != _isSupplierMode) {
       setState(() {
         _isSupplierMode = isSupplier;
+        _selectedActiveStatus =
+            null; // Reset active status filter when switching modes
       });
     }
   }
@@ -464,13 +516,87 @@ class _OrdersState extends State<Orders> {
                         onTap: () => _onCardTap(index),
                         child: SizedBox(
                           width: cardWidth,
-                          child: OrdersCard(
-                            svgIconPath: data.svgIconPath,
-                            title: data.title,
-                            count: data.count,
-                            percentage: data.percentage,
-                            circleColor: data.circleColor,
-                            isSelected: isSelected,
+                          child: Stack(
+                            children: [
+                              OrdersCard(
+                                svgIconPath: data.svgIconPath,
+                                title: data.title,
+                                count: data.count,
+                                percentage: data.percentage,
+                                circleColor: data.circleColor,
+                                isSelected: isSelected,
+                              ),
+                              // NEW: Add dropdown for Active Orders card in customer mode
+                              if (data.hasDropdown && index == 1 && isSelected)
+                                Positioned(
+                                  top: 60.h,
+                                  right: 16.w,
+                                  child: Container(
+                                    width: 120.w,
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 8.w),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          const Color.fromARGB(255, 50, 65, 85),
+                                      borderRadius: BorderRadius.circular(8.r),
+                                      border: Border.all(
+                                        color: const Color.fromARGB(
+                                            255, 105, 65, 198),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedActiveStatus,
+                                        hint: Text(
+                                          'All',
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 11.sp,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                        dropdownColor: const Color.fromARGB(
+                                            255, 50, 65, 85),
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 11.sp,
+                                          color: Colors.white,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.arrow_drop_down,
+                                          color: Colors.white70,
+                                        ),
+                                        isExpanded: true,
+                                        items: [
+                                          DropdownMenuItem<String>(
+                                            value: null,
+                                            child: Text(
+                                              'All',
+                                              style: GoogleFonts.spaceGrotesk(
+                                                fontSize: 11.sp,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                          ..._activeStatusOptions
+                                              .map((String status) {
+                                            return DropdownMenuItem<String>(
+                                              value: status,
+                                              child: Text(
+                                                status,
+                                                style: GoogleFonts.spaceGrotesk(
+                                                  fontSize: 11.sp,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ],
+                                        onChanged: _onActiveStatusSelected,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       );
@@ -506,6 +632,33 @@ class _OrdersState extends State<Orders> {
                     ),
                   ),
                   const Spacer(),
+
+                  // NEW: Show Assign button when in customer mode, Active filter, and Prepared status
+                  if (!_isSupplierMode &&
+                      _selectedFilter == "Active" &&
+                      _selectedActiveStatus == "Prepared") ...[
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 0, 150, 136),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(120.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: _showAssignOrdersPopup,
+                      child: Text(
+                        'Assign',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                  ],
+
                   // Search box: filters table by order ID in real time.
                   Container(
                     width: 300.w,
@@ -597,12 +750,13 @@ class _OrdersState extends State<Orders> {
                   ),
                 )
               else
-                // Modified Order table: pass mode, orders list, filter, and search query
+                // Modified Order table: pass mode, orders list, filter, search query, and active status
                 Ordertable(
                   orders: _activeOrdersList,
                   filter: _selectedFilter,
                   searchQuery: _searchQuery,
-                  isSupplierMode: _isSupplierMode, // Pass the mode to table
+                  isSupplierMode: _isSupplierMode,
+                  selectedActiveStatus: _selectedActiveStatus, // NEW parameter
                 ),
             ],
           ),
@@ -619,11 +773,14 @@ class _OrderCardData {
   final String count;
   final double percentage;
   final Color circleColor;
+  final bool hasDropdown; // NEW property
+
   const _OrderCardData({
     required this.svgIconPath,
     required this.title,
     required this.count,
     required this.percentage,
     required this.circleColor,
+    this.hasDropdown = false,
   });
 }
