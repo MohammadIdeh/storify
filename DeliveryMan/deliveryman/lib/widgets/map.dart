@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:deliveryman/screens/order_detail_screen.dart';
+import 'package:deliveryman/widgets/DeliveryCompletionDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/order.dart';
 import '../services/location_service.dart';
 import '../services/order_service.dart';
@@ -42,6 +44,7 @@ class _MapScreenState extends State<MapScreen> {
         Provider.of<LocationService>(context, listen: false);
     final currentOrder = orderService.currentOrder;
     final currentPosition = locationService.currentPosition;
+    final activeRoutes = orderService.activeRoutes;
 
     setState(() {
       _markers = {};
@@ -56,22 +59,15 @@ class _MapScreenState extends State<MapScreen> {
                 LatLng(currentPosition.latitude, currentPosition.longitude),
             icon:
                 BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-            infoWindow: const InfoWindow(title: 'Your Location'),
+            infoWindow: const InfoWindow(
+              title: 'Your Location',
+              snippet: 'Delivery person current position',
+            ),
           ),
         );
-
-        // Move camera to current location if no active order
-        if (currentOrder == null) {
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(currentPosition.latitude, currentPosition.longitude),
-              15,
-            ),
-          );
-        }
       }
 
-      // Add markers for all assigned orders
+      // Add markers for all assigned orders with different colors based on status
       final assignedOrders = orderService.assignedOrders;
       for (final order in assignedOrders) {
         _markers.add(
@@ -89,44 +85,37 @@ class _MapScreenState extends State<MapScreen> {
         );
       }
 
-      // Add route line for current order
-      if (currentOrder != null && currentPosition != null) {
-        // If we have both current location and destination, show both on map
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngBounds(
-            LatLngBounds(
-              southwest: LatLng(
-                math.min(currentPosition.latitude, currentOrder.latitude) -
-                    0.01,
-                math.min(currentPosition.longitude, currentOrder.longitude) -
-                    0.01,
-              ),
-              northeast: LatLng(
-                math.max(currentPosition.latitude, currentOrder.latitude) +
-                    0.01,
-                math.max(currentPosition.longitude, currentOrder.longitude) +
-                    0.01,
-              ),
+      // Add polylines for active routes (using Google Directions real roads)
+      if (activeRoutes.isNotEmpty) {
+        for (int i = 0; i < activeRoutes.length; i++) {
+          final route = activeRoutes[i];
+          _polylines.add(
+            Polyline(
+              polylineId: PolylineId('route_${route.order.id}'),
+              color: route.routeColor,
+              width: 5,
+              points:
+                  route.routePoints, // Real road points from Google Directions
+              // No patterns for solid lines
             ),
-            100, // padding
-          ),
-        );
+          );
+        }
 
-        // Draw route line
-        _polylines.add(
-          Polyline(
-            polylineId: PolylineId('route_${currentOrder.id}'),
-            color: const Color(0xFF6941C6),
-            width: 4,
-            patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-            points: [
-              LatLng(currentPosition.latitude, currentPosition.longitude),
-              LatLng(currentOrder.latitude, currentOrder.longitude),
-            ],
+        // Fit all active routes on map
+        _fitActiveRoutesOnMap(activeRoutes, currentPosition);
+      } else if (currentOrder != null && currentPosition != null) {
+        // Single order route - still use Google Directions if available
+        _addSingleOrderRoute(currentOrder, currentPosition);
+      } else if (currentPosition != null) {
+        // Only current location
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(currentPosition.latitude, currentPosition.longitude),
+            15,
           ),
         );
       } else if (currentOrder != null) {
-        // If we only have destination, center on that
+        // Only destination
         _mapController?.animateCamera(
           CameraUpdate.newLatLngZoom(
             LatLng(currentOrder.latitude, currentOrder.longitude),
@@ -135,6 +124,92 @@ class _MapScreenState extends State<MapScreen> {
         );
       }
     });
+  }
+
+  void _addSingleOrderRoute(Order order, Position currentPosition) {
+    // For single orders, create a simple polyline
+    // In a real implementation, you could also call Google Directions here
+    _polylines.add(
+      Polyline(
+        polylineId: PolylineId('route_${order.id}'),
+        color: const Color(0xFF6941C6),
+        width: 4,
+        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+        points: [
+          LatLng(currentPosition.latitude, currentPosition.longitude),
+          LatLng(order.latitude, order.longitude),
+        ],
+      ),
+    );
+
+    // Show both current location and destination
+    _fitTwoPointsOnMap(
+      currentPosition.latitude,
+      currentPosition.longitude,
+      order.latitude,
+      order.longitude,
+    );
+  }
+
+  void _fitActiveRoutesOnMap(
+      List<RouteInfo> routes, Position? currentPosition) {
+    if (routes.isEmpty) return;
+
+    List<LatLng> allPoints = [];
+
+    // Add current position if available
+    if (currentPosition != null) {
+      allPoints
+          .add(LatLng(currentPosition.latitude, currentPosition.longitude));
+    }
+
+    // Add all route points
+    for (final route in routes) {
+      allPoints.addAll(route.routePoints);
+    }
+
+    if (allPoints.length < 2) return;
+
+    // Calculate bounds
+    double minLat = allPoints.first.latitude;
+    double maxLat = allPoints.first.latitude;
+    double minLng = allPoints.first.longitude;
+    double maxLng = allPoints.first.longitude;
+
+    for (final point in allPoints) {
+      minLat = math.min(minLat, point.latitude);
+      maxLat = math.max(maxLat, point.latitude);
+      minLng = math.min(minLng, point.longitude);
+      maxLng = math.max(maxLng, point.longitude);
+    }
+
+    // Add padding
+    const double padding = 0.01;
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat - padding, minLng - padding),
+      northeast: LatLng(maxLat + padding, maxLng + padding),
+    );
+
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 100),
+    );
+  }
+
+  void _fitTwoPointsOnMap(double lat1, double lng1, double lat2, double lng2) {
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        math.min(lat1, lat2) - 0.01,
+        math.min(lng1, lng2) - 0.01,
+      ),
+      northeast: LatLng(
+        math.max(lat1, lat2) + 0.01,
+        math.max(lng1, lng2) + 0.01,
+      ),
+    );
+
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 100),
+    );
   }
 
   BitmapDescriptor _getMarkerIcon(Order order) {
@@ -167,71 +242,84 @@ class _MapScreenState extends State<MapScreen> {
       _updateMap();
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            orderService.lastError ?? 'Failed to start delivery',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      _showMessage(orderService.lastError ?? 'Failed to start delivery', true);
     }
   }
 
-  void _markAsDelivered(Order order) async {
-    final orderService = Provider.of<OrderService>(context, listen: false);
-    final locationService =
-        Provider.of<LocationService>(context, listen: false);
+  void _showDeliveryCompletionDialog(Order order) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DeliveryCompletionDialog(
+        order: order,
+        onComplete: (deliveryData) async {
+          Navigator.of(context).pop();
 
-    final success =
-        await orderService.updateOrderStatus(order.id, OrderStatus.delivered);
-
-    if (success) {
-      locationService.stopTracking();
-      widget.onRefresh();
-      _updateMap();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Order marked as delivered',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
+          // Show loading
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+              ),
             ),
+          );
+
+          final orderService =
+              Provider.of<OrderService>(context, listen: false);
+          final locationService =
+              Provider.of<LocationService>(context, listen: false);
+
+          final success = await orderService.completeDelivery(deliveryData);
+
+          // Close loading dialog
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+
+          if (success) {
+            // Stop tracking if no more active orders
+            if (orderService.activeOrders.length <= 1) {
+              locationService.stopTracking();
+            }
+            widget.onRefresh();
+            _updateMap();
+
+            if (context.mounted) {
+              _showMessage('Order completed successfully!', false);
+            }
+          } else {
+            if (context.mounted) {
+              _showMessage(
+                  orderService.lastError ?? 'Failed to complete delivery',
+                  true);
+            }
+          }
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
+  void _showMessage(String message, bool isError) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.spaceGrotesk(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
           ),
-          backgroundColor: const Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
         ),
-      );
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            orderService.lastError ?? 'Failed to mark as delivered',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
+        backgroundColor: isError ? Colors.redAccent : const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   void _viewOrderDetails(Order order) {
@@ -377,7 +465,7 @@ class _MapScreenState extends State<MapScreen> {
                       text: 'Complete',
                       onPressed: () {
                         Navigator.pop(context);
-                        _markAsDelivered(order);
+                        _showDeliveryCompletionDialog(order);
                       },
                       backgroundColor: const Color(0xFF4CAF50),
                     ),
@@ -423,12 +511,165 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _buildBatchDeliveryPanel(OrderService orderService) {
+    final activeRoutes = orderService.activeRoutes;
+    if (activeRoutes.isEmpty) return const SizedBox.shrink();
+
+    // Calculate total time and distance
+    final totalTime =
+        activeRoutes.fold<int>(0, (sum, route) => sum + route.estimatedTime);
+    final totalDistance =
+        activeRoutes.fold<double>(0, (sum, route) => sum + route.distance);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF304050).withOpacity(0.95),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF6941C6).withOpacity(0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6941C6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.route,
+                  color: Color(0xFF6941C6),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Batch Delivery Active',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      '${activeRoutes.length} routes • ${totalDistance.toStringAsFixed(1)}km • ~${totalTime}min',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        color: const Color(0xAAFFFFFF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Route legend with time estimates
+          ...activeRoutes.asMap().entries.map((entry) {
+            final index = entry.key;
+            final route = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: route.routeColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: route.routeColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: route.routeColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Order #${route.order.id} - ${route.order.customerName}',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${route.distance.toStringAsFixed(1)}km • ~${route.estimatedTime}min',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            color: const Color(0xAAFFFFFF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (route.order.isInProgress)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'IN PROGRESS',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 8,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<LocationService, OrderService>(
       builder: (context, locationService, orderService, child) {
         final currentOrder = orderService.currentOrder;
         final assignedOrders = orderService.assignedOrders;
+        final isBatchActive = orderService.isBatchDeliveryActive;
 
         // Update map when orders change
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -454,11 +695,25 @@ class _MapScreenState extends State<MapScreen> {
               markers: _markers,
               polylines: _polylines,
               mapToolbarEnabled: false,
-              zoomControlsEnabled: false,
+              zoomControlsEnabled: true,
+              // IMPORTANT: Enable map interaction
+              zoomGesturesEnabled: true,
+              scrollGesturesEnabled: true,
+              tiltGesturesEnabled: true,
+              rotateGesturesEnabled: true,
             ),
 
-            // Orders overview panel at the top
-            if (assignedOrders.isNotEmpty)
+            // Batch delivery panel (when active)
+            if (isBatchActive)
+              Positioned(
+                top: 16,
+                left: 16,
+                right: 16,
+                child: _buildBatchDeliveryPanel(orderService),
+              ),
+
+            // Orders overview panel at the top (when not in batch mode)
+            if (assignedOrders.isNotEmpty && !isBatchActive)
               Positioned(
                 top: 16,
                 left: 16,
@@ -577,7 +832,9 @@ class _MapScreenState extends State<MapScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Active Delivery',
+                                    isBatchActive
+                                        ? 'Batch Delivery'
+                                        : 'Active Delivery',
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 12,
                                       color: const Color(0xAAFFFFFF),
@@ -656,11 +913,12 @@ class _MapScreenState extends State<MapScreen> {
                                 text: currentOrder.canStart &&
                                         !currentOrder.isInProgress
                                     ? 'Start Delivery'
-                                    : 'Mark Delivered',
+                                    : 'Complete',
                                 onPressed: currentOrder.canStart &&
                                         !currentOrder.isInProgress
                                     ? () => _startDelivery(currentOrder)
-                                    : () => _markAsDelivered(currentOrder),
+                                    : () => _showDeliveryCompletionDialog(
+                                        currentOrder),
                                 backgroundColor: currentOrder.canStart &&
                                         !currentOrder.isInProgress
                                     ? const Color(0xFF6941C6)

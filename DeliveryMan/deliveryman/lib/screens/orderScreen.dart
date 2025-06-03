@@ -1,3 +1,4 @@
+import 'package:deliveryman/widgets/DeliveryCompletionDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -37,13 +38,14 @@ class OrdersScreen extends StatelessWidget {
     }
 
     try {
-      // Create a temporary list with just this order
+      // Clear any existing selection and select this order
       orderService.clearSelection();
       orderService.toggleOrderSelection(order);
       
-      final success = await orderService.startBatchDelivery(currentPosition);
+      // Start batch delivery with single order (gets Google Directions)
+      final result = await orderService.startBatchDelivery(currentPosition);
 
-      if (success) {
+      if (result.success) {
         // Start location tracking
         locationService.startTracking(order.id);
         // Refresh data
@@ -55,7 +57,7 @@ class OrdersScreen extends StatelessWidget {
       } else {
         if (context.mounted) {
           _showMessage(context, 
-            orderService.lastError ?? 'Failed to start delivery. Please try again.', 
+            result.errorMessage ?? 'Failed to start delivery. Please try again.', 
             true
           );
         }
@@ -88,26 +90,27 @@ class OrdersScreen extends StatelessWidget {
     if (!confirmed) return;
 
     try {
-      final success = await orderService.startBatchDelivery(currentPosition);
+      final result = await orderService.startBatchDelivery(currentPosition);
 
-      if (success) {
-        // Start location tracking for the first order (or all of them)
-        final firstOrderId = orderService.selectedOrders.first.id;
+      if (result.success) {
+        // Start location tracking for the first order
+        final firstOrderId = result.successfulOrders.first;
         locationService.startTracking(firstOrderId);
         
         // Refresh data
         onRefresh();
         
         if (context.mounted) {
-          _showMessage(context, 
-            'Batch delivery started for ${orderService.selectedCount} orders!', 
-            false
-          );
+          String message = result.successfulOrders.length == orderService.selectedCount
+              ? 'Batch delivery started for ${result.successfulOrders.length} orders with optimized routes!'
+              : 'Started ${result.successfulOrders.length} of ${orderService.selectedCount} orders. Some failed to start.';
+          
+          _showMessage(context, message, result.failedOrders.isNotEmpty);
         }
       } else {
         if (context.mounted) {
           _showMessage(context, 
-            orderService.lastError ?? 'Failed to start batch delivery. Please try again.', 
+            result.errorMessage ?? 'Failed to start batch delivery. Please try again.', 
             true
           );
         }
@@ -174,22 +177,46 @@ class OrdersScreen extends StatelessWidget {
                   color: const Color(0xFF6941C6).withOpacity(0.3),
                 ),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: Color(0xFF6941C6),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'The route will be optimized for shortest distance.',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12,
-                        color: const Color(0xFF6941C6),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.route,
+                        color: Color(0xFF6941C6),
+                        size: 20,
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Google Maps will optimize routes for shortest travel time',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12,
+                            color: const Color(0xFF6941C6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time,
+                        color: Color(0xFF6941C6),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Real-time traffic data will be considered for accurate ETAs',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12,
+                            color: const Color(0xFF6941C6),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -233,46 +260,60 @@ class OrdersScreen extends StatelessWidget {
     ) ?? false;
   }
 
-  void _markAsDelivered(BuildContext context, Order order) async {
-    final orderService = Provider.of<OrderService>(context, listen: false);
-    final locationService = Provider.of<LocationService>(context, listen: false);
-
-    // Check if order is in progress
-    if (!order.isInProgress) {
-      _showMessage(context, 'This order is not in progress.', true);
-      return;
-    }
-
-    try {
-      final success = await orderService.updateOrderStatus(
-        order.id, 
-        OrderStatus.delivered
-      );
-
-      if (success) {
-        // Stop location tracking if this is the last active order
-        if (orderService.activeOrders.length <= 1) {
-          locationService.stopTracking();
-        }
-        // Refresh data
-        onRefresh();
-
-        if (context.mounted) {
-          _showMessage(context, 'Order marked as delivered!', false);
-        }
-      } else {
-        if (context.mounted) {
-          _showMessage(context, 
-            orderService.lastError ?? 'Failed to mark as delivered. Please try again.', 
-            true
+  void _showDeliveryCompletionDialog(BuildContext context, Order order) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DeliveryCompletionDialog(
+        order: order,
+        onComplete: (deliveryData) async {
+          Navigator.of(context).pop();
+          
+          // Show loading
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+              ),
+            ),
           );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showMessage(context, 'An error occurred: ${e.toString()}', true);
-      }
-    }
+
+          final orderService = Provider.of<OrderService>(context, listen: false);
+          final locationService = Provider.of<LocationService>(context, listen: false);
+          
+          final success = await orderService.completeDelivery(deliveryData);
+          
+          // Close loading dialog
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+
+          if (success) {
+            // Stop tracking if no more active orders
+            if (orderService.activeOrders.length <= 1) {
+              locationService.stopTracking();
+            }
+            onRefresh();
+
+            if (context.mounted) {
+              _showMessage(context, 'Order completed successfully! Payment and signature recorded.', false);
+            }
+          } else {
+            if (context.mounted) {
+              _showMessage(context, 
+                orderService.lastError ?? 'Failed to complete delivery. Please try again.', 
+                true
+              );
+            }
+          }
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
   }
 
   void _showMessage(BuildContext context, String message, bool isError) {
@@ -291,6 +332,7 @@ class OrdersScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         margin: const EdgeInsets.all(16),
+        duration: Duration(seconds: isError ? 4 : 3),
       ),
     );
   }
@@ -501,7 +543,7 @@ class OrdersScreen extends StatelessWidget {
                   ),
                 ),
 
-              // Multi-selection header
+              // Multi-selection header with Google Maps integration note
               Container(
                 margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 padding: const EdgeInsets.all(16),
@@ -535,7 +577,7 @@ class OrdersScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Orders Overview',
+                                'Smart Delivery System',
                                 style: GoogleFonts.spaceGrotesk(
                                   fontSize: 12,
                                   color: const Color(0xAAFFFFFF),
@@ -554,6 +596,37 @@ class OrdersScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        // Google Maps badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF4CAF50).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.route,
+                                color: Color(0xFF4CAF50),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Google Maps',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 10,
+                                  color: const Color(0xFF4CAF50),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         // Selection mode toggle
                         if (availableOrders.isNotEmpty && !orderService.hasActiveDeliveries)
                           IconButton(
@@ -591,7 +664,7 @@ class OrdersScreen extends StatelessWidget {
                                 ),
                                 if (orderService.selectedCount > 0)
                                   Text(
-                                    'Ready to start batch delivery',
+                                    'Real-time route optimization enabled',
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 10,
                                       color: const Color(0xFF4CAF50),
@@ -620,13 +693,24 @@ class OrdersScreen extends StatelessWidget {
                                 backgroundColor: const Color(0xFF6941C6),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),
-                              child: Text(
-                                'Start ${orderService.selectedCount} ${orderService.selectedCount == 1 ? 'Order' : 'Orders'}',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.route,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Start ${orderService.selectedCount}',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                         ],
@@ -660,7 +744,7 @@ class OrdersScreen extends StatelessWidget {
                             ? () => _startSingleDelivery(context, order)
                             : null,
                         onMarkAsDelivered: order.isInProgress
-                            ? () => _markAsDelivered(context, order)
+                            ? () => _showDeliveryCompletionDialog(context, order)
                             : null,
                       ),
                     );

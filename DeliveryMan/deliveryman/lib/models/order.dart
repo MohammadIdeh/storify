@@ -129,7 +129,7 @@ class Order {
   final List<OrderItem> items;
   final bool canStart;
   final bool isInProgress;
-  
+
   // New properties for multi-order delivery
   bool isSelected;
   int? routeIndex; // For color coding on map
@@ -219,11 +219,11 @@ class Order {
       note: json['note'] as String?,
       deliveryEmployeeId: json['deliveryEmployeeId'] as int,
       estimatedDeliveryTime: json['estimatedDeliveryTime'] as int,
-      deliveryStartTime: json['deliveryStartTime'] != null 
-          ? DateTime.parse(json['deliveryStartTime']) 
+      deliveryStartTime: json['deliveryStartTime'] != null
+          ? DateTime.parse(json['deliveryStartTime'])
           : null,
-      deliveryEndTime: json['deliveryEndTime'] != null 
-          ? DateTime.parse(json['deliveryEndTime']) 
+      deliveryEndTime: json['deliveryEndTime'] != null
+          ? DateTime.parse(json['deliveryEndTime'])
           : null,
       assignedAt: DateTime.parse(json['assignedAt']),
       deliveryDelayReason: json['deliveryDelayReason'] as String?,
