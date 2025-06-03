@@ -672,6 +672,12 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
                                         ),
                                       ),
                                     ),
+                                  ],
+                                ),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
                                     if (_signatureBytes != null)
                                       Container(
                                         padding: const EdgeInsets.symmetric(

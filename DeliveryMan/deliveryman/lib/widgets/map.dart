@@ -27,7 +27,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
@@ -42,12 +42,59 @@ class _MapScreenState extends State<MapScreen>
   bool _isLoadingRoute = false;
   Map<int, bool> _orderRouteLoading = {};
 
+  // Header collapse animation
+  late AnimationController _headerAnimationController;
+  late AnimationController _headerPulseController;
+  late Animation<double> _headerScaleAnimation;
+  late Animation<double> _headerFadeAnimation;
+  late Animation<double> _headerPulseAnimation;
+  bool _isHeaderMinimized = false;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize header animation controllers
+    _headerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+
+    _headerPulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _headerScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _headerAnimationController,
+      curve: Curves.easeInOutBack,
+    ));
+
+    _headerFadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _headerAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _headerPulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: _headerPulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start pulse animation for minimized state
+    _headerPulseController.repeat(reverse: true);
+
     _mapUpdateTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (mounted) _updateMapIfNeeded();
     });
@@ -57,7 +104,21 @@ class _MapScreenState extends State<MapScreen>
   void dispose() {
     _mapController?.dispose();
     _mapUpdateTimer?.cancel();
+    _headerAnimationController.dispose();
+    _headerPulseController.dispose();
     super.dispose();
+  }
+
+  void _toggleHeaderVisibility() {
+    setState(() {
+      _isHeaderMinimized = !_isHeaderMinimized;
+    });
+
+    if (_isHeaderMinimized) {
+      _headerAnimationController.forward();
+    } else {
+      _headerAnimationController.reverse();
+    }
   }
 
   void _updateMapIfNeeded() {
@@ -668,6 +729,338 @@ class _MapScreenState extends State<MapScreen>
     );
   }
 
+  Widget _buildMinimizedHeaderButton(List<Order> assignedOrders) {
+    final activeOrders = assignedOrders.where((o) => o.isInProgress).length;
+
+    return AnimatedBuilder(
+      animation: _headerPulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _headerPulseAnimation.value,
+          child: GestureDetector(
+            onTap: _toggleHeaderVisibility,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF6941C6),
+                    const Color(0xFF6941C6).withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6941C6).withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.map,
+                      color: Colors.white,
+                      size: 16,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(0, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${assignedOrders.length} Orders',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (activeOrders > 0)
+                        Text(
+                          '$activeOrders Active',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            color: Colors.white.withOpacity(0.9),
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.3),
+                                offset: const Offset(0, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.expand_more,
+                    color: Colors.white,
+                    size: 16,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        offset: const Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExpandedHeader(List<Order> assignedOrders) {
+    final activeOrders = assignedOrders.where((o) => o.isInProgress).length;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF304050).withOpacity(0.95),
+            const Color(0xFF304050).withOpacity(0.9),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF6941C6).withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: const Color(0xFF6941C6).withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF6941C6),
+                  const Color(0xFF6941C6).withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6941C6).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.map,
+              color: Colors.white,
+              size: 22,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Delivery Overview',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6941C6).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF6941C6).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        '${assignedOrders.length} Total',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11,
+                          color: const Color(0xFF6941C6),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (activeOrders > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withOpacity(0.5),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$activeOrders Active',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 11,
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (_isLoadingRoute)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6941C6).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: const Color(0xFF6941C6).withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF6941C6)),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Loading',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      color: const Color(0xFF6941C6),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(width: 8),
+          // Minimize button
+          GestureDetector(
+            onTap: _toggleHeaderVisibility,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                ),
+              ),
+              child: Icon(
+                Icons.minimize_rounded,
+                color: Colors.white,
+                size: 18,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.3),
+                    offset: const Offset(0, 1),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBatchDeliveryPanel(OrderService orderService) {
     final activeRoutes = orderService.activeRoutes;
     if (activeRoutes.isEmpty) return const SizedBox.shrink();
@@ -885,6 +1278,8 @@ class _MapScreenState extends State<MapScreen>
               buildingsEnabled: false,
               indoorViewEnabled: false,
             ),
+
+            // Batch delivery panel
             if (isBatchActive)
               Positioned(
                 top: 16,
@@ -892,100 +1287,63 @@ class _MapScreenState extends State<MapScreen>
                 right: 16,
                 child: _buildBatchDeliveryPanel(orderService),
               ),
+
+            // Collapsible header for single deliveries
             if (assignedOrders.isNotEmpty && !isBatchActive)
               Positioned(
                 top: 16,
                 left: 16,
                 right: 16,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF304050).withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF6941C6).withOpacity(0.3),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6941C6).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    if (child.key == const ValueKey('minimized')) {
+                      // Slide in from top for minimized button
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.0, -1.0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.elasticOut,
+                        )),
+                        child: ScaleTransition(
+                          scale: animation,
+                          child: child,
                         ),
-                        child: const Icon(
-                          Icons.map,
-                          color: Color(0xFF6941C6),
-                          size: 20,
+                      );
+                    } else {
+                      // Scale and fade for expanded header
+                      return ScaleTransition(
+                        scale: Tween<double>(
+                          begin: 0.8,
+                          end: 1.0,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.elasticOut,
+                        )),
+                        child: FadeTransition(
+                          opacity: animation,
+                          child: child,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Delivery Overview',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              '${assignedOrders.length} orders • ${assignedOrders.where((o) => o.isInProgress).length} active',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
-                                color: const Color(0xAAFFFFFF),
-                              ),
-                            ),
-                          ],
+                      );
+                    }
+                  },
+                  child: _isHeaderMinimized
+                      ? Align(
+                          key: const ValueKey('minimized'),
+                          alignment: Alignment.centerLeft,
+                          child: _buildMinimizedHeaderButton(assignedOrders),
+                        )
+                      : Container(
+                          key: const ValueKey('expanded'),
+                          child: _buildExpandedHeader(assignedOrders),
                         ),
-                      ),
-                      if (_isLoadingRoute)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6941C6).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF6941C6)),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Loading Route',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 10,
-                                  color: const Color(0xFF6941C6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
                 ),
               ),
-            // In map.dart, replace the current order info section with:
+
+            // Live navigation card for active deliveries
             if (currentOrder != null && currentOrder.isInProgress)
               Positioned(
                 left: 16,
@@ -997,6 +1355,8 @@ class _MapScreenState extends State<MapScreen>
                   onComplete: () => _showDeliveryCompletionDialog(currentOrder),
                 ),
               ),
+
+            // Empty state
             if (currentOrder == null && assignedOrders.isEmpty)
               Positioned(
                 left: 16,

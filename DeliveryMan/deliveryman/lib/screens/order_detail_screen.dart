@@ -250,256 +250,578 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1D2939), // background color
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFF304050), // card color
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+  // Check if this order can be started individually
+  bool _canStartIndividually(OrderService orderService) {
+    // If there's an active batch delivery and this order is not part of it, disable
+    if (orderService.isBatchDeliveryActive) {
+      // Check if this order is part of the active batch
+      bool isInActiveBatch = orderService.activeRoutes
+          .any((route) => route.order.id == widget.order.id);
+      return isInActiveBatch;
+    }
+
+    // If there are active orders but this isn't one of them, it can't be started
+    if (orderService.hasActiveDeliveries) {
+      return widget.order.isInProgress;
+    }
+
+    // Otherwise, use the default canStart logic
+    return widget.order.canStart && !widget.order.isInProgress;
+  }
+
+  // Get the reason why the order cannot be started
+  String _getDisabledReason(OrderService orderService) {
+    if (orderService.isBatchDeliveryActive) {
+      bool isInActiveBatch = orderService.activeRoutes
+          .any((route) => route.order.id == widget.order.id);
+      if (!isInActiveBatch) {
+        return 'This order is not part of the active batch delivery';
+      }
+    }
+
+    if (orderService.hasActiveDeliveries && !widget.order.isInProgress) {
+      return 'Complete current deliveries before starting new ones';
+    }
+
+    if (!widget.order.canStart) {
+      return 'Order is not ready to be started';
+    }
+
+    return 'Order cannot be started at this time';
+  }
+
+  // Build batch status panel
+  Widget _buildBatchStatusPanel(OrderService orderService) {
+    if (!orderService.isBatchDeliveryActive) return const SizedBox.shrink();
+
+    final activeRoutes = orderService.activeRoutes;
+    final currentOrderInBatch =
+        activeRoutes.any((route) => route.order.id == widget.order.id);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            currentOrderInBatch
+                ? const Color(0xFF4CAF50).withOpacity(0.1)
+                : Colors.orange.withOpacity(0.1),
+            currentOrderInBatch
+                ? const Color(0xFF4CAF50).withOpacity(0.05)
+                : Colors.orange.withOpacity(0.05),
+          ],
         ),
-        title: Text(
-          'Order Details',
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: currentOrderInBatch
+              ? const Color(0xFF4CAF50).withOpacity(0.3)
+              : Colors.orange.withOpacity(0.3),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6941C6).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFF6941C6).withOpacity(0.3),
-              ),
-            ),
-            child: Text(
-              '#${widget.order.id}',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF6941C6),
-              ),
-            ),
-          ),
-        ],
       ),
-      body: Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Map showing the delivery location
-          Container(
-            height: 280,
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFF6941C6).withOpacity(0.3),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: currentOrderInBatch
+                      ? const Color(0xFF4CAF50).withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  currentOrderInBatch ? Icons.check_circle : Icons.warning,
+                  color: currentOrderInBatch
+                      ? const Color(0xFF4CAF50)
+                      : Colors.orange,
+                  size: 20,
+                ),
               ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(
-                target: LatLng(widget.order.latitude, widget.order.longitude),
-                zoom: 15,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Batch Delivery Status',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      currentOrderInBatch
+                          ? 'This order is part of the active batch'
+                          : 'This order is NOT in the active batch',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        color: currentOrderInBatch
+                            ? const Color(0xFF4CAF50)
+                            : Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              markers: _markers,
-              polylines: _polylines,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              mapToolbarEnabled: false,
-              zoomControlsEnabled: false,
-            ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6941C6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${activeRoutes.length} in batch',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    color: const Color(0xFF6941C6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-
-          // Order details
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          if (!currentOrderInBatch) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
                 children: [
-                  // Status and order info header
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF304050),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF6941C6).withOpacity(0.3),
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Complete the current batch delivery before starting individual orders',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        color: Colors.orange,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Order Status',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
-                                color: const Color(0xAAFFFFFF),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            _buildStatusChip(widget.order.status),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Amount',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
-                                color: const Color(0xAAFFFFFF),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$${widget.order.totalCost.toStringAsFixed(2)}',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF4CAF50),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Customer information
-                  _buildSection(
-                    'Customer Information',
-                    Icons.person,
-                    [
-                      _buildDetailItem('Customer Name',
-                          widget.order.customerName, Icons.person_outline),
-                      _buildDetailItem(
-                          'Phone Number',
-                          widget.order.customer.user.phoneNumber,
-                          Icons.phone_outlined),
-                      _buildDetailItem('Delivery Address', widget.order.address,
-                          Icons.location_on_outlined),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Order information
-                  _buildSection(
-                    'Order Information',
-                    Icons.receipt_long,
-                    [
-                      _buildDetailItem(
-                        'Order Time',
-                        DateFormat('MMM dd, yyyy - hh:mm a')
-                            .format(widget.order.createdAt),
-                        Icons.access_time,
-                      ),
-                      _buildDetailItem(
-                        'Assigned Time',
-                        DateFormat('MMM dd, yyyy - hh:mm a')
-                            .format(widget.order.assignedAt),
-                        Icons.assignment_turned_in,
-                      ),
-                      _buildDetailItem(
-                        'Total Amount',
-                        '\$${widget.order.totalCost.toStringAsFixed(2)}',
-                        Icons.attach_money,
-                      ),
-                      if (widget.order.discount > 0)
-                        _buildDetailItem(
-                          'Discount',
-                          '\$${widget.order.discount.toStringAsFixed(2)}',
-                          Icons.local_offer,
-                        ),
-                      _buildDetailItem(
-                        'Estimated Delivery Time',
-                        '${widget.order.estimatedDeliveryTime} minutes',
-                        Icons.schedule,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Order Items
-                  _buildSection(
-                    'Order Items (${widget.order.items.length})',
-                    Icons.shopping_bag,
-                    [
-                      ...widget.order.items
-                          .map((item) => _buildOrderItem(item))
-                          .toList(),
-                    ],
-                  ),
-
-                  if (widget.order.note != null &&
-                      widget.order.note!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _buildSection(
-                      'Order Notes',
-                      Icons.note_alt,
-                      [
-                        _buildDetailItem(
-                            'Notes', widget.order.note!, Icons.note_outlined),
-                      ],
-                    ),
-                  ],
-
-                  if (widget.order.deliveryNotes != null &&
-                      widget.order.deliveryNotes!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _buildSection(
-                      'Delivery Notes',
-                      Icons.delivery_dining,
-                      [
-                        _buildDetailItem('Delivery Notes',
-                            widget.order.deliveryNotes!, Icons.note_outlined),
-                      ],
-                    ),
-                  ],
-
-                  const SizedBox(height: 24),
-
-                  // Action buttons
-                  if (widget.order.canStart || widget.order.isInProgress) ...[
-                    CustomButton(
-                      text: widget.order.canStart && !widget.order.isInProgress
-                          ? 'Start Delivery'
-                          : 'Mark as Delivered',
-                      onPressed: _isUpdatingStatus
-                          ? () {} // Empty function instead of null
-                          : widget.order.canStart && !widget.order.isInProgress
-                              ? () => _startDelivery()
-                              : () => _markAsDelivered(),
-                      isLoading: _isUpdatingStatus,
-                      backgroundColor:
-                          widget.order.canStart && !widget.order.isInProgress
-                              ? const Color(0xFF6941C6) // primary
-                              : const Color(0xFF4CAF50), // success
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
-          ),
+          ],
+          if (currentOrderInBatch) ...[
+            const SizedBox(height: 12),
+            // Show position in batch
+            Builder(
+              builder: (context) {
+                final routeIndex = activeRoutes
+                    .indexWhere((route) => route.order.id == widget.order.id);
+                if (routeIndex == -1) return const SizedBox.shrink();
+
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: activeRoutes[routeIndex].routeColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${routeIndex + 1}',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 12,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Delivery position ${routeIndex + 1} of ${activeRoutes.length}',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12,
+                            color: const Color(0xFF4CAF50),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (widget.order.isInProgress)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'ACTIVE',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 8,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<OrderService>(
+      builder: (context, orderService, child) {
+        final canStartIndividually = _canStartIndividually(orderService);
+        final disabledReason = _getDisabledReason(orderService);
+        final showBatchPanel = orderService.isBatchDeliveryActive ||
+            orderService.hasActiveDeliveries;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF1D2939), // background color
+          appBar: AppBar(
+            scrolledUnderElevation: 0,
+            elevation: 0,
+            backgroundColor: const Color(0xFF304050), // card color
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              'Order Details',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6941C6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF6941C6).withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  '#${widget.order.id}',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF6941C6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Map showing the delivery location
+              Container(
+                height: 280,
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF6941C6).withOpacity(0.3),
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: GoogleMap(
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target:
+                        LatLng(widget.order.latitude, widget.order.longitude),
+                    zoom: 15,
+                  ),
+                  markers: _markers,
+                  polylines: _polylines,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: true,
+                  mapToolbarEnabled: false,
+                  zoomControlsEnabled: false,
+                ),
+              ),
+
+              // Order details
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Batch status panel
+                      if (showBatchPanel) _buildBatchStatusPanel(orderService),
+
+                      // Status and order info header
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF304050),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF6941C6).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Order Status',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 12,
+                                    color: const Color(0xAAFFFFFF),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                _buildStatusChip(widget.order.status),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Amount',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 12,
+                                    color: const Color(0xAAFFFFFF),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '\$${widget.order.totalCost.toStringAsFixed(2)}',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF4CAF50),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Customer information
+                      _buildSection(
+                        'Customer Information',
+                        Icons.person,
+                        [
+                          _buildDetailItem('Customer Name',
+                              widget.order.customerName, Icons.person_outline),
+                          _buildDetailItem(
+                              'Phone Number',
+                              widget.order.customer.user.phoneNumber,
+                              Icons.phone_outlined),
+                          _buildDetailItem('Delivery Address',
+                              widget.order.address, Icons.location_on_outlined),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Order information
+                      _buildSection(
+                        'Order Information',
+                        Icons.receipt_long,
+                        [
+                          _buildDetailItem(
+                            'Order Time',
+                            DateFormat('MMM dd, yyyy - hh:mm a')
+                                .format(widget.order.createdAt),
+                            Icons.access_time,
+                          ),
+                          _buildDetailItem(
+                            'Assigned Time',
+                            DateFormat('MMM dd, yyyy - hh:mm a')
+                                .format(widget.order.assignedAt),
+                            Icons.assignment_turned_in,
+                          ),
+                          _buildDetailItem(
+                            'Total Amount',
+                            '\$${widget.order.totalCost.toStringAsFixed(2)}',
+                            Icons.attach_money,
+                          ),
+                          if (widget.order.discount > 0)
+                            _buildDetailItem(
+                              'Discount',
+                              '\$${widget.order.discount.toStringAsFixed(2)}',
+                              Icons.local_offer,
+                            ),
+                          _buildDetailItem(
+                            'Estimated Delivery Time',
+                            '${widget.order.estimatedDeliveryTime} minutes',
+                            Icons.schedule,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Order Items
+                      _buildSection(
+                        'Order Items (${widget.order.items.length})',
+                        Icons.shopping_bag,
+                        [
+                          ...widget.order.items
+                              .map((item) => _buildOrderItem(item))
+                              .toList(),
+                        ],
+                      ),
+
+                      if (widget.order.note != null &&
+                          widget.order.note!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _buildSection(
+                          'Order Notes',
+                          Icons.note_alt,
+                          [
+                            _buildDetailItem('Notes', widget.order.note!,
+                                Icons.note_outlined),
+                          ],
+                        ),
+                      ],
+
+                      if (widget.order.deliveryNotes != null &&
+                          widget.order.deliveryNotes!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _buildSection(
+                          'Delivery Notes',
+                          Icons.delivery_dining,
+                          [
+                            _buildDetailItem(
+                                'Delivery Notes',
+                                widget.order.deliveryNotes!,
+                                Icons.note_outlined),
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // Action buttons with batch awareness
+                      if (widget.order.canStart ||
+                          widget.order.isInProgress) ...[
+                        // Show disabled reason if applicable
+                        if (!canStartIndividually &&
+                            widget.order.canStart &&
+                            !widget.order.isInProgress) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.redAccent.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.block,
+                                  color: Colors.redAccent,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Cannot Start Individually',
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.redAccent,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        disabledReason,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 12,
+                                          color: Colors.redAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        CustomButton(
+                          text: widget.order.canStart &&
+                                  !widget.order.isInProgress
+                              ? 'Start Delivery'
+                              : 'Mark as Delivered',
+                          onPressed: _isUpdatingStatus || !canStartIndividually
+                              ? () {} // Empty function for disabled state
+                              : widget.order.canStart &&
+                                      !widget.order.isInProgress
+                                  ? () => _startDelivery()
+                                  : () => _markAsDelivered(),
+                          isLoading: _isUpdatingStatus,
+                          backgroundColor: !canStartIndividually &&
+                                  widget.order.canStart &&
+                                  !widget.order.isInProgress
+                              ? Colors.grey.withOpacity(0.5) // Disabled state
+                              : widget.order.canStart &&
+                                      !widget.order.isInProgress
+                                  ? const Color(0xFF6941C6) // primary
+                                  : const Color(0xFF4CAF50), // success
+                        ),
+                      ],
+
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

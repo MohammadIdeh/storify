@@ -25,7 +25,8 @@ class LiveNavigationCard extends StatefulWidget {
   State<LiveNavigationCard> createState() => _LiveNavigationCardState();
 }
 
-class _LiveNavigationCardState extends State<LiveNavigationCard> {
+class _LiveNavigationCardState extends State<LiveNavigationCard>
+    with TickerProviderStateMixin {
   Timer? _navigationTimer;
   int _elapsedSeconds = 0;
   int _estimatedRemainingMinutes = 0;
@@ -39,11 +40,58 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
   DateTime? _lastPositionTime;
   List<double> _recentSpeeds = [];
 
+  // Animation and minimization state
+  late AnimationController _animationController;
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _pulseAnimation;
+  bool _isMinimized = false;
+
   @override
   void initState() {
     super.initState();
     _deliveryStartTime =
         widget.currentOrder.deliveryStartTime ?? DateTime.now();
+
+    // Initialize animation controllers
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticInOut,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start pulse animation for minimized state
+    _pulseController.repeat(reverse: true);
+
     _startNavigationTracking();
     _calculateInitialETA();
   }
@@ -51,7 +99,21 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
   @override
   void dispose() {
     _navigationTimer?.cancel();
+    _animationController.dispose();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  void _toggleMinimize() {
+    setState(() {
+      _isMinimized = !_isMinimized;
+    });
+
+    if (_isMinimized) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
   }
 
   void _startNavigationTracking() {
@@ -202,21 +264,149 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
     return const Color(0xFF6941C6); // Purple - En route
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildMinimizedButton() {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _pulseAnimation.value,
+          child: GestureDetector(
+            onTap: _toggleMinimize,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    _getETAColor(),
+                    _getETAColor().withOpacity(0.8),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _getETAColor().withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                    spreadRadius: 2,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Background pulse effect
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Content
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.navigation,
+                          color: Colors.white,
+                          size: 24,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatETA(),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.3),
+                                offset: const Offset(0, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Live indicator
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF4CAF50).withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExpandedCard() {
     return Container(
-      margin: const EdgeInsets.all(10),
+      margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF304050),
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF304050),
+            const Color(0xFF304050).withOpacity(0.95),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFF6941C6).withOpacity(0.3),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: const Color(0xFF6941C6).withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -225,19 +415,31 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with navigation status
+            // Header with navigation status and close button
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getETAColor().withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [
+                        _getETAColor(),
+                        _getETAColor().withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _getETAColor().withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     Icons.navigation,
-                    color: _getETAColor(),
-                    size: 20,
+                    color: Colors.white,
+                    size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -271,6 +473,9 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF4CAF50).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50).withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -278,9 +483,16 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF4CAF50),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4CAF50).withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -295,6 +507,26 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
+                // Minimize button
+                GestureDetector(
+                  onTap: _toggleMinimize,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.minimize_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
               ],
             ),
 
@@ -302,13 +534,27 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
 
             // Real-time navigation stats
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF1D2939),
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF1D2939),
+                    const Color(0xFF1D2939).withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _getETAColor().withOpacity(0.2),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -410,9 +656,7 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
                               size: 16,
                               color: Color(0xFFFF9800),
                             ),
-                            SizedBox(
-                              width: 5,
-                            ),
+                            const SizedBox(width: 5),
                             Text(
                               'Elapsed',
                               style: GoogleFonts.spaceGrotesk(
@@ -446,7 +690,10 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF6941C6).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF6941C6).withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -498,39 +745,78 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: widget.onViewDetails,
-                    icon: const Icon(Icons.info_outline, size: 18),
-                    label: Text(
-                      'Details',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1D2939),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onViewDetails,
+                      icon: const Icon(Icons.info_outline, size: 18),
+                      label: Text(
+                        'Details',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1D2939),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: widget.onComplete,
-                    icon: const Icon(Icons.check_circle, size: 18),
-                    label: Text(
-                      'Complete',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF4CAF50),
+                          const Color(0xFF4CAF50).withOpacity(0.8),
+                        ],
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onComplete,
+                      icon: const Icon(Icons.check_circle, size: 18),
+                      label: Text(
+                        'Complete',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -539,6 +825,59 @@ class _LiveNavigationCardState extends State<LiveNavigationCard> {
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        if (child.key == const ValueKey('minimized')) {
+          // Slide in from right for minimized button
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.elasticOut,
+            )),
+            child: ScaleTransition(
+              scale: animation,
+              child: child,
+            ),
+          );
+        } else {
+          // Scale and fade for expanded card
+          return ScaleTransition(
+            scale: Tween<double>(
+              begin: 0.8,
+              end: 1.0,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.elasticOut,
+            )),
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        }
+      },
+      child: _isMinimized
+          ? Align(
+              key: const ValueKey('minimized'),
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: _buildMinimizedButton(),
+              ),
+            )
+          : Container(
+              key: const ValueKey('expanded'),
+              child: _buildExpandedCard(),
+            ),
     );
   }
 }
