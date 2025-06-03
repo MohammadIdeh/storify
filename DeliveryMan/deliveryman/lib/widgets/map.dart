@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:deliveryman/screens/order_detail_screen.dart';
 import 'package:deliveryman/widgets/DeliveryCompletionDialog.dart';
+import 'package:deliveryman/widgets/LiveNavigationCard.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -984,149 +985,16 @@ class _MapScreenState extends State<MapScreen>
                   ),
                 ),
               ),
-            if (currentOrder != null)
+            // In map.dart, replace the current order info section with:
+            if (currentOrder != null && currentOrder.isInProgress)
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF304050),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF6941C6).withOpacity(0.3),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6941C6).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.delivery_dining,
-                                color: Color(0xFF6941C6),
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    isBatchActive
-                                        ? 'Batch Delivery'
-                                        : 'Active Delivery',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 12,
-                                      color: const Color(0xAAFFFFFF),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    currentOrder.customerName,
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: currentOrder.canStart &&
-                                        !currentOrder.isInProgress
-                                    ? const Color(0xFF6941C6)
-                                    : const Color(0xFF4CAF50),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                currentOrder.canStart &&
-                                        !currentOrder.isInProgress
-                                    ? 'Ready'
-                                    : 'In Progress',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: Color(0xFF6941C6),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                currentOrder.address,
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 14,
-                                  color: const Color(0xAAFFFFFF),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomButton(
-                                text: 'View Details',
-                                onPressed: () =>
-                                    _viewOrderDetails(currentOrder),
-                                backgroundColor: const Color(0xFF1D2939),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CustomButton(
-                                text: currentOrder.canStart &&
-                                        !currentOrder.isInProgress
-                                    ? 'Start Delivery'
-                                    : 'Complete',
-                                onPressed: currentOrder.canStart &&
-                                        !currentOrder.isInProgress
-                                    ? () => _startDelivery(currentOrder)
-                                    : () => _showDeliveryCompletionDialog(
-                                        currentOrder),
-                                backgroundColor: currentOrder.canStart &&
-                                        !currentOrder.isInProgress
-                                    ? const Color(0xFF6941C6)
-                                    : const Color(0xFF4CAF50),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                child: LiveNavigationCard(
+                  currentOrder: currentOrder,
+                  onViewDetails: () => _viewOrderDetails(currentOrder),
+                  onComplete: () => _showDeliveryCompletionDialog(currentOrder),
                 ),
               ),
             if (currentOrder == null && assignedOrders.isEmpty)
