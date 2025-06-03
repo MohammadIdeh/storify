@@ -227,96 +227,215 @@ class OrderService with ChangeNotifier {
     LatLng destination,
   ) async {
     try {
+      // Ensure we have valid coordinates
+      if (origin.latitude.abs() > 90 ||
+          origin.longitude.abs() > 180 ||
+          destination.latitude.abs() > 90 ||
+          destination.longitude.abs() > 180) {
+        print('❌ Invalid coordinates provided');
+        return null;
+      }
+
+      // Build the URL with all necessary parameters
       final url = 'https://maps.googleapis.com/maps/api/directions/json'
           '?origin=${origin.latitude},${origin.longitude}'
           '&destination=${destination.latitude},${destination.longitude}'
           '&key=$googleMapsApiKey'
           '&mode=driving'
+          '&alternatives=false'
           '&traffic_model=best_guess'
-          '&departure_time=now';
+          '&departure_time=now'
+          '&units=metric';
 
-      print('🗺️ Fetching directions from Google Maps API...');
-      final response = await http.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 10),
+      print('🗺️ Requesting Google Directions...');
+      print(
+          '📍 From: ${origin.latitude.toStringAsFixed(6)}, ${origin.longitude.toStringAsFixed(6)}');
+      print(
+          '📍 To: ${destination.latitude.toStringAsFixed(6)}, ${destination.longitude.toStringAsFixed(6)}');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'DeliveryApp/1.0',
+        },
+      ).timeout(
+        const Duration(seconds: 15),
         onTimeout: () {
-          throw TimeoutException('Google Directions API timeout');
+          throw TimeoutException(
+              'Google Directions API timeout after 15 seconds');
         },
       );
+
+      print('📥 Google Directions response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
+        print('📊 Google Directions API status: ${data['status']}');
+
+        if (data['status'] == 'OK' &&
+            data['routes'] != null &&
+            data['routes'].isNotEmpty) {
           final route = data['routes'][0];
           final leg = route['legs'][0];
 
+          // Validate route data
+          if (route['overview_polyline'] == null ||
+              route['overview_polyline']['points'] == null) {
+            print('❌ No polyline data in response');
+            return null;
+          }
+
           // Extract polyline points
-          final polylinePoints =
-              _decodePolyline(route['overview_polyline']['points']);
+          final encodedPolyline =
+              route['overview_polyline']['points'] as String;
+          final polylinePoints = _decodePolyline(encodedPolyline);
+
+          if (polylinePoints.isEmpty) {
+            print('❌ Failed to decode polyline');
+            return null;
+          }
 
           // Extract distance and duration
-          final distanceKm = leg['distance']['value'] / 1000.0;
-          final durationMinutes = (leg['duration_in_traffic']?['value'] ??
-                  leg['duration']['value']) ~/
-              60;
+          final distanceKm = (leg['distance']['value'] as int) / 1000.0;
 
-          print(
-              '✅ Google Directions: ${distanceKm.toStringAsFixed(1)}km, ${durationMinutes}min');
+          // Prefer duration_in_traffic if available, otherwise use duration
+          int durationSeconds;
+          if (leg['duration_in_traffic'] != null) {
+            durationSeconds = leg['duration_in_traffic']['value'] as int;
+          } else {
+            durationSeconds = leg['duration']['value'] as int;
+          }
+          final durationMinutes = (durationSeconds / 60).round();
+
+          print('✅ Google Directions success:');
+          print('   📏 Distance: ${distanceKm.toStringAsFixed(2)}km');
+          print('   ⏱️ Duration: ${durationMinutes}min');
+          print('   🛣️ Route points: ${polylinePoints.length}');
 
           return GoogleDirectionsResponse(
             points: polylinePoints,
             distanceKm: distanceKm,
             durationMinutes: durationMinutes,
-            encodedPolyline: route['overview_polyline']['points'],
+            encodedPolyline: encodedPolyline,
           );
         } else {
-          print('❌ Google Directions API error: ${data['status']}');
+          String errorMsg = 'Unknown error';
+          if (data['status'] != null) {
+            switch (data['status']) {
+              case 'NOT_FOUND':
+                errorMsg =
+                    'Route not found - one of the locations may be invalid';
+                break;
+              case 'ZERO_RESULTS':
+                errorMsg = 'No route found between these locations';
+                break;
+              case 'MAX_WAYPOINTS_EXCEEDED':
+                errorMsg = 'Too many waypoints in request';
+                break;
+              case 'INVALID_REQUEST':
+                errorMsg = 'Invalid request - check coordinates';
+                break;
+              case 'OVER_DAILY_LIMIT':
+              case 'OVER_QUERY_LIMIT':
+                errorMsg = 'Google Maps API quota exceeded';
+                break;
+              case 'REQUEST_DENIED':
+                errorMsg = 'API key invalid or request denied';
+                break;
+              default:
+                errorMsg = 'API returned status: ${data['status']}';
+            }
+          }
+
+          print('❌ Google Directions API error: $errorMsg');
+
+          if (data['error_message'] != null) {
+            print('❌ Additional error info: ${data['error_message']}');
+          }
+
           return null;
         }
+      } else if (response.statusCode == 403) {
+        print(
+            '❌ Google Directions API: Forbidden (403) - Check API key and billing');
+        return null;
+      } else if (response.statusCode == 429) {
+        print('❌ Google Directions API: Rate limited (429)');
+        return null;
       } else {
         print('❌ Google Directions API HTTP error: ${response.statusCode}');
+        print('❌ Response body: ${response.body}');
         return null;
       }
     } catch (e) {
-      print('❌ Error calling Google Directions API: $e');
+      if (e is TimeoutException) {
+        print('❌ Google Directions API timeout: ${e.message}');
+      } else {
+        print('❌ Error calling Google Directions API: $e');
+      }
       return null;
     }
   }
 
-  // Decode Google's polyline encoding
   List<LatLng> _decodePolyline(String encoded) {
-    List<LatLng> points = [];
-    int index = 0;
-    int len = encoded.length;
-    int lat = 0;
-    int lng = 0;
+    try {
+      if (encoded.isEmpty) {
+        print('❌ Empty polyline string');
+        return [];
+      }
 
-    while (index < len) {
-      int b;
-      int shift = 0;
-      int result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
+      List<LatLng> points = [];
+      int index = 0;
+      int len = encoded.length;
+      int lat = 0;
+      int lng = 0;
 
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
+      while (index < len) {
+        int b;
+        int shift = 0;
+        int result = 0;
 
-      points.add(LatLng(lat / 1E5, lng / 1E5));
+        // Decode latitude
+        do {
+          if (index >= len) break;
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+
+        int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+
+        // Decode longitude
+        do {
+          if (index >= len) break;
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+
+        int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+        lng += dlng;
+
+        final latLng = LatLng(lat / 1E5, lng / 1E5);
+
+        // Validate decoded coordinates
+        if (latLng.latitude.abs() <= 90 && latLng.longitude.abs() <= 180) {
+          points.add(latLng);
+        }
+      }
+
+      print('🔄 Decoded ${points.length} points from polyline');
+      return points;
+    } catch (e) {
+      print('❌ Error decoding polyline: $e');
+      return [];
     }
-
-    return points;
   }
 
   Future<void> fetchAssignedOrders() async {
@@ -516,7 +635,13 @@ class OrderService with ChangeNotifier {
           .where((order) => orderIds.contains(order.id))
           .toList();
 
-      if (ordersToRoute.isEmpty) return routes;
+      if (ordersToRoute.isEmpty) {
+        print('❌ No orders found for route generation');
+        return routes;
+      }
+
+      print(
+          '🗺️ Generating optimized routes for ${ordersToRoute.length} orders');
 
       // Optimize route order using nearest neighbor algorithm
       List<Order> optimizedOrders = _optimizeDeliveryRoute(
@@ -527,10 +652,14 @@ class OrderService with ChangeNotifier {
 
       // Create routes for each order with Google Directions
       LatLng currentLocation = LatLng(startLatitude, startLongitude);
+      int successfulRoutes = 0;
 
       for (int i = 0; i < optimizedOrders.length; i++) {
         final order = optimizedOrders[i];
         final orderLocation = LatLng(order.latitude, order.longitude);
+
+        print(
+            '🛣️ Generating route ${i + 1}/${optimizedOrders.length} for Order #${order.id}');
 
         // Get real route from Google Directions API
         final directionsResponse = await _getDirectionsFromGoogle(
@@ -547,14 +676,18 @@ class OrderService with ChangeNotifier {
           routePoints = directionsResponse.points;
           distance = directionsResponse.distanceKm;
           estimatedTime = directionsResponse.durationMinutes;
+          successfulRoutes++;
+
+          print(
+              '✅ Real route generated: ${distance.toStringAsFixed(1)}km, ${estimatedTime}min');
         } else {
-          // Fallback to straight line
-          print('⚠️ Using fallback route for order ${order.id}');
+          // Fallback to straight line calculation
+          print('⚠️ Using fallback calculation for Order #${order.id}');
           routePoints = [currentLocation, orderLocation];
           distance = _calculateDistance(currentLocation.latitude,
               currentLocation.longitude, order.latitude, order.longitude);
           estimatedTime =
-              (distance * 2).round(); // Rough estimate: 2 min per km
+              (distance * 2.5).round(); // Estimate: 2.5 min per km in city
         }
 
         routes.add(RouteInfo(
@@ -567,9 +700,17 @@ class OrderService with ChangeNotifier {
         ));
 
         currentLocation = orderLocation;
+
+        // Small delay between API calls to avoid rate limiting
+        if (i < optimizedOrders.length - 1) {
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
       }
+
+      print(
+          '🎉 Route generation complete: ${successfulRoutes}/${ordersToRoute.length} real routes');
     } catch (e) {
-      print('Error generating optimized routes: $e');
+      print('❌ Error generating optimized routes: $e');
     }
 
     return routes;
@@ -603,48 +744,124 @@ class OrderService with ChangeNotifier {
     }
   }
 
-  // Complete delivery with signature and payment details
+  // Complete delivery with signature and payment details (using multipart/form-data)
+// In your order_service.dart, replace the completeDelivery method with this fixed version:
+
+// Complete delivery with signature and payment details
   Future<bool> completeDelivery(Map<String, dynamic> deliveryData) async {
     if (_token == null) return false;
 
     try {
       print('🏁 Completing delivery with data: ${deliveryData.keys}');
 
-      final response = await http.post(
+      // Convert the data to the format expected by your backend
+      final requestBody = {
+        'orderId': int.parse(deliveryData['orderId']),
+        'paymentMethod': deliveryData['paymentMethod'],
+        'amountPaid': double.parse(deliveryData['amountPaid']),
+        'totalAmount': double.parse(deliveryData['totalAmount']),
+        'deliveryNotes': deliveryData['deliveryNotes'],
+        'signatureImage': deliveryData['signatureImage'], // Base64 string
+      };
+
+      print(
+          '📤 Sending completion request to: $baseUrl/delivery/complete-delivery');
+      print('📝 Request body keys: ${requestBody.keys}');
+
+      final response = await http
+          .post(
         Uri.parse('$baseUrl/delivery/complete-delivery'),
         headers: {
           'Content-Type': 'application/json',
           'token': _token!,
         },
-        body: json.encode(deliveryData),
+        body: json.encode(requestBody),
+      )
+          .timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Request timeout');
+        },
       );
 
-      print('Complete delivery response: ${response.statusCode}');
+      print('📥 Complete delivery response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final orderId = int.parse(deliveryData['orderId']);
+        try {
+          final responseData = json.decode(response.body);
+          print('✅ Delivery completed successfully: $responseData');
 
-        // Remove completed order from active routes
-        _activeRoutes.removeWhere((route) => route.order.id == orderId);
-        if (_activeRoutes.length <= 1) {
-          _isBatchDeliveryActive = false;
+          final orderId = requestBody['orderId'] as int;
+
+          // Remove completed order from active routes
+          _activeRoutes.removeWhere((route) => route.order.id == orderId);
+          if (_activeRoutes.length <= 1) {
+            _isBatchDeliveryActive = false;
+          }
+
+          // Refresh orders
+          await fetchAssignedOrders();
+          await fetchCompletedOrders();
+
+          print('✅ Orders refreshed after completion');
+          return true;
+        } catch (e) {
+          print('❌ Error parsing success response: $e');
+          // Still return true since the request was successful (200)
+          return true;
         }
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        print('❌ Bad request: ${errorData}');
+        _lastError = errorData['message'] ?? 'Bad request';
+        return false;
+      } else if (response.statusCode == 401) {
+        print('❌ Unauthorized request');
+        _lastError = 'Authentication failed. Please login again.';
+        return false;
+      } else if (response.statusCode == 404) {
+        print('❌ Order not found');
+        _lastError = 'Order not found or already completed.';
+        return false;
+      } else if (response.statusCode == 500) {
+        // Server error - try to get more details
+        try {
+          final errorResponse = response.body;
+          print(
+              '❌ Server error response: ${errorResponse.substring(0, 500)}...');
 
-        // Refresh orders
-        await fetchAssignedOrders();
-        await fetchCompletedOrders();
-
-        print('✅ Delivery completed successfully');
-        return true;
+          // Check if it's JSON error
+          if (errorResponse.contains('application/json')) {
+            try {
+              final errorJson = json.decode(errorResponse);
+              _lastError = errorJson['message'] ?? 'Server error occurred';
+            } catch (e) {
+              _lastError = 'Server error: Unable to parse error details';
+            }
+          } else {
+            _lastError =
+                'Server error: Please check if all required fields are provided';
+          }
+        } catch (e) {
+          _lastError = 'Server error: ${response.statusCode}';
+        }
+        return false;
       } else {
         print(
             '❌ Failed to complete delivery: ${response.statusCode} - ${response.body}');
-        _lastError = 'Failed to complete delivery: ${response.body}';
+        _lastError = 'Failed to complete delivery: HTTP ${response.statusCode}';
         return false;
       }
     } catch (e) {
       print('❌ Error completing delivery: $e');
-      _lastError = 'Error completing delivery: ${e.toString()}';
+
+      if (e is TimeoutException) {
+        _lastError = 'Request timeout. Please check your internet connection.';
+      } else if (e.toString().contains('SocketException')) {
+        _lastError = 'Network error. Please check your internet connection.';
+      } else {
+        _lastError = 'Error completing delivery: ${e.toString()}';
+      }
       return false;
     }
   }
@@ -823,5 +1040,27 @@ class OrderService with ChangeNotifier {
   void dispose() {
     _stopRefreshTimer();
     super.dispose();
+  }
+
+  Future<void> testGoogleDirectionsAPI() async {
+    print('🧪 Testing Google Directions API...');
+
+    // Test with known coordinates (e.g., from Amman to nearby location)
+    final testOrigin = LatLng(31.9539, 35.9106); // Amman center
+    final testDestination = LatLng(31.9613, 35.9467); // Nearby location
+
+    final result = await _getDirectionsFromGoogle(testOrigin, testDestination);
+
+    if (result != null) {
+      print('✅ Google Directions API test successful!');
+      print('   Distance: ${result.distanceKm.toStringAsFixed(2)}km');
+      print('   Duration: ${result.durationMinutes} minutes');
+      print('   Points: ${result.points.length}');
+    } else {
+      print('❌ Google Directions API test failed!');
+      print('   Check API key: $googleMapsApiKey');
+      print('   Verify billing is enabled for Google Maps Platform');
+      print('   Ensure Directions API is enabled in Google Cloud Console');
+    }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:deliveryman/screens/order_detail_screen.dart';
@@ -24,16 +25,77 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen>
+    with AutomaticKeepAliveClientMixin {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   bool _isMapInitialized = false;
+  Timer? _mapUpdateTimer;
+
+  // Cache for better performance
+  Position? _lastKnownPosition;
+  List<Order> _lastKnownOrders = [];
+
+  // Route loading states
+  bool _isLoadingRoute = false;
+  Map<int, bool> _orderRouteLoading = {};
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapUpdateTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) _updateMapIfNeeded();
+    });
+  }
 
   @override
   void dispose() {
     _mapController?.dispose();
+    _mapUpdateTimer?.cancel();
     super.dispose();
+  }
+
+  void _updateMapIfNeeded() {
+    if (!_isMapInitialized || !mounted) return;
+
+    final orderService = Provider.of<OrderService>(context, listen: false);
+    final locationService =
+        Provider.of<LocationService>(context, listen: false);
+
+    final currentPosition = locationService.currentPosition;
+    final currentOrders = orderService.assignedOrders;
+
+    bool shouldUpdate = false;
+
+    if (currentPosition != _lastKnownPosition) {
+      shouldUpdate = true;
+      _lastKnownPosition = currentPosition;
+    }
+
+    if (currentOrders.length != _lastKnownOrders.length ||
+        !_ordersEqual(currentOrders, _lastKnownOrders)) {
+      shouldUpdate = true;
+      _lastKnownOrders = List.from(currentOrders);
+    }
+
+    if (shouldUpdate) {
+      _updateMap();
+    }
+  }
+
+  bool _ordersEqual(List<Order> orders1, List<Order> orders2) {
+    if (orders1.length != orders2.length) return false;
+    for (int i = 0; i < orders1.length; i++) {
+      if (orders1[i].id != orders2[i].id ||
+          orders1[i].status != orders2[i].status) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void _updateMap() {
@@ -46,109 +108,178 @@ class _MapScreenState extends State<MapScreen> {
     final currentPosition = locationService.currentPosition;
     final activeRoutes = orderService.activeRoutes;
 
-    setState(() {
-      _markers = {};
-      _polylines = {};
+    if (mounted) {
+      setState(() {
+        _markers = _buildMarkers(currentPosition, orderService.assignedOrders);
+        _polylines = _buildPolylines(
+            activeRoutes, currentOrder, currentPosition, orderService);
+      });
 
-      // Add marker for delivery person's current location
-      if (currentPosition != null) {
-        _markers.add(
-          Marker(
-            markerId: const MarkerId('current_location'),
-            position:
-                LatLng(currentPosition.latitude, currentPosition.longitude),
-            icon:
-                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-            infoWindow: const InfoWindow(
-              title: 'Your Location',
-              snippet: 'Delivery person current position',
-            ),
-          ),
-        );
-      }
-
-      // Add markers for all assigned orders with different colors based on status
-      final assignedOrders = orderService.assignedOrders;
-      for (final order in assignedOrders) {
-        _markers.add(
-          Marker(
-            markerId: MarkerId('order_${order.id}'),
-            position: LatLng(order.latitude, order.longitude),
-            icon: _getMarkerIcon(order),
-            infoWindow: InfoWindow(
-              title: 'Order #${order.id}',
-              snippet:
-                  '${order.customerName} - \$${order.totalCost.toStringAsFixed(2)}',
-            ),
-            onTap: () => _showOrderInfoBottomSheet(order),
-          ),
-        );
-      }
-
-      // Add polylines for active routes (using Google Directions real roads)
-      if (activeRoutes.isNotEmpty) {
-        for (int i = 0; i < activeRoutes.length; i++) {
-          final route = activeRoutes[i];
-          _polylines.add(
-            Polyline(
-              polylineId: PolylineId('route_${route.order.id}'),
-              color: route.routeColor,
-              width: 5,
-              points:
-                  route.routePoints, // Real road points from Google Directions
-              // No patterns for solid lines
-            ),
-          );
-        }
-
-        // Fit all active routes on map
-        _fitActiveRoutesOnMap(activeRoutes, currentPosition);
-      } else if (currentOrder != null && currentPosition != null) {
-        // Single order route - still use Google Directions if available
-        _addSingleOrderRoute(currentOrder, currentPosition);
-      } else if (currentPosition != null) {
-        // Only current location
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng(currentPosition.latitude, currentPosition.longitude),
-            15,
-          ),
-        );
-      } else if (currentOrder != null) {
-        // Only destination
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng(currentOrder.latitude, currentOrder.longitude),
-            15,
-          ),
-        );
-      }
-    });
+      _updateCameraPosition(activeRoutes, currentOrder, currentPosition);
+    }
   }
 
-  void _addSingleOrderRoute(Order order, Position currentPosition) {
-    // For single orders, create a simple polyline
-    // In a real implementation, you could also call Google Directions here
-    _polylines.add(
-      Polyline(
-        polylineId: PolylineId('route_${order.id}'),
-        color: const Color(0xFF6941C6),
-        width: 4,
-        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-        points: [
-          LatLng(currentPosition.latitude, currentPosition.longitude),
-          LatLng(order.latitude, order.longitude),
-        ],
-      ),
-    );
+  Set<Marker> _buildMarkers(Position? currentPosition, List<Order> orders) {
+    final markers = <Marker>{};
 
-    // Show both current location and destination
-    _fitTwoPointsOnMap(
-      currentPosition.latitude,
-      currentPosition.longitude,
-      order.latitude,
-      order.longitude,
-    );
+    if (currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: LatLng(currentPosition.latitude, currentPosition.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          infoWindow: const InfoWindow(
+            title: 'Your Location',
+            snippet: 'Delivery person current position',
+          ),
+        ),
+      );
+    }
+
+    for (final order in orders) {
+      markers.add(
+        Marker(
+          markerId: MarkerId('order_${order.id}'),
+          position: LatLng(order.latitude, order.longitude),
+          icon: _getMarkerIcon(order),
+          infoWindow: InfoWindow(
+            title: 'Order #${order.id}',
+            snippet:
+                '${order.customerName} - \$${order.totalCost.toStringAsFixed(2)}',
+          ),
+          onTap: () => _showOrderInfoBottomSheet(order),
+        ),
+      );
+    }
+
+    return markers;
+  }
+
+  Set<Polyline> _buildPolylines(
+      List<RouteInfo> activeRoutes,
+      Order? currentOrder,
+      Position? currentPosition,
+      OrderService orderService) {
+    final polylines = <Polyline>{};
+
+    if (activeRoutes.isNotEmpty) {
+      // Use real Google Directions routes for batch delivery
+      for (int i = 0; i < activeRoutes.length; i++) {
+        final route = activeRoutes[i];
+        polylines.add(
+          Polyline(
+            polylineId: PolylineId('route_${route.order.id}'),
+            color: route.routeColor,
+            width: 6, // Slightly thicker for visibility
+            points:
+                route.routePoints, // Real road points from Google Directions
+            // NO PATTERNS = Solid line following real roads
+          ),
+        );
+      }
+    } else if (currentOrder != null && currentPosition != null) {
+      // For single orders, get real route from Google Directions
+      _loadSingleOrderRoute(currentOrder, currentPosition, orderService);
+    }
+
+    return polylines;
+  }
+
+  Future<void> _loadSingleOrderRoute(
+      Order order, Position currentPosition, OrderService orderService) async {
+    // Avoid multiple simultaneous requests for the same order
+    if (_orderRouteLoading[order.id] == true) return;
+
+    setState(() {
+      _orderRouteLoading[order.id] = true;
+    });
+
+    try {
+      final origin =
+          LatLng(currentPosition.latitude, currentPosition.longitude);
+      final destination = LatLng(order.latitude, order.longitude);
+
+      print('🗺️ Loading real route for Order #${order.id}');
+
+      // Get real route from Google Directions
+      final directionsResponse =
+          await orderService.getDirectionsFromGoogle(origin, destination);
+
+      if (directionsResponse != null && mounted) {
+        setState(() {
+          _polylines.removeWhere(
+              (polyline) => polyline.polylineId.value == 'route_${order.id}');
+
+          // Add real route polyline
+          _polylines.add(
+            Polyline(
+              polylineId: PolylineId('route_${order.id}'),
+              color: const Color(0xFF6941C6),
+              width: 5,
+              points: directionsResponse.points, // Real road points!
+              // NO PATTERNS = Solid line following real roads
+            ),
+          );
+        });
+
+        print(
+            '✅ Real route loaded: ${directionsResponse.points.length} points, ${directionsResponse.distanceKm.toStringAsFixed(1)}km');
+      } else {
+        // Fallback to straight line only if Directions fails
+        print('⚠️ Google Directions failed, using straight line');
+        if (mounted) {
+          setState(() {
+            _polylines.removeWhere(
+                (polyline) => polyline.polylineId.value == 'route_${order.id}');
+
+            _polylines.add(
+              Polyline(
+                polylineId: PolylineId('route_${order.id}'),
+                color: const Color(0xFF6941C6).withOpacity(0.7),
+                width: 4,
+                patterns: [
+                  PatternItem.dash(15),
+                  PatternItem.gap(8)
+                ], // Dashed only for fallback
+                points: [
+                  LatLng(currentPosition.latitude, currentPosition.longitude),
+                  LatLng(order.latitude, order.longitude),
+                ],
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading route: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _orderRouteLoading[order.id] = false;
+        });
+      }
+    }
+  }
+
+  void _updateCameraPosition(List<RouteInfo> activeRoutes, Order? currentOrder,
+      Position? currentPosition) {
+    if (activeRoutes.isNotEmpty) {
+      _fitActiveRoutesOnMap(activeRoutes, currentPosition);
+    } else if (currentOrder != null && currentPosition != null) {
+      _fitTwoPointsOnMap(
+        currentPosition.latitude,
+        currentPosition.longitude,
+        currentOrder.latitude,
+        currentOrder.longitude,
+      );
+    } else if (currentPosition != null) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(currentPosition.latitude, currentPosition.longitude),
+          15,
+        ),
+      );
+    }
   }
 
   void _fitActiveRoutesOnMap(
@@ -157,20 +288,17 @@ class _MapScreenState extends State<MapScreen> {
 
     List<LatLng> allPoints = [];
 
-    // Add current position if available
     if (currentPosition != null) {
       allPoints
           .add(LatLng(currentPosition.latitude, currentPosition.longitude));
     }
 
-    // Add all route points
     for (final route in routes) {
       allPoints.addAll(route.routePoints);
     }
 
     if (allPoints.length < 2) return;
 
-    // Calculate bounds
     double minLat = allPoints.first.latitude;
     double maxLat = allPoints.first.latitude;
     double minLng = allPoints.first.longitude;
@@ -183,7 +311,6 @@ class _MapScreenState extends State<MapScreen> {
       maxLng = math.max(maxLng, point.longitude);
     }
 
-    // Add padding
     const double padding = 0.01;
     final bounds = LatLngBounds(
       southwest: LatLng(minLat - padding, minLng - padding),
@@ -239,7 +366,6 @@ class _MapScreenState extends State<MapScreen> {
     if (success) {
       locationService.startTracking(order.id);
       widget.onRefresh();
-      _updateMap();
     } else {
       if (!mounted) return;
       _showMessage(orderService.lastError ?? 'Failed to start delivery', true);
@@ -255,7 +381,6 @@ class _MapScreenState extends State<MapScreen> {
         onComplete: (deliveryData) async {
           Navigator.of(context).pop();
 
-          // Show loading
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -273,18 +398,15 @@ class _MapScreenState extends State<MapScreen> {
 
           final success = await orderService.completeDelivery(deliveryData);
 
-          // Close loading dialog
           if (context.mounted) {
             Navigator.of(context).pop();
           }
 
           if (success) {
-            // Stop tracking if no more active orders
             if (orderService.activeOrders.length <= 1) {
               locationService.stopTracking();
             }
             widget.onRefresh();
-            _updateMap();
 
             if (context.mounted) {
               _showMessage('Order completed successfully!', false);
@@ -292,8 +414,9 @@ class _MapScreenState extends State<MapScreen> {
           } else {
             if (context.mounted) {
               _showMessage(
-                  orderService.lastError ?? 'Failed to complete delivery',
-                  true);
+                orderService.lastError ?? 'Failed to complete delivery',
+                true,
+              );
             }
           }
         },
@@ -305,6 +428,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showMessage(String message, bool isError) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -388,6 +512,38 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Route status indicator
+            if (_orderRouteLoading[order.id] == true)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6941C6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Loading real route...',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        color: const Color(0xFF6941C6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             Row(
               children: [
                 const Icon(
@@ -515,7 +671,6 @@ class _MapScreenState extends State<MapScreen> {
     final activeRoutes = orderService.activeRoutes;
     if (activeRoutes.isEmpty) return const SizedBox.shrink();
 
-    // Calculate total time and distance
     final totalTime =
         activeRoutes.fold<int>(0, (sum, route) => sum + route.estimatedTime);
     final totalDistance =
@@ -561,7 +716,7 @@ class _MapScreenState extends State<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Batch Delivery Active',
+                      'Real Road Routes Active',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -578,10 +733,36 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
               ),
+              // Google Maps badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF4CAF50),
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Real Roads',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
+                        color: const Color(0xFF4CAF50),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          // Route legend with time estimates
           ...activeRoutes.asMap().entries.map((entry) {
             final index = entry.key;
             final route = entry.value;
@@ -665,16 +846,13 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Consumer2<LocationService, OrderService>(
       builder: (context, locationService, orderService, child) {
         final currentOrder = orderService.currentOrder;
         final assignedOrders = orderService.assignedOrders;
         final isBatchActive = orderService.isBatchDeliveryActive;
-
-        // Update map when orders change
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _updateMap();
-        });
 
         return Stack(
           children: [
@@ -686,8 +864,7 @@ class _MapScreenState extends State<MapScreen> {
                         locationService.currentPosition!.latitude,
                         locationService.currentPosition!.longitude,
                       )
-                    : const LatLng(
-                        31.9539, 35.9106), // Default to Amman, Jordan
+                    : const LatLng(31.9539, 35.9106),
                 zoom: 14,
               ),
               myLocationEnabled: true,
@@ -696,14 +873,17 @@ class _MapScreenState extends State<MapScreen> {
               polylines: _polylines,
               mapToolbarEnabled: false,
               zoomControlsEnabled: true,
-              // IMPORTANT: Enable map interaction
               zoomGesturesEnabled: true,
               scrollGesturesEnabled: true,
               tiltGesturesEnabled: true,
               rotateGesturesEnabled: true,
+              // Performance optimizations
+              compassEnabled: false,
+              mapType: MapType.normal,
+              trafficEnabled: true, // Enable traffic for better route planning
+              buildingsEnabled: false,
+              indoorViewEnabled: false,
             ),
-
-            // Batch delivery panel (when active)
             if (isBatchActive)
               Positioned(
                 top: 16,
@@ -711,8 +891,6 @@ class _MapScreenState extends State<MapScreen> {
                 right: 16,
                 child: _buildBatchDeliveryPanel(orderService),
               ),
-
-            // Orders overview panel at the top (when not in batch mode)
             if (assignedOrders.isNotEmpty && !isBatchActive)
               Positioned(
                 top: 16,
@@ -771,27 +949,46 @@ class _MapScreenState extends State<MapScreen> {
                           ],
                         ),
                       ),
-                      if (orderService.isLoading)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF6941C6)),
+                      if (_isLoadingRoute)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6941C6).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF6941C6)),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Loading Route',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 10,
+                                  color: const Color(0xFF6941C6),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],
                   ),
                 ),
               ),
-
-            // Current order info overlay at the bottom
             if (currentOrder != null)
               Positioned(
                 left: 16,
                 right: 16,
-                bottom: 100, // Account for bottom nav
+                bottom: 100,
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF304050),
@@ -932,8 +1129,6 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
               ),
-
-            // No active order overlay
             if (currentOrder == null && assignedOrders.isEmpty)
               Positioned(
                 left: 16,

@@ -19,32 +19,44 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   int _currentIndex = 0;
   bool _isLoading = false;
   bool _hasInitialized = false;
 
+  // Use PageView for better performance
+  late PageController _pageController;
+
+  // Cache for reducing rebuilds
+  List<Widget>? _cachedScreens;
+
   final List<String> _screenTitles = ['Map', 'Orders', 'History'];
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Initialize services and fetch data after the first frame
+    _pageController = PageController(initialPage: _currentIndex);
+
+    // Initialize services after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeServices();
-      _fetchData();
+      if (mounted) {
+        _initializeServices();
+        _fetchData();
+      }
     });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Only fetch data if we haven't initialized yet
-    // This prevents the infinite loop during build
+    // Only initialize once
     if (!_hasInitialized) {
       _hasInitialized = true;
-      // Use addPostFrameCallback to avoid setState during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _fetchData();
@@ -56,13 +68,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Use addPostFrameCallback to avoid setState during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _fetchData();
@@ -72,17 +84,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _initializeServices() {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final orderService = Provider.of<OrderService>(context, listen: false);
-    final locationService =
-        Provider.of<LocationService>(context, listen: false);
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final orderService = Provider.of<OrderService>(context, listen: false);
+      final locationService =
+          Provider.of<LocationService>(context, listen: false);
 
-    // Set token for services
-    orderService.updateToken(authService.token);
-    locationService.updateToken(authService.token);
+      // Set token for services
+      if (authService.token != null) {
+        orderService.updateToken(authService.token);
+        locationService.updateToken(authService.token);
 
-    // Initialize location
-    locationService.getCurrentLocation();
+        // Initialize location in background
+        locationService.getCurrentLocation();
+      }
+    } catch (e) {
+      debugPrint('Error initializing services: $e');
+    }
   }
 
   Future<void> _fetchData() async {
@@ -92,17 +110,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _isLoading = true;
     });
 
-    final orderService = Provider.of<OrderService>(context, listen: false);
-
     try {
-      await orderService.fetchAssignedOrders();
+      final orderService = Provider.of<OrderService>(context, listen: false);
 
-      // Fetch completed orders if we're on the history tab
-      if (_currentIndex == 2) {
-        await orderService.fetchCompletedOrders();
+      // Fetch data based on current tab to avoid unnecessary calls
+      switch (_currentIndex) {
+        case 0: // Map tab
+        case 1: // Orders tab
+          await orderService.fetchAssignedOrders();
+          break;
+        case 2: // History tab
+          await orderService.fetchCompletedOrders();
+          break;
       }
     } catch (e) {
-      print('Error fetching data: $e');
+      debugPrint('Error fetching data: $e');
     }
 
     if (mounted) {
@@ -113,20 +135,54 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _onNavTap(int index) {
+    if (_currentIndex == index) return; // Avoid unnecessary rebuilds
+
     setState(() {
       _currentIndex = index;
     });
 
-    // Fetch specific data when switching tabs
+    // Animate to page
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+
+    // Fetch specific data for the new tab
+    _fetchTabSpecificData(index);
+  }
+
+  void _fetchTabSpecificData(int index) {
     final orderService = Provider.of<OrderService>(context, listen: false);
 
-    if (index == 1) {
-      // Orders tab
-      orderService.fetchAssignedOrders();
-    } else if (index == 2) {
-      // History tab
-      orderService.fetchCompletedOrders();
+    switch (index) {
+      case 0: // Map
+      case 1: // Orders tab
+        orderService.fetchAssignedOrders();
+        break;
+      case 2: // History tab
+        orderService.fetchCompletedOrders();
+        break;
     }
+  }
+
+  List<Widget> _buildScreens() {
+    // Cache screens to avoid rebuilding them
+    if (_cachedScreens != null) return _cachedScreens!;
+
+    _cachedScreens = [
+      MapScreen(onRefresh: _fetchData),
+      OrdersScreen(
+        isLoading: _isLoading,
+        onRefresh: _fetchData,
+      ),
+      HistoryScreen(
+        isLoading: _isLoading,
+        onRefresh: _fetchData,
+      ),
+    ];
+
+    return _cachedScreens!;
   }
 
   void _showLogoutDialog() {
@@ -209,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     return Scaffold(
       backgroundColor: const Color(0xFF1D2939),
@@ -218,10 +274,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         backgroundColor: const Color(0xFF304050),
         title: Row(
           children: [
-            SvgPicture.asset(
-              'assets/images/logo.svg',
+            // Use a simple container instead of SVG for better performance
+            Container(
               width: 30,
               height: 30,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6941C6),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.delivery_dining,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Column(
@@ -248,6 +313,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ),
         actions: [
+          // Refresh button
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
@@ -255,15 +321,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 color: const Color(0xFF6941C6).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
-                Icons.refresh,
-                color: Color(0xFF6941C6),
-                size: 20,
-              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF6941C6),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.refresh,
+                      color: Color(0xFF6941C6),
+                      size: 20,
+                    ),
             ),
-            onPressed: _fetchData,
+            onPressed: _isLoading ? null : _fetchData,
             tooltip: 'Refresh',
           ),
+
+          // Debug button (only in debug mode)
           if (kDebugMode)
             IconButton(
               icon: Container(
@@ -281,6 +358,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               onPressed: _showDebugMenu,
               tooltip: 'Debug Menu',
             ),
+
+          // Logout button
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
@@ -302,19 +381,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       body: Stack(
         children: [
-          IndexedStack(
-            index: _currentIndex,
-            children: [
-              MapScreen(onRefresh: _fetchData),
-              OrdersScreen(
-                isLoading: _isLoading,
-                onRefresh: _fetchData,
-              ),
-              HistoryScreen(
-                isLoading: _isLoading,
-                onRefresh: _fetchData,
-              ),
-            ],
+          // Use PageView for better performance than IndexedStack
+          PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(), // Disable swipe
+            children: _buildScreens(),
           ),
 
           // Bottom navigation bar
@@ -391,6 +462,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
               onTap: () {
                 Navigator.pop(context);
+                _fetchData();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.clear_all, color: Colors.orange),
+              title: const Text(
+                'Clear Cache & Restart',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Clear cached screens and restart',
+                style: TextStyle(color: Colors.white70),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _cachedScreens = null; // Clear cache
+                  _hasInitialized = false;
+                });
+                _initializeServices();
                 _fetchData();
               },
             ),
