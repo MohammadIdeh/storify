@@ -1,7 +1,9 @@
 import 'package:deliveryman/screens/historyScreen.dart';
 import 'package:deliveryman/screens/orderScreen.dart';
+import 'package:deliveryman/widgets/apiTestingWidget.dart';
 import 'package:deliveryman/widgets/map.dart';
 import 'package:deliveryman/widgets/navbar.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -262,6 +264,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             onPressed: _fetchData,
             tooltip: 'Refresh',
           ),
+          if (kDebugMode)
+            IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.bug_report,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              onPressed: _showDebugMenu,
+              tooltip: 'Debug Menu',
+            ),
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
@@ -309,6 +328,75 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDebugMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF304050),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white30,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Debug Menu',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.api, color: Color(0xFF6941C6)),
+              title: const Text(
+                'API Test Screen',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Test API connection and debug orders',
+                style: TextStyle(color: Colors.white70),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ApiTestScreen(),
+                  ),
+                );
+              },
+            ),
+            const Divider(color: Colors.white30),
+            ListTile(
+              leading: const Icon(Icons.refresh, color: Color(0xFF6941C6)),
+              title: const Text(
+                'Force Refresh Orders',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _fetchData();
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

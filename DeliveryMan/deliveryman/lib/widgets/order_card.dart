@@ -132,6 +132,12 @@ class OrderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
+                      Icons.phone_outlined,
+                      'Phone',
+                      order.customer.user.phoneNumber,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
                       Icons.location_on_outlined,
                       'Delivery Address',
                       order.address,
@@ -143,26 +149,139 @@ class OrderCard extends StatelessWidget {
                           child: _buildInfoRow(
                             Icons.attach_money,
                             'Amount',
-                            '\$${order.amount.toStringAsFixed(2)}',
+                            '\$${order.totalCost.toStringAsFixed(2)}',
                             valueColor: const Color(0xFF4CAF50),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildInfoRow(
-                            Icons.access_time,
-                            'Time',
-                            DateFormat('hh:mm a').format(order.createdAt),
+                            Icons.shopping_bag,
+                            'Items',
+                            '${order.items.length} ${order.items.length == 1 ? 'item' : 'items'}',
                           ),
                         ),
                       ],
                     ),
+                    if (order.estimatedDeliveryTime > 0) ...[
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        Icons.schedule,
+                        'Est. Delivery Time',
+                        '${order.estimatedDeliveryTime} minutes',
+                      ),
+                    ],
                   ],
                 ),
               ),
 
+              // Order Items Preview
+              if (order.items.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6941C6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF6941C6).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 16,
+                            color: Color(0xFF6941C6),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Order Items (${order.items.length})',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 12,
+                              color: const Color(0xFF6941C6),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...order.items.take(3).map((item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    color: const Color(0xFF304050),
+                                  ),
+                                  child: item.product.image.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          child: Image.network(
+                                            item.product.image,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    const Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white54,
+                                              size: 12,
+                                            ),
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.shopping_bag,
+                                          color: Colors.white54,
+                                          size: 12,
+                                        ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${item.quantity}x ${item.product.name}',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 11,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(
+                                  '\$${item.subtotal.toStringAsFixed(2)}',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 11,
+                                    color: const Color(0xFF4CAF50),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                      if (order.items.length > 3)
+                        Text(
+                          '+ ${order.items.length - 3} more items',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            color: const Color(0xAAFFFFFF),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Notes if any
-              if (order.notes != null && order.notes!.isNotEmpty) ...[
+              if (order.note != null && order.note!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
@@ -188,7 +307,7 @@ class OrderCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Special Instructions',
+                              'Order Notes',
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 12,
                                 color: const Color(0xFF6941C6),
@@ -197,7 +316,7 @@ class OrderCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              order.notes!,
+                              order.note!,
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 13,
                                 color: Colors.white,
@@ -205,6 +324,38 @@ class OrderCard extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Timing information
+              if (order.assignedAt != order.createdAt) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF304050),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF6941C6).withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Color(0xAAFFFFFF),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Assigned: ${DateFormat('MMM dd, hh:mm a').format(order.assignedAt)}',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11,
+                          color: const Color(0xAAFFFFFF),
                         ),
                       ),
                     ],
@@ -224,7 +375,8 @@ class OrderCard extends StatelessWidget {
                       backgroundColor: const Color(0xFF1D2939),
                     ),
                   ),
-                  if (order.status == OrderStatus.accepted &&
+                  if (order.canStart &&
+                      !order.isInProgress &&
                       onStartDelivery != null) ...[
                     const SizedBox(width: 12),
                     Expanded(
@@ -235,8 +387,7 @@ class OrderCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (order.status == OrderStatus.inProgress &&
-                      onMarkAsDelivered != null) ...[
+                  if (order.isInProgress && onMarkAsDelivered != null) ...[
                     const SizedBox(width: 12),
                     Expanded(
                       child: CustomButton(
@@ -309,10 +460,10 @@ class OrderCard extends StatelessWidget {
         label = 'Pending';
         icon = Icons.schedule;
         break;
-      case OrderStatus.accepted:
+      case OrderStatus.assigned:
         color = const Color(0xFF6941C6);
-        label = 'Accepted';
-        icon = Icons.check_circle_outline;
+        label = 'Assigned';
+        icon = Icons.assignment;
         break;
       case OrderStatus.inProgress:
         color = Colors.orange;
@@ -364,8 +515,8 @@ class OrderCard extends StatelessWidget {
     switch (status) {
       case OrderStatus.pending:
         return Icons.schedule;
-      case OrderStatus.accepted:
-        return Icons.check_circle_outline;
+      case OrderStatus.assigned:
+        return Icons.assignment;
       case OrderStatus.inProgress:
         return Icons.local_shipping;
       case OrderStatus.delivered:

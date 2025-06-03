@@ -191,7 +191,7 @@ class HistoryScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: OrderCard(
                     order: order,
-                    onViewDetails: () => _viewOrderDetails(context, order),
+                    onViewDetails: () => _viewOrderDetails(context, order), isSelectionMode: null,
                   ),
                 );
               },

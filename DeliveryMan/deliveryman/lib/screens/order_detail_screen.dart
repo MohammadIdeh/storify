@@ -367,7 +367,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '\$${widget.order.amount.toStringAsFixed(2)}',
+                              '\$${widget.order.totalCost.toStringAsFixed(2)}',
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -388,6 +388,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     [
                       _buildDetailItem('Customer Name',
                           widget.order.customerName, Icons.person_outline),
+                      _buildDetailItem(
+                          'Phone Number',
+                          widget.order.customer.user.phoneNumber,
+                          Icons.phone_outlined),
                       _buildDetailItem('Delivery Address', widget.order.address,
                           Icons.location_on_outlined),
                     ],
@@ -406,22 +410,64 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         Icons.access_time,
                       ),
                       _buildDetailItem(
-                        'Order Amount',
-                        '\$${widget.order.amount.toStringAsFixed(2)}',
+                        'Assigned Time',
+                        DateFormat('MMM dd, yyyy - hh:mm a')
+                            .format(widget.order.assignedAt),
+                        Icons.assignment_turned_in,
+                      ),
+                      _buildDetailItem(
+                        'Total Amount',
+                        '\$${widget.order.totalCost.toStringAsFixed(2)}',
                         Icons.attach_money,
+                      ),
+                      if (widget.order.discount > 0)
+                        _buildDetailItem(
+                          'Discount',
+                          '\$${widget.order.discount.toStringAsFixed(2)}',
+                          Icons.local_offer,
+                        ),
+                      _buildDetailItem(
+                        'Estimated Delivery Time',
+                        '${widget.order.estimatedDeliveryTime} minutes',
+                        Icons.schedule,
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
 
-                  if (widget.order.notes != null &&
-                      widget.order.notes!.isNotEmpty) ...[
+                  // Order Items
+                  _buildSection(
+                    'Order Items (${widget.order.items.length})',
+                    Icons.shopping_bag,
+                    [
+                      ...widget.order.items
+                          .map((item) => _buildOrderItem(item))
+                          .toList(),
+                    ],
+                  ),
+
+                  if (widget.order.note != null &&
+                      widget.order.note!.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildSection(
-                      'Additional Notes',
+                      'Order Notes',
                       Icons.note_alt,
                       [
-                        _buildDetailItem('Special Instructions',
-                            widget.order.notes!, Icons.note_outlined),
+                        _buildDetailItem(
+                            'Notes', widget.order.note!, Icons.note_outlined),
+                      ],
+                    ),
+                  ],
+
+                  if (widget.order.deliveryNotes != null &&
+                      widget.order.deliveryNotes!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildSection(
+                      'Delivery Notes',
+                      Icons.delivery_dining,
+                      [
+                        _buildDetailItem('Delivery Notes',
+                            widget.order.deliveryNotes!, Icons.note_outlined),
                       ],
                     ),
                   ],
@@ -429,20 +475,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const SizedBox(height: 24),
 
                   // Action buttons
-                  if (widget.order.status == OrderStatus.accepted ||
-                      widget.order.status == OrderStatus.inProgress) ...[
+                  if (widget.order.canStart || widget.order.isInProgress) ...[
                     CustomButton(
-                      text: widget.order.status == OrderStatus.accepted
+                      text: widget.order.canStart && !widget.order.isInProgress
                           ? 'Start Delivery'
                           : 'Mark as Delivered',
                       onPressed: _isUpdatingStatus
                           ? () {} // Empty function instead of null
-                          : widget.order.status == OrderStatus.accepted
+                          : widget.order.canStart && !widget.order.isInProgress
                               ? () => _startDelivery()
                               : () => _markAsDelivered(),
                       isLoading: _isUpdatingStatus,
                       backgroundColor:
-                          widget.order.status == OrderStatus.accepted
+                          widget.order.canStart && !widget.order.isInProgress
                               ? const Color(0xFF6941C6) // primary
                               : const Color(0xFF4CAF50), // success
                     ),
@@ -451,6 +496,81 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const SizedBox(height: 16),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderItem(OrderItem item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D2939),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFF6941C6).withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Product Image
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFF304050),
+            ),
+            child: item.product.image.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      item.product.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  )
+                : const Icon(
+                    Icons.shopping_bag,
+                    color: Colors.white54,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.product.name,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Qty: ${item.quantity} × \$${item.price.toStringAsFixed(2)}',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12,
+                    color: const Color(0xAAFFFFFF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '\$${item.subtotal.toStringAsFixed(2)}',
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 14,
+              color: const Color(0xFF4CAF50),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -555,10 +675,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         label = 'Pending';
         icon = Icons.schedule;
         break;
-      case OrderStatus.accepted:
+      case OrderStatus.assigned:
         color = const Color(0xFF6941C6);
-        label = 'Accepted';
-        icon = Icons.check_circle_outline;
+        label = 'Assigned';
+        icon = Icons.assignment;
         break;
       case OrderStatus.inProgress:
         color = Colors.orange;
