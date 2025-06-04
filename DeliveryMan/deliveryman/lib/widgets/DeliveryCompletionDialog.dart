@@ -730,7 +730,7 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
                     ),
                   ),
 
-                  // Action Buttons - Full width
+                  // Action Buttons - Full width - FIXED VERSION
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
@@ -744,14 +744,13 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
                           ),
                         ),
                         const SizedBox(width: 20),
-                        SizedBox(
-                          width: double.infinity,
+                        Expanded(
+                          // ✅ Fixed: Changed from SizedBox to Expanded
+                          flex: 2, // Give the Complete button more space
                           child: CustomButton(
-                            text: 'Complete Delivery',
-                            onPressed:
-                                _completeDelivery, // Remove the _isProcessing check
-                            isLoading:
-                                false, // Don't use internal loading state
+                            text: 'Complete',
+                            onPressed: _completeDelivery,
+                            isLoading: false,
                             backgroundColor: const Color(0xFF4CAF50),
                             icon: const Icon(Icons.check_circle, size: 20),
                           ),

@@ -43,9 +43,10 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     _addDebugLine('Checking authentication...');
     _addDebugLine('Is logged in: ${authService.isLoggedIn}');
     _addDebugLine('Token available: ${authService.token != null}');
-    
+
     if (authService.token != null) {
-      _addDebugLine('Token (first 20 chars): ${authService.token!.substring(0, math.min(20, authService.token!.length))}...');
+      _addDebugLine(
+          'Token (first 20 chars): ${authService.token!.substring(0, math.min(20, authService.token!.length))}...');
     }
 
     if (!authService.isLoggedIn || authService.token == null) {
@@ -60,13 +61,14 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     _addDebugLine('Testing order API...');
     try {
       await orderService.fetchAssignedOrders();
-      
+
       if (orderService.lastError != null) {
         _addDebugLine('API Error: ${orderService.lastError}');
       } else {
         _addDebugLine('SUCCESS: Orders fetched successfully');
-        _addDebugLine('Number of assigned orders: ${orderService.assignedOrders.length}');
-        
+        _addDebugLine(
+            'Number of assigned orders: ${orderService.assignedOrders.length}');
+
         for (int i = 0; i < orderService.assignedOrders.length; i++) {
           final order = orderService.assignedOrders[i];
           _addDebugLine('Order ${i + 1}:');
@@ -79,7 +81,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
           _addDebugLine('  Address: ${order.address}');
           _addDebugLine('  Items: ${order.items.length}');
         }
-        
+
         if (orderService.currentOrder != null) {
           _addDebugLine('Current Order ID: ${orderService.currentOrder!.id}');
         } else {
@@ -91,7 +93,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     }
 
     _addDebugLine('=== API Connection Test Completed ===');
-    
+
     setState(() {
       _isLoading = false;
     });
@@ -219,4 +221,3 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     );
   }
 }
-

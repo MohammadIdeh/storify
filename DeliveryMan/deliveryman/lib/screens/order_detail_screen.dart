@@ -790,27 +790,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                         ],
 
-                        CustomButton(
-                          text: widget.order.canStart &&
-                                  !widget.order.isInProgress
-                              ? 'Start Delivery'
-                              : 'Mark as Delivered',
-                          onPressed: _isUpdatingStatus || !canStartIndividually
-                              ? () {} // Empty function for disabled state
-                              : widget.order.canStart &&
-                                      !widget.order.isInProgress
-                                  ? () => _startDelivery()
-                                  : () => _markAsDelivered(),
-                          isLoading: _isUpdatingStatus,
-                          backgroundColor: !canStartIndividually &&
-                                  widget.order.canStart &&
-                                  !widget.order.isInProgress
-                              ? Colors.grey.withOpacity(0.5) // Disabled state
-                              : widget.order.canStart &&
-                                      !widget.order.isInProgress
-                                  ? const Color(0xFF6941C6) // primary
-                                  : const Color(0xFF4CAF50), // success
-                        ),
+                        // CustomButton(
+                        //   text: widget.order.canStart &&
+                        //           !widget.order.isInProgress
+                        //       ? 'Start Delivery'
+                        //       : 'Mark as Delivered',
+                        //   onPressed: _isUpdatingStatus || !canStartIndividually
+                        //       ? () {} // Empty function for disabled state
+                        //       : widget.order.canStart &&
+                        //               !widget.order.isInProgress
+                        //           ? () => _startDelivery()
+                        //           : () => _markAsDelivered(),
+                        //   isLoading: _isUpdatingStatus,
+                        //   backgroundColor: !canStartIndividually &&
+                        //           widget.order.canStart &&
+                        //           !widget.order.isInProgress
+                        //       ? Colors.grey.withOpacity(0.5) // Disabled state
+                        //       : widget.order.canStart &&
+                        //               !widget.order.isInProgress
+                        //           ? const Color(0xFF6941C6) // primary
+                        //           : const Color(0xFF4CAF50), // success
+                        // ),
                       ],
 
                       const SizedBox(height: 16),

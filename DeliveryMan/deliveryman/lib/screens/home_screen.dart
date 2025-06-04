@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen>
         isLoading: _isLoading,
         onRefresh: _fetchData,
       ),
-      HistoryScreen(
+      EnhancedHistoryScreen(
         isLoading: _isLoading,
         onRefresh: _fetchData,
       ),
