@@ -22,18 +22,21 @@ class OrdersScreen extends StatelessWidget {
 
   void _startSingleDelivery(BuildContext context, Order order) async {
     final orderService = Provider.of<OrderService>(context, listen: false);
-    final locationService = Provider.of<LocationService>(context, listen: false);
+    final locationService =
+        Provider.of<LocationService>(context, listen: false);
 
     // Check if order can be started
     if (!order.canStart || order.isInProgress) {
-      _showMessage(context, 'This order cannot be started at the moment.', true);
+      _showMessage(
+          context, 'This order cannot be started at the moment.', true);
       return;
     }
 
     // Get current location
     final currentPosition = locationService.currentPosition;
     if (currentPosition == null) {
-      _showMessage(context, 'Unable to get current location. Please enable GPS.', true);
+      _showMessage(
+          context, 'Unable to get current location. Please enable GPS.', true);
       return;
     }
 
@@ -41,7 +44,7 @@ class OrdersScreen extends StatelessWidget {
       // Clear any existing selection and select this order
       orderService.clearSelection();
       orderService.toggleOrderSelection(order);
-      
+
       // Start batch delivery with single order (gets Google Directions)
       final result = await orderService.startBatchDelivery(currentPosition);
 
@@ -50,16 +53,17 @@ class OrdersScreen extends StatelessWidget {
         locationService.startTracking(order.id);
         // Refresh data
         onRefresh();
-        
+
         if (context.mounted) {
           _showMessage(context, 'Delivery started successfully!', false);
         }
       } else {
         if (context.mounted) {
-          _showMessage(context, 
-            result.errorMessage ?? 'Failed to start delivery. Please try again.', 
-            true
-          );
+          _showMessage(
+              context,
+              result.errorMessage ??
+                  'Failed to start delivery. Please try again.',
+              true);
         }
       }
     } catch (e) {
@@ -71,22 +75,26 @@ class OrdersScreen extends StatelessWidget {
 
   void _startBatchDelivery(BuildContext context) async {
     final orderService = Provider.of<OrderService>(context, listen: false);
-    final locationService = Provider.of<LocationService>(context, listen: false);
+    final locationService =
+        Provider.of<LocationService>(context, listen: false);
 
     if (orderService.selectedCount == 0) {
-      _showMessage(context, 'Please select at least one order to start delivery.', true);
+      _showMessage(
+          context, 'Please select at least one order to start delivery.', true);
       return;
     }
 
     // Get current location
     final currentPosition = locationService.currentPosition;
     if (currentPosition == null) {
-      _showMessage(context, 'Unable to get current location. Please enable GPS.', true);
+      _showMessage(
+          context, 'Unable to get current location. Please enable GPS.', true);
       return;
     }
 
     // Show confirmation dialog for batch delivery
-    final confirmed = await _showBatchConfirmationDialog(context, orderService.selectedCount);
+    final confirmed =
+        await _showBatchConfirmationDialog(context, orderService.selectedCount);
     if (!confirmed) return;
 
     try {
@@ -96,23 +104,25 @@ class OrdersScreen extends StatelessWidget {
         // Start location tracking for the first order
         final firstOrderId = result.successfulOrders.first;
         locationService.startTracking(firstOrderId);
-        
+
         // Refresh data
         onRefresh();
-        
+
         if (context.mounted) {
-          String message = result.successfulOrders.length == orderService.selectedCount
+          String message = result.successfulOrders.length ==
+                  orderService.selectedCount
               ? 'Batch delivery started for ${result.successfulOrders.length} orders with optimized routes!'
               : 'Started ${result.successfulOrders.length} of ${orderService.selectedCount} orders. Some failed to start.';
-          
+
           _showMessage(context, message, result.failedOrders.isNotEmpty);
         }
       } else {
         if (context.mounted) {
-          _showMessage(context, 
-            result.errorMessage ?? 'Failed to start batch delivery. Please try again.', 
-            true
-          );
+          _showMessage(
+              context,
+              result.errorMessage ??
+                  'Failed to start batch delivery. Please try again.',
+              true);
         }
       }
     } catch (e) {
@@ -122,201 +132,229 @@ class OrdersScreen extends StatelessWidget {
     }
   }
 
-  Future<bool> _showBatchConfirmationDialog(BuildContext context, int orderCount) async {
+  Future<bool> _showBatchConfirmationDialog(
+      BuildContext context, int orderCount) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF304050),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6941C6).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.delivery_dining,
-                color: Color(0xFF6941C6),
-                size: 24,
-              ),
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF304050),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Start Batch Delivery',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You are about to start delivery for $orderCount ${orderCount == 1 ? 'order' : 'orders'}.',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14,
-                color: const Color(0xAAFFFFFF),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6941C6).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFF6941C6).withOpacity(0.3),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6941C6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.delivery_dining,
+                    color: Color(0xFF6941C6),
+                    size: 24,
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  Row(
+                const SizedBox(width: 12),
+                Text(
+                  'Start Batch Delivery',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You are about to start delivery for $orderCount ${orderCount == 1 ? 'order' : 'orders'}.',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14,
+                    color: const Color(0xAAFFFFFF),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6941C6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF6941C6).withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
                     children: [
-                      const Icon(
-                        Icons.route,
-                        color: Color(0xFF6941C6),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Google Maps will optimize routes for shortest travel time',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 12,
-                            color: const Color(0xFF6941C6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.route,
+                            color: Color(0xFF6941C6),
+                            size: 20,
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Google Maps will optimize routes for shortest travel time',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 12,
+                                color: const Color(0xFF6941C6),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: Color(0xFF6941C6),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Real-time traffic data will be considered for accurate ETAs',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 12,
+                                color: const Color(0xFF6941C6),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: Color(0xFF6941C6),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Real-time traffic data will be considered for accurate ETAs',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 12,
-                            color: const Color(0xFF6941C6),
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14,
+                    color: const Color(0xAAFFFFFF),
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14,
-                color: const Color(0xAAFFFFFF),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6941C6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                'Start Delivery',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6941C6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    'Start Delivery',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
+  // For orderScreen.dart - replace _showDeliveryCompletionDialog:
   void _showDeliveryCompletionDialog(BuildContext context, Order order) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => DeliveryCompletionDialog(
+      builder: (dialogContext) => DeliveryCompletionDialog(
         order: order,
         onComplete: (deliveryData) async {
-          Navigator.of(context).pop();
-          
-          // Show loading
+          // Close dialog immediately
+          Navigator.of(dialogContext).pop();
+
+          // Store context reference
+          final currentContext = context;
+
+          // Show loading indicator
           showDialog(
-            context: context,
+            context: currentContext,
             barrierDismissible: false,
-            builder: (context) => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+            builder: (loadingContext) => WillPopScope(
+              onWillPop: () async => false,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+                ),
               ),
             ),
           );
 
-          final orderService = Provider.of<OrderService>(context, listen: false);
-          final locationService = Provider.of<LocationService>(context, listen: false);
-          
-          final success = await orderService.completeDelivery(deliveryData);
-          
-          // Close loading dialog
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
+          try {
+            // Complete delivery
+            final orderService =
+                Provider.of<OrderService>(currentContext, listen: false);
+            final locationService =
+                Provider.of<LocationService>(currentContext, listen: false);
 
-          if (success) {
-            // Stop tracking if no more active orders
-            if (orderService.activeOrders.length <= 1) {
-              locationService.stopTracking();
-            }
-            onRefresh();
+            final success = await orderService.completeDelivery(deliveryData);
 
-            if (context.mounted) {
-              _showMessage(context, 'Order completed successfully! Payment and signature recorded.', false);
+            // Close loading dialog
+            if (currentContext.mounted) {
+              Navigator.of(currentContext).pop();
             }
-          } else {
-            if (context.mounted) {
-              _showMessage(context, 
-                orderService.lastError ?? 'Failed to complete delivery. Please try again.', 
-                true
-              );
+
+            if (success) {
+              if (orderService.activeOrders.length <= 1) {
+                locationService.stopTracking();
+              }
+              onRefresh();
+
+              if (currentContext.mounted) {
+                _showMessage(
+                    currentContext, 'Order completed successfully!', false);
+              }
+            } else {
+              if (currentContext.mounted) {
+                _showMessage(
+                    currentContext,
+                    orderService.lastError ?? 'Failed to complete delivery',
+                    true);
+              }
+            }
+          } catch (e) {
+            // Close loading dialog on error
+            if (currentContext.mounted) {
+              Navigator.of(currentContext).pop();
+            }
+
+            if (currentContext.mounted) {
+              _showMessage(
+                  currentContext, 'An error occurred: ${e.toString()}', true);
             }
           }
         },
         onCancel: () {
-          Navigator.of(context).pop();
+          Navigator.of(dialogContext).pop();
         },
       ),
     );
   }
 
   void _showMessage(BuildContext context, String message, bool isError) {
+    if (!context.mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -353,7 +391,8 @@ class OrdersScreen extends StatelessWidget {
       await orderService.fetchAssignedOrders();
     } catch (e) {
       if (context.mounted) {
-        _showMessage(context, 'Failed to refresh orders: ${e.toString()}', true);
+        _showMessage(
+            context, 'Failed to refresh orders: ${e.toString()}', true);
       }
     }
   }
@@ -364,7 +403,8 @@ class OrdersScreen extends StatelessWidget {
       builder: (context, orderService, child) {
         final orders = orderService.assignedOrders;
         final hasError = orderService.lastError != null;
-        final availableOrders = orders.where((o) => o.canStart && !o.isInProgress).toList();
+        final availableOrders =
+            orders.where((o) => o.canStart && !o.isInProgress).toList();
         final activeOrders = orders.where((o) => o.isInProgress).toList();
 
         if (isLoading && orders.isEmpty) {
@@ -510,7 +550,8 @@ class OrdersScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.redAccent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.redAccent.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
@@ -598,7 +639,8 @@ class OrdersScreen extends StatelessWidget {
                         ),
                         // Google Maps badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -628,22 +670,25 @@ class OrdersScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         // Selection mode toggle
-                        if (availableOrders.isNotEmpty && !orderService.hasActiveDeliveries)
+                        if (availableOrders.isNotEmpty &&
+                            !orderService.hasActiveDeliveries)
                           IconButton(
                             icon: Icon(
-                              orderService.isSelectionMode ? Icons.close : Icons.checklist,
-                              color: orderService.isSelectionMode 
-                                  ? Colors.redAccent 
+                              orderService.isSelectionMode
+                                  ? Icons.close
+                                  : Icons.checklist,
+                              color: orderService.isSelectionMode
+                                  ? Colors.redAccent
                                   : const Color(0xFF6941C6),
                             ),
                             onPressed: () => orderService.toggleSelectionMode(),
-                            tooltip: orderService.isSelectionMode 
-                                ? 'Exit Selection' 
+                            tooltip: orderService.isSelectionMode
+                                ? 'Exit Selection'
                                 : 'Multi-Select',
                           ),
                       ],
                     ),
-                    
+
                     // Multi-selection controls
                     if (orderService.isSelectionMode) ...[
                       const SizedBox(height: 16),
@@ -676,7 +721,8 @@ class OrdersScreen extends StatelessWidget {
                           const SizedBox(width: 12),
                           if (availableOrders.isNotEmpty)
                             TextButton(
-                              onPressed: () => orderService.selectAllAvailable(),
+                              onPressed: () =>
+                                  orderService.selectAllAvailable(),
                               child: Text(
                                 'Select All',
                                 style: GoogleFonts.spaceGrotesk(
@@ -691,7 +737,8 @@ class OrdersScreen extends StatelessWidget {
                               onPressed: () => _startBatchDelivery(context),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF6941C6),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -733,18 +780,20 @@ class OrdersScreen extends StatelessWidget {
                       child: OrderCard(
                         order: order,
                         isSelectionMode: orderService.isSelectionMode,
-                        onSelectionChanged: orderService.isSelectionMode 
-                            ? (selected) => orderService.toggleOrderSelection(order)
+                        onSelectionChanged: orderService.isSelectionMode
+                            ? (selected) =>
+                                orderService.toggleOrderSelection(order)
                             : null,
                         onViewDetails: () => _viewOrderDetails(context, order),
-                        onStartDelivery: !orderService.isSelectionMode && 
-                                        order.canStart && 
-                                        !order.isInProgress &&
-                                        !orderService.hasActiveDeliveries
+                        onStartDelivery: !orderService.isSelectionMode &&
+                                order.canStart &&
+                                !order.isInProgress &&
+                                !orderService.hasActiveDeliveries
                             ? () => _startSingleDelivery(context, order)
                             : null,
                         onMarkAsDelivered: order.isInProgress
-                            ? () => _showDeliveryCompletionDialog(context, order)
+                            ? () =>
+                                _showDeliveryCompletionDialog(context, order)
                             : null,
                       ),
                     );

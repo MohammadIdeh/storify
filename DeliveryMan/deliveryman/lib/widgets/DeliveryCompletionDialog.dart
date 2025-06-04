@@ -30,7 +30,6 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
   final TextEditingController _amountPaidController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   Uint8List? _signatureBytes;
-  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -157,10 +156,6 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
   void _completeDelivery() {
     if (!_validateForm()) return;
 
-    setState(() {
-      _isProcessing = true;
-    });
-
     try {
       final amountPaid = double.parse(_amountPaidController.text);
       final paymentMethodString =
@@ -177,11 +172,9 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
         'signatureImage': signatureBase64,
       };
 
+      // Call the completion callback immediately - parent handles loading
       widget.onComplete(deliveryData);
     } catch (e) {
-      setState(() {
-        _isProcessing = false;
-      });
       _showError('Error processing delivery completion: $e');
     }
   }
@@ -751,12 +744,14 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
                           ),
                         ),
                         const SizedBox(width: 20),
-                        Expanded(
-                          flex: 2,
+                        SizedBox(
+                          width: double.infinity,
                           child: CustomButton(
-                            text: 'Delivery',
-                            onPressed: _completeDelivery,
-                            isLoading: _isProcessing,
+                            text: 'Complete Delivery',
+                            onPressed:
+                                _completeDelivery, // Remove the _isProcessing check
+                            isLoading:
+                                false, // Don't use internal loading state
                             backgroundColor: const Color(0xFF4CAF50),
                             icon: const Icon(Icons.check_circle, size: 20),
                           ),

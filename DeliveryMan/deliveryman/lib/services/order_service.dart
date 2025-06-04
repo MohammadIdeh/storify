@@ -751,6 +751,11 @@ class OrderService with ChangeNotifier {
   Future<bool> completeDelivery(Map<String, dynamic> deliveryData) async {
     if (_token == null) return false;
 
+    // Set loading state at the beginning
+    _isLoading = true;
+    _lastError = null;
+    notifyListeners();
+
     try {
       print('🏁 Completing delivery with data: ${deliveryData.keys}');
 
@@ -792,6 +797,8 @@ class OrderService with ChangeNotifier {
         } catch (e) {
           print('❌ Error processing signature: $e');
           _lastError = 'Error processing signature';
+          _isLoading = false;
+          notifyListeners();
           return false;
         }
       }
@@ -832,10 +839,16 @@ class OrderService with ChangeNotifier {
           await fetchCompletedOrders();
 
           print('✅ Orders refreshed after completion');
+
+          // Reset loading state on success
+          _isLoading = false;
+          notifyListeners();
           return true;
         } catch (e) {
           print('❌ Error parsing success response: $e');
           // Still return true since the request was successful (200)
+          _isLoading = false;
+          notifyListeners();
           return true;
         }
       } else if (response.statusCode == 400) {
@@ -847,23 +860,33 @@ class OrderService with ChangeNotifier {
           print('❌ Bad request - could not parse error: $responseBody');
           _lastError = 'Bad request - invalid data format';
         }
+        _isLoading = false;
+        notifyListeners();
         return false;
       } else if (response.statusCode == 401) {
         print('❌ Unauthorized request');
         _lastError = 'Authentication failed. Please login again.';
+        _isLoading = false;
+        notifyListeners();
         return false;
       } else if (response.statusCode == 404) {
         print('❌ Order not found');
         _lastError = 'Order not found or already completed.';
+        _isLoading = false;
+        notifyListeners();
         return false;
       } else if (response.statusCode == 500) {
         print('❌ Server error: $responseBody');
         _lastError = 'Server error: Please try again.';
+        _isLoading = false;
+        notifyListeners();
         return false;
       } else {
         print(
             '❌ Failed to complete delivery: ${response.statusCode} - $responseBody');
         _lastError = 'Failed to complete delivery: HTTP ${response.statusCode}';
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
     } catch (e) {
@@ -876,6 +899,10 @@ class OrderService with ChangeNotifier {
       } else {
         _lastError = 'Error completing delivery: ${e.toString()}';
       }
+
+      // Reset loading state on error
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }

@@ -434,56 +434,77 @@ class _MapScreenState extends State<MapScreen>
     }
   }
 
+// For map.dart - replace _showDeliveryCompletionDialog:
   void _showDeliveryCompletionDialog(Order order) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => DeliveryCompletionDialog(
+      builder: (dialogContext) => DeliveryCompletionDialog(
         order: order,
         onComplete: (deliveryData) async {
-          Navigator.of(context).pop();
+          // Close dialog immediately
+          Navigator.of(dialogContext).pop();
 
+          // Store context reference
+          final currentContext = context;
+
+          // Show loading indicator
           showDialog(
-            context: context,
+            context: currentContext,
             barrierDismissible: false,
-            builder: (context) => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+            builder: (loadingContext) => WillPopScope(
+              onWillPop: () async => false,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+                ),
               ),
             ),
           );
 
-          final orderService =
-              Provider.of<OrderService>(context, listen: false);
-          final locationService =
-              Provider.of<LocationService>(context, listen: false);
+          try {
+            final orderService =
+                Provider.of<OrderService>(currentContext, listen: false);
+            final locationService =
+                Provider.of<LocationService>(currentContext, listen: false);
 
-          final success = await orderService.completeDelivery(deliveryData);
+            final success = await orderService.completeDelivery(deliveryData);
 
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-
-          if (success) {
-            if (orderService.activeOrders.length <= 1) {
-              locationService.stopTracking();
+            // Close loading dialog
+            if (mounted && currentContext.mounted) {
+              Navigator.of(currentContext).pop();
             }
-            widget.onRefresh();
 
-            if (context.mounted) {
-              _showMessage('Order completed successfully!', false);
+            if (success) {
+              if (orderService.activeOrders.length <= 1) {
+                locationService.stopTracking();
+              }
+              widget.onRefresh();
+
+              if (mounted && currentContext.mounted) {
+                _showMessage('Order completed successfully!', false);
+              }
+            } else {
+              if (mounted && currentContext.mounted) {
+                _showMessage(
+                  orderService.lastError ?? 'Failed to complete delivery',
+                  true,
+                );
+              }
             }
-          } else {
-            if (context.mounted) {
-              _showMessage(
-                orderService.lastError ?? 'Failed to complete delivery',
-                true,
-              );
+          } catch (e) {
+            // Close loading dialog on error
+            if (mounted && currentContext.mounted) {
+              Navigator.of(currentContext).pop();
+            }
+
+            if (mounted && currentContext.mounted) {
+              _showMessage('An error occurred: ${e.toString()}', true);
             }
           }
         },
         onCancel: () {
-          Navigator.of(context).pop();
+          Navigator.of(dialogContext).pop();
         },
       ),
     );
