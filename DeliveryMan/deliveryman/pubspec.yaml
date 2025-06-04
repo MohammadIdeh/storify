@@ -23,6 +23,7 @@ dependencies:
   firebase_messaging: ^14.6.7
   google_fonts: ^6.2.1
   signature: ^6.0.0
+  http_parser: ^4.1.2
 
 
 dev_dependencies:

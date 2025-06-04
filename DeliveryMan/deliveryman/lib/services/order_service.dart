@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http_parser/http_parser.dart';
 import '../models/order.dart';
 
 class TimeoutException implements Exception {
@@ -747,51 +748,78 @@ class OrderService with ChangeNotifier {
   // Complete delivery with signature and payment details (using multipart/form-data)
 // In your order_service.dart, replace the completeDelivery method with this fixed version:
 
-// Complete delivery with signature and payment details
   Future<bool> completeDelivery(Map<String, dynamic> deliveryData) async {
     if (_token == null) return false;
 
     try {
       print('🏁 Completing delivery with data: ${deliveryData.keys}');
 
-      // Convert the data to the format expected by your backend
-      final requestBody = {
-        'orderId': int.parse(deliveryData['orderId']),
-        'paymentMethod': deliveryData['paymentMethod'],
-        'amountPaid': double.parse(deliveryData['amountPaid']),
-        'totalAmount': double.parse(deliveryData['totalAmount']),
-        'deliveryNotes': deliveryData['deliveryNotes'],
-        'signatureImage': deliveryData['signatureImage'], // Base64 string
-      };
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/delivery/complete-delivery'),
+      );
+
+      // Add headers
+      request.headers.addAll({
+        'token': _token!,
+      });
+
+      // Add form fields
+      request.fields['orderId'] = deliveryData['orderId'];
+      request.fields['paymentMethod'] = deliveryData['paymentMethod'];
+      request.fields['amountPaid'] = deliveryData['amountPaid'];
+      request.fields['totalAmount'] = deliveryData['totalAmount'];
+      request.fields['deliveryNotes'] = deliveryData['deliveryNotes'];
+
+      // Add signature file if provided
+      if (deliveryData['signatureImage'] != null) {
+        try {
+          // Decode base64 signature
+          final signatureBase64 = deliveryData['signatureImage'] as String;
+          final signatureBytes = base64Decode(signatureBase64);
+
+          // Create multipart file from bytes
+          var signatureFile = http.MultipartFile.fromBytes(
+            'signature', // Field name expected by backend
+            signatureBytes,
+            filename: 'signature_${deliveryData['orderId']}.png',
+            contentType: MediaType('image', 'png'),
+          );
+
+          request.files.add(signatureFile);
+          print('📎 Added signature file: ${signatureBytes.length} bytes');
+        } catch (e) {
+          print('❌ Error processing signature: $e');
+          _lastError = 'Error processing signature';
+          return false;
+        }
+      }
 
       print(
-          '📤 Sending completion request to: $baseUrl/delivery/complete-delivery');
-      print('📝 Request body keys: ${requestBody.keys}');
+          '📤 Sending multipart completion request to: $baseUrl/delivery/complete-delivery');
+      print('📝 Form fields: ${request.fields.keys}');
+      print('📁 Files: ${request.files.map((f) => f.field).toList()}');
 
-      final response = await http
-          .post(
-        Uri.parse('$baseUrl/delivery/complete-delivery'),
-        headers: {
-          'Content-Type': 'application/json',
-          'token': _token!,
-        },
-        body: json.encode(requestBody),
-      )
-          .timeout(
+      // Send request with timeout
+      final response = await request.send().timeout(
         const Duration(seconds: 30),
         onTimeout: () {
           throw TimeoutException('Request timeout');
         },
       );
 
+      // Convert streamed response to regular response
+      final responseBody = await response.stream.bytesToString();
+
       print('📥 Complete delivery response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         try {
-          final responseData = json.decode(response.body);
+          final responseData = json.decode(responseBody);
           print('✅ Delivery completed successfully: $responseData');
 
-          final orderId = requestBody['orderId'] as int;
+          final orderId = int.parse(deliveryData['orderId']);
 
           // Remove completed order from active routes
           _activeRoutes.removeWhere((route) => route.order.id == orderId);
@@ -811,9 +839,14 @@ class OrderService with ChangeNotifier {
           return true;
         }
       } else if (response.statusCode == 400) {
-        final errorData = json.decode(response.body);
-        print('❌ Bad request: ${errorData}');
-        _lastError = errorData['message'] ?? 'Bad request';
+        try {
+          final errorData = json.decode(responseBody);
+          print('❌ Bad request: ${errorData}');
+          _lastError = errorData['message'] ?? 'Bad request';
+        } catch (e) {
+          print('❌ Bad request - could not parse error: $responseBody');
+          _lastError = 'Bad request - invalid data format';
+        }
         return false;
       } else if (response.statusCode == 401) {
         print('❌ Unauthorized request');
@@ -824,31 +857,12 @@ class OrderService with ChangeNotifier {
         _lastError = 'Order not found or already completed.';
         return false;
       } else if (response.statusCode == 500) {
-        // Server error - try to get more details
-        try {
-          final errorResponse = response.body;
-          print(
-              '❌ Server error response: ${errorResponse.substring(0, 500)}...');
-
-          // Check if it's JSON error
-          if (errorResponse.contains('application/json')) {
-            try {
-              final errorJson = json.decode(errorResponse);
-              _lastError = errorJson['message'] ?? 'Server error occurred';
-            } catch (e) {
-              _lastError = 'Server error: Unable to parse error details';
-            }
-          } else {
-            _lastError =
-                'Server error: Please check if all required fields are provided';
-          }
-        } catch (e) {
-          _lastError = 'Server error: ${response.statusCode}';
-        }
+        print('❌ Server error: $responseBody');
+        _lastError = 'Server error: Please try again.';
         return false;
       } else {
         print(
-            '❌ Failed to complete delivery: ${response.statusCode} - ${response.body}');
+            '❌ Failed to complete delivery: ${response.statusCode} - $responseBody');
         _lastError = 'Failed to complete delivery: HTTP ${response.statusCode}';
         return false;
       }
