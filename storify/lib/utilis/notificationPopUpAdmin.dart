@@ -1,3 +1,4 @@
+// lib/utilis/notificationPopUpAdmin.dart (Enhanced version)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -20,28 +21,31 @@ class NotificationPopup extends StatefulWidget {
 
 class _NotificationPopupState extends State<NotificationPopup> {
   late List<NotificationItem> _notifications;
-  
+
   @override
   void initState() {
     super.initState();
     _notifications = widget.notifications;
-    
+
     // Register for notification updates
-    NotificationService().registerNotificationsListChangedCallback(_updateNotifications);
+    NotificationService()
+        .registerNotificationsListChangedCallback(_updateNotifications);
   }
-  
+
   @override
   void dispose() {
     // Unregister when the widget is disposed
-    NotificationService().unregisterNotificationsListChangedCallback(_updateNotifications);
+    NotificationService()
+        .unregisterNotificationsListChangedCallback(_updateNotifications);
     super.dispose();
   }
-  
+
   void _updateNotifications(List<NotificationItem> notifications) {
     if (mounted) {
       setState(() {
         _notifications = notifications;
-        print('NotificationPopup updated with ${_notifications.length} notifications');
+        print(
+            'NotificationPopup updated with ${_notifications.length} notifications');
       });
     }
   }
@@ -125,13 +129,14 @@ class _NotificationPopupState extends State<NotificationPopup> {
                       ElevatedButton(
                         onPressed: () async {
                           await NotificationService().addManualNotification(
-                            'Test Notification',
-                            'This is a test notification added manually'
-                          );
+                              'Test Notification',
+                              'This is a test notification added manually');
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                          backgroundColor:
+                              const Color.fromARGB(255, 105, 65, 198),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.w, vertical: 8.h),
                         ),
                         child: Text(
                           'Add Test Notification',
@@ -147,8 +152,10 @@ class _NotificationPopupState extends State<NotificationPopup> {
                           await NotificationService().testDatabaseConnection();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 46, 123, 231),
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                          backgroundColor:
+                              const Color.fromARGB(255, 46, 123, 231),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.w, vertical: 8.h),
                         ),
                         child: Text(
                           'Test Database',
@@ -183,13 +190,19 @@ class _NotificationPopupState extends State<NotificationPopup> {
   Widget _buildNotificationItem(NotificationItem notification) {
     return InkWell(
       onTap: () {
-        // Handle notification tap - navigate or perform action
-        if (notification.onTap != null) {
-          notification.onTap!();
-        }
-        
         // Mark as read when tapped
         NotificationService().markAsRead(notification.id);
+
+        // Close the notification popup first
+        widget.onCloseMenu();
+
+        // Then handle notification tap - navigate or perform action
+        if (notification.onTap != null) {
+          // Add a small delay to ensure the popup is closed first
+          Future.delayed(Duration(milliseconds: 100), () {
+            notification.onTap!();
+          });
+        }
       },
       child: Container(
         padding: EdgeInsets.all(16.w),
@@ -238,12 +251,28 @@ class _NotificationPopupState extends State<NotificationPopup> {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  Text(
-                    notification.timeAgo,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        notification.timeAgo,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12.sp,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      // Show click instruction for low stock notifications
+                      if (notification.title.contains('Stock Alert'))
+                        Expanded(
+                          child: Text(
+                            ' • Tap to view details',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 11.sp,
+                              color: const Color.fromARGB(255, 105, 65, 198),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -254,8 +283,9 @@ class _NotificationPopupState extends State<NotificationPopup> {
               Container(
                 width: 10.w,
                 height: 10.h,
-                decoration: const BoxDecoration(
-                  color: Color.fromARGB(255, 105, 65, 198),
+                decoration: BoxDecoration(
+                  color: notification.iconBackgroundColor ??
+                      const Color.fromARGB(255, 105, 65, 198),
                   shape: BoxShape.circle,
                 ),
               ),

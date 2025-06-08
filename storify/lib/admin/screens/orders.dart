@@ -1,4 +1,4 @@
-// lib/admin/screens/orders.dart
+// lib/admin/screens/orders.dart (Updated with low stock integration)
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,6 +19,12 @@ import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderTable.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/supplierOrderPopUp.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/assignOrderPopup.dart';
+// New low stock imports
+import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_service.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_models.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_popup.dart';
+import 'package:storify/utilis/notification_service.dart';
+import 'package:storify/utilis/notificationModel.dart';
 
 class Orders extends StatefulWidget {
   const Orders({super.key});
@@ -55,11 +61,136 @@ class _OrdersState extends State<Orders> {
     'on_theway'
   ];
 
+  // NEW: Low stock related variables
+  bool _isCheckingLowStock = false;
+  bool _hasCheckedLowStock = false;
+  List<LowStockItem> _lowStockItems = [];
+
   @override
   void initState() {
     super.initState();
     _loadProfilePicture();
     _fetchOrders();
+    // Check for low stock items when screen loads
+    _checkLowStockItems();
+  }
+
+  @override
+  void dispose() {
+    // Reset notification status when leaving the screen
+    LowStockService.resetNotificationStatus();
+    super.dispose();
+  }
+
+  // NEW: Check for low stock items
+  Future<void> _checkLowStockItems() async {
+    print('🔍 Starting low stock check...');
+
+    // Only check if we haven't already checked and should show notification
+    if (_hasCheckedLowStock) {
+      print('⏭️ Already checked low stock, skipping');
+      return;
+    }
+
+    final shouldShow = await LowStockService.shouldShowNotification();
+    print('📋 Should show notification: $shouldShow');
+
+    if (!shouldShow) {
+      print('🚫 Notification already shown today, skipping');
+      return;
+    }
+
+    setState(() {
+      _isCheckingLowStock = true;
+    });
+
+    try {
+      print('🌐 Calling low stock API...');
+      final response = await LowStockService.getLowStockItems();
+
+      print('📊 API Response: ${response?.message}');
+      print('📦 Low stock items count: ${response?.lowStockItems.length ?? 0}');
+
+      if (response != null && response.lowStockItems.isNotEmpty && mounted) {
+        print('✅ Found ${response.lowStockItems.length} low stock items');
+
+        setState(() {
+          _lowStockItems = response.lowStockItems;
+          _hasCheckedLowStock = true;
+        });
+
+        // Show notification
+        print('🔔 Creating notification...');
+        await _showLowStockNotification(response.lowStockItems);
+
+        // Mark that we've shown the notification
+        await LowStockService.markNotificationShown();
+
+        print('✅ Notification created and marked as shown');
+      } else {
+        print('❌ No low stock items found or response is null');
+        setState(() {
+          _hasCheckedLowStock = true;
+        });
+      }
+    } catch (e) {
+      print('💥 Error checking low stock items: $e');
+      print('📍 Stack trace: ${StackTrace.current}');
+      setState(() {
+        _hasCheckedLowStock = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingLowStock = false;
+        });
+      }
+    }
+  }
+
+  // NEW: Show low stock notification
+  Future<void> _showLowStockNotification(List<LowStockItem> items) async {
+    try {
+      final message = LowStockService.getNotificationMessage(items);
+      final hasCritical = LowStockService.hasCriticalItems(items);
+
+      final notification = NotificationItem(
+        id: 'low_stock_${DateTime.now().millisecondsSinceEpoch}',
+        title: hasCritical ? 'Critical Stock Alert!' : 'Low Stock Alert',
+        message: message,
+        timeAgo: 'Just now',
+        isRead: false,
+        icon: hasCritical ? Icons.error : Icons.warning_amber_rounded,
+        iconBackgroundColor: hasCritical ? Colors.red : Colors.orange,
+        onTap: () => _showLowStockPopupDialog(),
+      );
+
+      // Add to notification service
+      await NotificationService().saveNotification(notification);
+
+      print('Added low stock notification: ${notification.title}');
+    } catch (e) {
+      print('Error showing low stock notification: $e');
+    }
+  }
+
+  // NEW: Show low stock popup
+  void _showLowStockPopupDialog() {
+    if (_lowStockItems.isNotEmpty) {
+      showLowStockPopup(
+        context,
+        _lowStockItems,
+        onOrdersGenerated: () {
+          // Refresh orders when new orders are generated
+          _fetchOrders();
+          // Reset low stock check so it can check again next time
+          setState(() {
+            _hasCheckedLowStock = false;
+            _lowStockItems.clear();
+          });
+        },
+      );
+    }
   }
 
   // Fetch orders from the API
@@ -485,6 +616,47 @@ class _OrdersState extends State<Orders> {
                         ),
                       ),
                     ),
+
+                  // NEW: Low Stock Alert Button
+                  if (_lowStockItems.isNotEmpty && _hasCheckedLowStock) ...[
+                    SizedBox(width: 16.w),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            LowStockService.hasCriticalItems(_lowStockItems)
+                                ? Colors.red
+                                : Colors.orange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(180.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: _showLowStockPopupDialog,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LowStockService.hasCriticalItems(_lowStockItems)
+                                ? Icons.error
+                                : Icons.warning_amber_rounded,
+                            color: Colors.white,
+                            size: 20.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'Low Stock (${_lowStockItems.length})',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // Add refresh button
                   IconButton(
                     icon: Icon(
@@ -492,11 +664,50 @@ class _OrdersState extends State<Orders> {
                       color: Colors.white,
                       size: 24.sp,
                     ),
-                    onPressed: _fetchOrders,
+                    onPressed: () {
+                      _fetchOrders();
+                      // Also recheck low stock when refreshing
+                      setState(() {
+                        _hasCheckedLowStock = false;
+                      });
+                      _checkLowStockItems();
+                    },
                   ),
                 ],
               ),
               SizedBox(height: 40.h),
+
+              // NEW: Show low stock checking indicator
+              if (_isCheckingLowStock)
+                Container(
+                  margin: EdgeInsets.only(bottom: 20.h),
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 36, 50, 69),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 20.w,
+                        height: 20.h,
+                        child: CircularProgressIndicator(
+                          color: Colors.orange,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        'Checking for low stock items...',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Filter Cards
               LayoutBuilder(
                 builder: (context, constraints) {
