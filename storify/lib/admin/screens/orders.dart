@@ -1,4 +1,4 @@
-// lib/admin/screens/orders.dart (Updated with low stock integration)
+// lib/admin/screens/orders.dart (Fixed version)
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -65,6 +65,7 @@ class _OrdersState extends State<Orders> {
   bool _isCheckingLowStock = false;
   bool _hasCheckedLowStock = false;
   List<LowStockItem> _lowStockItems = [];
+  bool _shouldShowLowStockButton = false; // Add this flag
 
   @override
   void initState() {
@@ -73,6 +74,9 @@ class _OrdersState extends State<Orders> {
     _fetchOrders();
     // Check for low stock items when screen loads
     _checkLowStockItems();
+
+    // Register for handling low stock notifications
+    _registerLowStockNotificationHandler();
   }
 
   @override
@@ -82,23 +86,65 @@ class _OrdersState extends State<Orders> {
     super.dispose();
   }
 
-  // NEW: Check for low stock items
+  // NEW: Register to handle low stock notifications from navbar
+  void _registerLowStockNotificationHandler() {
+    // This will be called when a low stock notification is tapped from navbar
+    NotificationService()
+        .registerLowStockNotificationHandler(_handleLowStockNotificationTap);
+  }
+
+  // NEW: Handle low stock notification taps
+  Future<void> _handleLowStockNotificationTap() async {
+    print(
+        '🔔 Low stock notification tapped, fetching current low stock items...');
+
+    try {
+      final response = await LowStockService.getLowStockItems();
+
+      if (response != null && response.lowStockItems.isNotEmpty && mounted) {
+        print(
+            '✅ Found ${response.lowStockItems.length} current low stock items');
+
+        // Show the popup with current low stock items
+        showLowStockPopup(
+          context,
+          response.lowStockItems,
+          onOrdersGenerated: () {
+            // Refresh orders when new orders are generated
+            _fetchOrders();
+            // Refresh low stock check
+            _checkLowStockItems();
+          },
+        );
+      } else {
+        print('❌ No current low stock items found');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No low stock items found at this time'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('💥 Error fetching current low stock items: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error fetching low stock items: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // NEW: Check for low stock items - Enhanced with better debugging
   Future<void> _checkLowStockItems() async {
     print('🔍 Starting low stock check...');
-
-    // Only check if we haven't already checked and should show notification
-    if (_hasCheckedLowStock) {
-      print('⏭️ Already checked low stock, skipping');
-      return;
-    }
-
-    final shouldShow = await LowStockService.shouldShowNotification();
-    print('📋 Should show notification: $shouldShow');
-
-    if (!shouldShow) {
-      print('🚫 Notification already shown today, skipping');
-      return;
-    }
+    print('🐛 DEBUG: _isSupplierMode = $_isSupplierMode');
+    print('🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
 
     setState(() {
       _isCheckingLowStock = true;
@@ -111,44 +157,79 @@ class _OrdersState extends State<Orders> {
       print('📊 API Response: ${response?.message}');
       print('📦 Low stock items count: ${response?.lowStockItems.length ?? 0}');
 
+      // DEBUG: Add more detailed checks
+      print('🐛 DEBUG: response != null: ${response != null}');
+      print(
+          '🐛 DEBUG: response.lowStockItems.isNotEmpty: ${response?.lowStockItems.isNotEmpty}');
+      print('🐛 DEBUG: mounted: $mounted');
+
       if (response != null && response.lowStockItems.isNotEmpty && mounted) {
         print('✅ Found ${response.lowStockItems.length} low stock items');
 
+        print('🐛 DEBUG: About to setState...');
         setState(() {
           _lowStockItems = response.lowStockItems;
           _hasCheckedLowStock = true;
+          _shouldShowLowStockButton = true; // Set the flag to show button
         });
 
-        // Show notification
-        print('🔔 Creating notification...');
-        await _showLowStockNotification(response.lowStockItems);
+        print('🐛 DEBUG: After setState:');
+        print('🐛 DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
+        print('🐛 DEBUG: _hasCheckedLowStock = $_hasCheckedLowStock');
+        print(
+            '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
 
-        // Mark that we've shown the notification
-        await LowStockService.markNotificationShown();
+        // Check if we should show notification
+        final shouldShow = await LowStockService.shouldShowNotification();
+        print('📋 Should show notification: $shouldShow');
 
-        print('✅ Notification created and marked as shown');
+        if (shouldShow) {
+          // Show notification
+          print('🔔 Creating notification...');
+          await _showLowStockNotification(response.lowStockItems);
+
+          // Mark that we've shown the notification
+          await LowStockService.markNotificationShown();
+
+          print('✅ Notification created and marked as shown');
+        } else {
+          print('🚫 Notification already shown today, skipping');
+        }
       } else {
         print('❌ No low stock items found or response is null');
+        print('🐛 DEBUG: About to setState (no items)...');
         setState(() {
           _hasCheckedLowStock = true;
+          _shouldShowLowStockButton = false; // Don't show button if no items
+          _lowStockItems.clear();
         });
+        print('🐛 DEBUG: After setState (no items):');
+        print(
+            '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
       }
     } catch (e) {
       print('💥 Error checking low stock items: $e');
       print('📍 Stack trace: ${StackTrace.current}');
       setState(() {
         _hasCheckedLowStock = true;
+        _shouldShowLowStockButton = false;
+        _lowStockItems.clear();
       });
     } finally {
       if (mounted) {
         setState(() {
           _isCheckingLowStock = false;
         });
+        print('🐛 DEBUG: Final state:');
+        print('🐛 DEBUG: _isSupplierMode = $_isSupplierMode');
+        print(
+            '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
+        print('🐛 DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
       }
     }
   }
 
-  // NEW: Show low stock notification
+  // NEW: Show low stock notification - Enhanced to not use onTap callback
   Future<void> _showLowStockNotification(List<LowStockItem> items) async {
     try {
       final message = LowStockService.getNotificationMessage(items);
@@ -162,11 +243,11 @@ class _OrdersState extends State<Orders> {
         isRead: false,
         icon: hasCritical ? Icons.error : Icons.warning_amber_rounded,
         iconBackgroundColor: hasCritical ? Colors.red : Colors.orange,
-        onTap: () => _showLowStockPopupDialog(),
+        // Don't set onTap here - it will be handled by notification type detection
       );
 
-      // Add to notification service
-      await NotificationService().saveNotification(notification);
+      // Add to notification service with special type
+      await NotificationService().saveLowStockNotification(notification);
 
       print('Added low stock notification: ${notification.title}');
     } catch (e) {
@@ -187,7 +268,10 @@ class _OrdersState extends State<Orders> {
           setState(() {
             _hasCheckedLowStock = false;
             _lowStockItems.clear();
+            _shouldShowLowStockButton = false;
           });
+          // Re-check for low stock
+          _checkLowStockItems();
         },
       );
     }
@@ -586,6 +670,7 @@ class _OrdersState extends State<Orders> {
                   ),
                   const Spacer(),
                   // Show "Order From Supplier" button only in supplier mode
+
                   if (_isSupplierMode)
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -617,43 +702,54 @@ class _OrdersState extends State<Orders> {
                       ),
                     ),
 
-                  // NEW: Low Stock Alert Button
-                  if (_lowStockItems.isNotEmpty && _hasCheckedLowStock) ...[
+                  // NEW: Low Stock Alert Button - Fixed condition
+                  if (_isSupplierMode && _shouldShowLowStockButton) ...[
                     SizedBox(width: 16.w),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            LowStockService.hasCriticalItems(_lowStockItems)
-                                ? Colors.red
-                                : Colors.orange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        fixedSize: Size(180.w, 50.h),
-                        elevation: 1,
-                      ),
-                      onPressed: _showLowStockPopupDialog,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LowStockService.hasCriticalItems(_lowStockItems)
-                                ? Icons.error
-                                : Icons.warning_amber_rounded,
-                            color: Colors.white,
-                            size: 20.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            'Low Stock (${_lowStockItems.length})',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                    Builder(
+                      builder: (context) {
+                        print(
+                            '🐛 BUILD DEBUG: Low stock button is being built!');
+                        print(
+                            '🐛 BUILD DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
+                        return ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                LowStockService.hasCriticalItems(_lowStockItems)
+                                    ? Colors.red
+                                    : Colors.orange,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
+                            fixedSize: Size(180.w, 50.h),
+                            elevation: 1,
                           ),
-                        ],
-                      ),
+                          onPressed: () {
+                            print('🔔 Low stock button pressed!');
+                            _showLowStockPopupDialog();
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LowStockService.hasCriticalItems(_lowStockItems)
+                                    ? Icons.error
+                                    : Icons.warning_amber_rounded,
+                                color: Colors.white,
+                                size: 20.sp,
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Low Stock (${_lowStockItems.length})',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
 
@@ -669,6 +765,7 @@ class _OrdersState extends State<Orders> {
                       // Also recheck low stock when refreshing
                       setState(() {
                         _hasCheckedLowStock = false;
+                        _shouldShowLowStockButton = false;
                       });
                       _checkLowStockItems();
                     },

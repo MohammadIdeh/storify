@@ -26,7 +26,11 @@ class NotificationService {
 
   // Callback functions that UI can register to be notified of new notifications
   List<Function(NotificationItem)> _newNotificationCallbacks = [];
-  List<Function(List<NotificationItem>)> _notificationsListChangedCallbacks = [];
+  List<Function(List<NotificationItem>)> _notificationsListChangedCallbacks =
+      [];
+
+  // NEW: Low stock notification handler
+  Function()? _lowStockNotificationHandler;
 
   // In-memory store of notifications
   List<NotificationItem> _notifications = [];
@@ -37,7 +41,8 @@ class NotificationService {
     await _instance._initLocalNotifications();
 
     // Request permission
-    NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+    NotificationSettings settings =
+        await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -51,7 +56,7 @@ class NotificationService {
 
     // Load saved notifications from SharedPreferences
     await NotificationService()._loadNotifications();
-    
+
     // Load notifications from Firestore
     await NotificationService().loadNotificationsFromFirestore();
 
@@ -72,7 +77,8 @@ class NotificationService {
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings();
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
@@ -111,7 +117,8 @@ class NotificationService {
   }
 
   // Background message handler
-  static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  static Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
     print("Handling a background message: ${message.messageId}");
     // Store the notification for when app is opened
     final notification = NotificationItem.fromFirebaseMessage(message);
@@ -119,7 +126,8 @@ class NotificationService {
   }
 
   // Store background notifications
-  static Future<void> _storeBackgroundNotification(NotificationItem notification) async {
+  static Future<void> _storeBackgroundNotification(
+      NotificationItem notification) async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -127,7 +135,8 @@ class NotificationService {
       List<Map<String, dynamic>> bgNotifications = [];
       String? existingData = prefs.getString('background_notifications');
       if (existingData != null) {
-        bgNotifications = List<Map<String, dynamic>>.from(jsonDecode(existingData));
+        bgNotifications =
+            List<Map<String, dynamic>>.from(jsonDecode(existingData));
       }
 
       // Convert to storable format
@@ -144,7 +153,8 @@ class NotificationService {
       bgNotifications.add(notificationData);
 
       // Store back
-      await prefs.setString('background_notifications', jsonEncode(bgNotifications));
+      await prefs.setString(
+          'background_notifications', jsonEncode(bgNotifications));
     } catch (e) {
       print('Error storing background notification: $e');
     }
@@ -171,7 +181,7 @@ class NotificationService {
 
           // Add to list
           _notifications.add(notification);
-          
+
           // Save to Firestore
           await _databaseService.saveNotification(notification);
         }
@@ -217,7 +227,8 @@ class NotificationService {
 
       // Send to your backend
       final response = await http.post(
-        Uri.parse('https://finalproject-a5ls.onrender.com/notifications/register-token'),
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/notifications/register-token'),
         headers: headers,
         body: json.encode(body),
       );
@@ -239,11 +250,18 @@ class NotificationService {
     _newNotificationCallbacks.add(callback);
   }
 
-  void registerNotificationsListChangedCallback(Function(List<NotificationItem>) callback) {
+  void registerNotificationsListChangedCallback(
+      Function(List<NotificationItem>) callback) {
     _notificationsListChangedCallbacks.add(callback);
-    
+
     // Immediately call with current notifications
     callback(_notifications);
+  }
+
+  // NEW: Register low stock notification handler
+  void registerLowStockNotificationHandler(Function() handler) {
+    _lowStockNotificationHandler = handler;
+    print('🔔 Low stock notification handler registered');
   }
 
   // Unregister callbacks when they're no longer needed
@@ -251,7 +269,8 @@ class NotificationService {
     _newNotificationCallbacks.remove(callback);
   }
 
-  void unregisterNotificationsListChangedCallback(Function(List<NotificationItem>) callback) {
+  void unregisterNotificationsListChangedCallback(
+      Function(List<NotificationItem>) callback) {
     _notificationsListChangedCallbacks.remove(callback);
   }
 
@@ -274,7 +293,7 @@ class NotificationService {
 
       // Save to SharedPreferences
       _saveNotifications();
-      
+
       // Save to Firestore
       _databaseService.saveNotification(notification);
 
@@ -326,7 +345,7 @@ class NotificationService {
 
       // Save to SharedPreferences
       await _saveNotifications();
-      
+
       // Save to Firestore
       await _databaseService.markAsRead(id);
 
@@ -356,10 +375,10 @@ class NotificationService {
     }
 
     _notifications = updatedList;
-    
+
     // Save to SharedPreferences
     await _saveNotifications();
-    
+
     // Save to Firestore
     await _databaseService.markAllAsRead();
 
@@ -399,9 +418,10 @@ class NotificationService {
         print('Successfully sent notification to supplier');
         print('Response body: ${response.body}');
       } else {
-        print('Failed to send notification to supplier: ${response.statusCode}');
+        print(
+            'Failed to send notification to supplier: ${response.statusCode}');
         print('Response body: ${response.body}');
-        
+
         // Add a local notification for immediate feedback
         final testNotification = NotificationItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -411,11 +431,11 @@ class NotificationService {
           isRead: false,
           icon: Icons.business,
         );
-        
+
         _notifications.add(testNotification);
         await _saveNotifications();
         await _databaseService.saveNotification(testNotification);
-        
+
         // Notify listeners
         for (var callback in _notificationsListChangedCallbacks) {
           callback(_notifications);
@@ -459,7 +479,7 @@ class NotificationService {
         print('Failed to send notification to admin: ${response.statusCode}');
         print('Response body: ${response.body}');
       }
-      
+
       // Add a local notification for immediate feedback regardless of API response
       final testNotification = NotificationItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -469,11 +489,11 @@ class NotificationService {
         isRead: false,
         icon: Icons.admin_panel_settings,
       );
-      
+
       _notifications.add(testNotification);
       await _saveNotifications();
       await _databaseService.saveNotification(testNotification);
-      
+
       // Notify listeners
       for (var callback in _notificationsListChangedCallbacks) {
         callback(_notifications);
@@ -481,7 +501,7 @@ class NotificationService {
     } catch (e) {
       print('Error sending notification to admin: $e');
       print('Stack trace: ${StackTrace.current}');
-      
+
       // Even if there's an error, add a local notification
       final errorNotification = NotificationItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -491,10 +511,10 @@ class NotificationService {
         isRead: false,
         icon: Icons.error,
       );
-      
+
       _notifications.add(errorNotification);
       await _saveNotifications();
-      
+
       // Notify listeners
       for (var callback in _notificationsListChangedCallbacks) {
         callback(_notifications);
@@ -507,14 +527,37 @@ class NotificationService {
     try {
       final prefs = await SharedPreferences.getInstance();
       List<Map<String, dynamic>> notificationsJson = _notifications
-          .map((notification) => notification.toMap())
+          .map((notification) => _enhancedNotificationToMap(notification))
           .toList();
 
       await prefs.setString('notifications', jsonEncode(notificationsJson));
-      print('Saved ${notificationsJson.length} notifications to SharedPreferences');
+      print(
+          'Saved ${notificationsJson.length} notifications to SharedPreferences');
     } catch (e) {
       print('Error saving notifications: $e');
     }
+  }
+
+  // Enhanced notification to map with low stock type
+  Map<String, dynamic> _enhancedNotificationToMap(
+      NotificationItem notification) {
+    final map = notification.toMap();
+
+    // Add special type for low stock notifications
+    if (notification.title.contains('Stock Alert') ||
+        notification.title.contains('Low Stock')) {
+      map['type'] = 'low_stock';
+    }
+
+    return map;
+  }
+
+  // Enhanced notification from map
+  NotificationItem _enhancedNotificationFromMap(Map<String, dynamic> map) {
+    final notification = NotificationItem.fromMap(map);
+
+    // If it's a low stock notification, don't set onTap since it will be handled specially
+    return notification;
   }
 
   // Load notifications from SharedPreferences
@@ -526,10 +569,12 @@ class NotificationService {
       if (notificationsJson != null) {
         final List decodedList = jsonDecode(notificationsJson);
         _notifications = decodedList
-            .map((item) => NotificationItem.fromMap(item as Map<String, dynamic>))
+            .map((item) =>
+                _enhancedNotificationFromMap(item as Map<String, dynamic>))
             .toList();
-        
-        print('Loaded ${_notifications.length} notifications from SharedPreferences');
+
+        print(
+            'Loaded ${_notifications.length} notifications from SharedPreferences');
       } else {
         print('No notifications found in SharedPreferences');
       }
@@ -538,23 +583,25 @@ class NotificationService {
       _notifications = [];
     }
   }
-  
+
   // Load notifications from Firestore
   Future<void> loadNotificationsFromFirestore() async {
     try {
       print('Loading notifications from Firestore...');
-      final firestoreNotifications = await _databaseService.getAllNotifications();
-      
+      final firestoreNotifications =
+          await _databaseService.getAllNotifications();
+
       if (firestoreNotifications.isNotEmpty) {
-        print('Loaded ${firestoreNotifications.length} notifications from Firestore');
-        
+        print(
+            'Loaded ${firestoreNotifications.length} notifications from Firestore');
+
         // Replace existing notifications with Firestore notifications
         // This ensures we always have the latest data from the database
         _notifications = firestoreNotifications;
-        
+
         // Save to SharedPreferences for offline access
         await _saveNotifications();
-        
+
         // Notify listeners
         for (var callback in _notificationsListChangedCallbacks) {
           callback(_notifications);
@@ -585,13 +632,13 @@ class NotificationService {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
   }
-  
+
   // Debug method to help troubleshoot admin notifications
   Future<void> debugAdminNotifications() async {
     try {
       // 1. Check if we have any notifications in memory
       print('Current notifications in memory: ${_notifications.length}');
-      
+
       // 2. Add a test notification locally
       final testNotification = NotificationItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -601,31 +648,31 @@ class NotificationService {
         isRead: false,
         icon: Icons.admin_panel_settings,
       );
-      
+
       _notifications.add(testNotification);
       await _saveNotifications();
-      
+
       // 3. Save to Firestore
       await _databaseService.saveNotification(testNotification);
-      
-      print('Added test notification locally. Total count: ${_notifications.length}');
-      
+
+      print(
+          'Added test notification locally. Total count: ${_notifications.length}');
+
       // 4. Notify listeners
       for (var callback in _notificationsListChangedCallbacks) {
         callback(_notifications);
       }
-      
+
       // 5. Test sending to backend
       await sendNotificationToAdmin(
-        'Backend Test Notification',
-        'Testing admin notification from backend',
-        {'test': 'true', 'timestamp': DateTime.now().toString()}
-      );
-      
+          'Backend Test Notification',
+          'Testing admin notification from backend',
+          {'test': 'true', 'timestamp': DateTime.now().toString()});
+
       // 6. Check if the token is registered
       final token = await FirebaseMessaging.instance.getToken();
       print('Current FCM token: $token');
-      
+
       // 7. Check if we're properly registered as admin
       final prefs = await SharedPreferences.getInstance();
       final currentRole = await AuthService.getCurrentRole() ?? '';
@@ -635,7 +682,7 @@ class NotificationService {
       print('Stack trace: ${StackTrace.current}');
     }
   }
-  
+
   // Test database connection
   Future<void> testDatabaseConnection() async {
     try {
@@ -670,42 +717,42 @@ class NotificationService {
       );
     }
   }
-  
+
   // Check Firestore connection
   Future<void> checkFirestoreConnection() async {
     try {
       print('Checking Firestore connection...');
-      
+
       // Try to write a test document
       final testDoc = {
         'test': true,
         'timestamp': DateTime.now().toIso8601String(),
         'message': 'Firestore connection test'
       };
-      
+
       await FirebaseFirestore.instance
           .collection('connection_tests')
           .add(testDoc);
-      
+
       print('Successfully wrote test document to Firestore');
-      
+
       // Try to read from notifications collection
       final snapshot = await FirebaseFirestore.instance
           .collection('notifications')
           .limit(1)
           .get();
-      
-      print('Successfully read from Firestore. Documents: ${snapshot.docs.length}');
-      
+
+      print(
+          'Successfully read from Firestore. Documents: ${snapshot.docs.length}');
+
       // Force reload notifications
       await loadNotificationsFromFirestore();
-      
     } catch (e) {
       print('Firestore connection test failed: $e');
       print('Stack trace: ${StackTrace.current}');
     }
   }
-  
+
   // Add a manual notification for testing
   Future<void> addManualNotification(String title, String message) async {
     final testNotification = NotificationItem(
@@ -716,10 +763,10 @@ class NotificationService {
       isRead: false,
       icon: Icons.notifications,
     );
-    
+
     _notifications.add(testNotification);
     await _saveNotifications();
-    
+
     // Notify listeners
     for (var callback in _notificationsListChangedCallbacks) {
       callback(_notifications);
@@ -731,13 +778,13 @@ class NotificationService {
     try {
       // Save to database
       await _databaseService.saveNotification(notification);
-      
+
       // Add to in-memory list
       _notifications.add(notification);
-      
+
       // Save to SharedPreferences
       await _saveNotifications();
-      
+
       // Notify listeners
       for (var callback in _newNotificationCallbacks) {
         callback(notification);
@@ -750,5 +797,52 @@ class NotificationService {
       print('Error saving notification: $e');
       print('Stack trace: ${StackTrace.current}');
     }
+  }
+
+  // NEW: Save low stock notification with special handling
+  Future<void> saveLowStockNotification(NotificationItem notification) async {
+    try {
+      // Save to database with special type
+      await _databaseService.saveNotification(notification);
+
+      // Add to in-memory list
+      _notifications.add(notification);
+
+      // Save to SharedPreferences
+      await _saveNotifications();
+
+      // Notify listeners
+      for (var callback in _newNotificationCallbacks) {
+        callback(notification);
+      }
+
+      for (var callback in _notificationsListChangedCallbacks) {
+        callback(_notifications);
+      }
+
+      print('Saved low stock notification: ${notification.title}');
+    } catch (e) {
+      print('Error saving low stock notification: $e');
+      print('Stack trace: ${StackTrace.current}');
+    }
+  }
+
+  // NEW: Handle notification tap - checks if it's a low stock notification
+  bool handleNotificationTap(NotificationItem notification) {
+    if (notification.title.contains('Stock Alert') ||
+        notification.title.contains('Low Stock')) {
+      print('🔔 Low stock notification tapped: ${notification.title}');
+
+      // Call the registered handler if available
+      if (_lowStockNotificationHandler != null) {
+        _lowStockNotificationHandler!();
+        return true; // Handled
+      } else {
+        print('⚠️ No low stock notification handler registered');
+        return false; // Not handled
+      }
+    }
+
+    return false; // Not a low stock notification
   }
 }

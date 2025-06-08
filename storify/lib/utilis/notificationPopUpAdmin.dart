@@ -1,4 +1,4 @@
-// lib/utilis/notificationPopUpAdmin.dart (Enhanced version)
+// lib/utilis/notificationPopUpAdmin.dart (Enhanced version with low stock handling)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -188,20 +188,54 @@ class _NotificationPopupState extends State<NotificationPopup> {
   }
 
   Widget _buildNotificationItem(NotificationItem notification) {
+    // Check if this is a low stock notification
+    final isLowStockNotification = notification.title.contains('Stock Alert') ||
+        notification.title.contains('Low Stock');
+
     return InkWell(
-      onTap: () {
+      onTap: () async {
+        print('🔔 Notification tapped: ${notification.title}');
+
         // Mark as read when tapped
         NotificationService().markAsRead(notification.id);
 
         // Close the notification popup first
         widget.onCloseMenu();
 
-        // Then handle notification tap - navigate or perform action
-        if (notification.onTap != null) {
+        // Handle low stock notifications specially
+        if (isLowStockNotification) {
+          print('🔔 Low stock notification tapped, handling specially...');
+
           // Add a small delay to ensure the popup is closed first
           Future.delayed(Duration(milliseconds: 100), () {
-            notification.onTap!();
+            // Try to handle via the notification service
+            final handled =
+                NotificationService().handleNotificationTap(notification);
+
+            if (!handled) {
+              print(
+                  '⚠️ Low stock notification not handled - no handler registered');
+              // Show a fallback message
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        'Please navigate to the Orders screen to view low stock items'),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
           });
+        } else {
+          // Handle regular notifications
+          if (notification.onTap != null) {
+            // Add a small delay to ensure the popup is closed first
+            Future.delayed(Duration(milliseconds: 100), () {
+              notification.onTap!();
+            });
+          }
         }
       },
       child: Container(
@@ -261,10 +295,10 @@ class _NotificationPopupState extends State<NotificationPopup> {
                         ),
                       ),
                       // Show click instruction for low stock notifications
-                      if (notification.title.contains('Stock Alert'))
+                      if (isLowStockNotification)
                         Expanded(
                           child: Text(
-                            ' • Tap to view details',
+                            ' • Tap to view low stock items',
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 11.sp,
                               color: const Color.fromARGB(255, 105, 65, 198),
