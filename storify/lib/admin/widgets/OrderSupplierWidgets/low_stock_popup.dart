@@ -24,13 +24,12 @@ class _LowStockPopupState extends State<LowStockPopup> {
   late List<LowStockItem> _items;
   bool _isGeneratingOrders = false;
   bool _selectAll = false;
-  Map<int, List<SupplierInfo>> _productSuppliers = {};
-  Map<int, SupplierInfo?> _selectedSuppliers = {};
+  Map<int, LowStockSupplier?> _selectedSuppliers = {};
 
   // Advanced features
   bool _useGlobalSupplier = false;
-  SupplierInfo? _globalSupplier;
-  List<SupplierInfo> _allSuppliers = [];
+  LowStockSupplier? _globalSupplier;
+  List<LowStockSupplier> _allSuppliers = [];
   Map<int, TextEditingController> _quantityControllers = {};
 
   @override
@@ -57,85 +56,37 @@ class _LowStockPopupState extends State<LowStockPopup> {
   }
 
   void _initializeSuppliers() {
+    // Get all unique suppliers from all items
+    _allSuppliers = LowStockService.getAllUniqueSuppliers(_items);
+    print('Found ${_allSuppliers.length} unique suppliers across all items');
+
+    // Set default suppliers for each item
     for (var item in _items) {
-      _loadProductSuppliers(item.product.productId);
-    }
-    _loadAllSuppliers();
-  }
+      if (item.suppliers.isNotEmpty) {
+        // Try to use supplier from last order, otherwise use first available
+        LowStockSupplier? defaultSupplier;
 
-  Future<void> _loadAllSuppliers() async {
-    try {
-      // Get unique suppliers from all product suppliers
-      Set<SupplierInfo> uniqueSuppliers = {};
-
-      for (var item in _items) {
-        final response =
-            await LowStockService.getProductSuppliers(item.product.productId);
-        if (response != null) {
-          uniqueSuppliers.addAll(response.suppliers);
-        }
-      }
-
-      setState(() {
-        _allSuppliers = uniqueSuppliers.toList();
-      });
-    } catch (e) {
-      print('Error loading all suppliers: $e');
-    }
-  }
-
-  Future<void> _loadProductSuppliers(int productId) async {
-    try {
-      final response = await LowStockService.getProductSuppliers(productId);
-      if (response != null && mounted) {
-        setState(() {
-          _productSuppliers[productId] = response.suppliers;
-
-          final itemIndex =
-              _items.indexWhere((item) => item.product.productId == productId);
-          if (itemIndex != -1) {
-            final item = _items[itemIndex];
-            if (item.lastOrder != null && response.suppliers.isNotEmpty) {
-              final lastOrderSupplierId = item.lastOrder!.supplier.id;
-              final lastOrderSupplierName = item.lastOrder!.supplier.user.name;
-              final lastOrderSupplierEmail =
-                  item.lastOrder!.supplier.user.email;
-
-              SupplierInfo? matchingSupplier;
-              try {
-                matchingSupplier = response.suppliers.firstWhere(
-                  (supplier) => supplier.id == lastOrderSupplierId,
-                );
-              } catch (e) {
-                try {
-                  matchingSupplier = response.suppliers.firstWhere(
-                    (supplier) =>
-                        supplier.name.toLowerCase() ==
-                        lastOrderSupplierName.toLowerCase(),
-                  );
-                } catch (e) {
-                  matchingSupplier = response.suppliers.first;
-                }
-              }
-
-              if (matchingSupplier != null) {
-                _selectedSuppliers[productId] = matchingSupplier;
-                print(
-                    'Set default supplier for product $productId: ${matchingSupplier.name}');
-              }
-            } else if (response.suppliers.isNotEmpty) {
-              _selectedSuppliers[productId] = response.suppliers.first;
-              print(
-                  'Set first available supplier for product $productId: ${response.suppliers.first.name}');
-            }
+        if (item.lastOrder != null) {
+          try {
+            defaultSupplier = item.suppliers.firstWhere(
+              (supplier) =>
+                  supplier.supplierName == item.lastOrder!.supplierName,
+            );
+            print(
+                'Set default supplier for product ${item.product.productId} from last order: ${defaultSupplier.supplierName}');
+          } catch (e) {
+            defaultSupplier = item.suppliers.first;
+            print(
+                'Set first available supplier for product ${item.product.productId}: ${defaultSupplier.supplierName}');
           }
-        });
-      } else {
-        print('Failed to load suppliers for product $productId');
+        } else {
+          defaultSupplier = item.suppliers.first;
+          print(
+              'Set first available supplier for product ${item.product.productId}: ${defaultSupplier.supplierName}');
+        }
+
+        _selectedSuppliers[item.product.productId] = defaultSupplier;
       }
-    } catch (e) {
-      print('Error loading suppliers for product $productId: $e');
-      print('Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -177,7 +128,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
     }
   }
 
-  void _updateSupplier(int productId, SupplierInfo? supplier) {
+  void _updateSupplier(int productId, LowStockSupplier? supplier) {
     setState(() {
       _selectedSuppliers[productId] = supplier;
     });
@@ -208,7 +159,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
 
       // Handle global supplier override
       if (_useGlobalSupplier && _globalSupplier != null) {
-        globalSupplierId = _globalSupplier!.id;
+        globalSupplierId = _globalSupplier!.supplierId;
       }
 
       // Collect custom quantities
@@ -231,14 +182,15 @@ class _LowStockPopupState extends State<LowStockPopup> {
         Map<int, int> suppliers = {};
         for (var item in selectedItems) {
           final selectedSupplier = _selectedSuppliers[item.product.productId];
-          if (selectedSupplier != null && item.lastOrder != null) {
+          if (selectedSupplier != null) {
+            // Get the default supplier for comparison
+            final defaultSupplier = item.effectiveSupplier;
+
             // Only add if different from default supplier
-            if (selectedSupplier.id != item.lastOrder!.supplier.id) {
-              suppliers[item.product.productId] = selectedSupplier.id;
+            if (defaultSupplier == null ||
+                selectedSupplier.supplierId != defaultSupplier.supplierId) {
+              suppliers[item.product.productId] = selectedSupplier.supplierId;
             }
-          } else if (selectedSupplier != null) {
-            // Add if there's no last order but supplier is selected
-            suppliers[item.product.productId] = selectedSupplier.id;
           }
         }
         if (suppliers.isNotEmpty) {
@@ -305,7 +257,9 @@ class _LowStockPopupState extends State<LowStockPopup> {
     switch (alertLevel.toUpperCase()) {
       case 'CRITICAL':
         return Colors.red;
-      case 'WARNING':
+      case 'HIGH':
+        return Colors.deepOrange;
+      case 'MEDIUM':
         return Colors.orange;
       case 'LOW':
         return Colors.yellow;
@@ -317,6 +271,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
   @override
   Widget build(BuildContext context) {
     final selectedCount = _items.where((item) => item.isSelected).length;
+    final alertCounts = LowStockService.getAlertLevelCounts(_items);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -440,7 +395,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
                       SizedBox(width: 12.w),
 
                       // Global Supplier Dropdown
-                      if (_useGlobalSupplier)
+                      if (_useGlobalSupplier && _allSuppliers.isNotEmpty)
                         Container(
                           width: 200.w,
                           padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -452,7 +407,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
                             ),
                           ),
                           child: DropdownButtonHideUnderline(
-                            child: DropdownButton<SupplierInfo>(
+                            child: DropdownButton<LowStockSupplier>(
                               value: _globalSupplier,
                               hint: Text(
                                 'Select Global Supplier',
@@ -474,10 +429,10 @@ class _LowStockPopupState extends State<LowStockPopup> {
                               ),
                               isExpanded: true,
                               items: _allSuppliers.map((supplier) {
-                                return DropdownMenuItem<SupplierInfo>(
+                                return DropdownMenuItem<LowStockSupplier>(
                                   value: supplier,
                                   child: Text(
-                                    supplier.name,
+                                    supplier.supplierName,
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 12.sp,
                                       color: Colors.white,
@@ -516,24 +471,14 @@ class _LowStockPopupState extends State<LowStockPopup> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildStatItem(
-                              'Critical',
-                              LowStockService.getAlertLevelCounts(
-                                      _items)['CRITICAL'] ??
-                                  0,
-                              Colors.red),
-                          _buildStatItem(
-                              'Warning',
-                              LowStockService.getAlertLevelCounts(
-                                      _items)['WARNING'] ??
-                                  0,
+                          _buildStatItem('Critical',
+                              alertCounts['CRITICAL'] ?? 0, Colors.red),
+                          _buildStatItem('High', alertCounts['HIGH'] ?? 0,
+                              Colors.deepOrange),
+                          _buildStatItem('Medium', alertCounts['MEDIUM'] ?? 0,
                               Colors.orange),
                           _buildStatItem(
-                              'Low',
-                              LowStockService.getAlertLevelCounts(
-                                      _items)['LOW'] ??
-                                  0,
-                              Colors.yellow),
+                              'Low', alertCounts['LOW'] ?? 0, Colors.yellow),
                           _buildStatItem('Selected', selectedCount,
                               const Color.fromARGB(255, 105, 65, 198)),
                         ],
@@ -564,7 +509,6 @@ class _LowStockPopupState extends State<LowStockPopup> {
                               child: Row(
                                 children: [
                                   SizedBox(width: 40.w), // Checkbox space
-                                  SizedBox(width: 60.w), // Image space
                                   Expanded(
                                       flex: 2,
                                       child: Text('Product',
@@ -637,7 +581,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
                       ),
                       if (_useGlobalSupplier && _globalSupplier != null)
                         Text(
-                          'Global supplier: ${_globalSupplier!.name}',
+                          'Global supplier: ${_globalSupplier!.supplierName}',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 14.sp,
                             color: const Color.fromARGB(255, 105, 65, 198),
@@ -734,7 +678,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
   }
 
   Widget _buildItemRow(LowStockItem item, int index) {
-    final suppliers = _productSuppliers[item.product.productId] ?? [];
+    final suppliers = item.suppliers;
     final selectedSupplier = _selectedSuppliers[item.product.productId];
     final quantityController = _quantityControllers[item.product.productId];
 
@@ -750,39 +694,6 @@ class _LowStockPopupState extends State<LowStockPopup> {
               onChanged: (value) => _toggleItemSelection(index),
               activeColor: const Color.fromARGB(255, 105, 65, 198),
               checkColor: Colors.white,
-            ),
-          ),
-
-          // Product Image
-          SizedBox(
-            width: 60.w,
-            child: Container(
-              width: 50.w,
-              height: 50.h,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              child: item.product.image != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8.r),
-                      child: Image.network(
-                        item.product.image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.image_not_supported_outlined,
-                            color: Colors.white54,
-                            size: 24.sp,
-                          );
-                        },
-                      ),
-                    )
-                  : Icon(
-                      Icons.inventory_outlined,
-                      color: Colors.white54,
-                      size: 24.sp,
-                    ),
             ),
           ),
 
@@ -803,10 +714,17 @@ class _LowStockPopupState extends State<LowStockPopup> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  item.product.category.categoryName,
+                  item.product.category,
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 12.sp,
                     color: Colors.white70,
+                  ),
+                ),
+                Text(
+                  '${item.suppliers.length} suppliers available',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 11.sp,
+                    color: Colors.white60,
                   ),
                 ),
               ],
@@ -921,8 +839,8 @@ class _LowStockPopupState extends State<LowStockPopup> {
     );
   }
 
-  Widget _buildSupplierDropdown(List<SupplierInfo> suppliers,
-      SupplierInfo? selectedSupplier, int productId) {
+  Widget _buildSupplierDropdown(List<LowStockSupplier> suppliers,
+      LowStockSupplier? selectedSupplier, int productId) {
     try {
       if (suppliers.isEmpty) {
         return Center(
@@ -937,12 +855,12 @@ class _LowStockPopupState extends State<LowStockPopup> {
       }
 
       final validSelectedSupplier =
-          suppliers.any((s) => s.id == selectedSupplier?.id)
+          suppliers.any((s) => s.supplierId == selectedSupplier?.supplierId)
               ? selectedSupplier
               : null;
 
       return DropdownButtonHideUnderline(
-        child: DropdownButton<SupplierInfo>(
+        child: DropdownButton<LowStockSupplier>(
           value: validSelectedSupplier,
           hint: Text(
             'Select Supplier',
@@ -963,15 +881,30 @@ class _LowStockPopupState extends State<LowStockPopup> {
           ),
           isExpanded: true,
           items: suppliers.map((supplier) {
-            return DropdownMenuItem<SupplierInfo>(
+            return DropdownMenuItem<LowStockSupplier>(
               value: supplier,
-              child: Text(
-                supplier.name,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12.sp,
-                  color: Colors.white,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    supplier.supplierName,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 12.sp,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (supplier.priceSupplier > 0)
+                    Text(
+                      '\$${supplier.priceSupplier.toStringAsFixed(2)}',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10.sp,
+                        color: Colors.white70,
+                      ),
+                    ),
+                ],
               ),
             );
           }).toList(),

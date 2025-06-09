@@ -55,7 +55,7 @@ class LowStockService {
     }
   }
 
-  // Get low stock items
+  // Get low stock items - Updated for new API structure
   static Future<LowStockResponse?> getLowStockItems() async {
     try {
       final headers = await AuthService.getAuthHeaders();
@@ -81,10 +81,23 @@ class LowStockService {
     }
   }
 
-  // Get suppliers for a specific product
-  static Future<ProductSuppliersResponse?> getProductSuppliers(
-      int productId) async {
+  // Get suppliers for a specific product - Updated to use new supplier structure
+  static Future<List<LowStockSupplier>?> getProductSuppliers(
+      int productId, List<LowStockItem> lowStockItems) async {
     try {
+      // First try to find suppliers from low stock items (since they're included now)
+      final item = lowStockItems.firstWhere(
+        (item) => item.product.productId == productId,
+        orElse: () => throw Exception('Product not found in low stock items'),
+      );
+
+      if (item.suppliers.isNotEmpty) {
+        print(
+            'Found ${item.suppliers.length} suppliers for product $productId from low stock data');
+        return item.suppliers;
+      }
+
+      // Fallback to original API call if needed
       final headers = await AuthService.getAuthHeaders();
 
       final response = await http.get(
@@ -99,19 +112,24 @@ class LowStockService {
         final data = json.decode(response.body);
         final parsedResponse = ProductSuppliersResponse.fromJson(data);
 
-        // Debug: Print supplier information
-        print(
-            'Found ${parsedResponse.suppliers.length} suppliers for product $productId');
-        for (var supplier in parsedResponse.suppliers) {
-          print(
-              'Supplier: ${supplier.id} - ${supplier.name} - ${supplier.email}');
-        }
+        // Convert to LowStockSupplier format
+        final lowStockSuppliers = parsedResponse.suppliers
+            .map((supplier) => LowStockSupplier(
+                  supplierId: supplier.id,
+                  supplierName: supplier.name,
+                  supplierEmail: supplier.email,
+                  supplierPhone: '', // Not available in old format
+                  priceSupplier: 0.0, // Not available in old format
+                  relationshipStatus: 'Active', // Default value
+                ))
+            .toList();
 
-        return parsedResponse;
+        print(
+            'Found ${lowStockSuppliers.length} suppliers for product $productId from fallback API');
+        return lowStockSuppliers;
       } else {
         print(
             'Failed to get product suppliers. Status: ${response.statusCode}');
-        print('Response body: ${response.body}');
         return null;
       }
     } catch (e) {
@@ -121,7 +139,7 @@ class LowStockService {
     }
   }
 
-  // Generate orders for selected products with advanced options
+  // Generate orders for selected products with advanced options - Updated for new structure
   static Future<GenerateOrdersResponse?> generateOrders({
     List<int>? selectedProductIds,
     bool selectAll = false,
@@ -185,16 +203,19 @@ class LowStockService {
     }
   }
 
-  // Check if there are critical low stock items
+  // Check if there are critical low stock items - Updated for new alert levels
   static bool hasCriticalItems(List<LowStockItem> items) {
-    return items.any((item) => item.alertLevel.toUpperCase() == 'CRITICAL');
+    return items.any((item) =>
+        item.alertLevel.toUpperCase() == 'CRITICAL' ||
+        item.alertLevel.toUpperCase() == 'HIGH');
   }
 
-  // Get count of low stock items by alert level
+  // Get count of low stock items by alert level - Updated for new alert levels
   static Map<String, int> getAlertLevelCounts(List<LowStockItem> items) {
     final counts = <String, int>{
       'CRITICAL': 0,
-      'WARNING': 0,
+      'HIGH': 0,
+      'MEDIUM': 0,
       'LOW': 0,
     };
 
@@ -206,25 +227,49 @@ class LowStockService {
     return counts;
   }
 
-  // Get formatted notification message
+  // Get formatted notification message - Updated for new structure
   static String getNotificationMessage(List<LowStockItem> items) {
     final counts = getAlertLevelCounts(items);
-    final criticalCount = counts['CRITICAL'] ?? 0;
+    final criticalCount = (counts['CRITICAL'] ?? 0) + (counts['HIGH'] ?? 0);
     final totalCount = items.length;
 
     if (criticalCount > 0) {
-      return '$criticalCount critical items need immediate attention ($totalCount total low stock items)';
+      return '$criticalCount critical/high priority items need immediate attention ($totalCount total low stock items)';
     } else {
       return '$totalCount items are running low on stock';
     }
   }
 
+  // Get formatted summary message for display
+  static String getSummaryMessage(LowStockResponse response) {
+    final summary = response.summary;
+    if (summary.itemsFilteredOut > 0) {
+      return 'Showing ${summary.itemsWithActiveSuppliers} items with active suppliers (${summary.itemsFilteredOut} items filtered out due to no active suppliers)';
+    } else {
+      return 'Showing ${summary.itemsWithActiveSuppliers} items with active suppliers';
+    }
+  }
+
+  // Get unique suppliers from all items
+  static List<LowStockSupplier> getAllUniqueSuppliers(
+      List<LowStockItem> items) {
+    final Map<int, LowStockSupplier> uniqueSuppliers = {};
+
+    for (var item in items) {
+      for (var supplier in item.suppliers) {
+        uniqueSuppliers[supplier.supplierId] = supplier;
+      }
+    }
+
+    return uniqueSuppliers.values.toList();
+  }
+
   // Update product's selected supplier
   static Future<void> updateProductSupplier(
-      LowStockItem item, SupplierInfo newSupplier) async {
+      LowStockItem item, LowStockSupplier newSupplier) async {
     // This would update the supplier for the product in the backend if needed
     // For now, we'll just update it locally in the UI
     print(
-        'Updated supplier for product ${item.product.name} to ${newSupplier.name}');
+        'Updated supplier for product ${item.product.name} to ${newSupplier.supplierName}');
   }
 }

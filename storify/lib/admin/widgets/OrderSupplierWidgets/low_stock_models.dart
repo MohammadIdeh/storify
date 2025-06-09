@@ -2,21 +2,53 @@
 import 'dart:convert';
 
 class LowStockResponse {
+  final bool success;
   final String message;
   final List<LowStockItem> lowStockItems;
+  final int count;
+  final LowStockSummary summary;
 
   LowStockResponse({
+    required this.success,
     required this.message,
     required this.lowStockItems,
+    required this.count,
+    required this.summary,
   });
 
   factory LowStockResponse.fromJson(Map<String, dynamic> json) {
     return LowStockResponse(
+      success: json['success'] ?? true,
       message: json['message'] ?? '',
-      lowStockItems: (json['lowStockItems'] as List?)
+      lowStockItems: (json['data'] as List?)
               ?.map((item) => LowStockItem.fromJson(item))
               .toList() ??
           [],
+      count: json['count'] ?? 0,
+      summary: LowStockSummary.fromJson(json['summary'] ?? {}),
+    );
+  }
+}
+
+class LowStockSummary {
+  final int totalLowStockProducts;
+  final int itemsWithActiveSuppliers;
+  final int itemsFilteredOut;
+  final int totalUniqueSuppliers;
+
+  LowStockSummary({
+    required this.totalLowStockProducts,
+    required this.itemsWithActiveSuppliers,
+    required this.itemsFilteredOut,
+    required this.totalUniqueSuppliers,
+  });
+
+  factory LowStockSummary.fromJson(Map<String, dynamic> json) {
+    return LowStockSummary(
+      totalLowStockProducts: json['totalLowStockProducts'] ?? 0,
+      itemsWithActiveSuppliers: json['itemsWithActiveSuppliers'] ?? 0,
+      itemsFilteredOut: json['itemsFilteredOut'] ?? 0,
+      totalUniqueSuppliers: json['totalUniqueSuppliers'] ?? 0,
     );
   }
 }
@@ -26,15 +58,23 @@ class LowStockItem {
   final LastOrder? lastOrder;
   final int stockDeficit;
   final String alertLevel;
+  final bool hasActiveSuppliers;
+  final int activeSupplierCount;
+  final List<LowStockSupplier> suppliers;
+  final List<String> supplierNames;
   bool isSelected;
   int? customQuantity; // Custom quantity for this item
-  SupplierInfo? customSupplier; // Custom supplier for this item
+  LowStockSupplier? customSupplier; // Custom supplier for this item
 
   LowStockItem({
     required this.product,
     this.lastOrder,
     required this.stockDeficit,
     required this.alertLevel,
+    required this.hasActiveSuppliers,
+    required this.activeSupplierCount,
+    required this.suppliers,
+    required this.supplierNames,
     this.isSelected = false,
     this.customQuantity,
     this.customSupplier,
@@ -42,12 +82,22 @@ class LowStockItem {
 
   factory LowStockItem.fromJson(Map<String, dynamic> json) {
     return LowStockItem(
-      product: LowStockProduct.fromJson(json['product']),
+      product: LowStockProduct.fromJson(json),
       lastOrder: json['lastOrder'] != null
           ? LastOrder.fromJson(json['lastOrder'])
           : null,
       stockDeficit: json['stockDeficit'] ?? 0,
       alertLevel: json['alertLevel'] ?? 'LOW',
+      hasActiveSuppliers: json['hasActiveSuppliers'] ?? false,
+      activeSupplierCount: json['activeSupplierCount'] ?? 0,
+      suppliers: (json['suppliers'] as List?)
+              ?.map((supplier) => LowStockSupplier.fromJson(supplier))
+              .toList() ??
+          [],
+      supplierNames: (json['supplierNames'] as List?)
+              ?.map((name) => name.toString())
+              .toList() ??
+          [],
       isSelected: false,
     );
   }
@@ -57,15 +107,23 @@ class LowStockItem {
     LastOrder? lastOrder,
     int? stockDeficit,
     String? alertLevel,
+    bool? hasActiveSuppliers,
+    int? activeSupplierCount,
+    List<LowStockSupplier>? suppliers,
+    List<String>? supplierNames,
     bool? isSelected,
     int? customQuantity,
-    SupplierInfo? customSupplier,
+    LowStockSupplier? customSupplier,
   }) {
     return LowStockItem(
       product: product ?? this.product,
       lastOrder: lastOrder ?? this.lastOrder,
       stockDeficit: stockDeficit ?? this.stockDeficit,
       alertLevel: alertLevel ?? this.alertLevel,
+      hasActiveSuppliers: hasActiveSuppliers ?? this.hasActiveSuppliers,
+      activeSupplierCount: activeSupplierCount ?? this.activeSupplierCount,
+      suppliers: suppliers ?? this.suppliers,
+      supplierNames: supplierNames ?? this.supplierNames,
       isSelected: isSelected ?? this.isSelected,
       customQuantity: customQuantity ?? this.customQuantity,
       customSupplier: customSupplier ?? this.customSupplier,
@@ -75,16 +133,27 @@ class LowStockItem {
   // Get the effective quantity (custom or default based on deficit)
   int get effectiveQuantity => customQuantity ?? stockDeficit;
 
-  // Get the effective supplier (custom or default from last order)
-  SupplierInfo? get effectiveSupplier =>
-      customSupplier ??
-      (lastOrder != null
-          ? SupplierInfo(
-              id: lastOrder!.supplier.id,
-              name: lastOrder!.supplier.user.name,
-              email: lastOrder!.supplier.user.email,
-            )
-          : null);
+  // Get the effective supplier (custom or default from last order or first supplier)
+  LowStockSupplier? get effectiveSupplier {
+    if (customSupplier != null) {
+      return customSupplier;
+    }
+
+    // Try to find supplier from last order
+    if (lastOrder != null && suppliers.isNotEmpty) {
+      try {
+        return suppliers.firstWhere(
+          (supplier) => supplier.supplierName == lastOrder!.supplierName,
+        );
+      } catch (e) {
+        // If not found, return first supplier
+        return suppliers.isNotEmpty ? suppliers.first : null;
+      }
+    }
+
+    // Return first supplier if available
+    return suppliers.isNotEmpty ? suppliers.first : null;
+  }
 }
 
 class LowStockProduct {
@@ -92,19 +161,13 @@ class LowStockProduct {
   final String name;
   final int quantity;
   final int lowStock;
-  final double costPrice;
-  final double sellPrice;
-  final String? image;
-  final ProductCategory category;
+  final String category;
 
   LowStockProduct({
     required this.productId,
     required this.name,
     required this.quantity,
     required this.lowStock,
-    required this.costPrice,
-    required this.sellPrice,
-    this.image,
     required this.category,
   });
 
@@ -114,104 +177,88 @@ class LowStockProduct {
       name: json['name'] ?? '',
       quantity: json['quantity'] ?? 0,
       lowStock: json['lowStock'] ?? 0,
-      costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0.0,
-      sellPrice: (json['sellPrice'] as num?)?.toDouble() ?? 0.0,
-      image: json['image'],
-      category: ProductCategory.fromJson(json['category'] ?? {}),
+      category: json['category'] ?? '',
     );
   }
 }
 
-class ProductCategory {
-  final int categoryID;
-  final String categoryName;
+class LowStockSupplier {
+  final int supplierId;
+  final String supplierName;
+  final String supplierEmail;
+  final String supplierPhone;
+  final double priceSupplier;
+  final String relationshipStatus;
 
-  ProductCategory({
-    required this.categoryID,
-    required this.categoryName,
+  LowStockSupplier({
+    required this.supplierId,
+    required this.supplierName,
+    required this.supplierEmail,
+    required this.supplierPhone,
+    required this.priceSupplier,
+    required this.relationshipStatus,
   });
 
-  factory ProductCategory.fromJson(Map<String, dynamic> json) {
-    return ProductCategory(
-      categoryID: json['categoryID'] ?? 0,
-      categoryName: json['categoryName'] ?? '',
+  factory LowStockSupplier.fromJson(Map<String, dynamic> json) {
+    return LowStockSupplier(
+      supplierId: json['supplierId'] ?? 0,
+      supplierName: json['supplierName'] ?? '',
+      supplierEmail: json['supplierEmail'] ?? '',
+      supplierPhone: json['supplierPhone'] ?? '',
+      priceSupplier: (json['priceSupplier'] as num?)?.toDouble() ?? 0.0,
+      relationshipStatus: json['relationshipStatus'] ?? 'Active',
     );
   }
+
+  // Add equality operator and hashCode for dropdown comparison
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LowStockSupplier &&
+          runtimeType == other.runtimeType &&
+          supplierId == other.supplierId;
+
+  @override
+  int get hashCode => supplierId.hashCode;
+
+  @override
+  String toString() =>
+      'LowStockSupplier(id: $supplierId, name: $supplierName, email: $supplierEmail, status: $relationshipStatus)';
 }
 
 class LastOrder {
   final int orderId;
-  final String orderDate;
   final int quantity;
   final double costPrice;
-  final String status;
-  final OrderSupplier supplier;
+  final String orderDate;
+  final String orderStatus;
+  final String supplierName;
+  final int daysSinceLastOrder;
 
   LastOrder({
     required this.orderId,
-    required this.orderDate,
     required this.quantity,
     required this.costPrice,
-    required this.status,
-    required this.supplier,
+    required this.orderDate,
+    required this.orderStatus,
+    required this.supplierName,
+    required this.daysSinceLastOrder,
   });
 
   factory LastOrder.fromJson(Map<String, dynamic> json) {
     return LastOrder(
       orderId: json['orderId'] ?? 0,
-      orderDate: json['orderDate'] ?? '',
       quantity: json['quantity'] ?? 0,
       costPrice: (json['costPrice'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] ?? '',
-      supplier: OrderSupplier.fromJson(json['supplier'] ?? {}),
+      orderDate: json['orderDate'] ?? '',
+      orderStatus: json['orderStatus'] ?? '',
+      supplierName: json['supplierName'] ?? '',
+      daysSinceLastOrder: json['daysSinceLastOrder'] ?? 0,
     );
   }
 }
 
-class OrderSupplier {
-  final int id;
-  final int userId;
-  final String accountBalance;
-  final SupplierUser user;
-
-  OrderSupplier({
-    required this.id,
-    required this.userId,
-    required this.accountBalance,
-    required this.user,
-  });
-
-  factory OrderSupplier.fromJson(Map<String, dynamic> json) {
-    return OrderSupplier(
-      id: json['id'] ?? 0,
-      userId: json['userId'] ?? 0,
-      accountBalance: json['accountBalance'] ?? '0.00',
-      user: SupplierUser.fromJson(json['user'] ?? {}),
-    );
-  }
-}
-
-class SupplierUser {
-  final int userId;
-  final String name;
-  final String email;
-
-  SupplierUser({
-    required this.userId,
-    required this.name,
-    required this.email,
-  });
-
-  factory SupplierUser.fromJson(Map<String, dynamic> json) {
-    return SupplierUser(
-      userId: json['userId'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-    );
-  }
-}
-
-// Product suppliers response models
+// Keep existing models for backward compatibility and other API calls
 class ProductSuppliersResponse {
   final String message;
   final ProductInfo product;
