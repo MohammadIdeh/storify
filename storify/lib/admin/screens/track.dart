@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'dart:convert';
 import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/admin/screens/dashboard.dart';
 import 'package:storify/admin/screens/Categories.dart';
@@ -9,8 +12,7 @@ import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/admin/widgets/trackingWidgets/cards.dart';
-import 'package:storify/admin/widgets/trackingWidgets/filterpanel.dart';
-import 'package:storify/admin/widgets/trackingWidgets/map.dart';
+import 'package:storify/admin/widgets/trackingWidgets/advanced_tracking_map.dart';
 
 class Track extends StatefulWidget {
   const Track({super.key});
@@ -20,14 +22,19 @@ class Track extends StatefulWidget {
 }
 
 class _TrackScreenState extends State<Track> {
+  int _currentIndex = 5;
+  String? profilePictureUrl;
+  List<Map<String, String>> _trackData = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
     _loadProfilePicture();
+    _fetchTrackingData();
   }
 
-  int _currentIndex = 5;
-  String? profilePictureUrl;
   Future<void> _loadProfilePicture() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -35,20 +42,65 @@ class _TrackScreenState extends State<Track> {
     });
   }
 
-  final List<Map<String, String>> _trackData = [
-    {
-      'title': 'Total Shipment',
-      'value': '456',
-    },
-    {
-      'title': 'Completed',
-      'value': '320',
-    },
-    {
-      'title': 'Pending',
-      'value': '136',
-    },
-  ];
+  Future<void> _fetchTrackingData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      // Get admin auth headers with token
+      final headers = await AuthService.getAuthHeaders(role: 'Admin');
+
+      final response = await http.get(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/dashboard/tracking-cards'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        setState(() {
+          _trackData = [
+            {
+              'title': 'Total Shipment',
+              'value': data['totalShipment'].toString(),
+            },
+            {
+              'title': 'Completed',
+              'value': data['completed'].toString(),
+            },
+            {
+              'title': 'Pending',
+              'value': data['pending'].toString(),
+            },
+          ];
+          _isLoading = false;
+        });
+      } else if (response.statusCode == 401) {
+        setState(() {
+          _errorMessage = 'Authentication failed. Please login again.';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              'Failed to load tracking data: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error fetching tracking data: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshTrackingData() async {
+    await _fetchTrackingData();
+  }
 
   void _onNavItemTap(int index) {
     setState(() {
@@ -136,6 +188,153 @@ class _TrackScreenState extends State<Track> {
     }
   }
 
+  Widget _buildLiveOrdersCardsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4.w,
+              height: 24.h,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6366F1),
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Text(
+              "Live Active Orders",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 24.sp,
+                fontWeight: FontWeight.w600,
+                color: const Color.fromARGB(255, 246, 246, 246),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: const Color(0xFF10B981)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6.w,
+                    height: 6.h,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    'LIVE',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16.h),
+        const AdvancedTrackingMap(showAsCards: true),
+      ],
+    );
+  }
+
+  Widget _buildTrackingCards() {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 150,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Color.fromARGB(255, 99, 102, 241),
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Container(
+        height: 150,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color.fromARGB(255, 46, 57, 84),
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 40.sp,
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                'Failed to load tracking data',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  color: Colors.white70,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              ElevatedButton(
+                onPressed: _refreshTrackingData,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 99, 102, 241),
+                ),
+                child: Text(
+                  'Retry',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 12.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final numberOfCards = _trackData.length;
+        const spacing = 40.0;
+        final cardWidth =
+            (availableWidth - ((numberOfCards - 1) * spacing)) / numberOfCards;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: 20,
+          children: List.generate(_trackData.length, (index) {
+            final data = _trackData[index];
+            return SizedBox(
+              width: cardWidth,
+              child: TrackCards(
+                title: data['title'] ?? '',
+                value: data['value'] ?? '',
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,90 +347,54 @@ class _TrackScreenState extends State<Track> {
           profilePictureUrl: profilePictureUrl,
         ),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// --- Dashboard Title ---
-                Row(
-                  children: [
-                    Text(
-                      "Tracking",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 35.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color.fromARGB(255, 246, 246, 246),
+      body: RefreshIndicator(
+        onRefresh: _refreshTrackingData,
+        color: const Color.fromARGB(255, 99, 102, 241),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// --- Dashboard Title ---
+                  Row(
+                    children: [
+                      Text(
+                        "Tracking",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 35.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color.fromARGB(255, 246, 246, 246),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-
-                /// --- Tracking Cards ---
-                const SizedBox(height: 20),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final availableWidth = constraints.maxWidth;
-                    final numberOfCards = _trackData.length;
-                    const spacing = 40.0;
-                    final cardWidth =
-                        (availableWidth - ((numberOfCards - 1) * spacing)) /
-                            numberOfCards;
-
-                    return Wrap(
-                      spacing: spacing,
-                      runSpacing: 20,
-                      children: List.generate(_trackData.length, (index) {
-                        final data = _trackData[index];
-                        return SizedBox(
-                          width: cardWidth,
-                          child: TrackCards(
-                            title: data['title'] ?? '',
-                            value: data['value'] ?? '',
-                          ),
-                        );
-                      }),
-                    );
-                  },
-                ),
-
-                /// --- Map Section ---
-                const SizedBox(height: 40),
-                // inside your Track.build(), replace the Padding + Row with:
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final totalWidth = constraints.maxWidth;
-                    const spacing = 40.0; // space between map & panel
-                    final panelWidth = totalWidth * 0.30; // 30% for the filters
-                    final mapWidth = totalWidth - panelWidth - spacing;
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 1) Map at computed width
-                        SizedBox(
-                          width: mapWidth,
-                          child: const TrackMapSection(),
+                      const Spacer(),
+                      // Add refresh button
+                      IconButton(
+                        onPressed: _refreshTrackingData,
+                        icon: Icon(
+                          Icons.refresh,
+                          color: Colors.white70,
+                          size: 24.sp,
                         ),
+                      ),
+                    ],
+                  ),
 
-                        SizedBox(width: spacing.w),
+                  /// --- Tracking Cards ---
+                  const SizedBox(height: 20),
+                  _buildTrackingCards(),
 
-                        // 2) Filters panel at computed width
-                        SizedBox(
-                          width: panelWidth,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 15.0),
-                            child: const FiltersPanel(),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
+                  /// --- Live Orders Cards Section ---
+                  const SizedBox(height: 30),
+                  _buildLiveOrdersCardsSection(),
+
+                  /// --- Advanced Map Section ---
+                  const SizedBox(height: 40),
+                  const AdvancedTrackingMap(),
+                ],
+              ),
             ),
           ),
         ),
