@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/widgets/productsWidgets/ProductSalesOverviewWidget.dart';
 import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:storify/admin/widgets/productsWidgets/productInformationCard.dart';
-import 'package:storify/admin/widgets/productsWidgets/salesOverview.dart';
 import 'package:storify/admin/widgets/productsWidgets/sellingHistoryTable.dart';
 
 class Productoverview extends StatefulWidget {
@@ -31,8 +31,6 @@ class _ProductoverviewState extends State<Productoverview> {
       _currentProduct = updatedProduct;
     });
   }
-// In the Productoverview class, modify the build method
-// Here's how the layout should look:
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +92,7 @@ class _ProductoverviewState extends State<Productoverview> {
               ),
               SizedBox(height: 40.h),
 
-              // Product info card and sales overview row (unchanged)
+              // Product info card and sales overview row (updated)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,8 +105,10 @@ class _ProductoverviewState extends State<Productoverview> {
                   ),
                   SizedBox(width: 20.w), // spacing between the two widgets
                   Expanded(
-                    flex: 2, // Less space for Salesoverview
-                    child: Salesoverview(),
+                    flex: 2, // Less space for Product Sales Overview
+                    child: ProductSalesOverviewWidget(
+                      productId: _currentProduct.productId,
+                    ),
                   ),
                 ],
               ),
@@ -257,7 +257,7 @@ class _ProductoverviewState extends State<Productoverview> {
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 22.sp,
                       fontWeight: FontWeight.w700,
-                      color: const Color.fromARGB(255, 255, 255, 255),  
+                      color: const Color.fromARGB(255, 255, 255, 255),
                     ),
                   ),
                 ],
@@ -266,7 +266,9 @@ class _ProductoverviewState extends State<Productoverview> {
               Row(
                 children: [
                   Expanded(
-                    child: SellingHistoryWidget(),
+                    child: ProductSellingHistoryWidget(
+                      productId: _currentProduct.productId,
+                    ),
                   )
                 ],
               ),

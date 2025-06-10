@@ -1,122 +1,172 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'dart:convert';
 
-/// Model for an order history item.
-class OrderHistoryItem {
-  final String orderId; // e.g. "#129376483"
-  final double orderPrice; // e.g. 100.58
-  final String orderDate; // e.g. "1/3/2025"
-  final String store; // e.g. "Abu ideh"
-  final String
-      status; // e.g. "Completed", "On the way", "Cancelled", "Refunded"
+/// Model for a product selling history item from API
+class ProductSellingHistoryItem {
+  final String orderId;
+  final String orderPrice;
+  final String orderDate;
+  final String customer;
+  final String status;
+  final int quantity;
+  final double subtotal;
 
-  OrderHistoryItem({
+  ProductSellingHistoryItem({
     required this.orderId,
     required this.orderPrice,
     required this.orderDate,
-    required this.store,
+    required this.customer,
     required this.status,
+    required this.quantity,
+    required this.subtotal,
   });
+
+  factory ProductSellingHistoryItem.fromJson(Map<String, dynamic> json) {
+    return ProductSellingHistoryItem(
+      orderId: json['orderId'] ?? '',
+      orderPrice: json['orderPrice'] ?? '',
+      orderDate: json['orderDate'] ?? '',
+      customer: json['customer'] ?? '',
+      status: json['status'] ?? '',
+      quantity: json['quantity'] ?? 0,
+      subtotal: (json['subtotal'] ?? 0).toDouble(),
+    );
+  }
 }
 
-class SellingHistoryWidget extends StatefulWidget {
-  const SellingHistoryWidget({Key? key}) : super(key: key);
+/// Model for pagination info from API
+class PaginationInfo {
+  final int currentPage;
+  final int limit;
+  final int totalItems;
+  final int totalPages;
+  final bool hasNextPage;
+  final bool hasPreviousPage;
+
+  PaginationInfo({
+    required this.currentPage,
+    required this.limit,
+    required this.totalItems,
+    required this.totalPages,
+    required this.hasNextPage,
+    required this.hasPreviousPage,
+  });
+
+  factory PaginationInfo.fromJson(Map<String, dynamic> json) {
+    return PaginationInfo(
+      currentPage: json['currentPage'] ?? 1,
+      limit: json['limit'] ?? 10,
+      totalItems: json['totalItems'] ?? 0,
+      totalPages: json['totalPages'] ?? 1,
+      hasNextPage: json['hasNextPage'] ?? false,
+      hasPreviousPage: json['hasPreviousPage'] ?? false,
+    );
+  }
+}
+
+/// Model for the complete API response
+class ProductSellingHistoryResponse {
+  final String message;
+  final Map<String, dynamic> product;
+  final List<ProductSellingHistoryItem> history;
+  final PaginationInfo pagination;
+
+  ProductSellingHistoryResponse({
+    required this.message,
+    required this.product,
+    required this.history,
+    required this.pagination,
+  });
+
+  factory ProductSellingHistoryResponse.fromJson(Map<String, dynamic> json) {
+    return ProductSellingHistoryResponse(
+      message: json['message'] ?? '',
+      product: json['product'] ?? {},
+      history: (json['history'] as List? ?? [])
+          .map((item) => ProductSellingHistoryItem.fromJson(item))
+          .toList(),
+      pagination: PaginationInfo.fromJson(json['pagination'] ?? {}),
+    );
+  }
+}
+
+class ProductSellingHistoryWidget extends StatefulWidget {
+  final int productId;
+
+  const ProductSellingHistoryWidget({
+    Key? key,
+    required this.productId,
+  }) : super(key: key);
 
   @override
-  _SellingHistoryWidgetState createState() => _SellingHistoryWidgetState();
+  _ProductSellingHistoryWidgetState createState() => _ProductSellingHistoryWidgetState();
 }
 
-class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
-  // Fake data for demonstration.
-  final List<OrderHistoryItem> _allOrders = [
-    OrderHistoryItem(
-      orderId: "#129376483",
-      orderPrice: 100.58,
-      orderDate: "1/3/2025",
-      store: "Abu ideh",
-      status: "Completed",
-    ),
-    OrderHistoryItem(
-      orderId: "#129376484",
-      orderPrice: 120.00,
-      orderDate: "1/3/2025",
-      store: "Abu ideh",
-      status: "On the way",
-    ),
-    OrderHistoryItem(
-      orderId: "#129376485",
-      orderPrice: 90.99,
-      orderDate: "1/3/2025",
-      store: "Abu ideh",
-      status: "Completed",
-    ),
-    OrderHistoryItem(
-      orderId: "#129376486",
-      orderPrice: 110.50,
-      orderDate: "1/3/2025",
-      store: "Abu ideh",
-      status: "Cancelled",
-    ),
-    OrderHistoryItem(
-      orderId: "#129376487",
-      orderPrice: 99.95,
-      orderDate: "1/3/2025",
-      store: "Abu ideh",
-      status: "Completed",
-    ),
-    OrderHistoryItem(
-      orderId: "#129376488",
-      orderPrice: 105.00,
-      orderDate: "1/3/2025",
-      store: "Abu ideh",
-      status: "Refunded",
-    ),
-    // Additional items that won't be shown if we limit to 6.
-    OrderHistoryItem(
-      orderId: "#129376489",
-      orderPrice: 85.00,
-      orderDate: "1/4/2025",
-      store: "Abu ideh",
-      status: "Completed",
-    ),
-  ];
+class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidget> {
+  // API data
+  ProductSellingHistoryResponse? _historyData;
+  bool _isLoading = true;
+  String? _error;
 
-  // Maximum items per page.
-  final int _itemsPerPage = 6;
+  // Pagination
   int _currentPage = 1;
+  final int _itemsPerPage = 6; // Display 6 items per page to match your original design
+
+  // Sorting
   int? _sortColumnIndex;
   bool _sortAscending = true;
 
-  /// Optionally, you can add sorting logic similar to your previous code.
-  List<OrderHistoryItem> get _sortedOrders {
-    List<OrderHistoryItem> temp = List.from(_allOrders);
-    if (_sortColumnIndex != null) {
-      if (_sortColumnIndex == 1) {
-        temp.sort((a, b) => a.orderPrice.compareTo(b.orderPrice));
-      } else if (_sortColumnIndex == 2) {
-        // For demo, sort by orderDate lexicographically.
-        temp.sort((a, b) => a.orderDate.compareTo(b.orderDate));
-      }
-      if (!_sortAscending) {
-        temp = temp.reversed.toList();
-      }
-    }
-    return temp;
+  @override
+  void initState() {
+    super.initState();
+    _fetchSellingHistory();
   }
 
-  List<OrderHistoryItem> get _visibleOrders {
-    List<OrderHistoryItem> sorted = _sortedOrders;
-    final totalItems = sorted.length;
-    final totalPages = (totalItems / _itemsPerPage).ceil();
-    if (_currentPage > totalPages && totalPages > 0) {
-      _currentPage = 1;
+  Future<void> _fetchSellingHistory() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      print('🔄 Fetching selling history for product ${widget.productId}, page $_currentPage');
+
+      // Build URL with pagination
+      final String url = 'https://finalproject-a5ls.onrender.com/dashboard/product-selling-history/${widget.productId}?page=$_currentPage&limit=$_itemsPerPage';
+
+      final headers = await AuthService.getAuthHeaders();
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Selling history data received');
+        print('📊 Total items: ${data['pagination']['totalItems']}');
+
+        setState(() {
+          _historyData = ProductSellingHistoryResponse.fromJson(data);
+          _isLoading = false;
+        });
+      } else {
+        print('❌ Error fetching selling history: ${response.statusCode}');
+        setState(() {
+          _error = 'Failed to load selling history: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Exception fetching selling history: $e');
+      setState(() {
+        _error = 'Network error: $e';
+        _isLoading = false;
+      });
     }
-    final startIndex = (_currentPage - 1) * _itemsPerPage;
-    final endIndex = startIndex + _itemsPerPage > totalItems
-        ? totalItems
-        : startIndex + _itemsPerPage;
-    return sorted.sublist(startIndex, endIndex);
   }
 
   /// Helper: builds a color-coded pill for status.
@@ -139,6 +189,10 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
         break;
       case "Refunded":
         borderColor = const Color.fromARGB(255, 141, 110, 199); // purple
+        bgColor = borderColor.withOpacity(0.15);
+        break;
+      case "Pending":
+        borderColor = const Color.fromARGB(255, 255, 193, 7); // yellow
         bgColor = borderColor.withOpacity(0.15);
         break;
       default:
@@ -165,7 +219,7 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
     );
   }
 
-  /// Builds a header label for sorting (if needed).
+  /// Builds a header label for sorting.
   Widget _buildSortableColumnLabel(String label, int colIndex) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
@@ -198,8 +252,19 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
         _sortColumnIndex = colIndex;
         _sortAscending = true;
       }
-      _currentPage = 1;
+      // Note: For server-side sorting, you would need to modify the API call
+      // For now, we'll keep client-side sorting on the current page data
     });
+  }
+
+  /// Navigate to a specific page
+  void _goToPage(int page) {
+    if (page != _currentPage && page >= 1 && _historyData != null && page <= _historyData!.pagination.totalPages) {
+      setState(() {
+        _currentPage = page;
+      });
+      _fetchSellingHistory();
+    }
   }
 
   /// Builds a pagination button.
@@ -221,11 +286,7 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
           ),
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         ),
-        onPressed: () {
-          setState(() {
-            _currentPage = pageIndex;
-          });
-        },
+        onPressed: () => _goToPage(pageIndex),
         child: Text(
           "$pageIndex",
           style: GoogleFonts.spaceGrotesk(
@@ -240,11 +301,140 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final totalItems = _sortedOrders.length;
-    final totalPages = (totalItems / _itemsPerPage).ceil();
+    if (_isLoading) {
+      return Container(
+        width: double.infinity,
+        height: 300.h,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(29.r),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: const Color.fromARGB(255, 105, 65, 198),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Loading selling history...',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Container(
+        width: double.infinity,
+        height: 300.h,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(29.r),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48.sp,
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Error loading selling history',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                _error!,
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontSize: 12.sp,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton(
+                onPressed: _fetchSellingHistory,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                child: Text(
+                  'Retry',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_historyData == null || _historyData!.history.isEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 300.h,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(29.r),
+        ),
+        child: Center(
+          child: Text(
+            'No selling history available for this product',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white70,
+              fontSize: 16.sp,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final pagination = _historyData!.pagination;
+    final history = _historyData!.history;
+
+    // Apply client-side sorting if needed
+    List<ProductSellingHistoryItem> sortedHistory = List.from(history);
+    if (_sortColumnIndex != null) {
+      if (_sortColumnIndex == 1) {
+        // Sort by order price (remove $ and convert to double)
+        sortedHistory.sort((a, b) {
+          final priceA = double.tryParse(a.orderPrice.replaceAll('\$', '').replaceAll(',', '')) ?? 0;
+          final priceB = double.tryParse(b.orderPrice.replaceAll('\$', '').replaceAll(',', '')) ?? 0;
+          return priceA.compareTo(priceB);
+        });
+      } else if (_sortColumnIndex == 4) {
+        // Sort by quantity
+        sortedHistory.sort((a, b) => a.quantity.compareTo(b.quantity));
+      } else if (_sortColumnIndex == 5) {
+        // Sort by subtotal
+        sortedHistory.sort((a, b) => a.subtotal.compareTo(b.subtotal));
+      }
+      if (!_sortAscending) {
+        sortedHistory = sortedHistory.reversed.toList();
+      }
+    }
 
     return Container(
-      width: double.infinity, // Takes the maximum width
+      width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(29.r),
@@ -302,22 +492,35 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
                           style: GoogleFonts.spaceGrotesk(
                               fontSize: 16.sp, color: Colors.white))),
                   DataColumn(
-                      label: Text("Store",
+                      label: Text("Customer",
                           style: GoogleFonts.spaceGrotesk(
                               fontSize: 16.sp, color: Colors.white))),
+                  DataColumn(
+                    label: _buildSortableColumnLabel("Quantity", 4),
+                    onSort: (columnIndex, _) {
+                      _onSort(4);
+                    },
+                  ),
+                  DataColumn(
+                    label: _buildSortableColumnLabel("Subtotal", 5),
+                    onSort: (columnIndex, _) {
+                      _onSort(5);
+                    },
+                  ),
                   DataColumn(
                       label: Text("Status",
                           style: GoogleFonts.spaceGrotesk(
                               fontSize: 16.sp, color: Colors.white))),
                 ],
-                rows: _visibleOrders.map((order) {
+                rows: sortedHistory.map((order) {
                   return DataRow(
                     cells: [
                       DataCell(Text(order.orderId)),
-                      DataCell(
-                          Text("\$${order.orderPrice.toStringAsFixed(2)}")),
+                      DataCell(Text(order.orderPrice)),
                       DataCell(Text(order.orderDate)),
-                      DataCell(Text(order.store)),
+                      DataCell(Text(order.customer)),
+                      DataCell(Text("${order.quantity}")),
+                      DataCell(Text("\$${order.subtotal.toStringAsFixed(2)}")),
                       DataCell(_buildStatusPill(order.status)),
                     ],
                   );
@@ -325,40 +528,62 @@ class _SellingHistoryWidgetState extends State<SellingHistoryWidget> {
               ),
             ),
           ),
-          SizedBox(
-            height: 20.h,
-          ),
-          // Pagination row.
+          SizedBox(height: 20.h),
+          
+          // Pagination row with total items info
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Left arrow.
-              IconButton(
-                icon:
-                    Icon(Icons.arrow_back, size: 20.sp, color: Colors.white70),
-                onPressed: _currentPage > 1
-                    ? () {
-                        setState(() {
-                          _currentPage--;
-                        });
-                      }
-                    : null,
+              // Total items info
+              Text(
+                "Total ${pagination.totalItems} items",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
               ),
-              // Page number buttons.
-              ...List.generate(totalPages, (index) {
-                return _buildPageButton(index + 1);
-              }),
-              // Right arrow.
-              IconButton(
-                icon: Icon(Icons.arrow_forward,
-                    size: 20.sp, color: Colors.white70),
-                onPressed: _currentPage < totalPages
-                    ? () {
-                        setState(() {
-                          _currentPage++;
-                        });
+              
+              // Pagination controls
+              Row(
+                children: [
+                  // Left arrow
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, size: 20.sp, color: Colors.white70),
+                    onPressed: pagination.hasPreviousPage
+                        ? () => _goToPage(_currentPage - 1)
+                        : null,
+                  ),
+                  
+                  // Page number buttons (show max 5 pages)
+                  ...List.generate(
+                    pagination.totalPages > 5 ? 5 : pagination.totalPages,
+                    (index) {
+                      int pageNumber;
+                      if (pagination.totalPages <= 5) {
+                        pageNumber = index + 1;
+                      } else {
+                        // Smart pagination: show current page and surrounding pages
+                        if (_currentPage <= 3) {
+                          pageNumber = index + 1;
+                        } else if (_currentPage >= pagination.totalPages - 2) {
+                          pageNumber = pagination.totalPages - 4 + index;
+                        } else {
+                          pageNumber = _currentPage - 2 + index;
+                        }
                       }
-                    : null,
+                      return _buildPageButton(pageNumber);
+                    },
+                  ),
+                  
+                  // Right arrow
+                  IconButton(
+                    icon: Icon(Icons.arrow_forward, size: 20.sp, color: Colors.white70),
+                    onPressed: pagination.hasNextPage
+                        ? () => _goToPage(_currentPage + 1)
+                        : null,
+                  ),
+                ],
               ),
             ],
           ),
