@@ -2,57 +2,149 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
 
-class Ordersoverview extends StatefulWidget {
-  const Ordersoverview({super.key});
+class OrdersOverviewWidget extends StatefulWidget {
+  final OrdersOverviewResponse ordersData;
+
+  const OrdersOverviewWidget({
+    super.key,
+    required this.ordersData,
+  });
 
   @override
-  State<Ordersoverview> createState() => _OrdersoverviewState();
+  State<OrdersOverviewWidget> createState() => _OrdersOverviewWidgetState();
 }
 
-class _OrdersoverviewState extends State<Ordersoverview> {
-  // The currently selected period. Default = "Monthly"
-  String _selectedPeriod = "Monthly";
+class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
+  String _selectedPeriod = "weekly";
+  OrdersOverviewResponse? _currentData;
+  bool _isLoading = false;
+  String? _error;
 
-  // Example data sets for each period (just placeholders).
-  // Adjust to your real data as needed.
-  final Map<String, List<FlSpot>> _dataMap = {
-    "Monthly": [
-      FlSpot(0, 10),
-      FlSpot(1, 12),
-      FlSpot(2, 8),
-      FlSpot(3, 15),
-      FlSpot(4, 10),
-      FlSpot(5, 18),
-      FlSpot(6, 7),
-    ],
-    "Weekly": [
-      FlSpot(0, 3),
-      FlSpot(1, 6),
-      FlSpot(2, 4),
-      FlSpot(3, 9),
-      FlSpot(4, 7),
-      FlSpot(5, 11),
-      FlSpot(6, 5),
-    ],
-    "Yearly": [
-      FlSpot(0, 18),
-      FlSpot(1, 14),
-      FlSpot(2, 10),
-      FlSpot(3, 16),
-      FlSpot(4, 12),
-      FlSpot(5, 19),
-      FlSpot(6, 15),
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _currentData = widget.ordersData;
+    _selectedPeriod = widget.ordersData.period;
+  }
+
+  Future<void> _fetchDataForPeriod(String period) async {
+    if (period == _selectedPeriod && _currentData != null) return;
+    
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await DashboardService.getOrdersOverview(period: period);
+      setState(() {
+        _currentData = response;
+        _selectedPeriod = period;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Background color similar to your screenshot (#2D3C4E)
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
 
-    // Retrieve the FlSpot data for the currently selected period
-    final List<FlSpot> currentSpots = _dataMap[_selectedPeriod] ?? [];
+    if (_isLoading) {
+      return Container(
+        width: double.infinity,
+        height: 467.h,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: const Color(0xFF00A6FF),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Container(
+        width: double.infinity,
+        height: 467.h,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48.sp,
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Error loading data',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              ElevatedButton(
+                onPressed: () => _fetchDataForPeriod(_selectedPeriod),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00A6FF),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Retry',
+                  style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_currentData == null) {
+      return Container(
+        width: double.infinity,
+        height: 467.h,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Center(
+          child: Text(
+            'No data available',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontSize: 16.sp,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Convert API data to chart points
+    final List<FlSpot> chartSpots = _generateChartSpots(_currentData!.data);
+    final maxY = _calculateMaxY(chartSpots);
 
     return Container(
       width: double.infinity,
@@ -64,30 +156,59 @@ class _OrdersoverviewState extends State<Ordersoverview> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// --- Header Row: Title & "Dropdown" ---
+          /// --- Header Row: Title & Period Selector ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Orders Overview",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 25.sp,
-                  fontWeight: FontWeight.w500,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Orders Overview",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    "\$${_currentData!.summary.current['revenue']?.toStringAsFixed(0) ?? '0'}",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Icon(
+                        _currentData!.summary.changes['revenue'] >= 0 
+                            ? Icons.arrow_upward 
+                            : Icons.arrow_downward,
+                        color: _currentData!.summary.changes['revenue'] >= 0 
+                            ? Colors.green 
+                            : Colors.red,
+                        size: 14.sp,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        "${_currentData!.summary.changes['revenue']?.toStringAsFixed(0) ?? '0'}%",
+                        style: GoogleFonts.spaceGrotesk(
+                          color: _currentData!.summary.changes['revenue'] >= 0 
+                              ? Colors.green 
+                              : Colors.red,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              // Wrap the "Weekly" text & icon in a PopupMenuButton
               PopupMenuButton<String>(
-                // The currently selected period will update here
-                onSelected: (value) {
-                  setState(() {
-                    _selectedPeriod = value;
-                  });
-                },
-                // Gray background for the small appearing container
+                onSelected: _fetchDataForPeriod,
                 color: const Color.fromARGB(255, 36, 50, 69),
-
-                // The button's child is your row with the icon + text
                 child: Row(
                   children: [
                     Icon(
@@ -97,7 +218,7 @@ class _OrdersoverviewState extends State<Ordersoverview> {
                     ),
                     SizedBox(width: 4.w),
                     Text(
-                      _selectedPeriod, // e.g. "Monthly", "Weekly", "Yearly"
+                      _selectedPeriod.capitalize(),
                       style: GoogleFonts.spaceGrotesk(
                         color: Colors.white.withOpacity(0.7),
                         fontSize: 14.sp,
@@ -111,11 +232,10 @@ class _OrdersoverviewState extends State<Ordersoverview> {
                   ],
                 ),
                 itemBuilder: (context) => [
-                  // Popup items: "Monthly", "Weekly", "Yearly"
                   PopupMenuItem(
-                    value: "Monthly",
+                    value: "daily",
                     child: Text(
-                      "Monthly",
+                      "Daily",
                       style: GoogleFonts.spaceGrotesk(
                         color: Colors.white,
                         fontSize: 14.sp,
@@ -123,7 +243,7 @@ class _OrdersoverviewState extends State<Ordersoverview> {
                     ),
                   ),
                   PopupMenuItem(
-                    value: "Weekly",
+                    value: "weekly",
                     child: Text(
                       "Weekly",
                       style: GoogleFonts.spaceGrotesk(
@@ -133,7 +253,17 @@ class _OrdersoverviewState extends State<Ordersoverview> {
                     ),
                   ),
                   PopupMenuItem(
-                    value: "Yearly",
+                    value: "monthly",
+                    child: Text(
+                      "Monthly",
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: "yearly",
                     child: Text(
                       "Yearly",
                       style: GoogleFonts.spaceGrotesk(
@@ -152,52 +282,42 @@ class _OrdersoverviewState extends State<Ordersoverview> {
           /// --- The Line Chart ---
           SizedBox(
             width: double.infinity,
-            height: 377.h,
+            height: 300.h,
             child: LineChart(
               LineChartData(
-                // The range of our chart
                 minX: 0,
-                maxX: 6,
+                maxX: (chartSpots.length - 1).toDouble(),
                 minY: 0,
-                maxY: 20,
+                maxY: maxY,
 
-                /// --- Tooltip (shows "January\n$xxk", or "Week\n$xxk", etc.) ---
+                /// --- Tooltip ---
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
-                      // We'll change the label based on _selectedPeriod
-                      String periodLabel;
-                      switch (_selectedPeriod) {
-                        case "Weekly":
-                          periodLabel = "Week";
-                          break;
-                        case "Yearly":
-                          periodLabel = "Year";
-                          break;
-                        default:
-                          periodLabel = "January";
-                      }
-
                       return touchedSpots.map((spot) {
-                        final value = spot.y.toStringAsFixed(0);
-                        return LineTooltipItem(
-                          "$periodLabel\n\$$value" "k",
-                          GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.sp,
-                          ),
-                        );
-                      }).toList();
+                        final index = spot.x.toInt();
+                        if (index < _currentData!.data.length) {
+                          final dataPoint = _currentData!.data[index];
+                          return LineTooltipItem(
+                            "${dataPoint.label}\n\$${dataPoint.revenue.toStringAsFixed(0)}",
+                            GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.sp,
+                            ),
+                          );
+                        }
+                        return null;
+                      }).where((item) => item != null).cast<LineTooltipItem>().toList();
                     },
                   ),
                 ),
 
-                /// --- Grid lines (horizontal only) ---
+                /// --- Grid lines ---
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  drawHorizontalLine: false,
+                  drawHorizontalLine: true,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: Colors.white.withOpacity(0.1),
@@ -206,84 +326,49 @@ class _OrdersoverviewState extends State<Ordersoverview> {
                   },
                 ),
 
-                /// --- Borders around the chart (disabled) ---
-                borderData: FlBorderData(
-                  show: false,
-                ),
+                borderData: FlBorderData(show: false),
 
                 /// --- Axis Titles & Ticks ---
                 titlesData: FlTitlesData(
-                  topTitles:
-                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles:
-                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
 
-                  // Bottom axis: days of the week
+                  // Bottom axis: labels from API data
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
-                          case 0:
-                            return _buildBottomTitle("SAT");
-                          case 1:
-                            return _buildBottomTitle("SUN");
-                          case 2:
-                            return _buildBottomTitle("MON");
-                          case 3:
-                            return _buildBottomTitle("TUE");
-                          case 4:
-                            return _buildBottomTitle("WED");
-                          case 5:
-                            return _buildBottomTitle("THU");
-                          case 6:
-                            return _buildBottomTitle("FRI");
-                          default:
-                            return Container();
+                        final index = value.toInt();
+                        if (index >= 0 && index < _currentData!.data.length) {
+                          return _buildBottomTitle(_currentData!.data[index].label);
                         }
+                        return Container();
                       },
                     ),
                   ),
 
-                  // Left axis: $0, $5k, $10k, $15k, $20k
+                  // Left axis: revenue values
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 50,
-                      interval: 5,
+                      interval: maxY / 4,
                       getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
-                          case 0:
-                            return _buildLeftTitle("\$0");
-                          case 5:
-                            return _buildLeftTitle("\$5k");
-                          case 10:
-                            return _buildLeftTitle("\$10k");
-                          case 15:
-                            return _buildLeftTitle("\$15k");
-                          case 20:
-                            return _buildLeftTitle("\$20k");
-                          default:
-                            return Container();
-                        }
+                        return _buildLeftTitle("\$${value.toInt()}");
                       },
                     ),
                   ),
                 ),
 
-                /// --- The actual line data (spots) ---
+                /// --- The actual line data ---
                 lineBarsData: [
                   LineChartBarData(
-                    // Use the current data for the selected period
-                    spots: currentSpots,
+                    spots: chartSpots,
                     isCurved: true,
-                    color: const Color(0xFF00A6FF), // Bright blue line
+                    color: const Color(0xFF00A6FF),
                     barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                    ),
-                    // Blue fill under the line
+                    dotData: FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
@@ -305,21 +390,42 @@ class _OrdersoverviewState extends State<Ordersoverview> {
     );
   }
 
-  /// --- Helpers for bottom axis labels (SAT, SUN, etc.) ---
+  List<FlSpot> _generateChartSpots(List<OrderData> data) {
+    if (data.isEmpty) {
+      return [FlSpot(0, 0)];
+    }
+    
+    return data.asMap().entries.map((entry) {
+      final index = entry.key;
+      final orderData = entry.value;
+      return FlSpot(index.toDouble(), orderData.revenue);
+    }).toList();
+  }
+
+  double _calculateMaxY(List<FlSpot> spots) {
+    if (spots.isEmpty) return 100;
+    
+    final maxValue = spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+    // Add 20% padding to the max value
+    return (maxValue * 1.2).ceilToDouble();
+  }
+
   Widget _buildBottomTitle(String text) {
+    // Truncate long labels
+    final displayText = text.length > 3 ? text.substring(0, 3) : text;
+    
     return Padding(
       padding: EdgeInsets.only(top: 8.h),
       child: Text(
-        text,
+        displayText,
         style: GoogleFonts.spaceGrotesk(
           color: Colors.white.withOpacity(0.7),
-          fontSize: 13.sp,
+          fontSize: 11.sp,
         ),
       ),
     );
   }
 
-  /// --- Helpers for left axis labels ($0, $5k, etc.) ---
   Widget _buildLeftTitle(String text) {
     return Padding(
       padding: EdgeInsets.only(right: 8.w),
@@ -327,10 +433,16 @@ class _OrdersoverviewState extends State<Ordersoverview> {
         text,
         style: GoogleFonts.spaceGrotesk(
           color: Colors.white.withOpacity(0.7),
-          fontSize: 13.sp,
+          fontSize: 11.sp,
         ),
         textAlign: TextAlign.left,
       ),
     );
+  }
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }

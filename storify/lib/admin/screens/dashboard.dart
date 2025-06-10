@@ -9,6 +9,8 @@ import 'package:storify/admin/screens/productsScreen.dart';
 import 'package:storify/admin/screens/roleManegment.dart';
 import 'package:storify/GeneralWidgets/longPressDraggable.dart';
 import 'package:storify/admin/screens/track.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/ordersBySuperMarket.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/ordersOverview.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/orderCount.dart';
@@ -16,7 +18,7 @@ import 'package:storify/admin/widgets/dashboardWidgets/profit.dart';
 import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/cards.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/topProductsList.dart';
-import 'package:storify/admin/widgets/dashboardWidgets/topStoresList.dart';
+
 import 'package:storify/utilis/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -30,24 +32,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   String? profilePictureUrl;
 
-  // Our 4 dashboard widgets in a list (initial order).
-  final List<Widget> _dashboardWidgets = [
-    Ordersbysupermarket(
-      alShiniPercent: 50,
-      alSudaniPercent: 10,
-      alNidalPercent: 35,
-      tilalSurdaPercent: 30,
-      totalStores: 4,
-      key: UniqueKey(),
-    ),
-    Ordersoverview(key: UniqueKey()),
-    Ordercount(key: UniqueKey()),
-    Profit(key: UniqueKey()),
-  ];
+  // API Data
+  List<DashboardCard> _dashboardCards = [];
+  TopCustomersResponse? _topCustomersData;
+  OrdersOverviewResponse? _ordersOverviewData;
+  TopProductsResponse? _topProductsData;
+  OrderCountResponse? _orderCountData;
+
+  // Loading states
+  bool _isLoadingCards = true;
+  bool _isLoadingCustomers = true;
+  bool _isLoadingOrdersOverview = true;
+  bool _isLoadingProducts = true;
+  bool _isLoadingOrderCount = true;
+
+  // Error states
+  String? _cardsError;
+  String? _customersError;
+  String? _ordersOverviewError;
+  String? _productsError;
+  String? _orderCountError;
+
   @override
   void initState() {
     super.initState();
     _loadProfilePicture();
+    _fetchDashboardData();
   }
 
   Future<void> _loadProfilePicture() async {
@@ -57,37 +67,296 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Our 4 StatsCards in a list (initial order).
-  final List<Widget> _statsCards = [
-    StatsCard(
-      percentage: "20 %",
-      svgIconPath: "assets/images/totalProducts.svg",
-      title: "Total Products",
-      value: "25,430",
-      key: UniqueKey(),
-    ),
-    StatsCard(
-      percentage: "12 %",
-      svgIconPath: "assets/images/totalPaidOrders.svg",
-      title: "Total paid Orders",
-      value: "16,000",
-      key: UniqueKey(),
-    ),
-    StatsCard(
-      percentage: "15 %",
-      svgIconPath: "assets/images/totalUsers.svg",
-      title: "Total User",
-      value: "18,540k",
-      key: UniqueKey(),
-    ),
-    StatsCard(
-      percentage: "20 %",
-      svgIconPath: "assets/images/totalStores.svg",
-      title: "Total Customers",
-      value: "24,763",
-      key: UniqueKey(),
-    ),
-  ];
+  Future<void> _fetchDashboardData() async {
+    // Fetch all dashboard data in parallel
+    await Future.wait([
+      _fetchDashboardCards(),
+      _fetchTopCustomers(),
+      _fetchOrdersOverview(),
+      _fetchTopProducts(),
+      _fetchOrderCount(),
+    ]);
+  }
+
+  Future<void> _fetchDashboardCards() async {
+    try {
+      final response = await DashboardService.getDashboardCards();
+      setState(() {
+        _dashboardCards = response.cards;
+        _isLoadingCards = false;
+        _cardsError = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingCards = false;
+        _cardsError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _fetchTopCustomers() async {
+    try {
+      final response = await DashboardService.getTopCustomers();
+      setState(() {
+        _topCustomersData = response;
+        _isLoadingCustomers = false;
+        _customersError = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingCustomers = false;
+        _customersError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _fetchOrdersOverview() async {
+    try {
+      final response = await DashboardService.getOrdersOverview();
+      setState(() {
+        _ordersOverviewData = response;
+        _isLoadingOrdersOverview = false;
+        _ordersOverviewError = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingOrdersOverview = false;
+        _ordersOverviewError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _fetchTopProducts() async {
+    try {
+      final response = await DashboardService.getTopProducts();
+      setState(() {
+        _topProductsData = response;
+        _isLoadingProducts = false;
+        _productsError = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingProducts = false;
+        _productsError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _fetchOrderCount() async {
+    try {
+      final response = await DashboardService.getOrderCounts();
+      setState(() {
+        _orderCountData = response;
+        _isLoadingOrderCount = false;
+        _orderCountError = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingOrderCount = false;
+        _orderCountError = e.toString();
+      });
+    }
+  }
+
+  // Build dashboard widgets with real data
+  List<Widget> get _dashboardWidgets {
+    return [
+      _isLoadingCustomers
+          ? _buildLoadingWidget()
+          : _customersError != null
+              ? _buildErrorWidget(_customersError!, _fetchTopCustomers)
+              : OrdersByCustomers(
+                  customersData: _topCustomersData!,
+                  key: UniqueKey(),
+                ),
+      _isLoadingOrdersOverview
+          ? _buildLoadingWidget()
+          : _ordersOverviewError != null
+              ? _buildErrorWidget(_ordersOverviewError!, _fetchOrdersOverview)
+              : OrdersOverviewWidget(
+                  ordersData: _ordersOverviewData!,
+                  key: UniqueKey(),
+                ),
+      _isLoadingOrderCount
+          ? _buildLoadingWidget()
+          : _orderCountError != null
+              ? _buildErrorWidget(_orderCountError!, _fetchOrderCount)
+              : OrderCountWidget(key: UniqueKey()),
+      Profit(key: UniqueKey()),
+    ];
+  }
+
+  // Build stats cards with real data
+  List<Widget> get _statsCards {
+    if (_isLoadingCards) {
+      return List.generate(4, (index) => _buildLoadingCard());
+    }
+
+    if (_cardsError != null) {
+      return [_buildErrorCard()];
+    }
+
+    return _dashboardCards.map((card) {
+      return StatsCard(
+        percentage: card.growth,
+        svgIconPath: _getSvgIconPath(card.title),
+        title: card.title,
+        value: card.value,
+        isPositive: card.isPositive,
+        key: UniqueKey(),
+      );
+    }).toList();
+  }
+
+  String _getSvgIconPath(String title) {
+    switch (title.toLowerCase()) {
+      case 'total products':
+        return "assets/images/totalProducts.svg";
+      case 'total paid orders':
+        return "assets/images/totalPaidOrders.svg";
+      case 'total users':
+        return "assets/images/totalUsers.svg";
+      case 'total customers':
+        return "assets/images/totalStores.svg";
+      default:
+        return "assets/images/totalProducts.svg";
+    }
+  }
+
+  Widget _buildLoadingWidget() {
+    return Container(
+      height: 400.h,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: const Color(0xFF9D67FF),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      height: 150.h,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: const Color(0xFF9D67FF),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String error, VoidCallback onRetry) {
+    return Container(
+      height: 400.h,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 48.sp,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Error loading data',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Text(
+                error,
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontSize: 12.sp,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9D67FF),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(color: Colors.white, fontSize: 14.sp),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return Container(
+      height: 150.h,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 24.sp,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Error loading cards',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 12.sp,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            ElevatedButton(
+              onPressed: _fetchDashboardCards,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9D67FF),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(color: Colors.white, fontSize: 10.sp),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _onNavItemTap(int index) {
     setState(() {
@@ -177,199 +446,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
-          profilePictureUrl:
-              profilePictureUrl, // Pass the profile picture URL here
+          profilePictureUrl: profilePictureUrl,
         ),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// --- Dashboard Title & Filter Button ---
-                Row(
-                  children: [
-                    Text(
-                      "Dashboard",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 35.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color.fromARGB(255, 246, 246, 246),
-                      ),
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () {
-                        NotificationService().debugAdminNotifications();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromARGB(255, 105, 65, 198),
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 16.w, vertical: 8.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'Debug Notifications',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 16.w, vertical: 8.h),
-                        elevation: 1,
-                      ),
-                      onPressed: () {},
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/images/filter.svg',
-                            width: 16.w,
-                            height: 16.h,
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            'Filter',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              color: const Color.fromARGB(255, 105, 123, 123),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 40.h),
-
-                /// --- Draggable Stats Cards (2x1 grid) ---
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Total available width for stats cards
-                    final availableWidth = constraints.maxWidth;
-                    // We display the stats cards in a single row (or adjust columns as needed)
-                    // Here, we use 4 cards in one row.
-                    const numberOfCards = 4;
-                    const spacing = 40.0;
-                    final cardWidth =
-                        (availableWidth - ((numberOfCards - 1) * spacing)) /
-                            numberOfCards;
-
-                    return Wrap(
-                      spacing: spacing,
-                      runSpacing: 20,
-                      children: List.generate(_statsCards.length, (index) {
-                        return _buildDraggableStatsCardItem(index, cardWidth);
-                      }),
-                    );
-                  },
-                ),
-                SizedBox(height: 20.h),
-
-                /// --- Draggable 2x2 Grid of the Dashboard Widgets ---
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final spacing = 20.w;
-                    const columns = 2;
-                    final itemWidth =
-                        (constraints.maxWidth - (columns - 1) * spacing) /
-                            columns;
-
-                    return Wrap(
-                      spacing: spacing,
-                      runSpacing: spacing,
-                      children:
-                          List.generate(_dashboardWidgets.length, (index) {
-                        return _buildDraggableItem(index, itemWidth);
-                      }),
-                    );
-                  },
-                ),
-                SizedBox(height: 20.h),
-                Row(
-                  children: [
-                    Text(
-                      'Top products',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 19.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color.fromARGB(255, 246, 246, 246),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 15.h),
-                ProductsTable(),
-                SizedBox(height: 20.h),
-                Row(
-                  children: [
-                    Text(
-                      'Top Stores',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 19.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color.fromARGB(255, 246, 246, 246),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 830.w,
-                    ),
-                    Text(
-                      'Best Selling Product',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 19.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color.fromARGB(255, 246, 246, 246),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 15.h),
-                Wrap(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SalesTableWidget(),
-                        ),
-                        SizedBox(
-                            width: 20
-                                .w), // Optional spacing between the two widgets
-                        Expanded(
-                          child: SalesTableWidget(),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-
-                SizedBox(height: 40.h),
-
-                // Debug Buttons Section
-                Container(
-                  padding: EdgeInsets.symmetric(vertical: 20.h),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      body: RefreshIndicator(
+        onRefresh: _fetchDashboardData,
+        color: const Color(0xFF9D67FF),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// --- Dashboard Title & Filter Button ---
+                  Row(
                     children: [
+                      Text(
+                        "Dashboard",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 35.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color.fromARGB(255, 246, 246, 246),
+                        ),
+                      ),
+                      const Spacer(),
                       ElevatedButton(
                         onPressed: () {
                           NotificationService().debugAdminNotifications();
@@ -378,7 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           backgroundColor:
                               const Color.fromARGB(255, 105, 65, 198),
                           padding: EdgeInsets.symmetric(
-                              horizontal: 20.w, vertical: 10.h),
+                              horizontal: 16.w, vertical: 8.h),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -391,34 +493,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(width: 10.w),
+                      SizedBox(width: 8.w),
                       ElevatedButton(
-                        onPressed: () {
-                          NotificationService().testDatabaseConnection();
-                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              const Color.fromARGB(255, 46, 123, 231),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 20.w, vertical: 10.h),
+                              const Color.fromARGB(255, 36, 50, 69),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.w, vertical: 8.h),
+                          elevation: 1,
                         ),
-                        child: Text(
-                          'Test Database',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.sp,
-                          ),
+                        onPressed: _fetchDashboardData,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.refresh,
+                              color: const Color.fromARGB(255, 105, 123, 123),
+                              size: 16.sp,
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'Refresh',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color.fromARGB(255, 105, 123, 123),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
+                  SizedBox(height: 40.h),
 
-                SizedBox(height: 101.h),
-              ],
+                  /// --- Draggable Stats Cards ---
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableWidth = constraints.maxWidth;
+                      final numberOfCards = _statsCards.length;
+                      const spacing = 40.0;
+                      final cardWidth =
+                          (availableWidth - ((numberOfCards - 1) * spacing)) /
+                              numberOfCards;
+
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: 20,
+                        children: List.generate(_statsCards.length, (index) {
+                          return _buildDraggableStatsCardItem(index, cardWidth);
+                        }),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 20.h),
+
+                  /// --- Draggable 2x2 Grid of the Dashboard Widgets ---
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final spacing = 20.w;
+                      const columns = 2;
+                      final itemWidth =
+                          (constraints.maxWidth - (columns - 1) * spacing) /
+                              columns;
+
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: spacing,
+                        children:
+                            List.generate(_dashboardWidgets.length, (index) {
+                          return _buildDraggableItem(index, itemWidth);
+                        }),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 20.h),
+                  Row(
+                    children: [
+                      Text(
+                        'Top products',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 19.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color.fromARGB(255, 246, 246, 246),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 15.h),
+                  ProductsTable(),
+
+                  SizedBox(height: 40.h),
+                ],
+              ),
             ),
           ),
         ),
@@ -455,11 +625,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           onWillAccept: (oldIndex) => oldIndex != index,
           onAccept: (oldIndex) {
-            setState(() {
-              final temp = _dashboardWidgets[oldIndex];
-              _dashboardWidgets[oldIndex] = _dashboardWidgets[index];
-              _dashboardWidgets[index] = temp;
-            });
+            // Note: Can't reorder when using dynamic widgets
+            // setState(() {
+            //   final temp = _dashboardWidgets[oldIndex];
+            //   _dashboardWidgets[oldIndex] = _dashboardWidgets[index];
+            //   _dashboardWidgets[index] = temp;
+            // });
           },
         ),
       ),
@@ -495,11 +666,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           onWillAccept: (oldIndex) => oldIndex != index,
           onAccept: (oldIndex) {
-            setState(() {
-              final temp = _statsCards[oldIndex];
-              _statsCards[oldIndex] = _statsCards[index];
-              _statsCards[index] = temp;
-            });
+            // Note: Can't reorder when using dynamic widgets
+            // setState(() {
+            //   final temp = _statsCards[oldIndex];
+            //   _statsCards[oldIndex] = _statsCards[index];
+            //   _statsCards[index] = temp;
+            // });
           },
         ),
       ),

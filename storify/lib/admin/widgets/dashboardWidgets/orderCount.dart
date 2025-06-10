@@ -2,21 +2,154 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
+// Import your models and service
 
-class Ordercount extends StatefulWidget {
-  const Ordercount({super.key});
+class OrderCountWidget extends StatefulWidget {
+  const OrderCountWidget({super.key});
 
   @override
-  State<Ordercount> createState() => _OrdercountState();
+  State<OrderCountWidget> createState() => _OrderCountWidgetState();
 }
 
-class _OrdercountState extends State<Ordercount> {
+class _OrderCountWidgetState extends State<OrderCountWidget> {
+  // API Data
+  OrderCountResponse? _orderCountData;
+  
+  // Loading and error states
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrderCounts();
+  }
+
+  Future<void> _fetchOrderCounts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await DashboardService.getOrderCounts();
+      setState(() {
+        _orderCountData = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Dark background color
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
-    // Purple line color
     final Color lineColor = const Color(0xFF9D67FF);
+
+    if (_isLoading) {
+      return Container(
+        width: double.infinity,
+        height: 467.h,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24.r),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: lineColor,
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Container(
+        width: double.infinity,
+        height: 467.h,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24.r),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48.sp,
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Error loading order counts',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                _error!,
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontSize: 12.sp,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              ElevatedButton(
+                onPressed: _fetchOrderCounts,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: lineColor,
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Retry',
+                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_orderCountData == null) {
+      return Container(
+        width: double.infinity,
+        height: 467.h,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(24.r),
+        ),
+        child: Center(
+          child: Text(
+            'No order count data available',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontSize: 16.sp,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Convert API data to chart spots
+    final List<FlSpot> chartSpots = _convertToChartSpots(_orderCountData!.data);
+    final maxY = _calculateMaxY(chartSpots);
+    final isGrowthPositive = _orderCountData!.growth >= 0;
 
     return Container(
       width: double.infinity,
@@ -28,35 +161,63 @@ class _OrdercountState extends State<Ordercount> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// --- Header Row: "Order Count" & "↑12%" ---
+          /// --- Header Row: "Order Count" & Growth ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Order Count",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 25.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.arrow_upward,
-                    color: Colors.green,
-                    size: 16.sp,
-                  ),
-                  SizedBox(width: 4.w),
                   Text(
-                    "12%",
+                    "Order Count",
                     style: GoogleFonts.spaceGrotesk(
-                      color: Colors.green,
-                      fontSize: 16.sp, // Slightly bigger
-                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    "Total: ${_orderCountData!.total}",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: isGrowthPositive 
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: isGrowthPositive ? Colors.green : Colors.red,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isGrowthPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: isGrowthPositive ? Colors.green : Colors.red,
+                      size: 16.sp,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      "${_orderCountData!.growth.abs()}%",
+                      style: GoogleFonts.spaceGrotesk(
+                        color: isGrowthPositive ? Colors.green : Colors.red,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -66,40 +227,48 @@ class _OrdercountState extends State<Ordercount> {
           /// --- The Line Chart ---
           SizedBox(
             width: double.infinity,
-            height: 377.h,
+            height: 350.h,
             child: LineChart(
               LineChartData(
-                // Y-axis from 0 to 25
                 minY: 0,
-                maxY: 25,
-                // X-axis from 0 to 6 (SAT=0 -> FRI=6)
+                maxY: maxY,
                 minX: 0,
-                maxX: 6,
+                maxX: (chartSpots.length - 1).toDouble(),
 
-                /// --- Tooltip ("value  ↑15%") ---
+                /// --- Tooltip ---
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        final value = spot.y.toStringAsFixed(0);
-                        return LineTooltipItem(
-                          "$value  ↑ 15%",
-                          GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.sp,
-                          ),
-                        );
-                      }).toList();
+                        final index = spot.x.toInt();
+                        if (index < _orderCountData!.data.length) {
+                          final dayData = _orderCountData!.data[index];
+                          return LineTooltipItem(
+                            "${dayData.day}\n${dayData.count} orders",
+                            GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.sp,
+                            ),
+                          );
+                        }
+                        return null;
+                      }).where((item) => item != null).cast<LineTooltipItem>().toList();
                     },
                   ),
                 ),
 
-                /// --- No grid lines or border ---
+                /// --- Grid lines ---
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  drawHorizontalLine: false,
+                  drawHorizontalLine: true,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.white.withOpacity(0.1),
+                      strokeWidth: 1,
+                    );
+                  },
                 ),
                 borderData: FlBorderData(show: false),
 
@@ -117,74 +286,44 @@ class _OrdercountState extends State<Ordercount> {
                       showTitles: true,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
-                          case 0:
-                            return _buildBottomTitle("SAT");
-                          case 1:
-                            return _buildBottomTitle("SUN");
-                          case 2:
-                            return _buildBottomTitle("MON");
-                          case 3:
-                            return _buildBottomTitle("TUE");
-                          case 4:
-                            return _buildBottomTitle("WED");
-                          case 5:
-                            return _buildBottomTitle("THU");
-                          case 6:
-                            return _buildBottomTitle("FRI");
-                          default:
-                            return Container();
+                        final index = value.toInt();
+                        if (index >= 0 && index < _orderCountData!.data.length) {
+                          return _buildBottomTitle(_orderCountData!.data[index].day);
                         }
+                        return Container();
                       },
                     ),
                   ),
-                  // Left axis: 0,5,10,15,20,25
+                  // Left axis: order counts
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
-                      interval: 5,
+                      interval: maxY > 5 ? (maxY / 5).ceilToDouble() : 1,
                       getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
-                          case 0:
-                            return _buildLeftTitle("0");
-                          case 5:
-                            return _buildLeftTitle("5");
-                          case 10:
-                            return _buildLeftTitle("10");
-                          case 15:
-                            return _buildLeftTitle("15");
-                          case 20:
-                            return _buildLeftTitle("20");
-                          case 25:
-                            return _buildLeftTitle("25");
-                          default:
-                            return Container();
-                        }
+                        return _buildLeftTitle(value.toInt().toString());
                       },
                     ),
                   ),
                 ),
 
-                /// --- The purple zig-zag line with dots ---
+                /// --- The line with dots ---
                 lineBarsData: [
                   LineChartBarData(
-                    // Zig-zag pattern
-                    spots: const [
-                      FlSpot(0, 8), // SAT
-                      FlSpot(1, 21), // SUN
-                      FlSpot(2, 15), // MON
-                      FlSpot(3, 10), // TUE
-                      FlSpot(4, 17), // WED
-                      FlSpot(5, 12), // THU
-                      FlSpot(6, 25), // FRI
-                    ],
-                    isCurved: false, // Straight lines for zig-zag
+                    spots: chartSpots,
+                    isCurved: false, // Straight lines for zig-zag effect
                     color: lineColor,
                     barWidth: 3,
-                    // Turn dots on, use white
                     dotData: FlDotData(
-                      show: false,
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Colors.white,
+                          strokeWidth: 2,
+                          strokeColor: lineColor,
+                        );
+                      },
                     ),
                     // Fill under the line
                     belowBarData: BarAreaData(
@@ -208,7 +347,27 @@ class _OrdercountState extends State<Ordercount> {
     );
   }
 
-  /// --- Bottom axis labels (SAT, SUN, etc.) ---
+  List<FlSpot> _convertToChartSpots(List<OrderCountData> data) {
+    if (data.isEmpty) {
+      return [FlSpot(0, 0)];
+    }
+    
+    return data.asMap().entries.map((entry) {
+      final index = entry.key;
+      final orderData = entry.value;
+      return FlSpot(index.toDouble(), orderData.count.toDouble());
+    }).toList();
+  }
+
+  double _calculateMaxY(List<FlSpot> spots) {
+    if (spots.isEmpty) return 5;
+    
+    final maxValue = spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+    // Ensure minimum of 5 for better visual, add 20% padding
+    return (maxValue < 5 ? 5 : maxValue * 1.2).ceilToDouble();
+  }
+
+  /// --- Bottom axis labels (days) ---
   Widget _buildBottomTitle(String text) {
     return Padding(
       padding: EdgeInsets.only(top: 8.h),
@@ -222,7 +381,7 @@ class _OrdercountState extends State<Ordercount> {
     );
   }
 
-  /// --- Left axis labels (0, 5, 10, 15, 20, 25) ---
+  /// --- Left axis labels (counts) ---
   Widget _buildLeftTitle(String text) {
     return Padding(
       padding: EdgeInsets.only(right: 8.w),

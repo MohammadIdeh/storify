@@ -2,34 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pie_chart/pie_chart.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
+// Import your models
 
-class Ordersbysupermarket extends StatelessWidget {
-  // Percentages for each supermarket (0-100)
-  final double alShiniPercent;
-  final double alSudaniPercent;
-  final double alNidalPercent;
-  final double tilalSurdaPercent;
-  // Total stores (shown in the donut center)
-  final int totalStores;
+class OrdersByCustomers extends StatelessWidget {
+  final TopCustomersResponse customersData;
 
-  const Ordersbysupermarket({
+  const OrdersByCustomers({
     super.key,
-    required this.alShiniPercent,
-    required this.alSudaniPercent,
-    required this.alNidalPercent,
-    required this.tilalSurdaPercent,
-    required this.totalStores,
+    required this.customersData,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Colors with ~70% opacity (B2 ~ hex opacity)
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
-    final Color greenColor = const Color(0xB200E074);
-    final Color orangeColor = const Color(0xB2FE8A00);
-    final Color blueColor = const Color(0xB200A6FF);
-    final Color pinkColor = const Color(0xB2FF1474);
-
+    
+    // Generate colors for the pie chart
+    final List<Color> pieColors = _generateColors(customersData.customers.length);
+    
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
@@ -46,7 +36,7 @@ class Ordersbysupermarket extends StatelessWidget {
               children: [
                 // Title
                 Text(
-                  "Orders By Supermarket",
+                  "Orders By Customers",
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 25.sp,
                     fontWeight: FontWeight.bold,
@@ -55,64 +45,113 @@ class Ordersbysupermarket extends StatelessWidget {
                 ),
                 SizedBox(height: 16.h),
 
-                _buildBarSection("Al-Shini", alShiniPercent, greenColor),
-                SizedBox(height: 12.h),
-                _buildBarSection("Al-Sudani", alSudaniPercent, orangeColor),
-                SizedBox(height: 12.h),
-                _buildBarSection("Al-Nidal", alNidalPercent, blueColor),
-                SizedBox(height: 12.h),
-                _buildBarSection("Tilal Surda", tilalSurdaPercent, pinkColor),
+                // Scrollable customer list
+                SizedBox(
+                  height: 300.h, // Fixed height for scrollable area
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (index >= customersData.customers.length) {
+                              return null;
+                            }
+                            
+                            final customer = customersData.customers[index];
+                            final color = pieColors[index % pieColors.length];
+                            
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 12.h),
+                              child: _buildCustomerSection(
+                                customer.name,
+                                customer.orderPercentage,
+                                color,
+                                customer,
+                              ),
+                            );
+                          },
+                          childCount: customersData.customers.length,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
+          SizedBox(width: 20.w),
           _buildDonutChart(
-            alShiniPercent,
-            alSudaniPercent,
-            alNidalPercent,
-            tilalSurdaPercent,
-            totalStores,
-            [greenColor, orangeColor, blueColor, pinkColor],
+            customersData.customers,
+            customersData.summary.totalCustomers,
+            pieColors,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBarSection(String label, double percentage, Color color) {
+  Widget _buildCustomerSection(String customerName, double percentage, Color color, Customer customer) {
     final clampedPercent = percentage.clamp(0, 100);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 10.w,
-                  height: 10.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color,
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    width: 10.w,
+                    height: 10.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                    ),
                   ),
-                ),
-                SizedBox(width: 6.w),
-                Text(
-                  label,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 17.sp,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                  SizedBox(width: 6.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          customerName,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 16.sp,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          "${customer.orderCount} orders • \$${customer.totalSpent.toStringAsFixed(0)}",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            Text(
-              "${percentage.toStringAsFixed(0)}%",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 17.sp,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: _getSegmentColor(customer.segment),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Text(
+                "${percentage.toStringAsFixed(1)}%",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12.sp,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -125,23 +164,20 @@ class Ordersbysupermarket extends StatelessWidget {
               children: [
                 Container(
                   width: availableWidth,
-                  height: 20.h,
+                  height: 8.h,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20.r),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
                 ),
                 Container(
                   width: availableWidth * (clampedPercent / 100.0),
-                  height: 20.h,
+                  height: 8.h,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(5.r),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
                 ),
-                SizedBox(
-                  height: 40,
-                )
               ],
             );
           },
@@ -151,48 +187,117 @@ class Ordersbysupermarket extends StatelessWidget {
   }
 
   Widget _buildDonutChart(
-    double alShini,
-    double alSudani,
-    double alNidal,
-    double tilalSurda,
-    int total,
+    List<Customer> customers,
+    int totalCustomers,
     List<Color> colorList,
   ) {
-    // Data for the pie chart
-    final dataMap = <String, double>{
-      "Al-Shini": alShini,
-      "Al-Sudani": alSudani,
-      "Al-Nidal": alNidal,
-      "Tilal Surda": tilalSurda,
-    };
+    // Prepare data for pie chart (top 6 customers to avoid overcrowding)
+    final topCustomers = customers.take(6).toList();
+    final dataMap = <String, double>{};
+    
+    for (int i = 0; i < topCustomers.length; i++) {
+      final customer = topCustomers[i];
+      dataMap[customer.name] = customer.orderPercentage;
+    }
+    
+    // If there are more customers, group them as "Others"
+    if (customers.length > 6) {
+      final otherPercentage = customers
+          .skip(6)
+          .fold(0.0, (sum, customer) => sum + customer.orderPercentage);
+      if (otherPercentage > 0) {
+        dataMap["Others"] = otherPercentage;
+      }
+    }
 
-    final double chartSize = 0.2.sw;
+    final double chartSize = 0.25.sw;
     return SizedBox(
       width: chartSize,
       height: chartSize,
       child: PieChart(
         dataMap: dataMap,
         chartType: ChartType.ring,
-        baseChartColor: Colors.white.withOpacity(0.2),
+        baseChartColor: Colors.white.withOpacity(0.1),
         colorList: colorList,
-        chartRadius: chartSize * 0.57,
-        ringStrokeWidth: chartSize * 0.12,
-        centerWidget: Text(
-          textAlign: TextAlign.center,
-          "Total stores\n$total",
-          style: GoogleFonts.spaceGrotesk(
-            textStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w600,
+        chartRadius: chartSize * 0.5,
+        ringStrokeWidth: chartSize * 0.1,
+        centerWidget: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Total",
+              style: GoogleFonts.spaceGrotesk(
+                textStyle: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
             ),
-            backgroundColor: Colors.transparent,
-          ),
+            Text(
+              "$totalCustomers",
+              style: GoogleFonts.spaceGrotesk(
+                textStyle: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              "Customers",
+              style: GoogleFonts.spaceGrotesk(
+                textStyle: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
         ),
         legendOptions: const LegendOptions(showLegends: false),
         chartValuesOptions: const ChartValuesOptions(showChartValues: false),
         animationDuration: const Duration(milliseconds: 800),
       ),
     );
+  }
+
+  List<Color> _generateColors(int count) {
+    final baseColors = [
+      const Color(0xB200E074), // Green
+      const Color(0xB2FE8A00), // Orange
+      const Color(0xB200A6FF), // Blue
+      const Color(0xB2FF1474), // Pink
+      const Color(0xB29D67FF), // Purple
+      const Color(0xB2FFD700), // Gold
+      const Color(0xB2FF6B6B), // Red
+      const Color(0xB24ECDC4), // Teal
+      const Color(0xB2A8E6CF), // Mint
+      const Color(0xB2F7DC6F), // Yellow
+    ];
+    
+    final colors = <Color>[];
+    for (int i = 0; i < count; i++) {
+      colors.add(baseColors[i % baseColors.length]);
+    }
+    return colors;
+  }
+
+  Color _getSegmentColor(String segment) {
+    switch (segment.toLowerCase()) {
+      case 'vip active':
+        return const Color(0xFF9D67FF); // Purple
+      case 'regular active':
+        return const Color(0xFF00A6FF); // Blue
+      case 'new':
+        return const Color(0xFF00E074); // Green
+      case 'occasional':
+        return const Color(0xFFFE8A00); // Orange
+      case 'inactive':
+        return const Color(0xFF666666); // Gray
+      default:
+        return const Color(0xFF444444); // Default gray
+    }
   }
 }

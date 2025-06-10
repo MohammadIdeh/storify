@@ -7,6 +7,7 @@ class StatsCard extends StatelessWidget {
   final String title;
   final String value;
   final String percentage;
+  final bool isPositive;
 
   const StatsCard({
     Key? key,
@@ -14,6 +15,7 @@ class StatsCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.percentage,
+    required this.isPositive,
   }) : super(key: key);
 
   @override
@@ -50,6 +52,15 @@ class StatsCard extends StatelessWidget {
               // The stats container originally was 140x140 which is about 44% of the width and 70% of the height.
               final statsContainerWidth = constraints.maxWidth * 0.44;
               final statsContainerHeight = constraints.maxHeight * 0.70;
+
+              // Dynamic colors based on isPositive
+              final percentageColor = isPositive
+                  ? const Color.fromARGB(178, 0, 224, 116) // Green for positive
+                  : const Color.fromARGB(178, 255, 87, 87); // Red for negative
+
+              final arrowIcon = isPositive
+                  ? 'assets/images/arrow_up.svg'
+                  : 'assets/images/arrow_down.svg';
 
               return Row(
                 children: [
@@ -129,9 +140,7 @@ class StatsCard extends StatelessWidget {
                                     color: Colors.transparent,
                                     borderRadius: const BorderRadius.all(
                                         Radius.circular(20)),
-                                    border: Border.all(
-                                        color: const Color.fromARGB(
-                                            178, 0, 224, 116)),
+                                    border: Border.all(color: percentageColor),
                                   ),
                                   child: Row(
                                     children: [
@@ -139,23 +148,26 @@ class StatsCard extends StatelessWidget {
                                         width: statsContainerWidth *
                                             0.043, // ~6/140 of width
                                       ),
-                                      SvgPicture.asset(
-                                        'assets/images/arrow_up.svg',
-                                        width: statsContainerWidth *
-                                            0.143, // ~20/140 of width
-                                        height: statsContainerWidth * 0.143,
+                                      // Use fallback icon if SVG doesn't exist
+                                      _buildArrowIcon(
+                                        arrowIcon,
+                                        statsContainerWidth * 0.143,
+                                        percentageColor,
+                                        isPositive,
                                       ),
                                       SizedBox(
                                         width: statsContainerWidth *
                                             0.029, // ~4/140 of width
                                       ),
-                                      Text(
-                                        percentage,
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: percentageFontSize,
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color.fromARGB(
-                                              178, 0, 224, 116),
+                                      Flexible(
+                                        child: Text(
+                                          percentage,
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: percentageFontSize,
+                                            fontWeight: FontWeight.w500,
+                                            color: percentageColor,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ],
@@ -175,5 +187,25 @@ class StatsCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildArrowIcon(
+      String assetPath, double size, Color color, bool isUp) {
+    // Try to load SVG, fallback to Icon if not available
+    try {
+      return SvgPicture.asset(
+        assetPath,
+        width: size,
+        height: size,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      );
+    } catch (e) {
+      // Fallback to Flutter Icon if SVG is not available
+      return Icon(
+        isUp ? Icons.arrow_upward : Icons.arrow_downward,
+        size: size,
+        color: color,
+      );
+    }
   }
 }
