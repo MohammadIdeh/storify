@@ -138,4 +138,97 @@ class DashboardService {
   static Future<String?> getCurrentAdminToken() async {
     return await AuthService.getTokenForRole('Admin');
   }
+
+  // Add this method to your existing DashboardService class in dashboard_service.dart
+
+  static Future<OrdersChartResponse> getOrdersChart({
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      // Build URL with optional query parameters
+      String url = '$baseUrl/dashboard/orders-chart';
+      List<String> queryParams = [];
+
+      if (startDate != null) {
+        queryParams.add('startDate=$startDate');
+      }
+      if (endDate != null) {
+        queryParams.add('endDate=$endDate');
+      }
+
+      if (queryParams.isNotEmpty) {
+        url += '?' + queryParams.join('&');
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return OrdersChartResponse.fromJson(jsonData);
+      } else if (response.statusCode == 401) {
+        throw Exception(
+            'Unauthorized: Please ensure you are logged in as Admin');
+      } else {
+        throw Exception(
+            'Failed to load orders chart: ${response.statusCode}\nResponse: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching orders chart: $e');
+    }
+  } // Add this method to your DashboardService class in dashboard_service.dart:
+
+  static Future<ProfitChartResponse> getProfitChart({
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      // Build URL with optional query parameters
+      String url = '$baseUrl/dashboard/profit-chart';
+      List<String> queryParams = [];
+
+      if (startDate != null) {
+        queryParams.add('startDate=$startDate');
+      }
+      if (endDate != null) {
+        queryParams.add('endDate=$endDate');
+      }
+
+      if (queryParams.isNotEmpty) {
+        url += '?' + queryParams.join('&');
+      }
+
+      print('🌐 Making profit chart request to: $url'); // Debug log
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      print(
+          '📡 Profit chart response status: ${response.statusCode}'); // Debug log
+      print('📡 Profit chart response body: ${response.body}'); // Debug log
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return ProfitChartResponse.fromJson(jsonData);
+      } else if (response.statusCode == 401) {
+        throw Exception(
+            'Unauthorized: Please ensure you are logged in as Admin');
+      } else {
+        throw Exception(
+            'Failed to load profit chart: ${response.statusCode}\nResponse: ${response.body}');
+      }
+    } catch (e) {
+      print('💥 Exception in getProfitChart: $e'); // Debug log
+      throw Exception('Error fetching profit chart: $e');
+    }
+  }
 }

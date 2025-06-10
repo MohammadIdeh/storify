@@ -2,15 +2,16 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
 
 class OrdersOverviewWidget extends StatefulWidget {
-  final OrdersOverviewResponse ordersData;
+  final OrdersOverviewResponse? ordersData; // Keep for backward compatibility
 
   const OrdersOverviewWidget({
     super.key,
-    required this.ordersData,
+    this.ordersData,
   });
 
   @override
@@ -18,39 +19,85 @@ class OrdersOverviewWidget extends StatefulWidget {
 }
 
 class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
-  String _selectedPeriod = "weekly";
-  OrdersOverviewResponse? _currentData;
+  OrdersChartResponse? _chartData;
   bool _isLoading = false;
   String? _error;
+
+  // Date selection
+  DateTime? _startDate;
+  DateTime? _endDate;
+  final DateFormat _dateFormatter = DateFormat('yyyy-MM-dd');
 
   @override
   void initState() {
     super.initState();
-    _currentData = widget.ordersData;
-    _selectedPeriod = widget.ordersData.period;
+    _fetchOrdersChart();
   }
 
-  Future<void> _fetchDataForPeriod(String period) async {
-    if (period == _selectedPeriod && _currentData != null) return;
-    
+  Future<void> _fetchOrdersChart({String? startDate, String? endDate}) async {
+    print(
+        '🔄 Fetching orders chart with startDate: $startDate, endDate: $endDate');
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final response = await DashboardService.getOrdersOverview(period: period);
+      final response = await DashboardService.getOrdersChart(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      print(
+          '✅ Orders chart data received: ${response.data.length} data points');
+      print('📊 Total revenue: ${response.totalRevenue}');
+      print(
+          '📅 Date range: ${response.dateRange.start} - ${response.dateRange.end}');
+
       setState(() {
-        _currentData = response;
-        _selectedPeriod = period;
+        _chartData = response;
         _isLoading = false;
       });
     } catch (e) {
+      print('❌ Error fetching orders chart: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _selectDateRange() async {
+    final result = await showDialog<Map<String, DateTime>>(
+      context: context,
+      builder: (BuildContext context) {
+        return _DateRangePickerDialog(
+          initialStartDate: _startDate,
+          initialEndDate: _endDate,
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _startDate = result['start'];
+        _endDate = result['end'];
+      });
+
+      await _fetchOrdersChart(
+        startDate: _dateFormatter.format(result['start']!),
+        endDate: _dateFormatter.format(result['end']!),
+      );
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+    _fetchOrdersChart();
   }
 
   @override
@@ -67,8 +114,21 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
           borderRadius: BorderRadius.circular(24),
         ),
         child: Center(
-          child: CircularProgressIndicator(
-            color: const Color(0xFF00A6FF),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: const Color(0xFF00A6FF),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Loading orders chart...',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -94,7 +154,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading data',
+                'Error loading orders chart',
                 style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                   fontSize: 16.sp,
@@ -102,19 +162,77 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                 ),
               ),
               SizedBox(height: 8.h),
-              ElevatedButton(
-                onPressed: () => _fetchDataForPeriod(_selectedPeriod),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A6FF),
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Error Details:',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.red,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      _error!,
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 10.sp,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _fetchOrdersChart(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A6FF),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Retry',
+                      style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                    ),
                   ),
-                ),
-                child: Text(
-                  'Retry',
-                  style: TextStyle(color: Colors.white, fontSize: 12.sp),
-                ),
+                  SizedBox(width: 8.w),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Test the endpoint directly
+                      print('🧪 Testing DashboardService.isAdminLoggedIn()');
+                      DashboardService.isAdminLoggedIn().then((isLoggedIn) {
+                        print('👤 Is admin logged in: $isLoggedIn');
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Debug',
+                      style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -122,7 +240,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
       );
     }
 
-    if (_currentData == null) {
+    if (_chartData == null) {
       return Container(
         width: double.infinity,
         height: 467.h,
@@ -143,8 +261,8 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
     }
 
     // Convert API data to chart points
-    final List<FlSpot> chartSpots = _generateChartSpots(_currentData!.data);
-    final maxY = _calculateMaxY(chartSpots);
+    final List<FlSpot> chartSpots = _generateChartSpots(_chartData!.data);
+    final maxY = _chartData!.maxValue > 0 ? _chartData!.maxValue * 1.2 : 100.0;
 
     return Container(
       width: double.infinity,
@@ -156,7 +274,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// --- Header Row: Title & Period Selector ---
+          /// --- Header Row: Title & Date Selector ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -173,105 +291,74 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    "\$${_currentData!.summary.current['revenue']?.toStringAsFixed(0) ?? '0'}",
+                    "\$${_chartData!.totalRevenue.toStringAsFixed(0)}",
                     style: GoogleFonts.spaceGrotesk(
                       color: Colors.white,
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Row(
-                    children: [
-                      Icon(
-                        _currentData!.summary.changes['revenue'] >= 0 
-                            ? Icons.arrow_upward 
-                            : Icons.arrow_downward,
-                        color: _currentData!.summary.changes['revenue'] >= 0 
-                            ? Colors.green 
-                            : Colors.red,
-                        size: 14.sp,
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        "${_currentData!.summary.changes['revenue']?.toStringAsFixed(0) ?? '0'}%",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: _currentData!.summary.changes['revenue'] >= 0 
-                              ? Colors.green 
-                              : Colors.red,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    "${_chartData!.dateRange.start} - ${_chartData!.dateRange.end}",
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ),
-              PopupMenuButton<String>(
-                onSelected: _fetchDataForPeriod,
-                color: const Color.fromARGB(255, 36, 50, 69),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      color: Colors.white.withOpacity(0.7),
-                      size: 18.sp,
+              Column(
+                children: [
+                  // Date Range Picker Button
+                  ElevatedButton.icon(
+                    onPressed: _selectDateRange,
+                    icon: Icon(
+                      Icons.date_range,
+                      size: 16.sp,
+                      color: Colors.white,
                     ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      _selectedPeriod.capitalize(),
+                    label: Text(
+                      _startDate != null && _endDate != null
+                          ? "Custom Range"
+                          : "Select Dates",
                       style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14.sp,
+                        color: Colors.white,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Icon(
-                      Icons.arrow_drop_down,
-                      color: Colors.white.withOpacity(0.7),
-                      size: 20.sp,
-                    )
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A6FF),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: Size(0, 32.h),
+                    ),
+                  ),
+
+                  // Clear Filter Button (only show if dates are selected)
+                  if (_startDate != null && _endDate != null) ...[
+                    SizedBox(height: 4.h),
+                    TextButton(
+                      onPressed: _clearDateFilter,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 8.w, vertical: 4.h),
+                        minimumSize: Size(0, 24.h),
+                      ),
+                      child: Text(
+                        "Clear Filter",
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
                   ],
-                ),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: "daily",
-                    child: Text(
-                      "Daily",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: "weekly",
-                    child: Text(
-                      "Weekly",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: "monthly",
-                    child: Text(
-                      "Monthly",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: "yearly",
-                    child: Text(
-                      "Yearly",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -294,21 +381,25 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final index = spot.x.toInt();
-                        if (index < _currentData!.data.length) {
-                          final dataPoint = _currentData!.data[index];
-                          return LineTooltipItem(
-                            "${dataPoint.label}\n\$${dataPoint.revenue.toStringAsFixed(0)}",
-                            GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.sp,
-                            ),
-                          );
-                        }
-                        return null;
-                      }).where((item) => item != null).cast<LineTooltipItem>().toList();
+                      return touchedSpots
+                          .map((spot) {
+                            final index = spot.x.toInt();
+                            if (index < _chartData!.data.length) {
+                              final dataPoint = _chartData!.data[index];
+                              return LineTooltipItem(
+                                "${dataPoint.day}\n\$${dataPoint.value.toStringAsFixed(0)}",
+                                GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.sp,
+                                ),
+                              );
+                            }
+                            return null;
+                          })
+                          .where((item) => item != null)
+                          .cast<LineTooltipItem>()
+                          .toList();
                     },
                   ),
                 ),
@@ -330,18 +421,20 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
 
                 /// --- Axis Titles & Ticks ---
                 titlesData: FlTitlesData(
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
 
-                  // Bottom axis: labels from API data
+                  // Bottom axis: days
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
-                        if (index >= 0 && index < _currentData!.data.length) {
-                          return _buildBottomTitle(_currentData!.data[index].label);
+                        if (index >= 0 && index < _chartData!.data.length) {
+                          return _buildBottomTitle(_chartData!.data[index].day);
                         }
                         return Container();
                       },
@@ -355,7 +448,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                       reservedSize: 50,
                       interval: maxY / 4,
                       getTitlesWidget: (value, meta) {
-                        return _buildLeftTitle("\$${value.toInt()}");
+                        return _buildLeftTitle("\$${_formatNumber(value)}");
                       },
                     ),
                   ),
@@ -368,7 +461,17 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                     isCurved: true,
                     color: const Color(0xFF00A6FF),
                     barWidth: 3,
-                    dotData: FlDotData(show: true),
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Colors.white,
+                          strokeWidth: 2,
+                          strokeColor: const Color(0xFF00A6FF),
+                        );
+                      },
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
@@ -390,34 +493,23 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
     );
   }
 
-  List<FlSpot> _generateChartSpots(List<OrderData> data) {
+  List<FlSpot> _generateChartSpots(List<OrdersChartData> data) {
     if (data.isEmpty) {
       return [FlSpot(0, 0)];
     }
-    
+
     return data.asMap().entries.map((entry) {
       final index = entry.key;
       final orderData = entry.value;
-      return FlSpot(index.toDouble(), orderData.revenue);
+      return FlSpot(index.toDouble(), orderData.value);
     }).toList();
   }
 
-  double _calculateMaxY(List<FlSpot> spots) {
-    if (spots.isEmpty) return 100;
-    
-    final maxValue = spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
-    // Add 20% padding to the max value
-    return (maxValue * 1.2).ceilToDouble();
-  }
-
   Widget _buildBottomTitle(String text) {
-    // Truncate long labels
-    final displayText = text.length > 3 ? text.substring(0, 3) : text;
-    
     return Padding(
       padding: EdgeInsets.only(top: 8.h),
       child: Text(
-        displayText,
+        text,
         style: GoogleFonts.spaceGrotesk(
           color: Colors.white.withOpacity(0.7),
           fontSize: 11.sp,
@@ -433,16 +525,420 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
         text,
         style: GoogleFonts.spaceGrotesk(
           color: Colors.white.withOpacity(0.7),
-          fontSize: 11.sp,
+          fontSize: 10.sp,
         ),
         textAlign: TextAlign.left,
       ),
     );
   }
+
+  String _formatNumber(double value) {
+    if (value >= 1000) {
+      return (value / 1000).toStringAsFixed(1) + 'k';
+    }
+    return value.toInt().toString();
+  }
 }
 
-extension StringExtension on String {
-  String capitalize() {
-    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
+// Custom Date Range Picker Dialog
+class _DateRangePickerDialog extends StatefulWidget {
+  final DateTime? initialStartDate;
+  final DateTime? initialEndDate;
+
+  const _DateRangePickerDialog({
+    this.initialStartDate,
+    this.initialEndDate,
+  });
+
+  @override
+  State<_DateRangePickerDialog> createState() => _DateRangePickerDialogState();
+}
+
+class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
+  DateTime? _startDate;
+  DateTime? _endDate;
+  final DateFormat _displayFormatter = DateFormat('MMM dd, yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    _startDate = widget.initialStartDate;
+    _endDate = widget.initialEndDate;
+  }
+
+  Future<void> _selectStartDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate:
+          _startDate ?? DateTime.now().subtract(const Duration(days: 7)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF00A6FF),
+              onPrimary: Colors.white,
+              surface: Color.fromARGB(255, 36, 50, 69),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        // If end date is before start date, adjust it
+        if (_endDate != null && _endDate!.isBefore(picked)) {
+          _endDate = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectEndDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? DateTime.now(),
+      firstDate:
+          _startDate ?? DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF00A6FF),
+              onPrimary: Colors.white,
+              surface: Color.fromARGB(255, 36, 50, 69),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+      });
+    }
+  }
+
+  void _selectPresetRange(String preset) {
+    final now = DateTime.now();
+    DateTime start;
+    DateTime end = now;
+
+    switch (preset) {
+      case 'Today':
+        start = DateTime(now.year, now.month, now.day);
+        break;
+      case 'Yesterday':
+        start = DateTime(now.year, now.month, now.day - 1);
+        end = DateTime(now.year, now.month, now.day - 1);
+        break;
+      case 'Last 7 days':
+        start = now.subtract(const Duration(days: 7));
+        break;
+      case 'Last 30 days':
+        start = now.subtract(const Duration(days: 30));
+        break;
+      case 'This month':
+        start = DateTime(now.year, now.month, 1);
+        break;
+      case 'Last month':
+        start = DateTime(now.year, now.month - 1, 1);
+        end = DateTime(now.year, now.month, 0);
+        break;
+      default:
+        return;
+    }
+
+    setState(() {
+      _startDate = start;
+      _endDate = end;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canApply = _startDate != null && _endDate != null;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 400.w,
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF00A6FF).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Select Date Range',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(
+                    Icons.close,
+                    color: Colors.white70,
+                    size: 20.sp,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 16.h),
+
+            // Quick presets
+            Text(
+              'Quick Select',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white70,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                'Today',
+                'Yesterday',
+                'Last 7 days',
+                'Last 30 days',
+                'This month',
+                'Last month',
+              ].map((preset) {
+                return GestureDetector(
+                  onTap: () => _selectPresetRange(preset),
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A6FF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF00A6FF).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      preset,
+                      style: GoogleFonts.spaceGrotesk(
+                        color: const Color(0xFF00A6FF),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            SizedBox(height: 20.h),
+
+            // Date selectors
+            Row(
+              children: [
+                // Start Date
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Start Date',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      GestureDetector(
+                        onTap: _selectStartDate,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 12.w, vertical: 10.h),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                color: Colors.white70,
+                                size: 16.sp,
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: Text(
+                                  _startDate != null
+                                      ? _displayFormatter.format(_startDate!)
+                                      : 'Select start',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: _startDate != null
+                                        ? Colors.white
+                                        : Colors.white54,
+                                    fontSize: 13.sp,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(width: 12.w),
+
+                // End Date
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'End Date',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      GestureDetector(
+                        onTap: _selectEndDate,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 12.w, vertical: 10.h),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                color: Colors.white70,
+                                size: 16.sp,
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: Text(
+                                  _endDate != null
+                                      ? _displayFormatter.format(_endDate!)
+                                      : 'Select end',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: _endDate != null
+                                        ? Colors.white
+                                        : Colors.white54,
+                                    fontSize: 13.sp,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 24.h),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: canApply
+                        ? () {
+                            Navigator.of(context).pop({
+                              'start': _startDate!,
+                              'end': _endDate!,
+                            });
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canApply
+                          ? const Color(0xFF00A6FF)
+                          : Colors.grey.withOpacity(0.3),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Apply',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

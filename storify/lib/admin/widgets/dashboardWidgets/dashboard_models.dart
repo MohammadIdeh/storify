@@ -357,3 +357,96 @@ class OrderCountResponse {
     );
   }
 }
+// Add these new models to your existing dashboard_models.dart file
+
+class OrdersChartData {
+  final String day;
+  final double value;
+
+  OrdersChartData({
+    required this.day,
+    required this.value,
+  });
+
+  factory OrdersChartData.fromJson(Map<String, dynamic> json) {
+    return OrdersChartData(
+      day: json['day'] ?? '',
+      value: (json['value'] ?? 0).toDouble(),
+    );
+  }
+}
+
+class DateRange {
+  final String start;
+  final String end;
+
+  DateRange({
+    required this.start,
+    required this.end,
+  });
+
+  factory DateRange.fromJson(Map<String, dynamic> json) {
+    return DateRange(
+      start: json['start'] ?? '',
+      end: json['end'] ?? '',
+    );
+  }
+}
+
+class OrdersChartResponse {
+  final List<OrdersChartData> data;
+  final double totalRevenue;
+  final double maxValue;
+  final DateRange dateRange;
+
+  OrdersChartResponse({
+    required this.data,
+    required this.totalRevenue,
+    required this.maxValue,
+    required this.dateRange,
+  });
+
+  factory OrdersChartResponse.fromJson(Map<String, dynamic> json) {
+    return OrdersChartResponse(
+      data: (json['data'] as List<dynamic>?)
+              ?.map((dataJson) => OrdersChartData.fromJson(dataJson))
+              .toList() ??
+          [],
+      totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
+      maxValue: (json['maxValue'] ?? 0).toDouble(),
+      dateRange: DateRange.fromJson(json['dateRange'] ?? {}),
+    );
+  }
+}
+// Add these new models to the END of your existing dashboard_models.dart file:
+
+class ProfitChartResponse {
+  final double profit;
+  final int growth;
+  final List<double> data;
+  final DateRange dateRange;
+
+  ProfitChartResponse({
+    required this.profit,
+    required this.growth,
+    required this.data,
+    required this.dateRange,
+  });
+
+  factory ProfitChartResponse.fromJson(Map<String, dynamic> json) {
+    // Handle the data list conversion with explicit type casting
+    List<double> dataList = <double>[];
+    if (json['data'] != null && json['data'] is List) {
+      dataList = (json['data'] as List)
+          .map<double>((value) => (value ?? 0).toDouble())
+          .toList();
+    }
+
+    return ProfitChartResponse(
+      profit: (json['profit'] ?? 0).toDouble(),
+      growth: json['growth'] ?? 0,
+      data: dataList,
+      dateRange: DateRange.fromJson(json['dateRange'] ?? {}),
+    );
+  }
+}
