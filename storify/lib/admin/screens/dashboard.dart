@@ -83,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     StatsCard(
       percentage: "20 %",
       svgIconPath: "assets/images/totalStores.svg",
-      title: "24,763",
+      title: "Total Customers",
       value: "24,763",
       key: UniqueKey(),
     ),
