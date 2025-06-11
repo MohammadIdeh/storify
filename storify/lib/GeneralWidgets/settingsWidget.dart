@@ -8,6 +8,8 @@ import 'package:storify/customer/widgets/mapPopUp.dart';
 import 'package:storify/GeneralWidgets/snackBar.dart';
 import 'package:storify/services/user_profile_service.dart';
 import 'dart:typed_data';
+// Import for web file picking
+import 'dart:html' as html;
 
 class SettingsWidget extends StatefulWidget {
   final VoidCallback onClose;
@@ -36,9 +38,11 @@ class _SettingsWidgetState extends State<SettingsWidget>
   final TextEditingController _phoneController = TextEditingController();
 
   // Password form controllers
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   // Profile data
   String? _currentProfilePicture;
@@ -86,7 +90,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
     try {
       // First try to get fresh data from API
       final profileData = await UserProfileService.getUserProfile();
-      
+
       if (profileData != null) {
         _updateFormControllers(profileData);
       } else {
@@ -98,7 +102,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
       print('Error loading profile data: $e');
       // Show error message
       if (mounted) {
-        showCustomSnackBar(context, 'Failed to load profile data', 'assets/images/error.svg');
+        showCustomSnackBar(
+            context, 'Failed to load profile data', 'assets/images/error.svg');
       }
     } finally {
       setState(() {
@@ -135,7 +140,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
     }
 
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      showCustomSnackBar(context, 'New passwords do not match', 'assets/images/error.svg');
+      showCustomSnackBar(
+          context, 'New passwords do not match', 'assets/images/error.svg');
       return;
     }
 
@@ -155,13 +161,18 @@ class _SettingsWidgetState extends State<SettingsWidget>
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
-        
-        showCustomSnackBar(context, 'Password changed successfully', 'assets/images/success.svg');
+
+        showCustomSnackBar(context, 'Password changed successfully',
+            'assets/images/success.svg');
       } else {
-        showCustomSnackBar(context, result['message'] ?? 'Failed to change password', 'assets/images/error.svg');
+        showCustomSnackBar(
+            context,
+            result['message'] ?? 'Failed to change password',
+            'assets/images/error.svg');
       }
     } catch (e) {
-      showCustomSnackBar(context, 'Error changing password: $e', 'assets/images/error.svg');
+      showCustomSnackBar(
+          context, 'Error changing password: $e', 'assets/images/error.svg');
     } finally {
       setState(() {
         _isChangingPassword = false;
@@ -186,14 +197,19 @@ class _SettingsWidgetState extends State<SettingsWidget>
       );
 
       if (result['success']) {
-        showCustomSnackBar(context, 'Profile updated successfully', 'assets/images/success.svg');
+        showCustomSnackBar(context, 'Profile updated successfully',
+            'assets/images/success.svg');
         // Refresh the form data after successful update
         await _loadProfileData();
       } else {
-        showCustomSnackBar(context, result['message'] ?? 'Failed to update profile', 'assets/images/error.svg');
+        showCustomSnackBar(
+            context,
+            result['message'] ?? 'Failed to update profile',
+            'assets/images/error.svg');
       }
     } catch (e) {
-      showCustomSnackBar(context, 'Error updating profile: $e', 'assets/images/error.svg');
+      showCustomSnackBar(
+          context, 'Error updating profile: $e', 'assets/images/error.svg');
     } finally {
       setState(() {
         _isSavingProfile = false;
@@ -201,39 +217,57 @@ class _SettingsWidgetState extends State<SettingsWidget>
     }
   }
 
-  // Handle image file selection
+  // Handle image file selection for Flutter Web
   Future<void> _handleImageSelection() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-        withData: true,
-      );
+      // Create file input element for web
+      final html.FileUploadInputElement fileInput =
+          html.FileUploadInputElement();
+      fileInput.accept = 'image/*';
+      fileInput.click();
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        
+      await fileInput.onChange.first;
+
+      if (fileInput.files!.isNotEmpty) {
+        final file = fileInput.files!.first;
+
         // Validate file type
         if (!UserProfileService.isValidImageFile(file.name)) {
-          showCustomSnackBar(context, 'Please select a valid image file (JPG, PNG, GIF, WebP)', 'assets/images/error.svg');
+          showCustomSnackBar(
+              context,
+              'Please select a valid image file (JPG, PNG, GIF, WebP)',
+              'assets/images/error.svg');
           return;
         }
 
+        // Read file as bytes
+        final reader = html.FileReader();
+        reader.readAsArrayBuffer(file);
+
+        await reader.onLoad.first;
+
+        final Uint8List bytes = Uint8List.fromList(reader.result as List<int>);
+
         // Validate file size (5MB max)
-        if (!UserProfileService.isValidImageSize(file.bytes!, maxSizeInMB: 5)) {
-          showCustomSnackBar(context, 'Image size must be less than 5MB', 'assets/images/error.svg');
+        if (!UserProfileService.isValidImageSize(bytes, maxSizeInMB: 5)) {
+          showCustomSnackBar(context, 'Image size must be less than 5MB',
+              'assets/images/error.svg');
           return;
         }
 
         setState(() {
-          _selectedImageBytes = file.bytes;
+          _selectedImageBytes = bytes;
           _selectedImageName = file.name;
         });
 
-        showCustomSnackBar(context, 'Image selected. Click "Upload Photo" to save', 'assets/images/info.svg');
+        showCustomSnackBar(
+            context,
+            'Image selected. Click "Upload Photo" to save',
+            'assets/images/info.svg');
       }
     } catch (e) {
-      showCustomSnackBar(context, 'Error selecting image: $e', 'assets/images/error.svg');
+      showCustomSnackBar(
+          context, 'Error selecting image: $e', 'assets/images/error.svg');
     }
   }
 
@@ -259,16 +293,21 @@ class _SettingsWidgetState extends State<SettingsWidget>
           _selectedImageBytes = null;
           _selectedImageName = null;
         });
-        
-        showCustomSnackBar(context, 'Profile picture updated successfully', 'assets/images/success.svg');
-        
+
+        showCustomSnackBar(context, 'Profile picture updated successfully',
+            'assets/images/success.svg');
+
         // Refresh profile data to get the new image URL
         await _loadProfileData();
       } else {
-        showCustomSnackBar(context, result['message'] ?? 'Failed to upload image', 'assets/images/error.svg');
+        showCustomSnackBar(
+            context,
+            result['message'] ?? 'Failed to upload image',
+            'assets/images/error.svg');
       }
     } catch (e) {
-      showCustomSnackBar(context, 'Error uploading image: $e', 'assets/images/error.svg');
+      showCustomSnackBar(
+          context, 'Error uploading image: $e', 'assets/images/error.svg');
     } finally {
       setState(() {
         _isUploadingImage = false;
@@ -338,16 +377,21 @@ class _SettingsWidgetState extends State<SettingsWidget>
             _selectedImageBytes = null;
             _selectedImageName = null;
           });
-          
-          showCustomSnackBar(context, 'Profile picture removed successfully', 'assets/images/success.svg');
-          
+
+          showCustomSnackBar(context, 'Profile picture removed successfully',
+              'assets/images/success.svg');
+
           // Refresh profile data
           await _loadProfileData();
         } else {
-          showCustomSnackBar(context, result['message'] ?? 'Failed to remove image', 'assets/images/error.svg');
+          showCustomSnackBar(
+              context,
+              result['message'] ?? 'Failed to remove image',
+              'assets/images/error.svg');
         }
       } catch (e) {
-        showCustomSnackBar(context, 'Error removing image: $e', 'assets/images/error.svg');
+        showCustomSnackBar(
+            context, 'Error removing image: $e', 'assets/images/error.svg');
       } finally {
         setState(() {
           _isUploadingImage = false;
@@ -565,12 +609,14 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                   _selectedImageBytes!,
                                   fit: BoxFit.cover,
                                 )
-                              : _currentProfilePicture != null && _currentProfilePicture!.isNotEmpty
+                              : _currentProfilePicture != null &&
+                                      _currentProfilePicture!.isNotEmpty
                                   ? CachedNetworkImage(
                                       imageUrl: _currentProfilePicture!,
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) => Container(
-                                        color: const Color(0xFF7B5CFA).withOpacity(0.2),
+                                        color: const Color(0xFF7B5CFA)
+                                            .withOpacity(0.2),
                                         child: Center(
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
@@ -579,9 +625,11 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                         ),
                                       ),
                                       errorWidget: (context, url, error) {
-                                        print('Error loading profile image: $error');
+                                        print(
+                                            'Error loading profile image: $error');
                                         return Container(
-                                          color: const Color(0xFF7B5CFA).withOpacity(0.2),
+                                          color: const Color(0xFF7B5CFA)
+                                              .withOpacity(0.2),
                                           child: Center(
                                             child: Icon(
                                               Icons.person,
@@ -593,7 +641,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                       },
                                     )
                                   : Container(
-                                      color: const Color(0xFF7B5CFA).withOpacity(0.2),
+                                      color: const Color(0xFF7B5CFA)
+                                          .withOpacity(0.2),
                                       child: Center(
                                         child: Icon(
                                           Icons.person,
@@ -621,16 +670,16 @@ class _SettingsWidgetState extends State<SettingsWidget>
                             Text(
                               _selectedImageBytes != null
                                   ? "New image selected: $_selectedImageName"
-                                  : _nameController.text.isNotEmpty 
+                                  : _nameController.text.isNotEmpty
                                       ? "Picture for ${_nameController.text}"
                                       : "Upload a new profile picture or avatar",
                               style: GoogleFonts.spaceGrotesk(
-                                color: _selectedImageBytes != null 
+                                color: _selectedImageBytes != null
                                     ? const Color(0xFF7B5CFA)
                                     : Colors.grey[400],
                                 fontSize: 14.sp,
-                                fontWeight: _selectedImageBytes != null 
-                                    ? FontWeight.w600 
+                                fontWeight: _selectedImageBytes != null
+                                    ? FontWeight.w600
                                     : FontWeight.normal,
                               ),
                             ),
@@ -638,13 +687,15 @@ class _SettingsWidgetState extends State<SettingsWidget>
                             Row(
                               children: [
                                 ElevatedButton(
-                                  onPressed: _isUploadingImage ? null : () async {
-                                    if (_selectedImageBytes != null) {
-                                      await _handleImageUpload();
-                                    } else {
-                                      await _handleImageSelection();
-                                    }
-                                  },
+                                  onPressed: _isUploadingImage
+                                      ? null
+                                      : () async {
+                                          if (_selectedImageBytes != null) {
+                                            await _handleImageUpload();
+                                          } else {
+                                            await _handleImageSelection();
+                                          }
+                                        },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF7B5CFA),
                                     foregroundColor: Colors.white,
@@ -666,7 +717,9 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                           ),
                                         )
                                       : Text(
-                                          _selectedImageBytes != null ? "Upload Photo" : "Select Photo",
+                                          _selectedImageBytes != null
+                                              ? "Upload Photo"
+                                              : "Select Photo",
                                           style: GoogleFonts.spaceGrotesk(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -675,12 +728,14 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                 SizedBox(width: 12.w),
                                 if (_selectedImageBytes != null) ...[
                                   TextButton(
-                                    onPressed: _isUploadingImage ? null : () {
-                                      setState(() {
-                                        _selectedImageBytes = null;
-                                        _selectedImageName = null;
-                                      });
-                                    },
+                                    onPressed: _isUploadingImage
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _selectedImageBytes = null;
+                                              _selectedImageName = null;
+                                            });
+                                          },
                                     child: Text(
                                       "Cancel",
                                       style: GoogleFonts.spaceGrotesk(
@@ -688,9 +743,12 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                       ),
                                     ),
                                   ),
-                                ] else if (_currentProfilePicture != null && _currentProfilePicture!.isNotEmpty) ...[
+                                ] else if (_currentProfilePicture != null &&
+                                    _currentProfilePicture!.isNotEmpty) ...[
                                   TextButton(
-                                    onPressed: _isUploadingImage ? null : _handleImageRemoval,
+                                    onPressed: _isUploadingImage
+                                        ? null
+                                        : _handleImageRemoval,
                                     child: Text(
                                       "Remove",
                                       style: GoogleFonts.spaceGrotesk(
@@ -728,8 +786,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   onPressed: _isLoadingProfile ? null : _loadProfileData,
                   icon: Icon(
                     Icons.refresh,
-                    color: _isLoadingProfile 
-                        ? Colors.grey[600] 
+                    color: _isLoadingProfile
+                        ? Colors.grey[600]
                         : const Color(0xFF7B5CFA),
                     size: 20.sp,
                   ),
@@ -740,40 +798,50 @@ class _SettingsWidgetState extends State<SettingsWidget>
             SizedBox(height: 16.h),
 
             // Form fields
-            _buildSettingsTextField("Full Name", _nameController, validator: (value) {
+            _buildSettingsTextField("Full Name", _nameController,
+                validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Name is required';
               }
               return null;
             }),
             SizedBox(height: 16.h),
-            _buildSettingsTextField("Email", _emailController, validator: (value) {
+            _buildSettingsTextField("Email", _emailController,
+                validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                  .hasMatch(value)) {
                 return 'Enter a valid email';
               }
               return null;
             }),
             SizedBox(height: 16.h),
-            _buildSettingsTextField("Phone Number", _phoneController, validator: (value) {
+            _buildSettingsTextField("Phone Number", _phoneController,
+                keyboardType: TextInputType.number, validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Phone number is required';
+              }
+              // Check if it contains only numbers, spaces, hyphens, and parentheses
+              if (!RegExp(r'^[0-9\s\-\(\)]+$').hasMatch(value)) {
+                return 'Phone number must contain only numbers';
               }
               return null;
             }),
             SizedBox(height: 16.h),
-            
+
             // Readonly fields for user info
             Row(
               children: [
                 Expanded(
-                  child: _buildReadOnlyField("User ID", _currentUserId ?? 'N/A'),
+                  child:
+                      _buildReadOnlyField("User ID", _currentUserId ?? 'N/A'),
                 ),
                 SizedBox(width: 16.w),
                 Expanded(
-                  child: _buildReadOnlyField("Role", _formatRoleName(userRole) ?? 'N/A'),
+                  child: _buildReadOnlyField(
+                      "Role", _formatRoleName(userRole) ?? 'N/A'),
                 ),
               ],
             ),
@@ -797,7 +865,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   SizedBox(height: 16.h),
 
                   _buildPasswordTextField(
-                    "Current Password", 
+                    "Current Password",
                     _currentPasswordController,
                     _showCurrentPassword,
                     (value) => setState(() => _showCurrentPassword = value),
@@ -810,7 +878,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   ),
                   SizedBox(height: 16.h),
                   _buildPasswordTextField(
-                    "New Password", 
+                    "New Password",
                     _newPasswordController,
                     _showNewPassword,
                     (value) => setState(() => _showNewPassword = value),
@@ -826,7 +894,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   ),
                   SizedBox(height: 16.h),
                   _buildPasswordTextField(
-                    "Confirm New Password", 
+                    "Confirm New Password",
                     _confirmPasswordController,
                     _showConfirmPassword,
                     (value) => setState(() => _showConfirmPassword = value),
@@ -846,7 +914,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   // Change Password Button
                   Center(
                     child: ElevatedButton(
-                      onPressed: _isChangingPassword ? null : _handlePasswordChange,
+                      onPressed:
+                          _isChangingPassword ? null : _handlePasswordChange,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7B5CFA),
                         foregroundColor: Colors.white,
@@ -1004,7 +1073,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
   }
 
   // Helper method to build text fields with validation
-  Widget _buildSettingsTextField(String label, TextEditingController controller, {String? Function(String?)? validator}) {
+  Widget _buildSettingsTextField(String label, TextEditingController controller,
+      {String? Function(String?)? validator, TextInputType? keyboardType}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1019,6 +1089,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
         TextFormField(
           controller: controller,
           validator: validator,
+          keyboardType: keyboardType,
           style: GoogleFonts.spaceGrotesk(
             color: Colors.white,
           ),
@@ -1071,13 +1142,18 @@ class _SettingsWidgetState extends State<SettingsWidget>
   }
 
   // Helper method to build password fields
-  Widget _buildPasswordTextField(
-    String label, 
-    TextEditingController controller,
-    bool isVisible,
-    Function(bool) onVisibilityChanged,
-    {String? Function(String?)? validator}
-  ) {
+  Widget _buildPasswordTextField(String label, TextEditingController controller,
+      bool isVisible, Function(bool) onVisibilityChanged,
+      {String? Function(String?)? validator}) {
+    // Determine autofill hints based on the field type
+    List<String> autofillHints = [];
+    if (label.toLowerCase().contains('current')) {
+      autofillHints = [AutofillHints.password];
+    } else if (label.toLowerCase().contains('new') ||
+        label.toLowerCase().contains('confirm')) {
+      autofillHints = [AutofillHints.newPassword];
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1093,6 +1169,12 @@ class _SettingsWidgetState extends State<SettingsWidget>
           controller: controller,
           obscureText: !isVisible,
           validator: validator,
+          autocorrect: false,
+          enableSuggestions: false,
+          autofillHints: autofillHints,
+          textInputAction: label.toLowerCase().contains('confirm')
+              ? TextInputAction.done
+              : TextInputAction.next,
           style: GoogleFonts.spaceGrotesk(
             color: Colors.white,
           ),
@@ -1193,7 +1275,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
   // Helper method to format role names for display
   String? _formatRoleName(String? role) {
     if (role == null) return null;
-    
+
     switch (role) {
       case 'DeliveryEmployee':
         return 'Delivery Employee';

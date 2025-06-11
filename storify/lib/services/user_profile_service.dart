@@ -100,12 +100,11 @@ class UserProfileService {
     }
   }
 
-  // Update profile using PUT endpoint (including profile picture)
+  // Update profile without image (using JSON)
   static Future<Map<String, dynamic>> updateProfile({
     String? name,
     String? email,
     String? phoneNumber,
-    String? profilePictureBase64,
   }) async {
     try {
       final headers = await AuthService.getAuthHeaders();
@@ -114,8 +113,6 @@ class UserProfileService {
       if (name != null) body['name'] = name;
       if (email != null) body['email'] = email;
       if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
-      if (profilePictureBase64 != null)
-        body['profilePicture'] = profilePictureBase64;
 
       print('Update Profile Request Body: ${json.encode(body)}');
 
@@ -152,28 +149,41 @@ class UserProfileService {
     }
   }
 
-  // Upload profile picture
+  // Upload profile picture using multipart form data
   static Future<Map<String, dynamic>> uploadProfilePicture(
       Uint8List imageBytes, String fileName) async {
     try {
       final headers = await AuthService.getAuthHeaders();
 
-      // Convert image to base64
-      final base64Image =
-          'data:image/${_getImageType(fileName)};base64,${base64Encode(imageBytes)}';
+      // Remove Content-Type from headers since it will be set automatically for multipart
+      final multipartHeaders = Map<String, String>.from(headers);
+      multipartHeaders.remove('Content-Type');
 
-      final body = json.encode({
-        'profilePicture': base64Image,
-      });
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/user/profile'),
+      );
+
+      // Add headers (except Content-Type)
+      request.headers.addAll(multipartHeaders);
+
+      // Add the image file
+      var multipartFile = http.MultipartFile.fromBytes(
+        'profilePicture', // This should match your API's expected field name
+        imageBytes,
+        filename: fileName,
+      );
+
+      request.files.add(multipartFile);
 
       print(
           'Upload Profile Picture Request - File: $fileName, Size: ${imageBytes.length} bytes');
+      print('Request headers: ${request.headers}');
 
-      final response = await http.put(
-        Uri.parse('$baseUrl/user/profile'),
-        headers: headers,
-        body: body,
-      );
+      // Send the request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
       print(
           'Upload Profile Picture API Response Status: ${response.statusCode}');
@@ -203,22 +213,29 @@ class UserProfileService {
     }
   }
 
-  // Remove profile picture
+  // Remove profile picture by sending empty value
   static Future<Map<String, dynamic>> removeProfilePicture() async {
     try {
       final headers = await AuthService.getAuthHeaders();
 
-      final body = json.encode({
-        'profilePicture': '', // Send empty string to remove
-      });
+      // Create multipart request for consistency
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/user/profile'),
+      );
+
+      // Remove Content-Type from headers
+      final multipartHeaders = Map<String, String>.from(headers);
+      multipartHeaders.remove('Content-Type');
+      request.headers.addAll(multipartHeaders);
+
+      // Add empty field to remove the profile picture
+      request.fields['profilePicture'] = '';
 
       print('Remove Profile Picture Request');
 
-      final response = await http.put(
-        Uri.parse('$baseUrl/user/profile'),
-        headers: headers,
-        body: body,
-      );
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
       print(
           'Remove Profile Picture API Response Status: ${response.statusCode}');
@@ -249,21 +266,78 @@ class UserProfileService {
     }
   }
 
-  // Helper method to get image type from file name
-  static String _getImageType(String fileName) {
-    final extension = fileName.toLowerCase().split('.').last;
-    switch (extension) {
-      case 'jpg':
-      case 'jpeg':
-        return 'jpeg';
-      case 'png':
-        return 'png';
-      case 'gif':
-        return 'gif';
-      case 'webp':
-        return 'webp';
-      default:
-        return 'jpeg'; // Default to jpeg
+  // Update profile with image using multipart form data
+  static Future<Map<String, dynamic>> updateProfileWithImage({
+    String? name,
+    String? email,
+    String? phoneNumber,
+    Uint8List? imageBytes,
+    String? fileName,
+  }) async {
+    try {
+      final headers = await AuthService.getAuthHeaders();
+
+      // Remove Content-Type from headers since it will be set automatically for multipart
+      final multipartHeaders = Map<String, String>.from(headers);
+      multipartHeaders.remove('Content-Type');
+
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/user/profile'),
+      );
+
+      // Add headers (except Content-Type)
+      request.headers.addAll(multipartHeaders);
+
+      // Add text fields
+      if (name != null) request.fields['name'] = name;
+      if (email != null) request.fields['email'] = email;
+      if (phoneNumber != null) request.fields['phoneNumber'] = phoneNumber;
+
+      // Add the image file if provided
+      if (imageBytes != null && fileName != null) {
+        var multipartFile = http.MultipartFile.fromBytes(
+          'profilePicture',
+          imageBytes,
+          filename: fileName,
+        );
+        request.files.add(multipartFile);
+      }
+
+      print('Update Profile with Image Request');
+      print('Fields: ${request.fields}');
+      print('Files: ${request.files.map((f) => f.filename).toList()}');
+
+      // Send the request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      print(
+          'Update Profile with Image API Response Status: ${response.statusCode}');
+      print('Update Profile with Image API Response Body: ${response.body}');
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['user'] != null) {
+        // Update local storage with the updated profile data
+        await _storeProfileDataLocally(responseData['user']);
+      }
+
+      return {
+        'success': response.statusCode == 200,
+        'statusCode': response.statusCode,
+        'message': responseData['message'] ?? 'Unknown error occurred',
+        'data': responseData,
+      };
+    } catch (e) {
+      print('Error updating profile with image: $e');
+      return {
+        'success': false,
+        'statusCode': 0,
+        'message': 'Network error occurred: $e',
+        'data': null,
+      };
     }
   }
 
@@ -300,5 +374,23 @@ class UserProfileService {
   static Future<bool> refreshProfile() async {
     final profileData = await getUserProfile();
     return profileData != null;
+  }
+
+  // Helper method to get MIME type from file extension
+  static String _getMimeType(String fileName) {
+    final extension = fileName.toLowerCase().split('.').last;
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Default to jpeg
+    }
   }
 }
