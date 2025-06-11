@@ -93,10 +93,17 @@ class _HomeScreenState extends State<HomeScreen>
       // Set token for services
       if (authService.token != null) {
         orderService.updateToken(authService.token);
+
+        // IMPORTANT: Update location service token to start periodic updates
         locationService.updateToken(authService.token);
 
         // Initialize location in background
         locationService.getCurrentLocation();
+
+        print("✅ Services initialized with token");
+        print("🌍 Location updates will start automatically every 10 seconds");
+      } else {
+        print("❌ No token available for service initialization");
       }
     } catch (e) {
       debugPrint('Error initializing services: $e');
@@ -263,6 +270,58 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // Build location status indicator
+  Widget _buildLocationStatusIndicator() {
+    return Consumer<LocationService>(
+      builder: (context, locationService, child) {
+        if (!locationService.isPeriodicUpdatesActive) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF4CAF50).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF4CAF50).withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withOpacity(0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'LIVE',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 10,
+                  color: const Color(0xFF4CAF50),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -313,6 +372,9 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         actions: [
+          // Location status indicator
+          _buildLocationStatusIndicator(),
+
           // Refresh button
           IconButton(
             icon: Container(
@@ -404,6 +466,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showDebugMenu() {
+    final locationService =
+        Provider.of<LocationService>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF304050),
@@ -433,6 +498,99 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
             const SizedBox(height: 20),
+
+            // Location status card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: locationService.isPeriodicUpdatesActive
+                    ? const Color(0xFF4CAF50).withOpacity(0.1)
+                    : Colors.redAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: locationService.isPeriodicUpdatesActive
+                      ? const Color(0xFF4CAF50).withOpacity(0.3)
+                      : Colors.redAccent.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        locationService.isPeriodicUpdatesActive
+                            ? Icons.location_on
+                            : Icons.location_off,
+                        color: locationService.isPeriodicUpdatesActive
+                            ? const Color(0xFF4CAF50)
+                            : Colors.redAccent,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Location Updates',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    locationService.isPeriodicUpdatesActive
+                        ? '✅ Active - Sending location every 10 seconds'
+                        : '❌ Inactive - No location updates',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (locationService.currentPosition != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Last: ${locationService.currentPosition!.latitude.toStringAsFixed(6)}, ${locationService.currentPosition!.longitude.toStringAsFixed(6)}',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            ListTile(
+              leading: const Icon(Icons.my_location, color: Color(0xFF6941C6)),
+              title: const Text(
+                'Force Location Update',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Manually send current location',
+                style: TextStyle(color: Colors.white70),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                locationService.forceLocationUpdate();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Location update sent manually',
+                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                    ),
+                    backgroundColor: const Color(0xFF4CAF50),
+                  ),
+                );
+              },
+            ),
+
+            const Divider(color: Colors.white30),
+
             ListTile(
               leading: const Icon(Icons.api, color: Color(0xFF6941C6)),
               title: const Text(

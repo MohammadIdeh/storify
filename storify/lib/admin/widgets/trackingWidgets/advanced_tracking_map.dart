@@ -36,6 +36,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   String _selectedFilter = 'all';
   bool _showSummary = true;
 
+  // Auto-refresh timer
+  Timer? _refreshTimer;
+
   // Route colors for different orders
   final List<Color> _routeColors = [
     const Color(0xFF6366F1), // Blue
@@ -50,9 +53,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     const Color(0xFFF97316), // Orange
   ];
 
-  // Google Maps API Key - FIXED: Using your actual API key
-  static const String _googleMapsApiKey =
-      'AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI';
+  // Backend API base URL
+  static const String _backendBaseUrl =
+      'https://finalproject-a5ls.onrender.com';
 
   @override
   void initState() {
@@ -68,11 +71,20 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       });
     });
     _fetchTrackingData();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    // Refresh data every 15 seconds to get updated delivery locations
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _fetchTrackingData();
+    });
   }
 
   Future<Position> _determinePosition() async {
@@ -92,6 +104,8 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
 
   Future<void> _fetchTrackingData() async {
     try {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = true;
         _errorMessage = null;
@@ -99,10 +113,11 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
 
       final headers = await AuthService.getAuthHeaders(role: 'Admin');
       final response = await http.get(
-        Uri.parse(
-            'https://finalproject-a5ls.onrender.com/dashboard/tracking-orders/detailed'),
+        Uri.parse('$_backendBaseUrl/dashboard/tracking-orders/detailed'),
         headers: headers,
       );
+
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -111,7 +126,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           _orders = data['orders'] ?? [];
           _isLoading = false;
         });
-        await _updateMapMarkersWithRoutes();
+        await _updateMapMarkersWithRealRoutes();
       } else {
         setState(() {
           _errorMessage =
@@ -120,6 +135,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Error fetching tracking data: $e';
         _isLoading = false;
@@ -127,79 +143,220 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     }
   }
 
-  Future<List<LatLng>> _getDirections(LatLng origin, LatLng destination) async {
+  // Enhanced directions API call using backend proxy
+  Future<List<LatLng>> _getDirectionsFromBackend(
+      LatLng origin, LatLng destination) async {
     try {
-      final url = 'https://maps.googleapis.com/maps/api/directions/json?'
-          'origin=${origin.latitude},${origin.longitude}&'
-          'destination=${destination.latitude},${destination.longitude}&'
-          'key=$_googleMapsApiKey';
-
-      print('Making directions API call: $url'); // Debug log
-
-      final response = await http.get(Uri.parse(url));
-
+      print('🗺️ Requesting directions from backend proxy...');
       print(
-          'Directions API Response Status: ${response.statusCode}'); // Debug log
-      print('Directions API Response Body: ${response.body}'); // Debug log
+          '📍 From: ${origin.latitude.toStringAsFixed(6)}, ${origin.longitude.toStringAsFixed(6)}');
+      print(
+          '📍 To: ${destination.latitude.toStringAsFixed(6)}, ${destination.longitude.toStringAsFixed(6)}');
+
+      // Get admin auth headers
+      final headers = await AuthService.getAuthHeaders(role: 'Admin');
+
+      final response = await http
+          .get(
+        Uri.parse('$_backendBaseUrl/api/directions').replace(queryParameters: {
+          'origin': '${origin.latitude},${origin.longitude}',
+          'destination': '${destination.latitude},${destination.longitude}',
+          'mode': 'driving',
+        }),
+        headers: headers,
+      )
+          .timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('Backend directions API timeout after 15 seconds');
+        },
+      );
+
+      print('📥 Backend response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('📊 Backend response status: ${data['status']}');
+
+        if (data['status'] == 'success' && data['route'] != null) {
+          final routeData = data['route'];
+
+          // Decode the polyline from backend
+          if (routeData['polyline'] != null) {
+            final polylinePoints =
+                _decodePolylineEnhanced(routeData['polyline']);
+
+            if (polylinePoints.isNotEmpty) {
+              final distance = routeData['distance']?['text'] ?? 'Unknown';
+              final duration = routeData['duration']?['text'] ?? 'Unknown';
+
+              print('✅ Backend directions success:');
+              print('   📏 Distance: $distance');
+              print('   ⏱️ Duration: $duration');
+              print('   🛣️ Route points: ${polylinePoints.length}');
+
+              return polylinePoints;
+            }
+          }
+        } else {
+          print(
+              '❌ Backend directions error: ${data['error'] ?? 'Unknown error'}');
+        }
+      } else if (response.statusCode == 400) {
+        final data = json.decode(response.body);
+        print('❌ Backend directions bad request: ${data['error']}');
+      } else if (response.statusCode == 401) {
+        print('❌ Backend directions: Authentication failed');
+      } else if (response.statusCode == 503) {
+        print('❌ Backend directions: Service unavailable');
+      } else {
+        print('❌ Backend directions HTTP error: ${response.statusCode}');
+        print('❌ Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error calling backend directions API: $e');
+    }
+
+    // Fallback to straight line if backend fails
+    print('⚠️ Falling back to straight line between points');
+    return [origin, destination];
+  }
+
+  // Enhanced batch directions using backend
+  Future<Map<int, List<LatLng>>> _getBatchDirectionsFromBackend(
+      List<Map<String, dynamic>> routeRequests) async {
+    try {
+      print('🗺️ Requesting batch directions from backend...');
+
+      final headers = await AuthService.getAuthHeaders(role: 'Admin');
+
+      final requestBody = {
+        'routes': routeRequests
+            .map((req) => {
+                  'orderId': req['orderId'],
+                  'origin':
+                      '${req['origin'].latitude},${req['origin'].longitude}',
+                  'destination':
+                      '${req['destination'].latitude},${req['destination'].longitude}',
+                })
+            .toList(),
+      };
+
+      final response = await http
+          .post(
+        Uri.parse('$_backendBaseUrl/api/directions/batch'),
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(requestBody),
+      )
+          .timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Backend batch directions timeout');
+        },
+      );
+
+      print('📥 Backend batch response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
-          final polylinePoints =
-              data['routes'][0]['overview_polyline']['points'];
-          print('Successfully got polyline points'); // Debug log
-          return _decodePolyline(polylinePoints);
-        } else {
+        if (data['status'] == 'complete' && data['results'] != null) {
+          final results = data['results'] as List;
+          final routeMap = <int, List<LatLng>>{};
+
+          for (final result in results) {
+            final orderId = result['orderId'] as int;
+
+            if (result['status'] == 'success' && result['polyline'] != null) {
+              final polylinePoints =
+                  _decodePolylineEnhanced(result['polyline']);
+              if (polylinePoints.isNotEmpty) {
+                routeMap[orderId] = polylinePoints;
+              }
+            }
+          }
+
           print(
-              'Directions API Error: ${data['status']} - ${data['error_message'] ?? 'No error message'}');
+              '✅ Batch directions success: ${routeMap.length} routes received');
+          return routeMap;
         }
-      } else {
-        print('HTTP Error: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error getting directions: $e');
+      print('❌ Error calling backend batch directions: $e');
     }
 
-    // Fallback to straight line if directions fail
-    print('Falling back to straight line between points');
-    return [origin, destination];
+    return {};
   }
 
-  List<LatLng> _decodePolyline(String encoded) {
-    List<LatLng> polylineCoordinates = [];
-    int index = 0;
-    int len = encoded.length;
-    int lat = 0;
-    int lng = 0;
+  // Enhanced polyline decoding with better error handling
+  List<LatLng> _decodePolylineEnhanced(String encoded) {
+    try {
+      if (encoded.isEmpty) {
+        print('❌ Empty polyline string');
+        return [];
+      }
 
-    while (index < len) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
+      List<LatLng> polylineCoordinates = [];
+      int index = 0;
+      int len = encoded.length;
+      int lat = 0;
+      int lng = 0;
 
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
+      while (index < len) {
+        int b;
+        int shift = 0;
+        int result = 0;
 
-      polylineCoordinates.add(LatLng(lat / 1E5, lng / 1E5));
+        // Decode latitude
+        do {
+          if (index >= len) break;
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+
+        int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+
+        // Decode longitude
+        do {
+          if (index >= len) break;
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+
+        int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+        lng += dlng;
+
+        final latLng = LatLng(lat / 1E5, lng / 1E5);
+
+        // Validate decoded coordinates
+        if (latLng.latitude.abs() <= 90 && latLng.longitude.abs() <= 180) {
+          polylineCoordinates.add(latLng);
+        } else {
+          print(
+              '⚠️ Invalid decoded coordinate: ${latLng.latitude}, ${latLng.longitude}');
+        }
+      }
+
+      print('🔄 Decoded ${polylineCoordinates.length} points from polyline');
+      return polylineCoordinates;
+    } catch (e) {
+      print('❌ Error decoding polyline: $e');
+      return [];
     }
-
-    return polylineCoordinates;
   }
 
-  Future<void> _updateMapMarkersWithRoutes() async {
+  Future<void> _updateMapMarkersWithRealRoutes() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoadingRoutes = true;
     });
@@ -207,6 +364,40 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     _markers.clear();
     _polylines.clear();
 
+    // Prepare batch request for all routes
+    List<Map<String, dynamic>> routeRequests = [];
+
+    for (int i = 0; i < _orders.length; i++) {
+      var order = _orders[i];
+      final orderLocation = order['locationData']?['deliveryLocation'];
+      final customerLocation = order['locationData']?['customerLocation'];
+
+      if (orderLocation != null && customerLocation != null) {
+        final deliveryLat = orderLocation['latitude']?.toDouble();
+        final deliveryLng = orderLocation['longitude']?.toDouble();
+        final customerLat = customerLocation['latitude']?.toDouble();
+        final customerLng = customerLocation['longitude']?.toDouble();
+
+        if (deliveryLat != null &&
+            deliveryLng != null &&
+            customerLat != null &&
+            customerLng != null) {
+          routeRequests.add({
+            'orderId': order['orderId'],
+            'origin': LatLng(deliveryLat, deliveryLng),
+            'destination': LatLng(customerLat, customerLng),
+          });
+        }
+      }
+    }
+
+    // Get batch directions from backend
+    Map<int, List<LatLng>> routeResults = {};
+    if (routeRequests.isNotEmpty) {
+      routeResults = await _getBatchDirectionsFromBackend(routeRequests);
+    }
+
+    // Create markers and polylines
     for (int i = 0; i < _orders.length; i++) {
       var order = _orders[i];
       final orderLocation = order['locationData']?['deliveryLocation'];
@@ -229,7 +420,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           final deliveryLocation = LatLng(deliveryLat, deliveryLng);
           final customerLocationLatLng = LatLng(customerLat, customerLng);
 
-          // Add delivery man marker with truck icon - FIXED: Only show specific order info
+          // Add delivery man marker
           _markers.add(
             Marker(
               markerId: MarkerId('delivery_$orderId'),
@@ -245,7 +436,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             ),
           );
 
-          // Add customer marker with home icon - FIXED: Only show specific customer info
+          // Add customer marker
           _markers.add(
             Marker(
               markerId: MarkerId('customer_$orderId'),
@@ -262,59 +453,53 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             ),
           );
 
-          // Get real route between delivery man and customer
-          try {
-            final routePoints = await _getDirections(
-              deliveryLocation,
-              customerLocationLatLng,
-            );
+          // Use route from batch request or fallback to straight line
+          List<LatLng> routePoints = routeResults[orderId] ??
+              [deliveryLocation, customerLocationLatLng];
+          final isRealRoute =
+              routeResults.containsKey(orderId) && routePoints.length > 2;
 
-            // Add route polyline with custom styling
-            _polylines.add(
-              Polyline(
-                polylineId: PolylineId('route_$orderId'),
-                points: routePoints,
-                color: routeColor,
-                width: 5,
-                patterns: _getRoutePattern(urgency),
-                startCap: Cap.roundCap,
-                endCap: Cap.roundCap,
-                jointType: JointType.round,
-              ),
-            );
+          // Add route polyline with enhanced styling
+          _polylines.add(
+            Polyline(
+              polylineId: PolylineId('route_$orderId'),
+              points: routePoints,
+              color: routeColor,
+              width: isRealRoute ? 6 : 4, // Thicker for real routes
+              patterns: isRealRoute
+                  ? [] // Solid line for real routes
+                  : _getRoutePattern(urgency), // Dashed for fallback
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              jointType: JointType.round,
+            ),
+          );
 
-            // Add animated markers along the route for visual effect
-            if (routePoints.length > 2) {
-              final midPoint = routePoints[routePoints.length ~/ 2];
-              _markers.add(
-                Marker(
-                  markerId: MarkerId('route_indicator_$orderId'),
-                  position: midPoint,
-                  icon: await _getRouteIndicatorIcon(routeColor),
-                  anchor: const Offset(0.5, 0.5),
-                  infoWindow: InfoWindow(
-                    title: '📍 Route #$orderId Progress',
-                    snippet: 'Midpoint of delivery route',
-                    onTap: () => _selectSpecificOrder(orderId),
-                  ),
+          // Add route status indicator
+          if (routePoints.length > 2) {
+            final midPoint = routePoints[routePoints.length ~/ 2];
+            _markers.add(
+              Marker(
+                markerId: MarkerId('route_indicator_$orderId'),
+                position: midPoint,
+                icon: await _getRouteIndicatorIcon(routeColor, isRealRoute),
+                anchor: const Offset(0.5, 0.5),
+                infoWindow: InfoWindow(
+                  title: isRealRoute
+                      ? '🛣️ Real Route #$orderId'
+                      : '📍 Route #$orderId (Estimated)',
+                  snippet: isRealRoute
+                      ? 'Following actual roads'
+                      : 'Straight line estimate',
+                  onTap: () => _selectSpecificOrder(orderId),
                 ),
-              );
-            }
-          } catch (e) {
-            print('Error creating route for order $orderId: $e');
-            // Fallback to straight line
-            _polylines.add(
-              Polyline(
-                polylineId: PolylineId('route_$orderId'),
-                points: [deliveryLocation, customerLocationLatLng],
-                color: routeColor,
-                width: 4,
-                patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-                startCap: Cap.roundCap,
-                endCap: Cap.roundCap,
               ),
             );
           }
+
+          print(isRealRoute
+              ? '✅ Real route added for Order #$orderId with ${routePoints.length} points'
+              : '⚠️ Fallback route used for Order #$orderId');
         }
       }
     }
@@ -335,12 +520,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       );
     }
 
-    setState(() {
-      _isLoadingRoutes = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingRoutes = false;
+      });
+    }
   }
 
-  // FIXED: New method to handle specific order selection
   void _selectSpecificOrder(int orderId) {
     setState(() {
       _selectedOrderId = orderId;
@@ -357,11 +543,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       _focusOnRoute(selectedOrder);
     }
 
-    print('Selected order: $orderId'); // Debug log
+    print('Selected order: $orderId');
   }
 
   Future<BitmapDescriptor> _getDeliveryManIcon(String urgency) async {
-    // You can create custom icons here or use different colored markers
     switch (urgency.toLowerCase()) {
       case 'high':
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
@@ -383,9 +568,12 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
   }
 
-  Future<BitmapDescriptor> _getRouteIndicatorIcon(Color color) async {
-    // Small marker to indicate active route
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+  Future<BitmapDescriptor> _getRouteIndicatorIcon(
+      Color color, bool isRealRoute) async {
+    // Different icons for real vs estimated routes
+    return isRealRoute
+        ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet)
+        : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
   }
 
   List<PatternItem> _getRoutePattern(String urgency) {
@@ -459,6 +647,34 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                       ),
                     ),
+                  // Backend proxy indicator
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.cloud_done,
+                          size: 12.sp,
+                          color: const Color(0xFF10B981),
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          'BACKEND PROXY',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10.sp,
+                            color: const Color(0xFF10B981),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               IconButton(
@@ -543,7 +759,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             deliveryLng != null &&
             customerLat != null &&
             customerLng != null) {
-          // Calculate straight line distance (you could enhance this with actual route distance)
           final distance = Geolocator.distanceBetween(
                   deliveryLat, deliveryLng, customerLat, customerLng) /
               1000; // Convert to km
@@ -772,6 +987,11 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       ),
     );
   }
+
+  // ... (remaining methods stay the same as previous implementation)
+  // Including: _buildLiveOrdersCards, _buildOrderDetails, _buildOrdersList,
+  // _buildOrderCard, _buildDetailSection, _buildDetailRow, _getStatusColor,
+  // _getUrgencyColor, _focusOnRoute, _calculateDistance
 
   Widget _buildLiveOrdersCards() {
     final filteredOrders = _orders.where((order) {
@@ -1592,7 +1812,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     mapType: MapType.normal,
                   ),
                 ),
-                // Live routes indicator
+                // Enhanced live routes indicator
                 Positioned(
                   top: 16.h,
                   left: 16.w,
@@ -1600,7 +1820,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     padding:
                         EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(20.r),
                     ),
                     child: Row(
@@ -1616,7 +1836,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                         SizedBox(width: 6.w),
                         Text(
-                          'LIVE ROUTES',
+                          'REAL ROADS VIA BACKEND',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
@@ -1640,14 +1860,14 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     ),
                   ),
                 ),
-                // Routes legend
+                // Enhanced routes legend
                 Positioned(
                   top: 16.h,
                   right: 16.w,
                   child: Container(
                     padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Column(
@@ -1730,7 +1950,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          'Route Colors',
+                          'Backend Proxy Routes',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 8.sp,
                             color: Colors.white,
@@ -1747,7 +1967,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
 
         SizedBox(width: 16.w),
 
-        // Control Panel
+        // Enhanced Control Panel
         Expanded(
           flex: 2,
           child: SizedBox(
