@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import '../models/delivery_history.dart';
+import '../models/today_stats.dart'; // Import the new model
 import '../services/auth_service.dart';
 
 class EnhancedHistoryScreen extends StatefulWidget {
@@ -26,7 +27,9 @@ class EnhancedHistoryScreen extends StatefulWidget {
 class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
     with SingleTickerProviderStateMixin {
   DeliveryHistoryResponse? _historyData;
+  TodayStatsResponse? _todayStats; // Add today stats
   bool _isLoading = false;
+  bool _isLoadingStats = false; // Separate loading for stats
   String? _error;
   int _currentPage = 1;
   final int _limit = 10;
@@ -40,7 +43,7 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _fetchDeliveryHistory();
+    _fetchData();
   }
 
   @override
@@ -48,6 +51,63 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Fetch both delivery history and today stats
+  Future<void> _fetchData() async {
+    await Future.wait([
+      _fetchDeliveryHistory(),
+      _fetchTodayStats(),
+    ]);
+  }
+
+  // New method to fetch today's stats
+  Future<void> _fetchTodayStats() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.token == null) {
+        throw Exception('No authentication token');
+      }
+
+      print(
+          'Fetching today stats from: https://finalproject-a5ls.onrender.com/delivery/today-stats');
+
+      final response = await http.get(
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/delivery/today-stats'),
+        headers: {
+          'Content-Type': 'application/json',
+          'token': authService.token!,
+        },
+      );
+
+      print('Today stats response status: ${response.statusCode}');
+      print('Today stats response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        setState(() {
+          _todayStats = TodayStatsResponse.fromJson(jsonData);
+          _isLoadingStats = false;
+        });
+        print('Successfully fetched today stats');
+      } else {
+        throw Exception('Failed to load today stats: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching today stats: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    }
   }
 
   Future<void> _fetchDeliveryHistory() async {
@@ -121,24 +181,96 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
   }
 
   Widget _buildStatsCards() {
-    if (_historyData == null) return const SizedBox.shrink();
+    // Show loading state if stats are loading
+    if (_isLoadingStats || _todayStats == null) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Today\'s Performance',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: _isLoadingStats
+                  ? Column(
+                      children: [
+                        const CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Loading today\'s stats...',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            color: const Color(0xAAFFFFFF),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      'No stats available',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        color: const Color(0xAAFFFFFF),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      );
+    }
 
-    final stats = _historyData!.stats;
+    final stats = _todayStats!.todayStats;
+    final activity = _todayStats!.todayActivity;
+    final performance = _todayStats!.performance;
 
     return Container(
       margin: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Performance Overview',
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          Row(
+            children: [
+              Text(
+                'Today\'s Performance',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6941C6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF6941C6).withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  _todayStats!.date,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12,
+                    color: const Color(0xFF6941C6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
+
+          // Main stats row
           Row(
             children: [
               Expanded(
@@ -178,8 +310,7 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
               Expanded(
                 child: _buildStatCard(
                   title: 'Avg Revenue',
-                  value:
-                      '\$${(stats.totalRevenue / stats.totalDeliveries).toStringAsFixed(1)}',
+                  value: '\$${stats.avgRevenuePerDelivery.toStringAsFixed(1)}',
                   icon: Icons.trending_up,
                   color: const Color(0xFF2196F3),
                   subtitle: 'Per delivery',
@@ -187,8 +318,135 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
               ),
             ],
           ),
+
+          // Performance metrics row
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Completion Rate',
+                  value: '${performance.completionRate.toStringAsFixed(1)}%',
+                  icon: Icons.check_circle,
+                  color: const Color(0xFF4CAF50),
+                  subtitle: 'Success rate',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Amount Paid',
+                  value: '\$${stats.totalAmountPaid.toStringAsFixed(0)}',
+                  icon: Icons.payment,
+                  color: const Color(0xFF9C27B0),
+                  subtitle: 'Collected',
+                ),
+              ),
+            ],
+          ),
+
+          // Activity overview
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF304050),
+                  const Color(0xFF304050).withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFF6941C6).withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.volunteer_activism_outlined,
+                      color: Color(0xFF6941C6),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Today\'s Activity',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActivityItem(
+                        'Active',
+                        activity.activeOrders.toString(),
+                        Colors.orange,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildActivityItem(
+                        'Completed',
+                        activity.completedDeliveries.toString(),
+                        const Color(0xFF4CAF50),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildActivityItem(
+                        'Pending',
+                        activity.pendingOrders.toString(),
+                        const Color(0xFF6941C6),
+                      ),
+                    ),
+                    if (activity.returnedOrders > 0)
+                      Expanded(
+                        child: _buildActivityItem(
+                          'Returned',
+                          activity.returnedOrders.toString(),
+                          Colors.redAccent,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActivityItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 12,
+            color: const Color(0xAAFFFFFF),
+          ),
+        ),
+      ],
     );
   }
 
@@ -236,7 +494,7 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
                 child: Icon(
                   icon,
                   color: color,
-                  size: 20,
+                  size: 19,
                 ),
               ),
               const Spacer(),
@@ -810,7 +1068,7 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
               ),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: _fetchDeliveryHistory,
+                onPressed: _fetchData,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6941C6),
                   padding:
@@ -830,59 +1088,15 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
       );
     }
 
-    if (_historyData == null || _historyData!.deliveries.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF304050),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.history,
-                  size: 64,
-                  color: Color(0xFF6941C6),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'No Delivery History',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Your completed deliveries will appear here.\nStart completing orders to build your history.',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16,
-                  color: const Color(0xAAFFFFFF),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     final filteredDeliveries = _filteredDeliveries;
 
     return RefreshIndicator(
-      onRefresh: _fetchDeliveryHistory,
+      onRefresh: _fetchData,
       color: const Color(0xFF6941C6),
       backgroundColor: const Color(0xFF304050),
       child: CustomScrollView(
         slivers: [
-          // Stats cards
+          // Stats cards (now using today stats API)
           SliverToBoxAdapter(
             child: _buildStatsCards(),
           ),
@@ -938,14 +1152,59 @@ class _EnhancedHistoryScreenState extends State<EnhancedHistoryScreen>
           ),
 
           // Delivery list
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return _buildDeliveryCard(filteredDeliveries[index]);
-              },
-              childCount: filteredDeliveries.length,
+          if (filteredDeliveries.isNotEmpty)
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  return _buildDeliveryCard(filteredDeliveries[index]);
+                },
+                childCount: filteredDeliveries.length,
+              ),
+            )
+          else
+            SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF304050),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.history,
+                          size: 64,
+                          color: Color(0xFF6941C6),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'No Delivery History',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Your completed deliveries will appear here.\nStart completing orders to build your history.',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          color: const Color(0xAAFFFFFF),
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
 
           // Bottom padding
           const SliverToBoxAdapter(
