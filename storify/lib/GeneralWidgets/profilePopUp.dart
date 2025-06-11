@@ -1,12 +1,15 @@
+// lib/GeneralWidgets/profilePopUp.dart
 // ignore: file_names
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:storify/GeneralWidgets/settingsWidget.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/services/user_profile_service.dart';
 
 class Profilepopup extends StatefulWidget {
   final VoidCallback onCloseMenu;
@@ -21,6 +24,7 @@ class _ProfilepopupState extends State<Profilepopup> {
   String? profilePictureUrl;
   String? userName;
   String? userRole;
+  bool _isLoadingProfile = false;
 
   @override
   void initState() {
@@ -29,12 +33,46 @@ class _ProfilepopupState extends State<Profilepopup> {
   }
 
   Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      profilePictureUrl = prefs.getString('profilePicture');
-      userName = prefs.getString('name');
-      userRole = prefs.getString('currentRole');
+      _isLoadingProfile = true;
     });
+
+    try {
+      // First try to load from local storage for immediate display
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        profilePictureUrl = prefs.getString('profilePicture');
+        userName = prefs.getString('name');
+        userRole = prefs.getString('currentRole');
+      });
+
+      // Then try to refresh from API in the background
+      final profileData = await UserProfileService.getUserProfile();
+      if (profileData != null && mounted) {
+        setState(() {
+          profilePictureUrl = profileData['profilePicture'];
+          userName = profileData['name'];
+          userRole = profileData['roleName'];
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      // Fallback to local data if API fails
+      final localData = await UserProfileService.getLocalProfileData();
+      if (mounted) {
+        setState(() {
+          profilePictureUrl = localData['profilePicture'];
+          userName = localData['name'];
+          userRole = localData['currentRole'];
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    }
   }
 
   // Handle logout - moved inside class and improved
@@ -53,6 +91,11 @@ class _ProfilepopupState extends State<Profilepopup> {
       await prefs.remove('profilePicture');
       await prefs.remove('name');
       await prefs.remove('currentRole');
+      await prefs.remove('email');
+      await prefs.remove('phoneNumber');
+      await prefs.remove('userId');
+      await prefs.remove('isActive');
+      await prefs.remove('registrationDate');
 
       // Clear auth data
       await prefs.remove('token');
@@ -98,23 +141,68 @@ class _ProfilepopupState extends State<Profilepopup> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Profile Image, Name, Role, etc.
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: DecorationImage(
-                image: profilePictureUrl != null &&
-                        profilePictureUrl!.isNotEmpty
-                    ? NetworkImage(profilePictureUrl!)
-                    : const AssetImage('assets/images/me.png') as ImageProvider,
-                fit: BoxFit.cover,
+          Stack(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child:
+                      profilePictureUrl != null && profilePictureUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: profilePictureUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: const Color(0xFF7B5CFA).withOpacity(0.2),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: const Color(0xFF7B5CFA),
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) {
+                                print('Error loading profile image: $error');
+                                return Image.asset(
+                                  'assets/images/me.png',
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              'assets/images/me.png',
+                              fit: BoxFit.cover,
+                            ),
+                ),
               ),
-            ),
+              if (_isLoadingProfile)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: const Color(0xFF7B5CFA),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           SizedBox(height: 12.h),
           Text(
-            userName ?? 'User',
+            userName ?? 'Loading...',
             style: GoogleFonts.spaceGrotesk(
               color: Colors.white,
               fontSize: 17.sp,
@@ -122,7 +210,7 @@ class _ProfilepopupState extends State<Profilepopup> {
             ),
           ),
           Text(
-            userRole ?? 'Guest',
+            _formatRoleName(userRole) ?? 'Guest',
             style: GoogleFonts.spaceGrotesk(
                 color: Colors.white70,
                 fontSize: 15.sp,
@@ -197,5 +285,23 @@ class _ProfilepopupState extends State<Profilepopup> {
         ],
       ),
     );
+  }
+
+  // Helper method to format role names for display
+  String? _formatRoleName(String? role) {
+    if (role == null) return null;
+
+    switch (role) {
+      case 'DeliveryEmployee':
+        return 'Delivery Employee';
+      case 'Customer':
+        return 'Customer';
+      case 'Supplier':
+        return 'Supplier';
+      case 'Admin':
+        return 'Admin';
+      default:
+        return role;
+    }
   }
 }
