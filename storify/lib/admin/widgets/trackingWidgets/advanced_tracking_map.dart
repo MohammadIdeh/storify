@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:storify/Registration/Widgets/auth_service.dart'; // Added missing import
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -18,17 +18,17 @@ class AdvancedTrackingMap extends StatefulWidget {
 }
 
 class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
-  GoogleMapController? mapController; // Made nullable
+  GoogleMapController? mapController;
   LatLng? _currentLatLng;
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
-  Timer? _refreshTimer;
 
   // Data from API
   Map<String, dynamic>? _trackingData;
   List<dynamic> _orders = [];
   bool _isLoading = true;
   String? _errorMessage;
+  bool _isLoadingRoutes = false;
 
   // UI State
   int? _selectedOrderId;
@@ -46,7 +46,12 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     const Color(0xFFEC4899), // Pink
     const Color(0xFF06B6D4), // Cyan
     const Color(0xFFF97316), // Orange
+    const Color(0xFF84CC16), // Lime
+    const Color(0xFFF97316), // Orange
   ];
+
+  // Google Maps API Key - Replace with your actual API key
+  static const String _googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
 
   @override
   void initState() {
@@ -57,25 +62,16 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         _currentLatLng = loc;
       });
     }).catchError((error) {
-      // Handle location permission errors gracefully
       setState(() {
-        _currentLatLng = const LatLng(31.9000, 35.2000); // Default location
+        _currentLatLng = const LatLng(31.9000, 35.2000);
       });
     });
     _fetchTrackingData();
-    _startRealTimeUpdates();
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
     super.dispose();
-  }
-
-  void _startRealTimeUpdates() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _fetchTrackingData();
-    });
   }
 
   Future<Position> _determinePosition() async {
@@ -114,7 +110,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           _orders = data['orders'] ?? [];
           _isLoading = false;
         });
-        _updateMapMarkers();
+        await _updateMapMarkersWithRoutes();
       } else {
         setState(() {
           _errorMessage =
@@ -130,7 +126,70 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     }
   }
 
-  void _updateMapMarkers() {
+  Future<List<LatLng>> _getDirections(LatLng origin, LatLng destination) async {
+    try {
+      final url = 'https://maps.googleapis.com/maps/api/directions/json?'
+          'origin=${origin.latitude},${origin.longitude}&'
+          'destination=${destination.latitude},${destination.longitude}&'
+          'key=$_googleMapsApiKey';
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
+          final polylinePoints =
+              data['routes'][0]['overview_polyline']['points'];
+          return _decodePolyline(polylinePoints);
+        }
+      }
+    } catch (e) {
+      print('Error getting directions: $e');
+    }
+
+    // Fallback to straight line if directions fail
+    return [origin, destination];
+  }
+
+  List<LatLng> _decodePolyline(String encoded) {
+    List<LatLng> polylineCoordinates = [];
+    int index = 0;
+    int len = encoded.length;
+    int lat = 0;
+    int lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      polylineCoordinates.add(LatLng(lat / 1E5, lng / 1E5));
+    }
+
+    return polylineCoordinates;
+  }
+
+  Future<void> _updateMapMarkersWithRoutes() async {
+    setState(() {
+      _isLoadingRoutes = true;
+    });
+
     _markers.clear();
     _polylines.clear();
 
@@ -151,80 +210,117 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             customerLng != null) {
           final urgency = order['orderStatus']?['urgencyLevel'] ?? 'Medium';
           final routeColor = _routeColors[i % _routeColors.length];
+          final orderId = order['orderId'];
 
-          // Add delivery location marker
+          final deliveryLocation = LatLng(deliveryLat, deliveryLng);
+          final customerLocationLatLng = LatLng(customerLat, customerLng);
+
+          // Add delivery man marker with truck icon
           _markers.add(
             Marker(
-              markerId: MarkerId('delivery_${order['orderId']}'),
-              position: LatLng(deliveryLat, deliveryLng),
-              icon: _getMarkerIcon(urgency),
+              markerId: MarkerId('delivery_$orderId'),
+              position: deliveryLocation,
+              icon: await _getDeliveryManIcon(urgency),
               infoWindow: InfoWindow(
-                title: 'Order #${order['orderId']} - Delivery',
+                title: '🚚 Delivery Man - Order #$orderId',
                 snippet:
                     '${order['customer']?['personalInfo']?['name']} - \$${order['orderMetrics']?['totalValue']}',
-                onTap: () => _selectOrder(order['orderId']),
+                onTap: () => _selectOrder(orderId),
               ),
-              onTap: () => _selectOrder(order['orderId']),
+              onTap: () => _selectOrder(orderId),
             ),
           );
 
-          // Add customer location marker
+          // Add customer marker with home icon
           _markers.add(
             Marker(
-              markerId: MarkerId('customer_${order['orderId']}'),
-              position: LatLng(customerLat, customerLng),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueAzure),
+              markerId: MarkerId('customer_$orderId'),
+              position: customerLocationLatLng,
+              icon: await _getCustomerIcon(),
               infoWindow: InfoWindow(
-                title:
-                    'Customer - ${order['customer']?['personalInfo']?['name']}',
+                title: '🏠 ${order['customer']?['personalInfo']?['name']}',
                 snippet:
-                    'Delivery Address: ${order['customer']?['deliveryAddress']?['fullAddress']}',
-                onTap: () => _selectOrder(order['orderId']),
+                    'Address: ${order['customer']?['deliveryAddress']?['fullAddress']}',
+                onTap: () => _selectOrder(orderId),
               ),
-              onTap: () => _selectOrder(order['orderId']),
+              onTap: () => _selectOrder(orderId),
             ),
           );
 
-          // Add route polyline between delivery and customer
-          _polylines.add(
-            Polyline(
-              polylineId: PolylineId('route_${order['orderId']}'),
-              points: [
-                LatLng(deliveryLat, deliveryLng),
-                LatLng(customerLat, customerLng),
-              ],
-              color: routeColor,
-              width: 4,
-              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-            ),
-          );
+          // Get real route between delivery man and customer
+          try {
+            final routePoints = await _getDirections(
+              deliveryLocation,
+              customerLocationLatLng,
+            );
+
+            // Add route polyline with custom styling
+            _polylines.add(
+              Polyline(
+                polylineId: PolylineId('route_$orderId'),
+                points: routePoints,
+                color: routeColor,
+                width: 5,
+                patterns: _getRoutePattern(urgency),
+                startCap: Cap.roundCap,
+                endCap: Cap.roundCap,
+                jointType: JointType.round,
+              ),
+            );
+
+            // Add animated markers along the route for visual effect
+            if (routePoints.length > 2) {
+              final midPoint = routePoints[routePoints.length ~/ 2];
+              _markers.add(
+                Marker(
+                  markerId: MarkerId('route_indicator_$orderId'),
+                  position: midPoint,
+                  icon: await _getRouteIndicatorIcon(routeColor),
+                  anchor: const Offset(0.5, 0.5),
+                ),
+              );
+            }
+          } catch (e) {
+            print('Error creating route for order $orderId: $e');
+            // Fallback to straight line
+            _polylines.add(
+              Polyline(
+                polylineId: PolylineId('route_$orderId'),
+                points: [deliveryLocation, customerLocationLatLng],
+                color: routeColor,
+                width: 4,
+                patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+                startCap: Cap.roundCap,
+                endCap: Cap.roundCap,
+              ),
+            );
+          }
         }
       }
     }
 
-    // Add admin current location marker with distinctive color (Gold)
+    // Add admin current location marker
     if (_currentLatLng != null) {
       _markers.add(
         Marker(
           markerId: const MarkerId('adminLocation'),
           position: _currentLatLng!,
-          icon:
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+          icon: await _getAdminIcon(),
           infoWindow: const InfoWindow(
-            title: '👑 Admin Location',
-            snippet: 'Control Center',
+            title: '👑 Admin Control Center',
+            snippet: 'Monitoring all deliveries',
           ),
         ),
       );
     }
 
-    setState(() {});
+    setState(() {
+      _isLoadingRoutes = false;
+    });
   }
 
-  BitmapDescriptor _getMarkerIcon(String urgency) {
+  Future<BitmapDescriptor> _getDeliveryManIcon(String urgency) async {
+    // You can create custom icons here or use different colored markers
     switch (urgency.toLowerCase()) {
       case 'high':
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
@@ -235,6 +331,32 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
       default:
         return BitmapDescriptor.defaultMarker;
+    }
+  }
+
+  Future<BitmapDescriptor> _getCustomerIcon() async {
+    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+  }
+
+  Future<BitmapDescriptor> _getAdminIcon() async {
+    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+  }
+
+  Future<BitmapDescriptor> _getRouteIndicatorIcon(Color color) async {
+    // Small marker to indicate active route
+    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+  }
+
+  List<PatternItem> _getRoutePattern(String urgency) {
+    switch (urgency.toLowerCase()) {
+      case 'high':
+        return []; // Solid line for high priority
+      case 'medium':
+        return [PatternItem.dash(30), PatternItem.gap(10)]; // Dashed for medium
+      case 'low':
+        return [PatternItem.dot, PatternItem.gap(15)]; // Dotted for low
+      default:
+        return [PatternItem.dash(20), PatternItem.gap(10)];
     }
   }
 
@@ -274,13 +396,29 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Real-Time Summary',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Live Route Summary',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  if (_isLoadingRoutes)
+                    SizedBox(
+                      width: 16.w,
+                      height: 16.h,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF10B981),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               IconButton(
                 onPressed: () => setState(() => _showSummary = !_showSummary),
@@ -297,9 +435,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               children: [
                 Expanded(
                   child: _buildSummaryItem(
-                    'Total Orders',
+                    'Active Routes',
                     (summary['totalOrders'] ?? 0).toString(),
-                    Icons.local_shipping,
+                    Icons.route,
                     const Color(0xFF6366F1),
                   ),
                 ),
@@ -319,9 +457,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               children: [
                 Expanded(
                   child: _buildSummaryItem(
-                    'Avg Order Value',
-                    '\$${(summary['averageOrderValue'] ?? 0.0).toStringAsFixed(2)}',
-                    Icons.trending_up,
+                    'Avg Distance',
+                    '${_calculateAverageDistance().toStringAsFixed(1)} km',
+                    Icons.straighten,
                     const Color(0xFF8B5CF6),
                   ),
                 ),
@@ -342,6 +480,40 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         ],
       ),
     );
+  }
+
+  double _calculateAverageDistance() {
+    if (_orders.isEmpty) return 0.0;
+
+    double totalDistance = 0.0;
+    int validOrders = 0;
+
+    for (var order in _orders) {
+      final orderLocation = order['locationData']?['deliveryLocation'];
+      final customerLocation = order['locationData']?['customerLocation'];
+
+      if (orderLocation != null && customerLocation != null) {
+        final deliveryLat = orderLocation['latitude']?.toDouble();
+        final deliveryLng = orderLocation['longitude']?.toDouble();
+        final customerLat = customerLocation['latitude']?.toDouble();
+        final customerLng = customerLocation['longitude']?.toDouble();
+
+        if (deliveryLat != null &&
+            deliveryLng != null &&
+            customerLat != null &&
+            customerLng != null) {
+          // Calculate straight line distance (you could enhance this with actual route distance)
+          final distance = Geolocator.distanceBetween(
+                  deliveryLat, deliveryLng, customerLat, customerLng) /
+              1000; // Convert to km
+
+          totalDistance += distance;
+          validOrders++;
+        }
+      }
+    }
+
+    return validOrders > 0 ? totalDistance / validOrders : 0.0;
   }
 
   Widget _buildSummaryItem(
@@ -388,7 +560,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Urgency Breakdown',
+            'Route Priority Breakdown',
             style: GoogleFonts.spaceGrotesk(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
@@ -398,12 +570,14 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           SizedBox(height: 8.h),
           Row(
             children: [
-              _buildUrgencyChip('High', urgencyData['high'] ?? 0, Colors.red),
+              _buildUrgencyChip(
+                  'High', urgencyData['high'] ?? 0, Colors.red, '━━━'),
               SizedBox(width: 8.w),
               _buildUrgencyChip(
-                  'Medium', urgencyData['medium'] ?? 0, Colors.orange),
+                  'Medium', urgencyData['medium'] ?? 0, Colors.orange, '┅┅┅'),
               SizedBox(width: 8.w),
-              _buildUrgencyChip('Low', urgencyData['low'] ?? 0, Colors.green),
+              _buildUrgencyChip(
+                  'Low', urgencyData['low'] ?? 0, Colors.green, '⋯⋯⋯'),
             ],
           ),
         ],
@@ -411,7 +585,8 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     );
   }
 
-  Widget _buildUrgencyChip(String label, int count, Color color) {
+  Widget _buildUrgencyChip(
+      String label, int count, Color color, String pattern) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
@@ -419,23 +594,36 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(color: color.withOpacity(0.5)),
       ),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8.w,
-            height: 8.h,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8.w,
+                height: 8.h,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 4.w),
+              Text(
+                '$label ($count)',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12.sp,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: 4.w),
           Text(
-            '$label ($count)',
+            pattern,
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 12.sp,
-              color: Colors.white,
+              fontSize: 10.sp,
+              color: color,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -456,7 +644,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tracking Controls',
+            'Route Controls',
             style: GoogleFonts.spaceGrotesk(
               fontSize: 16.sp,
               fontWeight: FontWeight.w600,
@@ -472,9 +660,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     _showAllOrders = true;
                     _selectedOrderId = null;
                   }),
-                  icon: Icon(
-                      _showAllOrders ? Icons.visibility : Icons.visibility_off),
-                  label: Text(_showAllOrders ? 'Tracking All' : 'Track All'),
+                  icon:
+                      Icon(_showAllOrders ? Icons.route : Icons.route_outlined),
+                  label: Text(_showAllOrders ? 'All Routes' : 'Show All'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _showAllOrders
                         ? const Color(0xFF10B981)
@@ -486,9 +674,22 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               SizedBox(width: 12.w),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _fetchTrackingData,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
+                  onPressed: () async {
+                    await _fetchTrackingData();
+                  },
+                  icon: _isLoadingRoutes
+                      ? SizedBox(
+                          width: 16.w,
+                          height: 16.h,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.refresh),
+                  label:
+                      Text(_isLoadingRoutes ? 'Updating...' : 'Refresh Routes'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6366F1),
                     foregroundColor: Colors.white,
@@ -501,7 +702,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           Wrap(
             spacing: 8.w,
             children: [
-              _buildFilterChip('All', 'all'),
+              _buildFilterChip('All Routes', 'all'),
               _buildFilterChip('High Priority', 'high'),
               _buildFilterChip('Medium Priority', 'medium'),
               _buildFilterChip('Low Priority', 'low'),
@@ -552,13 +753,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.local_shipping_outlined,
+                Icons.route_outlined,
                 size: 48.sp,
                 color: Colors.white54,
               ),
               SizedBox(height: 12.h),
               Text(
-                'No Active Orders',
+                'No Active Routes',
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 16.sp,
                   color: Colors.white70,
@@ -629,7 +830,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
-                      'Order #${order['orderId'] ?? 'N/A'}',
+                      'Route #${order['orderId'] ?? 'N/A'}',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
@@ -659,6 +860,31 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                 ],
               ),
               SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_shipping,
+                    size: 12.sp,
+                    color: routeColor,
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    '→',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 12.sp,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Icon(
+                    Icons.home,
+                    size: 12.sp,
+                    color: Colors.blue,
+                  ),
+                ],
+              ),
+              SizedBox(height: 4.h),
               Text(
                 order['customer']?['personalInfo']?['name'] ??
                     'Unknown Customer',
@@ -688,16 +914,17 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   ),
                   SizedBox(width: 8.w),
                   Icon(
-                    Icons.shopping_bag_outlined,
-                    size: 14.sp,
-                    color: Colors.white70,
+                    Icons.route,
+                    size: 12.sp,
+                    color: routeColor,
                   ),
                   SizedBox(width: 2.w),
                   Text(
-                    '${order['orderMetrics']?['totalItems'] ?? 0}',
+                    'LIVE',
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
+                      fontSize: 10.sp,
+                      color: routeColor,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -763,8 +990,14 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           // Header
           Row(
             children: [
+              Icon(
+                Icons.route,
+                color: Colors.white,
+                size: 20.sp,
+              ),
+              SizedBox(width: 8.w),
               Text(
-                'Order #${order['orderId'] ?? 'N/A'}',
+                'Route #${order['orderId'] ?? 'N/A'}',
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.w700,
@@ -783,7 +1016,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           ),
           SizedBox(height: 16.h),
 
-          // Status Badge
+          // Route Status
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             decoration: BoxDecoration(
@@ -796,60 +1029,58 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     order['orderStatus']?['current'] ?? 'pending'),
               ),
             ),
-            child: Text(
-              (order['orderStatus']?['current'] ?? 'pending')
-                  .toString()
-                  .toUpperCase(),
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: _getStatusColor(
-                    order['orderStatus']?['current'] ?? 'pending'),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.route,
+                  size: 16.sp,
+                  color: _getStatusColor(
+                      order['orderStatus']?['current'] ?? 'pending'),
+                ),
+                SizedBox(width: 6.w),
+                Text(
+                  'ROUTE ${(order['orderStatus']?['current'] ?? 'pending').toString().toUpperCase()}',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: _getStatusColor(
+                        order['orderStatus']?['current'] ?? 'pending'),
+                  ),
+                ),
+              ],
             ),
           ),
 
           SizedBox(height: 16.h),
 
-          // Customer Info
-          _buildDetailSection('Customer Information', [
+          // Route Information
+          _buildDetailSection('Route Information', [
             _buildDetailRow(
-                'Name', order['customer']?['personalInfo']?['name'] ?? 'N/A'),
+                'Delivery Man', 'Delivery Agent #${order['orderId']}'),
+            _buildDetailRow('Customer',
+                order['customer']?['personalInfo']?['name'] ?? 'N/A'),
             _buildDetailRow(
-                'Phone', order['customer']?['personalInfo']?['phone'] ?? 'N/A'),
-            _buildDetailRow(
-                'Email', order['customer']?['personalInfo']?['email'] ?? 'N/A'),
-            _buildDetailRow('Address',
-                order['customer']?['deliveryAddress']?['fullAddress'] ?? 'N/A'),
+                'Route Status', order['orderStatus']?['current'] ?? 'N/A'),
+            _buildDetailRow('Priority Level',
+                order['orderStatus']?['urgencyLevel'] ?? 'N/A'),
+            _buildDetailRow('Estimated Distance',
+                '${_calculateDistance(order).toStringAsFixed(1)} km'),
           ]),
 
           SizedBox(height: 16.h),
 
-          // Order Metrics
-          _buildDetailSection('Order Details', [
+          // Customer Info
+          _buildDetailSection('Delivery Destination', [
+            _buildDetailRow('Customer Phone',
+                order['customer']?['personalInfo']?['phone'] ?? 'N/A'),
+            _buildDetailRow('Delivery Address',
+                order['customer']?['deliveryAddress']?['fullAddress'] ?? 'N/A'),
             _buildDetailRow('Total Value',
                 '\$${order['orderMetrics']?['totalValue'] ?? 0}'),
             _buildDetailRow(
-                'Items', '${order['orderMetrics']?['totalItems'] ?? 0}'),
-            _buildDetailRow(
-                'Payment Status', order['paymentDetails']?['status'] ?? 'N/A'),
-            _buildDetailRow(
-                'Urgency', order['orderStatus']?['urgencyLevel'] ?? 'N/A'),
-            _buildDetailRow('Order Age',
-                order['orderStatus']?['orderAge']?['formatted'] ?? 'N/A'),
+                'Items Count', '${order['orderMetrics']?['totalItems'] ?? 0}'),
           ]),
-
-          SizedBox(height: 16.h),
-
-          // Items
-          if (order['items'] != null)
-            _buildDetailSection(
-              'Items',
-              (order['items'] as List)
-                  .map<Widget>(
-                      (item) => _buildItemRow(item as Map<String, dynamic>))
-                  .toList(),
-            ),
 
           SizedBox(height: 16.h),
 
@@ -858,21 +1089,42 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _focusOnOrder(order),
+                  onPressed: () => _focusOnRoute(order),
                   icon: const Icon(Icons.my_location),
-                  label: const Text('Focus on Map'),
+                  label: const Text('Follow Route'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6366F1),
                     foregroundColor: Colors.white,
                   ),
                 ),
               ),
-              SizedBox(width: 12.w),
             ],
           ),
         ],
       ),
     );
+  }
+
+  double _calculateDistance(Map<String, dynamic> order) {
+    final orderLocation = order['locationData']?['deliveryLocation'];
+    final customerLocation = order['locationData']?['customerLocation'];
+
+    if (orderLocation != null && customerLocation != null) {
+      final deliveryLat = orderLocation['latitude']?.toDouble();
+      final deliveryLng = orderLocation['longitude']?.toDouble();
+      final customerLat = customerLocation['latitude']?.toDouble();
+      final customerLng = customerLocation['longitude']?.toDouble();
+
+      if (deliveryLat != null &&
+          deliveryLng != null &&
+          customerLat != null &&
+          customerLng != null) {
+        return Geolocator.distanceBetween(
+                deliveryLat, deliveryLng, customerLat, customerLng) /
+            1000; // Convert to km
+      }
+    }
+    return 0.0;
   }
 
   Widget _buildOrdersList() {
@@ -894,13 +1146,23 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Active Orders (${filteredOrders.length})',
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.route,
+                color: Colors.white,
+                size: 20.sp,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                'Active Routes (${filteredOrders.length})',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
           SizedBox(height: 12.h),
           Expanded(
@@ -937,8 +1199,14 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           children: [
             Row(
               children: [
+                Icon(
+                  Icons.route,
+                  size: 16.sp,
+                  color: const Color(0xFF6366F1),
+                ),
+                SizedBox(width: 6.w),
                 Text(
-                  'Order #${order['orderId'] ?? 'N/A'}',
+                  'Route #${order['orderId'] ?? 'N/A'}',
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
@@ -966,27 +1234,66 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               ],
             ),
             SizedBox(height: 8.h),
-            Text(
-              order['customer']?['personalInfo']?['name'] ?? 'Unknown Customer',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12.sp,
-                color: Colors.white70,
-              ),
-            ),
-            Text(
-              '\$${order['orderMetrics']?['totalValue'] ?? 0} • ${order['orderMetrics']?['totalItems'] ?? 0} items',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12.sp,
-                color: const Color(0xFF10B981),
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.local_shipping,
+                  size: 12.sp,
+                  color: Colors.orange,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  ' → ',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  ),
+                ),
+                Icon(
+                  Icons.home,
+                  size: 12.sp,
+                  color: Colors.blue,
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    order['customer']?['personalInfo']?['name'] ??
+                        'Unknown Customer',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 12.sp,
+                      color: Colors.white70,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 4.h),
-            Text(
-              'Age: ${order['orderStatus']?['orderAge']?['formatted'] ?? 'Unknown'}',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 10.sp,
-                color: Colors.white54,
-              ),
+            Row(
+              children: [
+                Text(
+                  '\$${order['orderMetrics']?['totalValue'] ?? 0}',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    color: const Color(0xFF10B981),
+                  ),
+                ),
+                Text(
+                  ' • ${order['orderMetrics']?['totalItems'] ?? 0} items',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${_calculateDistance(order).toStringAsFixed(1)} km',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10.sp,
+                    color: Colors.white54,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1046,60 +1353,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     );
   }
 
-  Widget _buildItemRow(Map<String, dynamic> item) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.all(8.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFF374151),
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: Row(
-        children: [
-          if (item['productDetails']?['image'] != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6.r),
-              child: Image.network(
-                item['productDetails']['image'],
-                width: 40.w,
-                height: 40.h,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 40.w,
-                  height: 40.h,
-                  color: Colors.grey,
-                  child: const Icon(Icons.image, color: Colors.white),
-                ),
-              ),
-            ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['productName'] ?? 'Unknown Product',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Qty: ${item['quantity'] ?? 0} × \$${item['itemPrice'] ?? 0} = \$${item['subtotal'] ?? 0}',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 10.sp,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'on_theway':
@@ -1128,14 +1381,36 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     }
   }
 
-  void _focusOnOrder(Map<String, dynamic> order) {
-    final location = order['locationData']?['deliveryLocation'];
-    if (location != null && mapController != null) {
-      final lat = location['latitude']?.toDouble();
-      final lng = location['longitude']?.toDouble();
-      if (lat != null && lng != null) {
+  void _focusOnRoute(Map<String, dynamic> order) {
+    final orderLocation = order['locationData']?['deliveryLocation'];
+    final customerLocation = order['locationData']?['customerLocation'];
+
+    if (orderLocation != null &&
+        customerLocation != null &&
+        mapController != null) {
+      final deliveryLat = orderLocation['latitude']?.toDouble();
+      final deliveryLng = orderLocation['longitude']?.toDouble();
+      final customerLat = customerLocation['latitude']?.toDouble();
+      final customerLng = customerLocation['longitude']?.toDouble();
+
+      if (deliveryLat != null &&
+          deliveryLng != null &&
+          customerLat != null &&
+          customerLng != null) {
+        // Calculate bounds to fit both points
+        final bounds = LatLngBounds(
+          southwest: LatLng(
+            deliveryLat < customerLat ? deliveryLat : customerLat,
+            deliveryLng < customerLng ? deliveryLng : customerLng,
+          ),
+          northeast: LatLng(
+            deliveryLat > customerLat ? deliveryLat : customerLat,
+            deliveryLng > customerLng ? deliveryLng : customerLng,
+          ),
+        );
+
         mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+          CameraUpdate.newLatLngBounds(bounds, 100.0),
         );
       }
     }
@@ -1170,7 +1445,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                 Icon(Icons.error_outline, color: Colors.red, size: 32.sp),
                 SizedBox(height: 8.h),
                 Text(
-                  'Failed to load orders',
+                  'Failed to load routes',
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 14.sp,
                     color: Colors.white,
@@ -1276,7 +1551,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     mapType: MapType.normal,
                   ),
                 ),
-                // Real-time indicator
+                // Live routes indicator
                 Positioned(
                   top: 16.h,
                   left: 16.w,
@@ -1300,13 +1575,26 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                         SizedBox(width: 6.w),
                         Text(
-                          'LIVE TRACKING',
+                          'LIVE ROUTES',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
                         ),
+                        if (_isLoadingRoutes) ...[
+                          SizedBox(width: 8.w),
+                          SizedBox(
+                            width: 12.w,
+                            height: 12.h,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF10B981),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1325,7 +1613,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ROUTES',
+                          'ROUTE LEGEND',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
@@ -1336,17 +1624,33 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 12.w,
-                              height: 2.h,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(1.r),
-                              ),
+                            Icon(
+                              Icons.local_shipping,
+                              size: 12.sp,
+                              color: Colors.orange,
                             ),
                             SizedBox(width: 4.w),
                             Text(
-                              'Delivery → Customer',
+                              'Delivery Man',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 8.sp,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 2.h),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.home,
+                              size: 12.sp,
+                              color: Colors.blue,
+                            ),
+                            SizedBox(width: 4.w),
+                            Text(
+                              'Customer',
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 8.sp,
                                 color: Colors.white,
@@ -1365,13 +1669,31 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                             ),
                             SizedBox(width: 4.w),
                             Text(
-                              'Admin Location',
+                              'Admin',
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 8.sp,
                                 color: Colors.white,
                               ),
                             ),
                           ],
+                        ),
+                        SizedBox(height: 4.h),
+                        Container(
+                          height: 1,
+                          width: 80.w,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _routeColors.take(4).toList(),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Route Colors',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 8.sp,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -1400,7 +1722,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             ),
           ),
         ),
-     
       ],
     );
   }

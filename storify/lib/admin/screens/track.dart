@@ -188,68 +188,6 @@ class _TrackScreenState extends State<Track> {
     }
   }
 
-  Widget _buildLiveOrdersCardsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4.w,
-              height: 24.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1),
-                borderRadius: BorderRadius.circular(2.r),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Text(
-              "Live Active Orders",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.w600,
-                color: const Color.fromARGB(255, 246, 246, 246),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: const Color(0xFF10B981)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6.w,
-                    height: 6.h,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  SizedBox(width: 6.w),
-                  Text(
-                    'LIVE',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF10B981),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16.h),
-        const AdvancedTrackingMap(showAsCards: true),
-      ],
-    );
-  }
-
   Widget _buildTrackingCards() {
     if (_isLoading) {
       return const SizedBox(
@@ -386,9 +324,8 @@ class _TrackScreenState extends State<Track> {
                   const SizedBox(height: 20),
                   _buildTrackingCards(),
 
-                  /// --- Live Orders Cards Section ---
-                  const SizedBox(height: 30),
-                  _buildLiveOrdersCardsSection(),
+                  /// --- REMOVED: Live Orders Cards Section ---
+                  // _buildLiveOrdersCardsSection() has been removed
 
                   /// --- Advanced Map Section ---
                   const SizedBox(height: 40),
