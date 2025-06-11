@@ -167,7 +167,7 @@ class LocationService with ChangeNotifier {
 
       // Send to both endpoints when actively tracking
       await _sendLocationToServer(position);
-      await _updateLocationOnServer(position, orderId);
+ 
     });
   }
 
@@ -182,28 +182,7 @@ class LocationService with ChangeNotifier {
     notifyListeners();
   }
 
-  // Keep the old method for order-specific updates
-  Future<void> _updateLocationOnServer(Position position, int orderId) async {
-    if (_token == null) return;
 
-    try {
-      final location = DeliveryLocation(
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-
-      await http.post(
-        Uri.parse('$baseUrl/delivery/update-location/$orderId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'token': _token!,
-        },
-        body: json.encode(location.toJson()),
-      );
-    } catch (e) {
-      print("Error updating order location: $e");
-    }
-  }
 
   // Method to manually force location update (useful for testing)
   Future<void> forceLocationUpdate() async {
