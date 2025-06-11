@@ -50,8 +50,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     const Color(0xFFF97316), // Orange
   ];
 
-  // Google Maps API Key - Replace with your actual API key
-  static const String _googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
+  // Google Maps API Key - FIXED: Using your actual API key
+  static const String _googleMapsApiKey =
+      'AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI';
 
   @override
   void initState() {
@@ -133,7 +134,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           'destination=${destination.latitude},${destination.longitude}&'
           'key=$_googleMapsApiKey';
 
+      print('Making directions API call: $url'); // Debug log
+
       final response = await http.get(Uri.parse(url));
+
+      print(
+          'Directions API Response Status: ${response.statusCode}'); // Debug log
+      print('Directions API Response Body: ${response.body}'); // Debug log
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -141,14 +148,21 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
           final polylinePoints =
               data['routes'][0]['overview_polyline']['points'];
+          print('Successfully got polyline points'); // Debug log
           return _decodePolyline(polylinePoints);
+        } else {
+          print(
+              'Directions API Error: ${data['status']} - ${data['error_message'] ?? 'No error message'}');
         }
+      } else {
+        print('HTTP Error: ${response.statusCode}');
       }
     } catch (e) {
       print('Error getting directions: $e');
     }
 
     // Fallback to straight line if directions fail
+    print('Falling back to straight line between points');
     return [origin, destination];
   }
 
@@ -215,7 +229,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           final deliveryLocation = LatLng(deliveryLat, deliveryLng);
           final customerLocationLatLng = LatLng(customerLat, customerLng);
 
-          // Add delivery man marker with truck icon
+          // Add delivery man marker with truck icon - FIXED: Only show specific order info
           _markers.add(
             Marker(
               markerId: MarkerId('delivery_$orderId'),
@@ -224,26 +238,27 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               infoWindow: InfoWindow(
                 title: '🚚 Delivery Man - Order #$orderId',
                 snippet:
-                    '${order['customer']?['personalInfo']?['name']} - \$${order['orderMetrics']?['totalValue']}',
-                onTap: () => _selectOrder(orderId),
+                    'Customer: ${order['customer']?['personalInfo']?['name'] ?? 'Unknown'}\nValue: \$${order['orderMetrics']?['totalValue'] ?? 0}\nStatus: ${order['orderStatus']?['current'] ?? 'pending'}',
+                onTap: () => _selectSpecificOrder(orderId),
               ),
-              onTap: () => _selectOrder(orderId),
+              onTap: () => _selectSpecificOrder(orderId),
             ),
           );
 
-          // Add customer marker with home icon
+          // Add customer marker with home icon - FIXED: Only show specific customer info
           _markers.add(
             Marker(
               markerId: MarkerId('customer_$orderId'),
               position: customerLocationLatLng,
               icon: await _getCustomerIcon(),
               infoWindow: InfoWindow(
-                title: '🏠 ${order['customer']?['personalInfo']?['name']}',
+                title:
+                    '🏠 ${order['customer']?['personalInfo']?['name'] ?? 'Customer'}',
                 snippet:
-                    'Address: ${order['customer']?['deliveryAddress']?['fullAddress']}',
-                onTap: () => _selectOrder(orderId),
+                    'Order #$orderId\nAddress: ${order['customer']?['deliveryAddress']?['fullAddress'] ?? 'Unknown'}\nPhone: ${order['customer']?['personalInfo']?['phone'] ?? 'N/A'}',
+                onTap: () => _selectSpecificOrder(orderId),
               ),
-              onTap: () => _selectOrder(orderId),
+              onTap: () => _selectSpecificOrder(orderId),
             ),
           );
 
@@ -277,6 +292,11 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   position: midPoint,
                   icon: await _getRouteIndicatorIcon(routeColor),
                   anchor: const Offset(0.5, 0.5),
+                  infoWindow: InfoWindow(
+                    title: '📍 Route #$orderId Progress',
+                    snippet: 'Midpoint of delivery route',
+                    onTap: () => _selectSpecificOrder(orderId),
+                  ),
                 ),
               );
             }
@@ -306,9 +326,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           markerId: const MarkerId('adminLocation'),
           position: _currentLatLng!,
           icon: await _getAdminIcon(),
-          infoWindow: const InfoWindow(
+          infoWindow: InfoWindow(
             title: '👑 Admin Control Center',
-            snippet: 'Monitoring all deliveries',
+            snippet:
+                'Monitoring ${_orders.length} active deliveries\nYour current location',
           ),
         ),
       );
@@ -317,6 +338,26 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     setState(() {
       _isLoadingRoutes = false;
     });
+  }
+
+  // FIXED: New method to handle specific order selection
+  void _selectSpecificOrder(int orderId) {
+    setState(() {
+      _selectedOrderId = orderId;
+      _showAllOrders = false;
+    });
+
+    // Focus on the selected order's route
+    final selectedOrder = _orders.cast<Map<String, dynamic>>().firstWhere(
+          (o) => o['orderId'] == orderId,
+          orElse: () => <String, dynamic>{},
+        );
+
+    if (selectedOrder.isNotEmpty) {
+      _focusOnRoute(selectedOrder);
+    }
+
+    print('Selected order: $orderId'); // Debug log
   }
 
   Future<BitmapDescriptor> _getDeliveryManIcon(String urgency) async {
