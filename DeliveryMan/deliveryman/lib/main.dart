@@ -12,14 +12,12 @@ import 'utils/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   try {
     await Firebase.initializeApp();
     print('Firebase initialized successfully');
   } catch (e) {
     print('Failed to initialize Firebase: $e');
   }
-
   runApp(const MyApp());
 }
 
