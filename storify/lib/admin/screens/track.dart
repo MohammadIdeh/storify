@@ -393,6 +393,9 @@ class _TrackScreenState extends State<Track> {
                   /// --- Advanced Map Section ---
                   const SizedBox(height: 40),
                   const AdvancedTrackingMap(),
+                  SizedBox(
+                    height: 100,
+                  )
                 ],
               ),
             ),
