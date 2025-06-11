@@ -21,7 +21,7 @@ class LocationService with ChangeNotifier {
 
   void updateToken(String? token) {
     _token = token;
-    
+
     // Start periodic updates when token is available
     if (_token != null && !_isPeriodicUpdatesActive) {
       _startPeriodicLocationUpdates();
@@ -77,7 +77,7 @@ class LocationService with ChangeNotifier {
     if (_isPeriodicUpdatesActive || _token == null) return;
 
     print("🌍 Starting periodic location updates every 10 seconds");
-    
+
     final hasPermission = await requestPermission();
     if (!hasPermission) {
       print("❌ Location permission denied - cannot start periodic updates");
@@ -85,19 +85,20 @@ class LocationService with ChangeNotifier {
     }
 
     _isPeriodicUpdatesActive = true;
-    
+
     // Initial location update
     await _updateCurrentLocationAndSend();
-    
+
     // Start timer for periodic updates
-    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+    _locationUpdateTimer =
+        Timer.periodic(const Duration(seconds: 10), (_) async {
       await _updateCurrentLocationAndSend();
     });
   }
 
   void _stopPeriodicLocationUpdates() {
     if (!_isPeriodicUpdatesActive) return;
-    
+
     print("🛑 Stopping periodic location updates");
     _locationUpdateTimer?.cancel();
     _locationUpdateTimer = null;
@@ -125,7 +126,8 @@ class LocationService with ChangeNotifier {
         longitude: position.longitude,
       );
 
-      print("📍 Sending location update: ${position.latitude}, ${position.longitude}");
+      print(
+          "📍 Sending location update: ${position.latitude}, ${position.longitude}");
 
       final response = await http.put(
         Uri.parse('$baseUrl/delivery/location'),
@@ -139,7 +141,8 @@ class LocationService with ChangeNotifier {
       if (response.statusCode == 200) {
         print("✅ Location updated successfully");
       } else {
-        print("❌ Failed to update location: ${response.statusCode} - ${response.body}");
+        print(
+            "❌ Failed to update location: ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
       print("❌ Error sending location to server: $e");
@@ -167,7 +170,6 @@ class LocationService with ChangeNotifier {
 
       // Send to both endpoints when actively tracking
       await _sendLocationToServer(position);
- 
     });
   }
 
@@ -182,15 +184,13 @@ class LocationService with ChangeNotifier {
     notifyListeners();
   }
 
-
-
   // Method to manually force location update (useful for testing)
   Future<void> forceLocationUpdate() async {
     if (_token == null) {
       print("❌ No token available for location update");
       return;
     }
-    
+
     print("🔄 Forcing location update...");
     await _updateCurrentLocationAndSend();
   }
