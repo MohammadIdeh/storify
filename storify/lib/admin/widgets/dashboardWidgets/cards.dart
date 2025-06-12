@@ -131,46 +131,50 @@ class StatsCard extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                Container(
-                                  width: statsContainerWidth *
-                                      0.57, // ~80/140 of width
-                                  height: statsContainerHeight *
-                                      0.214, // ~30/140 of height
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: const BorderRadius.all(
-                                        Radius.circular(20)),
-                                    border: Border.all(color: percentageColor),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: statsContainerWidth *
-                                            0.043, // ~6/140 of width
-                                      ),
-                                      // Use fallback icon if SVG doesn't exist
-                                      _buildArrowIcon(
-                                        arrowIcon,
-                                        statsContainerWidth * 0.143,
-                                        percentageColor,
-                                        isPositive,
-                                      ),
-                                      SizedBox(
-                                        width: statsContainerWidth *
-                                            0.029, // ~4/140 of width
-                                      ),
-                                      Flexible(
-                                        child: Text(
-                                          percentage,
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: percentageFontSize,
-                                            fontWeight: FontWeight.w500,
-                                            color: percentageColor,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 30.0),
+                                  child: Container(
+                                    width: statsContainerWidth *
+                                        0.57, // ~80/140 of width
+                                    height: statsContainerHeight *
+                                        0.214, // ~30/140 of height
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(20)),
+                                      border:
+                                          Border.all(color: percentageColor),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: statsContainerWidth *
+                                              0.043, // ~6/140 of width
                                         ),
-                                      ),
-                                    ],
+                                        // Use fallback icon if SVG doesn't exist
+                                        _buildArrowIcon(
+                                          arrowIcon,
+                                          statsContainerWidth * 0.143,
+                                          percentageColor,
+                                          isPositive,
+                                        ),
+                                        SizedBox(
+                                          width: statsContainerWidth *
+                                              0.029, // ~4/140 of width
+                                        ),
+                                        Flexible(
+                                          child: Text(
+                                            percentage,
+                                            style: GoogleFonts.spaceGrotesk(
+                                              fontSize: percentageFontSize,
+                                              fontWeight: FontWeight.w500,
+                                              color: percentageColor,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 )
                               ],

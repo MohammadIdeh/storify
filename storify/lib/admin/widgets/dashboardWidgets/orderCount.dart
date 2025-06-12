@@ -16,7 +16,7 @@ class OrderCountWidget extends StatefulWidget {
 class _OrderCountWidgetState extends State<OrderCountWidget> {
   // API Data
   OrderCountResponse? _orderCountData;
-  
+
   // Loading and error states
   bool _isLoading = true;
   String? _error;
@@ -110,7 +110,8 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                 onPressed: _fetchOrderCounts,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: lineColor,
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -190,7 +191,7 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                 decoration: BoxDecoration(
-                  color: isGrowthPositive 
+                  color: isGrowthPositive
                       ? Colors.green.withOpacity(0.2)
                       : Colors.red.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12.r),
@@ -203,7 +204,9 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isGrowthPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                      isGrowthPositive
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
                       color: isGrowthPositive ? Colors.green : Colors.red,
                       size: 16.sp,
                     ),
@@ -239,21 +242,25 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final index = spot.x.toInt();
-                        if (index < _orderCountData!.data.length) {
-                          final dayData = _orderCountData!.data[index];
-                          return LineTooltipItem(
-                            "${dayData.day}\n${dayData.count} orders",
-                            GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.sp,
-                            ),
-                          );
-                        }
-                        return null;
-                      }).where((item) => item != null).cast<LineTooltipItem>().toList();
+                      return touchedSpots
+                          .map((spot) {
+                            final index = spot.x.toInt();
+                            if (index < _orderCountData!.data.length) {
+                              final dayData = _orderCountData!.data[index];
+                              return LineTooltipItem(
+                                "${dayData.day}\n${dayData.count} orders",
+                                GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.sp,
+                                ),
+                              );
+                            }
+                            return null;
+                          })
+                          .where((item) => item != null)
+                          .cast<LineTooltipItem>()
+                          .toList();
                     },
                   ),
                 ),
@@ -287,8 +294,10 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                       interval: 1,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
-                        if (index >= 0 && index < _orderCountData!.data.length) {
-                          return _buildBottomTitle(_orderCountData!.data[index].day);
+                        if (index >= 0 &&
+                            index < _orderCountData!.data.length) {
+                          return _buildBottomTitle(
+                              _orderCountData!.data[index].day);
                         }
                         return Container();
                       },
@@ -351,7 +360,7 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
     if (data.isEmpty) {
       return [FlSpot(0, 0)];
     }
-    
+
     return data.asMap().entries.map((entry) {
       final index = entry.key;
       final orderData = entry.value;
@@ -361,8 +370,9 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
 
   double _calculateMaxY(List<FlSpot> spots) {
     if (spots.isEmpty) return 5;
-    
-    final maxValue = spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+
+    final maxValue =
+        spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
     // Ensure minimum of 5 for better visual, add 20% padding
     return (maxValue < 5 ? 5 : maxValue * 1.2).ceilToDouble();
   }

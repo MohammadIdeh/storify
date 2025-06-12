@@ -6,31 +6,191 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Storify - Professional inventory management solution">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="storify">
+  <meta name="apple-mobile-web-app-title" content="Storify">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png" />
 
-  <title>storify</title>
+  <title>Storify - Inventory Management</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Maps Script -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI"></script>
+
+  <style>
+    /* Loading screen styles */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0175C2 0%, #0156A3 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      z-index: 99999;
+    }
+
+    .loading-logo {
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: pulse 2s ease-in-out infinite;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      text-align: center;
+      max-width: 300px;
+    }
+
+    .loading-text h2 {
+      margin: 0 0 10px 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .loading-text p {
+      margin: 0 0 20px 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    #loading-status {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-top: 10px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+    }
+
+    /* Ensure Flutter content is initially hidden */
+    #flutter-view {
+      display: none;
+    }
+
+    #flutter-view.ready {
+      display: block;
+    }
+  </style>
 </head>
 
 <body>
-  <!-- Firebase SDK - Add these before flutter_bootstrap.js -->
+  <!-- Loading Screen -->
+  <div id="loading">
+    <div class="loading-logo">S</div>
+    <div class="loading-spinner"></div>
+    <div class="loading-text">
+      <h2>Storify</h2>
+      <p>Loading your inventory management system</p>
+      <div id="loading-status">Starting up...</div>
+    </div>
+  </div>
+
+  <!-- Flutter content will be inserted here -->
+  <div id="flutter-view"></div>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-messaging-compat.js"></script>
 
   <script>
-    // Your web app's Firebase configuration
+    console.log('🚀 Starting Storify web app...');
+
+    let appReady = false;
+    let loadingTimeout;
+
+    function updateStatus(message) {
+      const statusEl = document.getElementById('loading-status');
+      if (statusEl) {
+        statusEl.textContent = message;
+      }
+      console.log('📱', message);
+    }
+
+    function hideLoadingScreen() {
+      if (appReady) return;
+      appReady = true;
+
+      console.log('✅ Hiding loading screen, showing Flutter app');
+      clearTimeout(loadingTimeout);
+
+      const loading = document.getElementById('loading');
+      const flutterView = document.getElementById('flutter-view');
+
+      if (loading && flutterView) {
+        updateStatus('Ready!');
+
+        setTimeout(() => {
+          loading.style.transition = 'opacity 0.5s ease-out';
+          loading.style.opacity = '0';
+          flutterView.classList.add('ready');
+
+          setTimeout(() => {
+            loading.style.display = 'none';
+            console.log('✅ Loading screen hidden successfully');
+          }, 500);
+        }, 200);
+      }
+    }
+
+    // Set up loading timeout (show app even if Flutter doesn't signal ready)
+    loadingTimeout = setTimeout(() => {
+      console.log('⏰ Loading timeout - forcing app to show');
+      updateStatus('Loading timeout - showing app...');
+      hideLoadingScreen();
+    }, 8000);
+
+    // Initialize Firebase (but DON'T request notifications yet)
     const firebaseConfig = {
       apiKey: "AIzaSyDlDlnG_03TqqjNr-bZB9QTAkin1L6F2-8",
       authDomain: "storify-32241.firebaseapp.com",
@@ -41,22 +201,70 @@
       measurementId: "G-PN0H7TT9PS"
     };
 
-    // Initialize Firebase
+    updateStatus('Initializing Firebase...');
     firebase.initializeApp(firebaseConfig);
+    console.log('🔥 Firebase initialized');
 
-    // Request notification permission when appropriate (you can customize this logic)
+    // DO NOT REQUEST PERMISSIONS HERE - let Flutter handle it later
     if (firebase.messaging.isSupported()) {
-      const messaging = firebase.messaging();
-
-      // Optional: You can request permission and get the token here
-      // or handle it through your Flutter code
-      messaging.getToken().then((token) => {
-        console.log('FCM Token (from web):', token);
-        // You might want to send this token to your server
-      }).catch((err) => {
-        console.log('Failed to get token:', err);
-      });
+      console.log('🔔 Messaging supported - will be initialized by Flutter');
+      updateStatus('Firebase ready');
+    } else {
+      console.log('❌ Messaging not supported');
+      updateStatus('Starting app...');
     }
+
+    // Register service worker silently (no permission requests)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js')
+        .then(function (registration) {
+          console.log('✅ Service Worker registered');
+        })
+        .catch(function (error) {
+          console.log('❌ Service Worker failed:', error);
+        });
+    }
+
+    // Listen for Flutter events
+    window.addEventListener('flutter-first-frame', function () {
+      console.log('✅ Flutter first frame event received');
+      updateStatus('App loaded!');
+      setTimeout(hideLoadingScreen, 100);
+    });
+
+    // Alternative: Listen for any sign that Flutter is ready
+    let flutterCheckInterval = setInterval(() => {
+      // Check if Flutter has added content to the page
+      if (document.querySelector('flt-scene-host') ||
+        document.querySelector('flutter-view') ||
+        document.querySelector('[flt-renderer]') ||
+        document.body.children.length > 3) {
+        console.log('✅ Flutter content detected in DOM');
+        clearInterval(flutterCheckInterval);
+        updateStatus('App ready!');
+        setTimeout(hideLoadingScreen, 500);
+      }
+    }, 500);
+
+    // Clear the interval after 10 seconds to prevent it running forever
+    setTimeout(() => {
+      clearInterval(flutterCheckInterval);
+    }, 10000);
+
+    // Error handling
+    window.addEventListener('error', function (event) {
+      console.error('❌ JavaScript error:', event.error);
+      updateStatus('Error occurred - loading anyway...');
+      setTimeout(hideLoadingScreen, 1000);
+    });
+
+    // Debug: Log when DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('✅ DOM Content Loaded');
+      updateStatus('DOM ready, loading Flutter...');
+    });
+
+    console.log('🚀 Web initialization complete - waiting for Flutter');
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

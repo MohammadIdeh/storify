@@ -35,85 +35,203 @@ class NotificationService {
   // In-memory store of notifications
   List<NotificationItem> _notifications = [];
 
-  // Initialize Firebase Messaging
+  // Track initialization state
+  bool _isInitialized = false;
+  bool _isInitializing = false;
+
+  // OPTIMIZED: Fast, non-blocking initialization
   static Future<void> initialize() async {
-    // Initialize local notifications
-    await _instance._initLocalNotifications();
+    final instance = NotificationService();
 
-    // Request permission
-    NotificationSettings settings =
-        await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    if (instance._isInitialized || instance._isInitializing) {
+      print('NotificationService already initialized or initializing');
+      return;
+    }
 
-    print('User granted permission: ${settings.authorizationStatus}');
+    instance._isInitializing = true;
 
-    // Get token
-    String? token = await FirebaseMessaging.instance.getToken();
-    print('FCM Token: $token');
+    try {
+      // 1. Quick local notifications setup (non-blocking)
+      await instance._initLocalNotifications();
 
-    // Load saved notifications from SharedPreferences
-    await NotificationService()._loadNotifications();
+      // 2. Load cached notifications immediately (fast)
+      await instance._loadNotifications();
 
-    // Load notifications from Firestore
-    await NotificationService().loadNotificationsFromFirestore();
+      // 3. Set up message handlers immediately
+      FirebaseMessaging.onMessage.listen(instance._handleForegroundMessage);
 
-    // Register foreground message handler
-    FirebaseMessaging.onMessage.listen(
-      NotificationService()._handleForegroundMessage,
-    );
+      print('NotificationService: Quick initialization completed');
+      instance._isInitialized = true;
+      instance._isInitializing = false;
 
-    // Send token to backend
-    await NotificationService()._sendTokenToBackend(token);
+      // 4. Do heavy operations in background (non-blocking)
+      _initializeInBackground();
+    } catch (e) {
+      print('Error in quick notification initialization: $e');
+      instance._isInitializing = false;
+      // Don't throw - let app continue without notifications
+    }
   }
 
-  // Initialize local notifications
+  // Background initialization - doesn't block app startup
+  static void _initializeInBackground() {
+    final instance = NotificationService();
+
+    // Run heavy operations in background
+    Future.microtask(() async {
+      try {
+        print('NotificationService: Starting background initialization...');
+
+        // Handle permissions based on platform
+        if (kIsWeb) {
+          await instance._requestWebPermissions();
+        } else {
+          await instance._requestMobilePermissions();
+        }
+
+        // Get token in background
+        String? token = await FirebaseMessaging.instance.getToken(
+          vapidKey: kIsWeb
+              ? "YOUR_VAPID_KEY_HERE"
+              : null, // Add your VAPID key for web
+        );
+
+        if (token != null) {
+          print('FCM Token obtained: ${token.substring(0, 20)}...');
+
+          // Send token to backend (non-blocking)
+          instance._sendTokenToBackend(token).catchError((e) {
+            print('Error sending token to backend: $e');
+          });
+        }
+
+        // Load from Firestore in background
+        instance.loadNotificationsFromFirestore().catchError((e) {
+          print('Error loading from Firestore: $e');
+        });
+
+        print('NotificationService: Background initialization completed');
+      } catch (e) {
+        print('Error in background notification initialization: $e');
+        // Don't throw - notifications are not critical for app function
+      }
+    });
+  }
+
+  // Web-specific permission handling
+  Future<void> _requestWebPermissions() async {
+    try {
+      // Check current permission status first
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
+
+      if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        print('Requesting web notification permissions...');
+
+        // Request permission (this may show popup but won't block since it's in background)
+        final newSettings = await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+
+        print('Web permission result: ${newSettings.authorizationStatus}');
+
+        if (newSettings.authorizationStatus == AuthorizationStatus.authorized) {
+          print('Web notifications permission granted');
+        } else {
+          print('Web notifications permission denied or not determined');
+        }
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.authorized) {
+        print('Web notifications already authorized');
+      } else {
+        print(
+            'Web notifications not authorized: ${settings.authorizationStatus}');
+      }
+    } catch (e) {
+      print('Error requesting web permissions: $e');
+    }
+  }
+
+  // Mobile-specific permission handling
+  Future<void> _requestMobilePermissions() async {
+    try {
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      print('Mobile permission result: ${settings.authorizationStatus}');
+    } catch (e) {
+      print('Error requesting mobile permissions: $e');
+    }
+  }
+
+  // Initialize local notifications (fast, non-blocking)
   Future<void> _initLocalNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings();
+      const DarwinInitializationSettings initializationSettingsIOS =
+          DarwinInitializationSettings();
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS,
+      );
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification tap
-        print('Notification tapped: ${response.payload}');
-      },
-    );
+      await flutterLocalNotificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          print('Notification tapped: ${response.payload}');
+        },
+      );
+
+      print('Local notifications initialized');
+    } catch (e) {
+      print('Error initializing local notifications: $e');
+    }
   }
 
   // Show a local notification
   Future<void> showNotification(RemoteMessage message) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'firebase_push_channel',
-      'Firebase Push Notifications',
-      channelDescription: 'Channel for Firebase push notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'firebase_push_channel',
+        'Firebase Push Notifications',
+        channelDescription: 'Channel for Firebase push notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+      );
 
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+      );
 
-    await flutterLocalNotificationsPlugin.show(
-      message.hashCode,
-      message.notification?.title ?? 'New Notification',
-      message.notification?.body ?? '',
-      platformChannelSpecifics,
-      payload: message.data.toString(),
-    );
+      await flutterLocalNotificationsPlugin.show(
+        message.hashCode,
+        message.notification?.title ?? 'New Notification',
+        message.notification?.body ?? '',
+        platformChannelSpecifics,
+        payload: message.data.toString(),
+      );
+    } catch (e) {
+      print('Error showing local notification: $e');
+    }
   }
 
   // Background message handler
@@ -160,7 +278,7 @@ class NotificationService {
     }
   }
 
-  // Process any background notifications when app starts
+  // Process any background notifications when app starts (OPTIMIZED)
   Future<void> processBackgroundNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -181,9 +299,6 @@ class NotificationService {
 
           // Add to list
           _notifications.add(notification);
-
-          // Save to Firestore
-          await _databaseService.saveNotification(notification);
         }
 
         // Clear background notifications
@@ -196,13 +311,20 @@ class NotificationService {
         for (var callback in _notificationsListChangedCallbacks) {
           callback(_notifications);
         }
+
+        // Save to Firestore in background (non-blocking)
+        for (var notification in _notifications) {
+          _databaseService.saveNotification(notification).catchError((e) {
+            print('Error saving background notification to Firestore: $e');
+          });
+        }
       }
     } catch (e) {
       print('Error processing background notifications: $e');
     }
   }
 
-  // Send the FCM token to your backend
+  // OPTIMIZED: Send the FCM token to your backend (non-blocking)
   Future<void> _sendTokenToBackend(String? token) async {
     if (token == null) return;
 
@@ -223,25 +345,26 @@ class NotificationService {
         if (supplierId != null) 'supplierId': supplierId,
       };
 
-      print('Sending token to backend with body: ${json.encode(body)}');
+      print('Sending token to backend...');
 
-      // Send to your backend
-      final response = await http.post(
-        Uri.parse(
-            'https://finalproject-a5ls.onrender.com/notifications/register-token'),
-        headers: headers,
-        body: json.encode(body),
-      );
+      // Send to your backend with timeout
+      final response = await http
+          .post(
+            Uri.parse(
+                'https://finalproject-a5ls.onrender.com/notifications/register-token'),
+            headers: headers,
+            body: json.encode(body),
+          )
+          .timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         print('Successfully registered FCM token with backend');
-        print('Response body: ${response.body}');
       } else {
         print('Failed to register FCM token: ${response.statusCode}');
-        print('Response body: ${response.body}');
       }
     } catch (e) {
       print('Error sending token to backend: $e');
+      // Don't throw - token registration failure shouldn't break the app
     }
   }
 
@@ -294,8 +417,10 @@ class NotificationService {
       // Save to SharedPreferences
       _saveNotifications();
 
-      // Save to Firestore
-      _databaseService.saveNotification(notification);
+      // Save to Firestore in background (non-blocking)
+      _databaseService.saveNotification(notification).catchError((e) {
+        print('Error saving notification to Firestore: $e');
+      });
 
       // Notify listeners
       for (var callback in _newNotificationCallbacks) {
@@ -313,8 +438,7 @@ class NotificationService {
     // Sort by timestamp (newest first) and return a copy
     final notifications = List<NotificationItem>.from(_notifications);
     notifications.sort((a, b) {
-      // Parse the timeAgo and compare - this is simplified and would need real timestamp logic
-      return b.id.compareTo(a.id); // Using id as a proxy for timestamp for now
+      return b.id.compareTo(a.id); // Using id as a proxy for timestamp
     });
     return notifications;
   }
@@ -346,8 +470,10 @@ class NotificationService {
       // Save to SharedPreferences
       await _saveNotifications();
 
-      // Save to Firestore
-      await _databaseService.markAsRead(id);
+      // Save to Firestore in background (non-blocking)
+      _databaseService.markAsRead(id).catchError((e) {
+        print('Error marking as read in Firestore: $e');
+      });
 
       // Notify listeners
       for (var callback in _notificationsListChangedCallbacks) {
@@ -379,8 +505,10 @@ class NotificationService {
     // Save to SharedPreferences
     await _saveNotifications();
 
-    // Save to Firestore
-    await _databaseService.markAllAsRead();
+    // Save to Firestore in background (non-blocking)
+    _databaseService.markAllAsRead().catchError((e) {
+      print('Error marking all as read in Firestore: $e');
+    });
 
     // Notify listeners
     for (var callback in _notificationsListChangedCallbacks) {
@@ -404,23 +532,23 @@ class NotificationService {
         'data': additionalData,
       };
 
-      print('Sending supplier notification with body: ${json.encode(body)}');
+      print('Sending supplier notification...');
 
-      // Send to your backend
-      final response = await http.post(
-        Uri.parse(
-            'https://finalproject-a5ls.onrender.com/notifications/send-to-supplier'),
-        headers: headers,
-        body: json.encode(body),
-      );
+      // Send to your backend with timeout
+      final response = await http
+          .post(
+            Uri.parse(
+                'https://finalproject-a5ls.onrender.com/notifications/send-to-supplier'),
+            headers: headers,
+            body: json.encode(body),
+          )
+          .timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         print('Successfully sent notification to supplier');
-        print('Response body: ${response.body}');
       } else {
         print(
             'Failed to send notification to supplier: ${response.statusCode}');
-        print('Response body: ${response.body}');
 
         // Add a local notification for immediate feedback
         final testNotification = NotificationItem(
@@ -434,7 +562,11 @@ class NotificationService {
 
         _notifications.add(testNotification);
         await _saveNotifications();
-        await _databaseService.saveNotification(testNotification);
+
+        // Save to Firestore in background
+        _databaseService.saveNotification(testNotification).catchError((e) {
+          print('Error saving to Firestore: $e');
+        });
 
         // Notify listeners
         for (var callback in _notificationsListChangedCallbacks) {
@@ -443,7 +575,6 @@ class NotificationService {
       }
     } catch (e) {
       print('Error sending notification to supplier: $e');
-      print('Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -462,22 +593,22 @@ class NotificationService {
         'data': additionalData,
       };
 
-      print('Sending admin notification with body: ${json.encode(body)}');
+      print('Sending admin notification...');
 
-      // Send to your backend
-      final response = await http.post(
-        Uri.parse(
-            'https://finalproject-a5ls.onrender.com/notifications/send-to-admin'),
-        headers: headers,
-        body: json.encode(body),
-      );
+      // Send to your backend with timeout
+      final response = await http
+          .post(
+            Uri.parse(
+                'https://finalproject-a5ls.onrender.com/notifications/send-to-admin'),
+            headers: headers,
+            body: json.encode(body),
+          )
+          .timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         print('Successfully sent notification to admin');
-        print('Response body: ${response.body}');
       } else {
         print('Failed to send notification to admin: ${response.statusCode}');
-        print('Response body: ${response.body}');
       }
 
       // Add a local notification for immediate feedback regardless of API response
@@ -492,7 +623,11 @@ class NotificationService {
 
       _notifications.add(testNotification);
       await _saveNotifications();
-      await _databaseService.saveNotification(testNotification);
+
+      // Save to Firestore in background
+      _databaseService.saveNotification(testNotification).catchError((e) {
+        print('Error saving to Firestore: $e');
+      });
 
       // Notify listeners
       for (var callback in _notificationsListChangedCallbacks) {
@@ -500,7 +635,6 @@ class NotificationService {
       }
     } catch (e) {
       print('Error sending notification to admin: $e');
-      print('Stack trace: ${StackTrace.current}');
 
       // Even if there's an error, add a local notification
       final errorNotification = NotificationItem(
@@ -522,7 +656,7 @@ class NotificationService {
     }
   }
 
-  // Save notifications to SharedPreferences
+  // OPTIMIZED: Save notifications to SharedPreferences (fast)
   Future<void> _saveNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -531,8 +665,6 @@ class NotificationService {
           .toList();
 
       await prefs.setString('notifications', jsonEncode(notificationsJson));
-      print(
-          'Saved ${notificationsJson.length} notifications to SharedPreferences');
     } catch (e) {
       print('Error saving notifications: $e');
     }
@@ -555,12 +687,10 @@ class NotificationService {
   // Enhanced notification from map
   NotificationItem _enhancedNotificationFromMap(Map<String, dynamic> map) {
     final notification = NotificationItem.fromMap(map);
-
-    // If it's a low stock notification, don't set onTap since it will be handled specially
     return notification;
   }
 
-  // Load notifications from SharedPreferences
+  // OPTIMIZED: Load notifications from SharedPreferences (fast)
   Future<void> _loadNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -575,8 +705,6 @@ class NotificationService {
 
         print(
             'Loaded ${_notifications.length} notifications from SharedPreferences');
-      } else {
-        print('No notifications found in SharedPreferences');
       }
     } catch (e) {
       print('Error loading notifications: $e');
@@ -584,7 +712,7 @@ class NotificationService {
     }
   }
 
-  // Load notifications from Firestore
+  // OPTIMIZED: Load notifications from Firestore (background, non-blocking)
   Future<void> loadNotificationsFromFirestore() async {
     try {
       print('Loading notifications from Firestore...');
@@ -595,23 +723,26 @@ class NotificationService {
         print(
             'Loaded ${firestoreNotifications.length} notifications from Firestore');
 
-        // Replace existing notifications with Firestore notifications
-        // This ensures we always have the latest data from the database
-        _notifications = firestoreNotifications;
+        // Merge with existing notifications, avoiding duplicates
+        final existingIds = _notifications.map((n) => n.id).toSet();
+        final newNotifications = firestoreNotifications
+            .where((n) => !existingIds.contains(n.id))
+            .toList();
 
-        // Save to SharedPreferences for offline access
-        await _saveNotifications();
+        if (newNotifications.isNotEmpty) {
+          _notifications.addAll(newNotifications);
 
-        // Notify listeners
-        for (var callback in _notificationsListChangedCallbacks) {
-          callback(_notifications);
+          // Save to SharedPreferences for offline access
+          await _saveNotifications();
+
+          // Notify listeners
+          for (var callback in _notificationsListChangedCallbacks) {
+            callback(_notifications);
+          }
         }
-      } else {
-        print('No notifications found in Firestore');
       }
     } catch (e) {
       print('Error loading notifications from Firestore: $e');
-      print('Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -633,56 +764,6 @@ class NotificationService {
     }
   }
 
-  // Debug method to help troubleshoot admin notifications
-  Future<void> debugAdminNotifications() async {
-    try {
-      // 1. Check if we have any notifications in memory
-      print('Current notifications in memory: ${_notifications.length}');
-
-      // 2. Add a test notification locally
-      final testNotification = NotificationItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: 'Test Admin Notification',
-        message: 'This is a test notification added locally',
-        timeAgo: 'Just now',
-        isRead: false,
-        icon: Icons.admin_panel_settings,
-      );
-
-      _notifications.add(testNotification);
-      await _saveNotifications();
-
-      // 3. Save to Firestore
-      await _databaseService.saveNotification(testNotification);
-
-      print(
-          'Added test notification locally. Total count: ${_notifications.length}');
-
-      // 4. Notify listeners
-      for (var callback in _notificationsListChangedCallbacks) {
-        callback(_notifications);
-      }
-
-      // 5. Test sending to backend
-      await sendNotificationToAdmin(
-          'Backend Test Notification',
-          'Testing admin notification from backend',
-          {'test': 'true', 'timestamp': DateTime.now().toString()});
-
-      // 6. Check if the token is registered
-      final token = await FirebaseMessaging.instance.getToken();
-      print('Current FCM token: $token');
-
-      // 7. Check if we're properly registered as admin
-      final prefs = await SharedPreferences.getInstance();
-      final currentRole = await AuthService.getCurrentRole() ?? '';
-      print('Current user role: $currentRole');
-    } catch (e) {
-      print('Error in debugAdminNotifications: $e');
-      print('Stack trace: ${StackTrace.current}');
-    }
-  }
-
   // Test database connection
   Future<void> testDatabaseConnection() async {
     try {
@@ -690,11 +771,13 @@ class NotificationService {
       final headers = await AuthService.getAuthHeaders();
       headers['Content-Type'] = 'application/json';
 
-      // Test connection to backend
-      final response = await http.get(
-        Uri.parse('https://finalproject-a5ls.onrender.com/health'),
-        headers: headers,
-      );
+      // Test connection to backend with timeout
+      final response = await http
+          .get(
+            Uri.parse('https://finalproject-a5ls.onrender.com/health'),
+            headers: headers,
+          )
+          .timeout(Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         // Show success notification
@@ -723,7 +806,7 @@ class NotificationService {
     try {
       print('Checking Firestore connection...');
 
-      // Try to write a test document
+      // Try to write a test document with timeout
       final testDoc = {
         'test': true,
         'timestamp': DateTime.now().toIso8601String(),
@@ -732,24 +815,17 @@ class NotificationService {
 
       await FirebaseFirestore.instance
           .collection('connection_tests')
-          .add(testDoc);
+          .add(testDoc)
+          .timeout(Duration(seconds: 5));
 
       print('Successfully wrote test document to Firestore');
 
-      // Try to read from notifications collection
-      final snapshot = await FirebaseFirestore.instance
-          .collection('notifications')
-          .limit(1)
-          .get();
-
-      print(
-          'Successfully read from Firestore. Documents: ${snapshot.docs.length}');
-
-      // Force reload notifications
-      await loadNotificationsFromFirestore();
+      // Force reload notifications in background
+      loadNotificationsFromFirestore().catchError((e) {
+        print('Error reloading notifications: $e');
+      });
     } catch (e) {
       print('Firestore connection test failed: $e');
-      print('Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -776,14 +852,16 @@ class NotificationService {
   // Add a public method to save notifications
   Future<void> saveNotification(NotificationItem notification) async {
     try {
-      // Save to database
-      await _databaseService.saveNotification(notification);
-
       // Add to in-memory list
       _notifications.add(notification);
 
       // Save to SharedPreferences
       await _saveNotifications();
+
+      // Save to database in background (non-blocking)
+      _databaseService.saveNotification(notification).catchError((e) {
+        print('Error saving notification to database: $e');
+      });
 
       // Notify listeners
       for (var callback in _newNotificationCallbacks) {
@@ -795,21 +873,22 @@ class NotificationService {
       }
     } catch (e) {
       print('Error saving notification: $e');
-      print('Stack trace: ${StackTrace.current}');
     }
   }
 
   // NEW: Save low stock notification with special handling
   Future<void> saveLowStockNotification(NotificationItem notification) async {
     try {
-      // Save to database with special type
-      await _databaseService.saveNotification(notification);
-
       // Add to in-memory list
       _notifications.add(notification);
 
       // Save to SharedPreferences
       await _saveNotifications();
+
+      // Save to database in background (non-blocking)
+      _databaseService.saveNotification(notification).catchError((e) {
+        print('Error saving low stock notification to database: $e');
+      });
 
       // Notify listeners
       for (var callback in _newNotificationCallbacks) {
@@ -823,7 +902,6 @@ class NotificationService {
       print('Saved low stock notification: ${notification.title}');
     } catch (e) {
       print('Error saving low stock notification: $e');
-      print('Stack trace: ${StackTrace.current}');
     }
   }
 

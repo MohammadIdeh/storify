@@ -16,10 +16,11 @@ class OrdersByCustomers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
-    
+
     // Generate colors for the pie chart
-    final List<Color> pieColors = _generateColors(customersData.customers.length);
-    
+    final List<Color> pieColors =
+        _generateColors(customersData.customers.length);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
@@ -56,10 +57,10 @@ class OrdersByCustomers extends StatelessWidget {
                             if (index >= customersData.customers.length) {
                               return null;
                             }
-                            
+
                             final customer = customersData.customers[index];
                             final color = pieColors[index % pieColors.length];
-                            
+
                             return Padding(
                               padding: EdgeInsets.only(bottom: 12.h),
                               child: _buildCustomerSection(
@@ -90,9 +91,10 @@ class OrdersByCustomers extends StatelessWidget {
     );
   }
 
-  Widget _buildCustomerSection(String customerName, double percentage, Color color, Customer customer) {
+  Widget _buildCustomerSection(
+      String customerName, double percentage, Color color, Customer customer) {
     final clampedPercent = percentage.clamp(0, 100);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -194,12 +196,12 @@ class OrdersByCustomers extends StatelessWidget {
     // Prepare data for pie chart (top 6 customers to avoid overcrowding)
     final topCustomers = customers.take(6).toList();
     final dataMap = <String, double>{};
-    
+
     for (int i = 0; i < topCustomers.length; i++) {
       final customer = topCustomers[i];
       dataMap[customer.name] = customer.orderPercentage;
     }
-    
+
     // If there are more customers, group them as "Others"
     if (customers.length > 6) {
       final otherPercentage = customers
@@ -210,7 +212,7 @@ class OrdersByCustomers extends StatelessWidget {
       }
     }
 
-    final double chartSize = 0.25.sw;
+    final double chartSize = 0.19.sw;
     return SizedBox(
       width: chartSize,
       height: chartSize,
@@ -276,7 +278,7 @@ class OrdersByCustomers extends StatelessWidget {
       const Color(0xB2A8E6CF), // Mint
       const Color(0xB2F7DC6F), // Yellow
     ];
-    
+
     final colors = <Color>[];
     for (int i = 0; i < count; i++) {
       colors.add(baseColors[i % baseColors.length]);

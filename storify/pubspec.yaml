@@ -57,6 +57,7 @@ flutter:
     - assets/images/filter.svg
     - assets/images/totalProducts.svg
     - assets/images/arrow_up.svg
+    - assets/images/arrow_down.svg
     - assets/images/totalPaidOrders.svg
     - assets/images/totalUsers.svg
     - assets/images/totalStores.svg

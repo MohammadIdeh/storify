@@ -11,7 +11,7 @@ import 'package:storify/GeneralWidgets/longPressDraggable.dart';
 import 'package:storify/admin/screens/track.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
-import 'package:storify/admin/widgets/dashboardWidgets/ordersBySuperMarket.dart';
+import 'package:storify/admin/widgets/dashboardWidgets/ordersByCustomer.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/ordersOverview.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/orderCount.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/profit.dart';
@@ -472,27 +472,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {
-                          NotificationService().debugAdminNotifications();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 105, 65, 198),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16.w, vertical: 8.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'Debug Notifications',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.sp,
-                          ),
-                        ),
-                      ),
                       SizedBox(width: 8.w),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
