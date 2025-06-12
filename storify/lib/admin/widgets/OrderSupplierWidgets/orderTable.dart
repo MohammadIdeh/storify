@@ -10,7 +10,8 @@ class Ordertable extends StatefulWidget {
   final String filter; // "Total", "Active", "Completed", "Cancelled"
   final String searchQuery;
   final bool isSupplierMode; // Added parameter to determine the mode
-  final String? selectedActiveStatus; // NEW: Selected active status for customer orders
+  final String?
+      selectedActiveStatus; // NEW: Selected active status for customer orders
 
   const Ordertable({
     Key? key,
@@ -33,7 +34,7 @@ class _OrdertableState extends State<Ordertable> {
   // Apply filter based on the selected filter value with the new status mappings.
   List<OrderItem> get _filteredOrders {
     List<OrderItem> filtered = widget.orders;
-    
+
     if (widget.filter != "Total") {
       if (widget.filter == "Active") {
         if (widget.isSupplierMode) {
@@ -79,14 +80,14 @@ class _OrdertableState extends State<Ordertable> {
             .toList();
       }
     }
-    
+
     // Filter by search query on orderId.
     if (widget.searchQuery.isNotEmpty) {
       filtered = filtered
           .where((order) => order.orderId.contains(widget.searchQuery))
           .toList();
     }
-    
+
     return filtered;
   }
 

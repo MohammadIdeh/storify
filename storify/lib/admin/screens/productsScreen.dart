@@ -327,7 +327,7 @@ class _ProductsscreenState extends State<Productsscreen> {
   // Build the view mode toggle buttons
   Widget _buildViewModeToggle() {
     return Container(
-      width: 360.w,
+      width: 300.w,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
         borderRadius: BorderRadius.circular(16),

@@ -808,270 +808,1021 @@ class _VieworderState extends State<Vieworder> {
                                       // Items table
                                       SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
-                                        child: DataTable(
-                                          dataRowColor: WidgetStateProperty
-                                              .resolveWith<Color?>(
-                                            (Set<WidgetState> states) =>
-                                                Colors.transparent,
+                                        child: // Replace the DataTable section with this modern styled version
+
+                                            Container(
+                                          width: 1170,
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(16.r),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.1),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
                                           ),
-                                          headingRowColor:
-                                              MaterialStateProperty.all<Color>(
-                                            const Color.fromARGB(
-                                                255, 47, 71, 82),
-                                          ),
-                                          border: TableBorder(
-                                            horizontalInside: BorderSide(
-                                              color:
-                                                  Colors.white.withOpacity(0.1),
-                                            ),
-                                          ),
-                                          columnSpacing: 20.w,
-                                          columns: [
-                                            DataColumn(
-                                              label: Text(
-                                                "Image",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(16.r),
+                                            child: Theme(
+                                              data: Theme.of(context).copyWith(
+                                                dividerTheme: DividerThemeData(
+                                                  color: Colors.white
+                                                      .withOpacity(0.08),
+                                                  thickness: 1,
                                                 ),
                                               ),
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                "Item",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                "Unit Price",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              numeric: true,
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                "Qty",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              numeric: true,
-                                            ),
-                                            DataColumn(
-                                              label: Text(
-                                                "Total",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              numeric: true,
-                                            ),
-                                            // Only show Status column for PartiallyAccepted orders
-                                            if (_localOrder.status ==
-                                                "PartiallyAccepted")
-                                              DataColumn(
-                                                label: Text(
-                                                  "Status",
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w600,
+                                              child: DataTable(
+                                                // Modern styling
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                    colors: [
+                                                      const Color.fromARGB(
+                                                          255, 42, 58, 78),
+                                                      const Color.fromARGB(
+                                                          255, 36, 50, 69),
+                                                    ],
                                                   ),
                                                 ),
-                                              ),
-                                          ],
-                                          rows: _visibleLineItems.map((item) {
-                                            // Pre-format all strings for display
-                                            final String nameStr = item.name;
-                                            final String unitPriceStr =
-                                                "\$${item.unitPrice.toStringAsFixed(2)}";
-                                            final String qtyStr =
-                                                item.quantity.toString();
-                                            final String totalStr =
-                                                "\$${item.total.toStringAsFixed(2)}";
-
-                                            return DataRow(
-                                              cells: [
-                                                // Image cell
-                                                DataCell(
-                                                  Container(
-                                                    width: 40.w,
-                                                    height: 40.h,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6.r),
+                                                dataRowColor:
+                                                    WidgetStateProperty
+                                                        .resolveWith<Color?>(
+                                                  (Set<WidgetState> states) {
+                                                    if (states.contains(
+                                                        WidgetState.hovered)) {
+                                                      return Colors.white
+                                                          .withOpacity(0.05);
+                                                    }
+                                                    return Colors.transparent;
+                                                  },
+                                                ),
+                                                headingRowColor:
+                                                    WidgetStateProperty.all<
+                                                        Color>(
+                                                  const Color.fromARGB(
+                                                      255, 52, 73, 94),
+                                                ),
+                                                headingRowHeight: 60.h,
+                                                dataRowMinHeight: 70.h,
+                                                dataRowMaxHeight: 80.h,
+                                                horizontalMargin: 20.w,
+                                                columnSpacing: 30.w,
+                                                showCheckboxColumn: false,
+                                                border: TableBorder(
+                                                  horizontalInside: BorderSide(
+                                                    color: Colors.white
+                                                        .withOpacity(0.08),
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                columns: [
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.image_rounded,
+                                                            color: Colors.white,
+                                                            size: 18.sp,
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Text(
+                                                            "Image",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 15.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                    child: item.imageUrl != null
-                                                        ? ClipRRect(
+                                                  ),
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .inventory_2_rounded,
+                                                            color: Colors.white,
+                                                            size: 18.sp,
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Text(
+                                                            "Item",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 15.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .attach_money_rounded,
+                                                            color: Colors.white,
+                                                            size: 18.sp,
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Text(
+                                                            "Unit Price",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 15.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    numeric: true,
+                                                  ),
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .numbers_rounded,
+                                                            color: Colors.white,
+                                                            size: 18.sp,
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Text(
+                                                            "Qty",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 15.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    numeric: true,
+                                                  ),
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .calculate_rounded,
+                                                            color: Colors.white,
+                                                            size: 18.sp,
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Text(
+                                                            "Total",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 15.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    numeric: true,
+                                                  ),
+                                                  // Only show Status column for PartiallyAccepted orders
+                                                  if (_localOrder.status ==
+                                                      "PartiallyAccepted")
+                                                    DataColumn(
+                                                      label: Container(
+                                                        child: Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .info_rounded,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 18.sp,
+                                                            ),
+                                                            SizedBox(
+                                                                width: 8.w),
+                                                            Text(
+                                                              "Status",
+                                                              style: GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                fontSize: 15.sp,
+                                                                letterSpacing:
+                                                                    0.5,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                                rows: _visibleLineItems
+                                                    .map((item) {
+                                                  return DataRow(
+                                                    cells: [
+                                                      // Image cell with modern styling
+                                                      DataCell(
+                                                        Container(
+                                                          width: 55.w,
+                                                          height: 55.h,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            gradient:
+                                                                LinearGradient(
+                                                              colors: [
+                                                                Colors.white
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                                Colors.white
+                                                                    .withOpacity(
+                                                                        0.05),
+                                                              ],
+                                                              begin: Alignment
+                                                                  .topLeft,
+                                                              end: Alignment
+                                                                  .bottomRight,
+                                                            ),
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        6.r),
-                                                            child:
-                                                                Image.network(
-                                                              item.imageUrl!,
-                                                              fit: BoxFit.cover,
-                                                              errorBuilder:
-                                                                  (context,
-                                                                      error,
-                                                                      stackTrace) {
-                                                                return Icon(
-                                                                  Icons
-                                                                      .image_not_supported_outlined,
-                                                                  color: Colors
-                                                                      .white54,
-                                                                  size: 20.sp,
-                                                                );
-                                                              },
+                                                                        12.r),
+                                                            border: Border.all(
+                                                              color: Colors
+                                                                  .white
+                                                                  .withOpacity(
+                                                                      0.15),
+                                                              width: 1.5,
                                                             ),
-                                                          )
-                                                        : Icon(
-                                                            Icons
-                                                                .image_outlined,
-                                                            color:
-                                                                Colors.white54,
-                                                            size: 20.sp,
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: Colors
+                                                                    .black
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                                blurRadius: 4,
+                                                                offset:
+                                                                    const Offset(
+                                                                        0, 2),
+                                                              ),
+                                                            ],
                                                           ),
-                                                  ),
-                                                ),
-                                                // Name cell
-                                                DataCell(Text(
-                                                  nameStr,
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white,
-                                                  ),
-                                                )),
-                                                // Unit price cell
-                                                DataCell(Text(
-                                                  unitPriceStr,
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white,
-                                                  ),
-                                                )),
-                                                // Quantity cell
-                                                DataCell(Text(
-                                                  qtyStr,
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white,
-                                                  ),
-                                                )),
-                                                // Total cell
-                                                DataCell(Text(
-                                                  totalStr,
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white,
-                                                  ),
-                                                )),
-                                                // Status cell (only for PartiallyAccepted orders)
-                                                if (_localOrder.status ==
-                                                    "PartiallyAccepted")
-                                                  DataCell(
-                                                      _buildProductStatusPill(
-                                                          item.status ??
-                                                              "Unknown")),
-                                              ],
-                                            );
-                                          }).toList(),
+                                                          child:
+                                                              item.imageUrl !=
+                                                                      null
+                                                                  ? ClipRRect(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              10.r),
+                                                                      child: Image
+                                                                          .network(
+                                                                        item.imageUrl!,
+                                                                        fit: BoxFit
+                                                                            .cover,
+                                                                        errorBuilder: (context,
+                                                                            error,
+                                                                            stackTrace) {
+                                                                          return Icon(
+                                                                            Icons.image_not_supported_rounded,
+                                                                            color:
+                                                                                Colors.white54,
+                                                                            size:
+                                                                                24.sp,
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                    )
+                                                                  : Icon(
+                                                                      Icons
+                                                                          .inventory_2_rounded,
+                                                                      color: Colors
+                                                                          .white54,
+                                                                      size:
+                                                                          24.sp,
+                                                                    ),
+                                                        ),
+                                                      ),
+
+                                                      // Name cell with modern styling
+                                                      DataCell(
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            Text(
+                                                              item.name,
+                                                              style: GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                fontSize: 15.sp,
+                                                              ),
+                                                              maxLines: 2,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                            SizedBox(
+                                                                height: 4.h),
+                                                            Container(
+                                                              padding: EdgeInsets
+                                                                  .symmetric(
+                                                                      horizontal:
+                                                                          8.w,
+                                                                      vertical:
+                                                                          2.h),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        105,
+                                                                        65,
+                                                                        198)
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            12.r),
+                                                              ),
+                                                              child: Text(
+                                                                "Product",
+                                                                style: GoogleFonts
+                                                                    .spaceGrotesk(
+                                                                  color: const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      105,
+                                                                      65,
+                                                                      198),
+                                                                  fontSize:
+                                                                      11.sp,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+
+                                                      // Unit price cell with modern styling
+                                                      DataCell(
+                                                        Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      16.w,
+                                                                  vertical:
+                                                                      8.h),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            gradient:
+                                                                LinearGradient(
+                                                              colors: [
+                                                                const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        105,
+                                                                        65,
+                                                                        198)
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                                const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        105,
+                                                                        65,
+                                                                        198)
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                              ],
+                                                              begin: Alignment
+                                                                  .topLeft,
+                                                              end: Alignment
+                                                                  .bottomRight,
+                                                            ),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10.r),
+                                                            border: Border.all(
+                                                              color: const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      105,
+                                                                      65,
+                                                                      198)
+                                                                  .withOpacity(
+                                                                      0.4),
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .attach_money_rounded,
+                                                                color: const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    105,
+                                                                    65,
+                                                                    198),
+                                                                size: 16.sp,
+                                                              ),
+                                                              Text(
+                                                                item.unitPrice
+                                                                    .toStringAsFixed(
+                                                                        2),
+                                                                style: GoogleFonts
+                                                                    .spaceGrotesk(
+                                                                  color: const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      105,
+                                                                      65,
+                                                                      198),
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                  fontSize:
+                                                                      14.sp,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      // Quantity cell with modern styling
+                                                      DataCell(
+                                                        Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      16.w,
+                                                                  vertical:
+                                                                      8.h),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            gradient:
+                                                                LinearGradient(
+                                                              colors: [
+                                                                Colors.white
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                                Colors.white
+                                                                    .withOpacity(
+                                                                        0.05),
+                                                              ],
+                                                            ),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10.r),
+                                                            border: Border.all(
+                                                              color: Colors
+                                                                  .white
+                                                                  .withOpacity(
+                                                                      0.2),
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            item.quantity
+                                                                .toString(),
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 14.sp,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      // Total cell with modern styling
+                                                      DataCell(
+                                                        Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      16.w,
+                                                                  vertical:
+                                                                      8.h),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            gradient:
+                                                                LinearGradient(
+                                                              colors: [
+                                                                const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        0,
+                                                                        224,
+                                                                        116)
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                                const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        0,
+                                                                        196,
+                                                                        255)
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                              ],
+                                                              begin: Alignment
+                                                                  .topLeft,
+                                                              end: Alignment
+                                                                  .bottomRight,
+                                                            ),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10.r),
+                                                            border: Border.all(
+                                                              color: const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      0,
+                                                                      224,
+                                                                      116)
+                                                                  .withOpacity(
+                                                                      0.4),
+                                                              width: 1.5,
+                                                            ),
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        0,
+                                                                        224,
+                                                                        116)
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                                blurRadius: 4,
+                                                                offset:
+                                                                    const Offset(
+                                                                        0, 2),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .attach_money_rounded,
+                                                                color: const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    0,
+                                                                    224,
+                                                                    116),
+                                                                size: 16.sp,
+                                                              ),
+                                                              Text(
+                                                                item.total
+                                                                    .toStringAsFixed(
+                                                                        2),
+                                                                style: GoogleFonts
+                                                                    .spaceGrotesk(
+                                                                  color: const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      0,
+                                                                      224,
+                                                                      116),
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w800,
+                                                                  fontSize:
+                                                                      15.sp,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      // Status cell (only for PartiallyAccepted orders)
+                                                      if (_localOrder.status ==
+                                                          "PartiallyAccepted")
+                                                        DataCell(
+                                                            _buildProductStatusPill(
+                                                                item.status ??
+                                                                    "Unknown")),
+                                                    ],
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
-
-                                      // Pagination controls if more than one page
                                       if (_lineItems.length >
                                           _lineItemsPerPage) ...[
-                                        SizedBox(height: 16.h),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(
-                                                Icons.arrow_back_ios,
-                                                color: Colors.white,
-                                                size: 16.sp,
+                                        SizedBox(height: 20.h),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 24.w, vertical: 16.h),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                const Color.fromARGB(
+                                                    255, 52, 73, 94),
+                                                const Color.fromARGB(
+                                                    255, 47, 64, 85),
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(16.r),
+                                            border: Border.all(
+                                              color:
+                                                  Colors.white.withOpacity(0.1),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.1),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
                                               ),
-                                              onPressed:
-                                                  _lineItemsCurrentPage > 1
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // Previous button
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  gradient:
+                                                      _lineItemsCurrentPage > 1
+                                                          ? LinearGradient(
+                                                              colors: [
+                                                                const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    105,
+                                                                    65,
+                                                                    198),
+                                                                const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    85,
+                                                                    45,
+                                                                    178),
+                                                              ],
+                                                            )
+                                                          : LinearGradient(
+                                                              colors: [
+                                                                Colors.white
+                                                                    .withOpacity(
+                                                                        0.1),
+                                                                Colors.white
+                                                                    .withOpacity(
+                                                                        0.05),
+                                                              ],
+                                                            ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                  boxShadow:
+                                                      _lineItemsCurrentPage > 1
+                                                          ? [
+                                                              BoxShadow(
+                                                                color: const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        105,
+                                                                        65,
+                                                                        198)
+                                                                    .withOpacity(
+                                                                        0.3),
+                                                                blurRadius: 8,
+                                                                offset:
+                                                                    const Offset(
+                                                                        0, 4),
+                                                              ),
+                                                            ]
+                                                          : [],
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(
+                                                    Icons.chevron_left_rounded,
+                                                    color:
+                                                        _lineItemsCurrentPage >
+                                                                1
+                                                            ? Colors.white
+                                                            : Colors.white38,
+                                                    size: 24.sp,
+                                                  ),
+                                                  onPressed:
+                                                      _lineItemsCurrentPage > 1
+                                                          ? () {
+                                                              setState(() {
+                                                                _lineItemsCurrentPage--;
+                                                              });
+                                                            }
+                                                          : null,
+                                                ),
+                                              ),
+
+                                              SizedBox(width: 24.w),
+
+                                              // Page indicator
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 20.w,
+                                                    vertical: 12.h),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Colors.white
+                                                          .withOpacity(0.15),
+                                                      Colors.white
+                                                          .withOpacity(0.08),
+                                                    ],
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          20.r),
+                                                  border: Border.all(
+                                                    color: Colors.white
+                                                        .withOpacity(0.3),
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.layers_rounded,
+                                                      color: Colors.white,
+                                                      size: 16.sp,
+                                                    ),
+                                                    SizedBox(width: 8.w),
+                                                    Text(
+                                                      "Page $_lineItemsCurrentPage of ${(_lineItems.length / _lineItemsPerPage).ceil()}",
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
+                                                        fontSize: 14.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              SizedBox(width: 24.w),
+
+                                              // Next button
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: _lineItemsCurrentPage <
+                                                          (_lineItems.length /
+                                                                  _lineItemsPerPage)
+                                                              .ceil()
+                                                      ? LinearGradient(
+                                                          colors: [
+                                                            const Color
+                                                                .fromARGB(255,
+                                                                105, 65, 198),
+                                                            const Color
+                                                                .fromARGB(255,
+                                                                85, 45, 178),
+                                                          ],
+                                                        )
+                                                      : LinearGradient(
+                                                          colors: [
+                                                            Colors.white
+                                                                .withOpacity(
+                                                                    0.1),
+                                                            Colors.white
+                                                                .withOpacity(
+                                                                    0.05),
+                                                          ],
+                                                        ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                  boxShadow: _lineItemsCurrentPage <
+                                                          (_lineItems.length /
+                                                                  _lineItemsPerPage)
+                                                              .ceil()
+                                                      ? [
+                                                          BoxShadow(
+                                                            color: const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    105,
+                                                                    65,
+                                                                    198)
+                                                                .withOpacity(
+                                                                    0.3),
+                                                            blurRadius: 8,
+                                                            offset:
+                                                                const Offset(
+                                                                    0, 4),
+                                                          ),
+                                                        ]
+                                                      : [],
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(
+                                                    Icons.chevron_right_rounded,
+                                                    color: _lineItemsCurrentPage <
+                                                            (_lineItems.length /
+                                                                    _lineItemsPerPage)
+                                                                .ceil()
+                                                        ? Colors.white
+                                                        : Colors.white38,
+                                                    size: 24.sp,
+                                                  ),
+                                                  onPressed: _lineItemsCurrentPage <
+                                                          (_lineItems.length /
+                                                                  _lineItemsPerPage)
+                                                              .ceil()
                                                       ? () {
                                                           setState(() {
-                                                            _lineItemsCurrentPage--;
+                                                            _lineItemsCurrentPage++;
                                                           });
                                                         }
                                                       : null,
-                                            ),
-                                            Text(
-                                              "Page $_lineItemsCurrentPage of ${(_lineItems.length / _lineItemsPerPage).ceil()}",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(
-                                                Icons.arrow_forward_ios,
-                                                color: Colors.white,
-                                                size: 16.sp,
-                                              ),
-                                              onPressed: _lineItemsCurrentPage <
-                                                      (_lineItems.length /
-                                                              _lineItemsPerPage)
-                                                          .ceil()
-                                                  ? () {
-                                                      setState(() {
-                                                        _lineItemsCurrentPage++;
-                                                      });
-                                                    }
-                                                  : null,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-
-                                      SizedBox(height: 20.h),
-                                      // Only Grand Total
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: Padding(
-                                          padding: EdgeInsets.only(bottom: 6.h),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              Text(
-                                                "Grand Total: ",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  fontSize: 16.sp,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Colors.white70,
-                                                ),
-                                              ),
-                                              Text(
-                                                "\$" +
-                                                    _localOrder.totalAmount
-                                                        .toStringAsFixed(2),
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  fontSize: 16.sp,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Colors.white70,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
+                                      ],
+
+                                      SizedBox(height: 24.h),
+
+// Enhanced Grand Total section
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 20.w,
+                                                vertical: 10.h),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  const Color.fromARGB(
+                                                          255, 0, 224, 116)
+                                                      .withOpacity(0.2),
+                                                  const Color.fromARGB(
+                                                          255, 0, 196, 255)
+                                                      .withOpacity(0.2),
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(16.r),
+                                              border: Border.all(
+                                                color: const Color.fromARGB(
+                                                        255, 0, 224, 116)
+                                                    .withOpacity(0.6),
+                                                width: 2,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color.fromARGB(
+                                                          255, 0, 224, 116)
+                                                      .withOpacity(0.2),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Container(
+                                                  padding: EdgeInsets.all(8.w),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color.fromARGB(
+                                                            255, 0, 224, 116)
+                                                        .withOpacity(0.3),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.calculate_rounded,
+                                                    color: const Color.fromARGB(
+                                                        255, 0, 224, 116),
+                                                    size: 24.sp,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 16.w),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "Grand Total",
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
+                                                        fontSize: 14.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white70,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      "\$${_localOrder.totalAmount.toStringAsFixed(2)}",
+                                                      style: GoogleFonts
+                                                          .spaceGrotesk(
+                                                        fontSize: 24.sp,
+                                                        fontWeight:
+                                                            FontWeight.w900,
+                                                        color: const Color
+                                                            .fromARGB(
+                                                            255, 0, 224, 116),
+                                                        letterSpacing: 1,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),

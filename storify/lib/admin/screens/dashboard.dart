@@ -53,10 +53,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _productsError;
   String? _orderCountError;
 
+  // Drag & Drop Order Lists
+  List<int> _statsCardsOrder = [];
+  List<int> _dashboardWidgetsOrder = [];
+
+  // Widget caches to prevent unnecessary recreation
+  List<Widget>? _cachedBaseDashboardWidgets;
+  List<Widget>? _cachedBaseStatsCards;
+
   @override
   void initState() {
     super.initState();
     _loadProfilePicture();
+    _loadSavedOrders();
     _fetchDashboardData();
   }
 
@@ -65,6 +74,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       profilePictureUrl = prefs.getString('profilePicture');
     });
+  }
+
+  // Load saved orders from SharedPreferences
+  Future<void> _loadSavedOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load stats cards order (default: [0, 1, 2, 3])
+    final savedStatsOrder = prefs.getStringList('dashboard_stats_order');
+    if (savedStatsOrder != null) {
+      _statsCardsOrder = savedStatsOrder.map((e) => int.parse(e)).toList();
+    } else {
+      _statsCardsOrder = [0, 1, 2, 3]; // Default order
+    }
+
+    // Load dashboard widgets order (default: [0, 1, 2, 3])
+    final savedWidgetsOrder = prefs.getStringList('dashboard_widgets_order');
+    if (savedWidgetsOrder != null) {
+      _dashboardWidgetsOrder =
+          savedWidgetsOrder.map((e) => int.parse(e)).toList();
+    } else {
+      _dashboardWidgetsOrder = [0, 1, 2, 3]; // Default order
+    }
+  }
+
+  // Save orders to SharedPreferences
+  Future<void> _saveOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Save stats cards order
+    await prefs.setStringList(
+      'dashboard_stats_order',
+      _statsCardsOrder.map((e) => e.toString()).toList(),
+    );
+
+    // Save dashboard widgets order
+    await prefs.setStringList(
+      'dashboard_widgets_order',
+      _dashboardWidgetsOrder.map((e) => e.toString()).toList(),
+    );
   }
 
   Future<void> _fetchDashboardData() async {
@@ -85,11 +133,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _dashboardCards = response.cards;
         _isLoadingCards = false;
         _cardsError = null;
+
+        // Clear cache to rebuild with new data
+        _cachedBaseStatsCards = null;
+
+        // Initialize stats cards order if needed
+        if (_statsCardsOrder.isEmpty ||
+            _statsCardsOrder.length != _dashboardCards.length) {
+          _statsCardsOrder =
+              List.generate(_dashboardCards.length, (index) => index);
+        }
       });
     } catch (e) {
       setState(() {
         _isLoadingCards = false;
         _cardsError = e.toString();
+        // Clear cache on error too
+        _cachedBaseStatsCards = null;
       });
     }
   }
@@ -101,11 +161,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _topCustomersData = response;
         _isLoadingCustomers = false;
         _customersError = null;
+        // Clear cache to rebuild with new data
+        _cachedBaseDashboardWidgets = null;
       });
     } catch (e) {
       setState(() {
         _isLoadingCustomers = false;
         _customersError = e.toString();
+        // Clear cache on error too
+        _cachedBaseDashboardWidgets = null;
       });
     }
   }
@@ -117,11 +181,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _ordersOverviewData = response;
         _isLoadingOrdersOverview = false;
         _ordersOverviewError = null;
+        // Clear cache to rebuild with new data
+        _cachedBaseDashboardWidgets = null;
       });
     } catch (e) {
       setState(() {
         _isLoadingOrdersOverview = false;
         _ordersOverviewError = e.toString();
+        // Clear cache on error too
+        _cachedBaseDashboardWidgets = null;
       });
     }
   }
@@ -149,62 +217,113 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _orderCountData = response;
         _isLoadingOrderCount = false;
         _orderCountError = null;
+        // Clear cache to rebuild with new data
+        _cachedBaseDashboardWidgets = null;
       });
     } catch (e) {
       setState(() {
         _isLoadingOrderCount = false;
         _orderCountError = e.toString();
+        // Clear cache on error too
+        _cachedBaseDashboardWidgets = null;
       });
     }
   }
 
   // Build dashboard widgets with real data
+  List<Widget> get _baseDashboardWidgets {
+    // Only rebuild if data has changed or cache is empty
+    if (_cachedBaseDashboardWidgets == null ||
+        _isLoadingCustomers ||
+        _isLoadingOrdersOverview ||
+        _isLoadingOrderCount ||
+        _customersError != null ||
+        _ordersOverviewError != null ||
+        _orderCountError != null) {
+      _cachedBaseDashboardWidgets = [
+        _isLoadingCustomers
+            ? _buildLoadingWidget(key: const Key('loading_customers'))
+            : _customersError != null
+                ? _buildErrorWidget(_customersError!, _fetchTopCustomers,
+                    key: const Key('error_customers'))
+                : OrdersByCustomers(
+                    customersData: _topCustomersData!,
+                    key: const Key('customers_widget'),
+                  ),
+        _isLoadingOrdersOverview
+            ? _buildLoadingWidget(key: const Key('loading_orders'))
+            : _ordersOverviewError != null
+                ? _buildErrorWidget(_ordersOverviewError!, _fetchOrdersOverview,
+                    key: const Key('error_orders'))
+                : OrdersOverviewWidget(
+                    ordersData: _ordersOverviewData!,
+                    key: const Key('orders_widget'),
+                  ),
+        _isLoadingOrderCount
+            ? _buildLoadingWidget(key: const Key('loading_count'))
+            : _orderCountError != null
+                ? _buildErrorWidget(_orderCountError!, _fetchOrderCount,
+                    key: const Key('error_count'))
+                : OrderCountWidget(key: const Key('count_widget')),
+        Profit(key: const Key('profit_widget')),
+      ];
+    }
+
+    return _cachedBaseDashboardWidgets!;
+  }
+
+  // Get dashboard widgets in the current order
   List<Widget> get _dashboardWidgets {
-    return [
-      _isLoadingCustomers
-          ? _buildLoadingWidget()
-          : _customersError != null
-              ? _buildErrorWidget(_customersError!, _fetchTopCustomers)
-              : OrdersByCustomers(
-                  customersData: _topCustomersData!,
-                  key: UniqueKey(),
-                ),
-      _isLoadingOrdersOverview
-          ? _buildLoadingWidget()
-          : _ordersOverviewError != null
-              ? _buildErrorWidget(_ordersOverviewError!, _fetchOrdersOverview)
-              : OrdersOverviewWidget(
-                  ordersData: _ordersOverviewData!,
-                  key: UniqueKey(),
-                ),
-      _isLoadingOrderCount
-          ? _buildLoadingWidget()
-          : _orderCountError != null
-              ? _buildErrorWidget(_orderCountError!, _fetchOrderCount)
-              : OrderCountWidget(key: UniqueKey()),
-      Profit(key: UniqueKey()),
-    ];
+    final baseWidgets = _baseDashboardWidgets;
+    if (_dashboardWidgetsOrder.isEmpty ||
+        _dashboardWidgetsOrder.length != baseWidgets.length) {
+      return baseWidgets;
+    }
+
+    return _dashboardWidgetsOrder.map((index) {
+      if (index >= 0 && index < baseWidgets.length) {
+        return baseWidgets[index];
+      }
+      return baseWidgets[0]; // Fallback
+    }).toList();
   }
 
   // Build stats cards with real data
   List<Widget> get _statsCards {
     if (_isLoadingCards) {
-      return List.generate(4, (index) => _buildLoadingCard());
+      return List.generate(
+          4, (index) => _buildLoadingCard(key: Key('loading_card_$index')));
     }
 
     if (_cardsError != null) {
-      return [_buildErrorCard()];
+      return [_buildErrorCard(key: const Key('error_card'))];
     }
 
-    return _dashboardCards.map((card) {
-      return StatsCard(
-        percentage: card.growth,
-        svgIconPath: _getSvgIconPath(card.title),
-        title: card.title,
-        value: card.value,
-        isPositive: card.isPositive,
-        key: UniqueKey(),
-      );
+    // Only rebuild if data has changed or cache is empty
+    if (_cachedBaseStatsCards == null || _dashboardCards.isEmpty) {
+      _cachedBaseStatsCards = _dashboardCards.map((card) {
+        return StatsCard(
+          percentage: card.growth,
+          svgIconPath: _getSvgIconPath(card.title),
+          title: card.title,
+          value: card.value,
+          isPositive: card.isPositive,
+          key: Key('stats_${card.title.replaceAll(' ', '_').toLowerCase()}'),
+        );
+      }).toList();
+    }
+
+    // Return cards in the current order
+    if (_statsCardsOrder.isEmpty ||
+        _statsCardsOrder.length != _cachedBaseStatsCards!.length) {
+      return _cachedBaseStatsCards!;
+    }
+
+    return _statsCardsOrder.map((index) {
+      if (index >= 0 && index < _cachedBaseStatsCards!.length) {
+        return _cachedBaseStatsCards![index];
+      }
+      return _cachedBaseStatsCards![0]; // Fallback
     }).toList();
   }
 
@@ -223,8 +342,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildLoadingWidget() {
+  Widget _buildLoadingWidget({Key? key}) {
     return Container(
+      key: key,
       height: 400.h,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
@@ -238,8 +358,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildLoadingCard() {
+  Widget _buildLoadingCard({Key? key}) {
     return Container(
+      key: key,
       height: 150.h,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
@@ -253,8 +374,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildErrorWidget(String error, VoidCallback onRetry) {
+  Widget _buildErrorWidget(String error, VoidCallback onRetry, {Key? key}) {
     return Container(
+      key: key,
       height: 400.h,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
@@ -313,8 +435,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildErrorCard() {
+  Widget _buildErrorCard({Key? key}) {
     return Container(
+      key: key,
       height: 150.h,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
@@ -604,12 +727,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           onWillAccept: (oldIndex) => oldIndex != index,
           onAccept: (oldIndex) {
-            // Note: Can't reorder when using dynamic widgets
-            // setState(() {
-            //   final temp = _dashboardWidgets[oldIndex];
-            //   _dashboardWidgets[oldIndex] = _dashboardWidgets[index];
-            //   _dashboardWidgets[index] = temp;
-            // });
+            // Swap the order indices
+            final temp = _dashboardWidgetsOrder[oldIndex];
+            _dashboardWidgetsOrder[oldIndex] = _dashboardWidgetsOrder[index];
+            _dashboardWidgetsOrder[index] = temp;
+
+            // Save the new order without triggering setState immediately
+            _saveOrders();
+
+            // Only trigger setState for the UI update, not widget recreation
+            setState(() {});
           },
         ),
       ),
@@ -645,12 +772,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           onWillAccept: (oldIndex) => oldIndex != index,
           onAccept: (oldIndex) {
-            // Note: Can't reorder when using dynamic widgets
-            // setState(() {
-            //   final temp = _statsCards[oldIndex];
-            //   _statsCards[oldIndex] = _statsCards[index];
-            //   _statsCards[index] = temp;
-            // });
+            // Swap the order indices
+            final temp = _statsCardsOrder[oldIndex];
+            _statsCardsOrder[oldIndex] = _statsCardsOrder[index];
+            _statsCardsOrder[index] = temp;
+
+            // Save the new order without triggering setState immediately
+            _saveOrders();
+
+            // Only trigger setState for the UI update, not widget recreation
+            setState(() {});
           },
         ),
       ),

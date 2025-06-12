@@ -37,8 +37,8 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
     });
 
     // Get the admin note if provided
-    final adminNote = _noteController.text.trim().isNotEmpty 
-        ? _noteController.text.trim() 
+    final adminNote = _noteController.text.trim().isNotEmpty
+        ? _noteController.text.trim()
         : null;
 
     final status = action == 'accept' ? 'Accepted' : 'Declined';
@@ -48,12 +48,13 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
       final headers = await AuthService.getAuthHeaders();
       // Add Content-Type to headers
       headers['Content-Type'] = 'application/json';
-      
+
       print('🔄 Processing request for product ${widget.product.id}: $status');
       print('📤 Request headers: $headers');
-      
+
       final response = await http.patch(
-        Uri.parse('https://finalproject-a5ls.onrender.com/request-product/${widget.product.id}/status'),
+        Uri.parse(
+            'https://finalproject-a5ls.onrender.com/request-product/${widget.product.id}/status'),
         headers: headers,
         body: json.encode({
           'status': status,
@@ -65,16 +66,15 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
         final data = json.decode(response.body);
         if (data['productRequest'] != null) {
           setState(() {
-            _updatedProduct = RequestedProductModel.fromJson(data['productRequest']);
+            _updatedProduct =
+                RequestedProductModel.fromJson(data['productRequest']);
             _isLoading = false;
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Product request has been $status'),
-              backgroundColor: status == 'Accepted' 
-                  ? Colors.green 
-                  : Colors.red,
+              backgroundColor: status == 'Accepted' ? Colors.green : Colors.red,
             ),
           );
 
@@ -113,11 +113,12 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
   Widget build(BuildContext context) {
     // Use the updated product if available, otherwise use the original
     final product = _updatedProduct ?? widget.product;
-    
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+        scrolledUnderElevation: 0,
+        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
         title: Text(
           'Product Request Details',
           style: GoogleFonts.spaceGrotesk(
@@ -196,9 +197,12 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                             SizedBox(height: 8.h),
                             _buildInfoRow('ID', '${product.id}'),
                             _buildInfoRow('Barcode', product.barcode),
-                            _buildInfoRow('Category', product.category.categoryName),
-                            _buildInfoRow('Cost Price', '\$${product.costPrice.toStringAsFixed(2)}'),
-                            _buildInfoRow('Sell Price', '\$${product.sellPrice.toStringAsFixed(2)}'),
+                            _buildInfoRow(
+                                'Category', product.category.categoryName),
+                            _buildInfoRow('Cost Price',
+                                '\$${product.costPrice.toStringAsFixed(2)}'),
+                            _buildInfoRow('Sell Price',
+                                '\$${product.sellPrice.toStringAsFixed(2)}'),
                             SizedBox(height: 16.h),
                             _buildStatusPill(product.status),
                           ],
@@ -206,9 +210,9 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                       ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 32.h),
-                  
+
                   // Supplier information section
                   _buildSectionHeader('Supplier Information'),
                   Container(
@@ -223,13 +227,14 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                         _buildInfoRow('Name', product.supplier.user.name),
                         _buildInfoRow('Email', product.supplier.user.email),
                         _buildInfoRow('ID', '${product.supplier.id}'),
-                        _buildInfoRow('Account Balance', product.supplier.accountBalance),
+                        _buildInfoRow(
+                            'Account Balance', product.supplier.accountBalance),
                       ],
                     ),
                   ),
-                  
+
                   SizedBox(height: 32.h),
-                  
+
                   // Product details section
                   _buildSectionHeader('Product Details'),
                   Container(
@@ -241,7 +246,8 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (product.description != null && product.description!.isNotEmpty)
+                        if (product.description != null &&
+                            product.description!.isNotEmpty)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -264,21 +270,25 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                               SizedBox(height: 16.h),
                             ],
                           ),
-                        _buildInfoRow('Request Date', '${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}'),
+                        _buildInfoRow('Request Date',
+                            '${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}'),
                         if (product.warranty != null)
                           _buildInfoRow('Warranty', product.warranty!),
                         if (product.prodDate != null)
-                          _buildInfoRow('Production Date', '${product.prodDate!.day}/${product.prodDate!.month}/${product.prodDate!.year}'),
+                          _buildInfoRow('Production Date',
+                              '${product.prodDate!.day}/${product.prodDate!.month}/${product.prodDate!.year}'),
                         if (product.expDate != null)
-                          _buildInfoRow('Expiry Date', '${product.expDate!.day}/${product.expDate!.month}/${product.expDate!.year}'),
+                          _buildInfoRow('Expiry Date',
+                              '${product.expDate!.day}/${product.expDate!.month}/${product.expDate!.year}'),
                       ],
                     ),
                   ),
-                  
+
                   SizedBox(height: 32.h),
-                  
+
                   // Admin note section if there is one
-                  if (product.adminNote != null && product.adminNote!.isNotEmpty)
+                  if (product.adminNote != null &&
+                      product.adminNote!.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -300,7 +310,7 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                         SizedBox(height: 32.h),
                       ],
                     ),
-                  
+
                   // Action buttons (only show if status is Pending)
                   if (product.status == 'Pending')
                     Column(
@@ -334,7 +344,8 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                                 ),
                                 decoration: InputDecoration(
                                   filled: true,
-                                  fillColor: const Color.fromARGB(255, 29, 41, 57),
+                                  fillColor:
+                                      const Color.fromARGB(255, 29, 41, 57),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.r),
                                     borderSide: BorderSide.none,
@@ -346,52 +357,54 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
                                 ),
                               ),
                               SizedBox(height: 24.h),
-                              
+
+                              // Accept/Decline buttons
                               // Accept/Decline buttons
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red.shade700,
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 16.h,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12.r),
-                                        ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade700,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 20.h,
+                                        horizontal: 50.w,
                                       ),
-                                      onPressed: () => _processRequest('decline'),
-                                      child: Text(
-                                        'Decline',
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 16.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12.r),
+                                      ),
+                                    ),
+                                    onPressed: () => _processRequest('decline'),
+                                    child: Text(
+                                      'Decline',
+                                      style: GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                     ),
                                   ),
                                   SizedBox(width: 16.w),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green.shade600,
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 16.h,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12.r),
-                                        ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade600,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 20.h,
+                                        horizontal: 50.w,
                                       ),
-                                      onPressed: () => _processRequest('accept'),
-                                      child: Text(
-                                        'Accept',
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 16.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12.r),
+                                      ),
+                                    ),
+                                    onPressed: () => _processRequest('accept'),
+                                    child: Text(
+                                      'Accept',
+                                      style: GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                     ),
                                   ),
@@ -458,7 +471,7 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
   // Helper to build status pill
   Widget _buildStatusPill(String status) {
     late Color bgColor;
-    
+
     switch (status) {
       case "Pending":
         bgColor = Colors.amber; // amber/yellow for pending

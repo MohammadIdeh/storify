@@ -239,7 +239,7 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
               InkWell(
                 onTap: _toggleNotificationMenu,
                 child: Container(
-                  width: 50.w,
+                  width: 52.w,
                   height: 52.h,
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 36, 50, 69),
@@ -247,13 +247,9 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
                   ),
                   child: Stack(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(13.0),
+                      Center(
                         child: SvgPicture.asset(
                           'assets/images/noti.svg',
-                          width: 20.w,
-                          height: 20.h,
-                          // ignore: deprecated_member_use
                           color: _isNotificationMenuOpen
                               ? const Color.fromARGB(255, 105, 65, 198)
                               : const Color.fromARGB(255, 105, 123, 123),

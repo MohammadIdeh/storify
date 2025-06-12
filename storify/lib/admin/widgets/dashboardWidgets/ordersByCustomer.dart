@@ -23,6 +23,7 @@ class OrdersByCustomers extends StatelessWidget {
 
     return Container(
       width: double.infinity,
+      height: 467.h,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: backgroundColor,

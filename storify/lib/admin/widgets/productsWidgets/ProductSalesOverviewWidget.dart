@@ -231,7 +231,7 @@ class _ProductSalesOverviewWidgetState
     if (_isLoading) {
       return Container(
         width: double.infinity,
-        height: 467.h,
+        height: 585.h,
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
           color: backgroundColor,
@@ -319,7 +319,7 @@ class _ProductSalesOverviewWidgetState
     if (_salesData == null) {
       return Container(
         width: double.infinity,
-        height: 467.h,
+        height: 585.h,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(24),
@@ -341,6 +341,7 @@ class _ProductSalesOverviewWidgetState
     final maxY = _salesData!.maxValue > 0 ? _salesData!.maxValue * 1.2 : 100.0;
 
     return Container(
+      height: 585.h,
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -476,7 +477,8 @@ class _ProductSalesOverviewWidgetState
           /// --- The Line Chart ---
           SizedBox(
             width: double.infinity,
-            height: 300.h,
+            height: 410.h, // Increased from 300.h to 420.h
+
             child: LineChart(
               LineChartData(
                 minX: 0,

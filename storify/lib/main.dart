@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/screens/dashboard.dart';
+import 'package:storify/admin/screens/orders.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
 import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
@@ -155,7 +156,7 @@ class MyApp extends StatelessWidget {
       switch (currentRole) {
         case 'Admin':
           print('👑 Showing DashboardScreen for Admin');
-          return const DashboardScreen();
+          return const Orders();
         case 'Supplier':
           print('🏪 Showing SupplierOrders');
           return const SupplierOrders();

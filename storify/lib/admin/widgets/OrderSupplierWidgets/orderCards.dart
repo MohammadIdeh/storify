@@ -91,7 +91,7 @@ class OrdersCard extends StatelessWidget {
                   // Bottom-center circular progress indicator.
                   Positioned(
                     bottom: 0,
-                    left: (cardWidth - circleSize) / 2, // Center it.
+                    left: (cardWidth - circleSize) / 1.75, // Center it.
                     child: CircularPercentIndicator(
                       radius: circleSize / 3,
                       lineWidth: circleSize * 0.05,

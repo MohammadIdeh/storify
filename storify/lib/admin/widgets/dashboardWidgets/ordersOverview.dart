@@ -265,6 +265,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
     final maxY = _chartData!.maxValue > 0 ? _chartData!.maxValue * 1.2 : 100.0;
 
     return Container(
+      height: 467.h,
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(

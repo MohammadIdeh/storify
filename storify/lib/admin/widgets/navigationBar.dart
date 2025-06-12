@@ -126,30 +126,14 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
           Row(
             children: [
               // Search
-              InkWell(
-                onTap: () {
-                  // Handle search
-                },
-                child: Container(
-                  width: 50.w,
-                  height: 52.h,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(13.0),
-                    child: SvgPicture.asset('assets/images/search.svg'),
-                  ),
-                ),
-              ),
+
               SizedBox(width: 14.w),
 
               // Notifications
               InkWell(
                 onTap: _toggleNotificationMenu,
                 child: Container(
-                  width: 50.w,
+                  width: 52.w,
                   height: 52.h,
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 36, 50, 69),
@@ -157,12 +141,9 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                   ),
                   child: Stack(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(13.0),
+                      Center(
                         child: SvgPicture.asset(
                           'assets/images/noti.svg',
-                          width: 20.w,
-                          height: 20.h,
                           color: _isNotificationMenuOpen
                               ? const Color.fromARGB(255, 105, 65, 198)
                               : const Color.fromARGB(255, 105, 123, 123),

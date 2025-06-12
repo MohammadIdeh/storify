@@ -835,71 +835,325 @@ class _OrdersState extends State<Orders> {
                                 isSelected: isSelected,
                               ),
                               // NEW: Add dropdown for Active Orders card in customer mode
+                              // NEW: Add dropdown for Active Orders card in customer mode
+                              // NEW: Add dropdown for Active Orders card in customer mode
                               if (data.hasDropdown && index == 1 && isSelected)
                                 Positioned(
-                                  top: 60.h,
-                                  right: 16.w,
+                                  top: 55.h,
+                                  right: 12.w,
                                   child: Container(
-                                    width: 120.w,
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 8.w),
+                                    width: 140.w,
                                     decoration: BoxDecoration(
-                                      color:
-                                          const Color.fromARGB(255, 50, 65, 85),
-                                      borderRadius: BorderRadius.circular(8.r),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          const Color.fromARGB(255, 60, 75, 95),
+                                          const Color.fromARGB(255, 45, 60, 80),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12.r),
                                       border: Border.all(
                                         color: const Color.fromARGB(
-                                            255, 105, 65, 198),
-                                        width: 1,
+                                                255, 105, 65, 198)
+                                            .withOpacity(0.3),
+                                        width: 1.5,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
                                     ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: _selectedActiveStatus,
-                                        hint: Text(
-                                          'All',
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 11.sp,
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                        dropdownColor: const Color.fromARGB(
-                                            255, 50, 65, 85),
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 11.sp,
-                                          color: Colors.white,
-                                        ),
-                                        icon: const Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Colors.white70,
-                                        ),
-                                        isExpanded: true,
-                                        items: [
-                                          DropdownMenuItem<String>(
-                                            value: null,
-                                            child: Text(
-                                              'All',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 11.sp,
-                                                color: Colors.white,
-                                              ),
+                                    child: Theme(
+                                      data: Theme.of(context).copyWith(
+                                        canvasColor: const Color.fromARGB(
+                                            255, 45, 60, 80),
+                                        // Remove all splash and highlight effects
+                                        splashColor: Colors.transparent,
+                                        highlightColor: Colors.transparent,
+                                        hoverColor: Colors.transparent,
+                                        focusColor: Colors.transparent,
+                                      ),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          value: _selectedActiveStatus,
+                                          hint: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 12.w,
+                                                vertical: 8.h),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.filter_list_rounded,
+                                                  color: Colors.white70,
+                                                  size: 16.sp,
+                                                ),
+                                                SizedBox(width: 6.w),
+                                                Text(
+                                                  'All Status',
+                                                  style:
+                                                      GoogleFonts.spaceGrotesk(
+                                                    fontSize: 12.sp,
+                                                    color: Colors.white70,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          ..._activeStatusOptions
-                                              .map((String status) {
-                                            return DropdownMenuItem<String>(
-                                              value: status,
-                                              child: Text(
-                                                status,
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  fontSize: 11.sp,
-                                                  color: Colors.white,
+                                          selectedItemBuilder:
+                                              (BuildContext context) {
+                                            return [
+                                              null, // for the "All" option
+                                              ..._activeStatusOptions,
+                                            ].map<Widget>((String? status) {
+                                              return Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 12.w,
+                                                    vertical: 8.h),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.filter_list_rounded,
+                                                      color:
+                                                          const Color.fromARGB(
+                                                              255,
+                                                              105,
+                                                              65,
+                                                              198),
+                                                      size: 16.sp,
+                                                    ),
+                                                    SizedBox(width: 6.w),
+                                                    Flexible(
+                                                      child: Text(
+                                                        status == null
+                                                            ? 'All Status'
+                                                            : _getStatusDisplayName(
+                                                                status),
+                                                        style: GoogleFonts
+                                                            .spaceGrotesk(
+                                                          fontSize: 12.sp,
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList();
+                                          },
+                                          dropdownColor: const Color.fromARGB(
+                                              255, 45, 60, 80),
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12.sp,
+                                            color: Colors.white,
+                                          ),
+                                          icon: Padding(
+                                            padding:
+                                                EdgeInsets.only(right: 8.w),
+                                            child: Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              color: Colors.white70,
+                                              size: 20.sp,
+                                            ),
+                                          ),
+                                          isExpanded: true,
+                                          borderRadius:
+                                              BorderRadius.circular(12.r),
+                                          elevation: 8,
+                                          // Remove dropdown button splash effects
+                                          focusColor: Colors.transparent,
+                                          items: [
+                                            DropdownMenuItem<String>(
+                                              value: null,
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  // Remove all splash effects
+                                                  splashColor:
+                                                      Colors.transparent,
+                                                  highlightColor:
+                                                      Colors.transparent,
+                                                  hoverColor:
+                                                      Colors.transparent,
+                                                  focusColor:
+                                                      Colors.transparent,
+                                                  overlayColor:
+                                                      MaterialStateProperty.all(
+                                                          Colors.transparent),
+                                                  child: Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal: 12.w,
+                                                            vertical: 10.h),
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8.r),
+                                                      color:
+                                                          _selectedActiveStatus ==
+                                                                  null
+                                                              ? const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      105,
+                                                                      65,
+                                                                      198)
+                                                                  .withOpacity(
+                                                                      0.1)
+                                                              : Colors
+                                                                  .transparent,
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .all_inclusive_rounded,
+                                                          color:
+                                                              _selectedActiveStatus ==
+                                                                      null
+                                                                  ? const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      105,
+                                                                      65,
+                                                                      198)
+                                                                  : Colors
+                                                                      .white70,
+                                                          size: 16.sp,
+                                                        ),
+                                                        SizedBox(width: 8.w),
+                                                        Text(
+                                                          'All Status',
+                                                          style: GoogleFonts
+                                                              .spaceGrotesk(
+                                                            fontSize: 12.sp,
+                                                            color: _selectedActiveStatus ==
+                                                                    null
+                                                                ? const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    105,
+                                                                    65,
+                                                                    198)
+                                                                : Colors.white,
+                                                            fontWeight:
+                                                                _selectedActiveStatus == null
+                                                                    ? FontWeight
+                                                                        .w600
+                                                                    : FontWeight
+                                                                        .w500,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
-                                            );
-                                          }).toList(),
-                                        ],
-                                        onChanged: _onActiveStatusSelected,
+                                            ),
+                                            ..._activeStatusOptions
+                                                .map((String status) {
+                                              final isSelected =
+                                                  _selectedActiveStatus ==
+                                                      status;
+                                              return DropdownMenuItem<String>(
+                                                value: status,
+                                                child: Material(
+                                                  color: Colors.transparent,
+                                                  child: InkWell(
+                                                    // Remove all splash effects
+                                                    splashColor:
+                                                        Colors.transparent,
+                                                    highlightColor:
+                                                        Colors.transparent,
+                                                    hoverColor:
+                                                        Colors.transparent,
+                                                    focusColor:
+                                                        Colors.transparent,
+                                                    overlayColor:
+                                                        MaterialStateProperty
+                                                            .all(Colors
+                                                                .transparent),
+                                                    child: Container(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 12.w,
+                                                              vertical: 10.h),
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8.r),
+                                                        color: isSelected
+                                                            ? const Color
+                                                                    .fromARGB(
+                                                                    255,
+                                                                    105,
+                                                                    65,
+                                                                    198)
+                                                                .withOpacity(
+                                                                    0.1)
+                                                            : Colors
+                                                                .transparent,
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Container(
+                                                            width: 8.w,
+                                                            height: 8.h,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                              color:
+                                                                  _getStatusColor(
+                                                                      status),
+                                                            ),
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Flexible(
+                                                            child: Text(
+                                                              _getStatusDisplayName(
+                                                                  status),
+                                                              style: GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                fontSize: 12.sp,
+                                                                color: isSelected
+                                                                    ? const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        105,
+                                                                        65,
+                                                                        198)
+                                                                    : Colors
+                                                                        .white,
+                                                                fontWeight: isSelected
+                                                                    ? FontWeight
+                                                                        .w600
+                                                                    : FontWeight
+                                                                        .w500,
+                                                              ),
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ],
+                                          onChanged: _onActiveStatusSelected,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1091,4 +1345,39 @@ class _OrderCardData {
     required this.circleColor,
     this.hasDropdown = false,
   });
+}
+
+// Helper function to convert status values to display names
+String _getStatusDisplayName(String status) {
+  switch (status) {
+    case 'Accepted':
+      return 'Accepted';
+    case 'Assigned':
+      return 'Assigned';
+    case 'Preparing':
+      return 'Preparing';
+    case 'Prepared':
+      return 'Prepared';
+    case 'on_theway':
+      return 'On Theway';
+    default:
+      return status;
+  }
+} // Helper function to get status indicator colors
+
+Color _getStatusColor(String status) {
+  switch (status) {
+    case 'Accepted':
+      return Colors.blue;
+    case 'Assigned':
+      return Colors.cyan;
+    case 'Preparing':
+      return Colors.orange;
+    case 'Prepared':
+      return Colors.green;
+    case 'on_theway':
+      return Colors.purple;
+    default:
+      return Colors.grey;
+  }
 }
