@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/order.dart';
 import '../services/location_service.dart';
 import '../services/order_service.dart';
@@ -116,6 +118,148 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         );
       }
     });
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    try {
+      // Clean the phone number (remove spaces, dashes, parentheses, etc.)
+      final cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+      print('📞 Attempting to call: $cleanedNumber');
+
+      // Simple approach - just use tel: scheme directly
+      final Uri phoneUri = Uri.parse('tel:$cleanedNumber');
+
+      // Try to launch with different modes
+      bool launched = false;
+
+      // First try: External application mode
+      try {
+        launched = await launchUrl(
+          phoneUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (e) {
+        print('📞 External app mode failed: $e');
+      }
+
+      // Second try: Platform default mode
+      if (!launched) {
+        try {
+          launched = await launchUrl(phoneUri);
+        } catch (e) {
+          print('📞 Platform default mode failed: $e');
+        }
+      }
+
+      // Third try: External non-browser mode
+      if (!launched) {
+        try {
+          launched = await launchUrl(
+            phoneUri,
+            mode: LaunchMode.externalNonBrowserApplication,
+          );
+        } catch (e) {
+          print('📞 External non-browser mode failed: $e');
+        }
+      }
+
+      if (!launched) {
+        if (!mounted) return;
+        _showMessage('Could not open phone app. Number: $cleanedNumber');
+      } else {
+        print('📞 Successfully launched phone app');
+      }
+    } catch (e) {
+      print('📞 Error making call: $e');
+      if (!mounted) return;
+      _showMessage('Error: $e');
+    }
+  }
+
+  void _showCallConfirmation(String phoneNumber, String customerName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF304050),
+        title: Text(
+          'Call Customer',
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Call $customerName?',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                phoneNumber,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18,
+                  color: const Color(0xFF4CAF50),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.spaceGrotesk(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _makePhoneCall(phoneNumber);
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4CAF50)),
+            child: Text(
+              'Call',
+              style: GoogleFonts.spaceGrotesk(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.spaceGrotesk(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   Future<void> _startDelivery() async {
@@ -647,7 +791,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         [
                           _buildDetailItem('Customer Name',
                               widget.order.customerName, Icons.person_outline),
-                          _buildDetailItem(
+                          _buildPhoneItem(
                               'Phone Number',
                               widget.order.customer.user.phoneNumber,
                               Icons.phone_outlined),
@@ -789,28 +933,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                           ),
                         ],
-
-                        // CustomButton(
-                        //   text: widget.order.canStart &&
-                        //           !widget.order.isInProgress
-                        //       ? 'Start Delivery'
-                        //       : 'Mark as Delivered',
-                        //   onPressed: _isUpdatingStatus || !canStartIndividually
-                        //       ? () {} // Empty function for disabled state
-                        //       : widget.order.canStart &&
-                        //               !widget.order.isInProgress
-                        //           ? () => _startDelivery()
-                        //           : () => _markAsDelivered(),
-                        //   isLoading: _isUpdatingStatus,
-                        //   backgroundColor: !canStartIndividually &&
-                        //           widget.order.canStart &&
-                        //           !widget.order.isInProgress
-                        //       ? Colors.grey.withOpacity(0.5) // Disabled state
-                        //       : widget.order.canStart &&
-                        //               !widget.order.isInProgress
-                        //           ? const Color(0xFF6941C6) // primary
-                        //           : const Color(0xFF4CAF50), // success
-                        // ),
                       ],
 
                       const SizedBox(height: 16),
@@ -977,6 +1099,87 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhoneItem(String label, String phoneNumber, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: const Color(0xAAFFFFFF),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12,
+                    color: const Color(0xAAFFFFFF),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        phoneNumber,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _showCallConfirmation(
+                          phoneNumber, widget.order.customerName),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.phone,
+                              color: Color(0xFF4CAF50),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Call',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 12,
+                                color: const Color(0xFF4CAF50),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

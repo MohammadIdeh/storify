@@ -307,6 +307,12 @@ class _MapScreenState extends State<MapScreen>
 
   Future<void> _loadSingleOrderRoute(
       Order order, Position currentPosition, OrderService orderService) async {
+    // Don't load single routes if we're in batch mode
+    if (orderService.isBatchDeliveryActive) {
+      print('🚫 Skipping single route load - batch delivery is active');
+      return;
+    }
+
     // Avoid multiple simultaneous requests for the same order
     if (_orderRouteLoading[order.id] == true) return;
 
@@ -319,7 +325,7 @@ class _MapScreenState extends State<MapScreen>
           LatLng(currentPosition.latitude, currentPosition.longitude);
       final destination = LatLng(order.latitude, order.longitude);
 
-      print('🗺️ Loading real route for Order #${order.id}');
+      print('🗺️ Loading real route for single Order #${order.id}');
 
       // Get real route from Google Directions
       final directionsResponse =
@@ -327,34 +333,36 @@ class _MapScreenState extends State<MapScreen>
 
       if (directionsResponse != null && mounted) {
         setState(() {
+          // Clear any existing routes for this order
           _polylines.removeWhere(
-              (polyline) => polyline.polylineId.value == 'route_${order.id}');
+              (polyline) => polyline.polylineId.value.contains('${order.id}'));
 
           // Add real route polyline
           _polylines.add(
             Polyline(
-              polylineId: PolylineId('route_${order.id}'),
+              polylineId: PolylineId('single_route_${order.id}'),
               color: const Color(0xFF6941C6),
               width: 5,
               points: directionsResponse.points, // Real road points!
-              // NO PATTERNS = Solid line following real roads
+              patterns: [], // Solid line for real routes
             ),
           );
         });
 
         print(
-            '✅ Real route loaded: ${directionsResponse.points.length} points, ${directionsResponse.distanceKm.toStringAsFixed(1)}km');
+            '✅ Single route loaded: ${directionsResponse.points.length} points, ${directionsResponse.distanceKm.toStringAsFixed(1)}km');
       } else {
         // Fallback to straight line only if Directions fails
-        print('⚠️ Google Directions failed, using straight line');
+        print(
+            '⚠️ Google Directions failed for single order, using straight line');
         if (mounted) {
           setState(() {
-            _polylines.removeWhere(
-                (polyline) => polyline.polylineId.value == 'route_${order.id}');
+            _polylines.removeWhere((polyline) =>
+                polyline.polylineId.value.contains('${order.id}'));
 
             _polylines.add(
               Polyline(
-                polylineId: PolylineId('route_${order.id}'),
+                polylineId: PolylineId('single_fallback_${order.id}'),
                 color: const Color(0xFF6941C6).withOpacity(0.7),
                 width: 4,
                 patterns: [
@@ -371,7 +379,7 @@ class _MapScreenState extends State<MapScreen>
         }
       }
     } catch (e) {
-      print('❌ Error loading route: $e');
+      print('❌ Error loading single route: $e');
     } finally {
       if (mounted) {
         setState(() {
