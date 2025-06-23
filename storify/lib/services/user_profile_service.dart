@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' as http_parser;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 
@@ -149,110 +150,261 @@ class UserProfileService {
     }
   }
 
-  // Upload profile picture using multipart form data
+  // MAIN UPLOAD METHOD WITH FULL DEBUGGING
   static Future<Map<String, dynamic>> uploadProfilePicture(
       Uint8List imageBytes, String fileName) async {
+    print('🌐 === HTTP REQUEST DEBUG START ===');
+
     try {
       final headers = await AuthService.getAuthHeaders();
+      print('🔑 Auth headers available: ${headers.keys.toList()}');
+      print(
+          '🔑 Authorization present: ${headers.containsKey('Authorization')}');
 
-      // Remove Content-Type from headers since it will be set automatically for multipart
-      final multipartHeaders = Map<String, String>.from(headers);
-      multipartHeaders.remove('Content-Type');
+      // Log token for debugging (first/last 10 chars only for security)
+      if (headers['Authorization'] != null) {
+        final token = headers['Authorization']!;
+        final tokenPreview = token.length > 20
+            ? '${token.substring(0, 10)}...${token.substring(token.length - 10)}'
+            : token;
+        print('🔑 Token preview: $tokenPreview');
+      }
 
-      // Create multipart request
       var request = http.MultipartRequest(
         'PUT',
         Uri.parse('$baseUrl/user/profile'),
       );
 
-      // Add headers (except Content-Type)
-      request.headers.addAll(multipartHeaders);
+      // Add authorization header
+      if (headers['Authorization'] != null) {
+        request.headers['Authorization'] = headers['Authorization']!;
+        print('✅ Authorization header added to request');
+      }
 
-      // Add the image file
+      // Add other headers except Content-Type (will be set automatically for multipart)
+      headers.forEach((key, value) {
+        if (key.toLowerCase() != 'content-type') {
+          request.headers[key] = value;
+        }
+      });
+
+      // Create the multipart file with proper content type
       var multipartFile = http.MultipartFile.fromBytes(
-        'profilePicture', // This should match your API's expected field name
+        'profilePicture', // Make sure this matches your backend field name
         imageBytes,
         filename: fileName,
+        contentType: _getMediaType(fileName),
       );
 
       request.files.add(multipartFile);
 
-      print(
-          'Upload Profile Picture Request - File: $fileName, Size: ${imageBytes.length} bytes');
-      print('Request headers: ${request.headers}');
+      print('📤 === REQUEST DETAILS ===');
+      print('   URL: ${request.url}');
+      print('   Method: ${request.method}');
+      print('   Headers: ${request.headers}');
+      print('   File field name: ${multipartFile.field}');
+      print('   File name: ${multipartFile.filename}');
+      print('   File size: ${multipartFile.length} bytes');
+      print('   File content type: ${multipartFile.contentType}');
+      print('   Expected backend field: profilePicture');
 
-      // Send the request
-      var streamedResponse = await request.send();
+      print('⏳ Sending multipart request...');
+
+      // Send the request with timeout
+      var streamedResponse = await request.send().timeout(
+        Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Upload timeout after 30 seconds');
+        },
+      );
+
       var response = await http.Response.fromStream(streamedResponse);
 
-      print(
-          'Upload Profile Picture API Response Status: ${response.statusCode}');
-      print('Upload Profile Picture API Response Body: ${response.body}');
+      print('📥 === RESPONSE DETAILS ===');
+      print('   Status Code: ${response.statusCode}');
+      print('   Response Headers: ${response.headers}');
+      print('   Response Body: ${response.body}');
+      print('   Response Length: ${response.body.length} characters');
 
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200 && responseData['user'] != null) {
-        // Update local storage with the updated profile data
-        await _storeProfileDataLocally(responseData['user']);
+      // Parse response
+      Map<String, dynamic> responseData;
+      try {
+        responseData = json.decode(response.body);
+        print('✅ Response successfully parsed as JSON');
+        print('📋 Parsed response keys: ${responseData.keys.toList()}');
+      } catch (e) {
+        print('❌ Failed to parse response as JSON: $e');
+        print('📄 Raw response body: ${response.body}');
+        responseData = {
+          'message':
+              response.body.isNotEmpty ? response.body : 'Empty response',
+          'rawResponse': response.body,
+        };
       }
 
+      bool isSuccess = response.statusCode == 200 || response.statusCode == 201;
+      print('🎯 Upload Success Status: $isSuccess');
+
+      // Handle successful response
+      if (isSuccess) {
+        print('🎉 Upload reported as successful by server');
+
+        if (responseData['user'] != null) {
+          print('👤 User data found in response');
+          print(
+              '🖼️ Profile picture in response: ${responseData['user']['profilePicture']}');
+
+          // Store updated profile data
+          await _storeProfileDataLocally(responseData['user']);
+          print('💾 Profile data updated in local storage');
+        } else {
+          print(
+              '⚠️ No user data in successful response - this might be the issue!');
+          print('📋 Available response keys: ${responseData.keys.toList()}');
+        }
+      } else {
+        print('❌ Upload failed according to server');
+        print('📋 Error details: ${responseData}');
+      }
+
+      print('🌐 === HTTP REQUEST DEBUG END ===');
+
       return {
-        'success': response.statusCode == 200,
+        'success': isSuccess,
         'statusCode': response.statusCode,
-        'message': responseData['message'] ?? 'Unknown error occurred',
+        'message': responseData['message'] ??
+            (isSuccess
+                ? 'Profile picture updated successfully'
+                : 'Upload failed'),
         'data': responseData,
+        'hasUserData': responseData['user'] != null,
+        'profilePictureUrl': responseData['user']?['profilePicture'],
       };
-    } catch (e) {
-      print('Error uploading profile picture: $e');
+    } catch (e, stackTrace) {
+      print('💥 === UPLOAD EXCEPTION ===');
+      print('   Error Type: ${e.runtimeType}');
+      print('   Error Message: $e');
+      print('   Stack Trace: $stackTrace');
+
       return {
         'success': false,
         'statusCode': 0,
-        'message': 'Network error occurred: $e',
+        'message': 'Network error: $e',
         'data': null,
+        'error': e.toString(),
       };
     }
   }
 
-  // Remove profile picture by sending empty value
+  // TEST UPLOAD METHOD - Upload a simple test image
+  static Future<Map<String, dynamic>> testUpload() async {
+    print('🧪 === STARTING TEST UPLOAD ===');
+
+    // Create a minimal 1x1 pixel PNG
+    final testImageBase64 =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    final testImageBytes = base64Decode(testImageBase64);
+    final testFileName = 'test_${DateTime.now().millisecondsSinceEpoch}.png';
+
+    print('🧪 Test image details:');
+    print('   Size: ${testImageBytes.length} bytes');
+    print('   Name: $testFileName');
+    print('   Type: PNG');
+
+    final result = await uploadProfilePicture(testImageBytes, testFileName);
+
+    print('🧪 === TEST UPLOAD RESULT ===');
+    print('   Success: ${result['success']}');
+    print('   Status: ${result['statusCode']}');
+    print('   Message: ${result['message']}');
+    print('   Has User Data: ${result['hasUserData']}');
+    print('   New Profile URL: ${result['profilePictureUrl']}');
+
+    return result;
+  }
+
+  // Remove profile picture
   static Future<Map<String, dynamic>> removeProfilePicture() async {
     try {
       final headers = await AuthService.getAuthHeaders();
 
-      // Create multipart request for consistency
+      // Try different approaches for removing profile picture
+
+      // Approach 1: Try dedicated DELETE endpoint
+      print('🗑️ Trying DELETE endpoint first...');
+      try {
+        final deleteResponse = await http.delete(
+          Uri.parse('$baseUrl/user/profile/picture'),
+          headers: headers,
+        );
+
+        if (deleteResponse.statusCode != 404 &&
+            deleteResponse.statusCode != 405) {
+          print('✅ DELETE endpoint exists, processing response...');
+          final responseData = json.decode(deleteResponse.body);
+          bool isSuccess = deleteResponse.statusCode == 200 ||
+              deleteResponse.statusCode == 204;
+
+          if (isSuccess && responseData['user'] != null) {
+            await _storeProfileDataLocally(responseData['user']);
+          }
+
+          return {
+            'success': isSuccess,
+            'statusCode': deleteResponse.statusCode,
+            'message': responseData['message'] ?? 'Profile picture removed',
+            'data': responseData,
+          };
+        }
+      } catch (e) {
+        print('⚠️ DELETE endpoint not available or failed: $e');
+      }
+
+      // Approach 2: Use multipart with removal flag
+      print('🗑️ Using multipart with removal flag...');
       var request = http.MultipartRequest(
         'PUT',
         Uri.parse('$baseUrl/user/profile'),
       );
 
-      // Remove Content-Type from headers
-      final multipartHeaders = Map<String, String>.from(headers);
-      multipartHeaders.remove('Content-Type');
-      request.headers.addAll(multipartHeaders);
+      // Add headers
+      if (headers['Authorization'] != null) {
+        request.headers['Authorization'] = headers['Authorization']!;
+      }
+      headers.forEach((key, value) {
+        if (key.toLowerCase() != 'content-type') {
+          request.headers[key] = value;
+        }
+      });
 
-      // Add empty field to remove the profile picture
-      request.fields['profilePicture'] = '';
-
-      print('Remove Profile Picture Request');
+      // Try multiple approaches for removal
+      request.fields['removeProfilePicture'] = 'true';
+      request.fields['profilePicture'] = ''; // Empty string
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      print(
-          'Remove Profile Picture API Response Status: ${response.statusCode}');
-      print('Remove Profile Picture API Response Body: ${response.body}');
+      print('Remove Profile Picture Response Status: ${response.statusCode}');
+      print('Remove Profile Picture Response Body: ${response.body}');
 
-      final responseData = json.decode(response.body);
+      Map<String, dynamic> responseData;
+      try {
+        responseData = json.decode(response.body);
+      } catch (e) {
+        responseData = {'message': response.body};
+      }
 
-      if (response.statusCode == 200 && responseData['user'] != null) {
-        // Update local storage with the updated profile data
+      bool isSuccess = response.statusCode == 200 || response.statusCode == 201;
+
+      if (isSuccess && responseData['user'] != null) {
         await _storeProfileDataLocally(responseData['user']);
       }
 
       return {
-        'success': response.statusCode == 200,
+        'success': isSuccess,
         'statusCode': response.statusCode,
-        'message':
-            responseData['message'] ?? 'Profile picture removed successfully',
+        'message': responseData['message'] ??
+            (isSuccess ? 'Profile picture removed' : 'Failed to remove'),
         'data': responseData,
       };
     } catch (e) {
@@ -277,57 +429,68 @@ class UserProfileService {
     try {
       final headers = await AuthService.getAuthHeaders();
 
-      // Remove Content-Type from headers since it will be set automatically for multipart
-      final multipartHeaders = Map<String, String>.from(headers);
-      multipartHeaders.remove('Content-Type');
-
-      // Create multipart request
       var request = http.MultipartRequest(
         'PUT',
         Uri.parse('$baseUrl/user/profile'),
       );
 
-      // Add headers (except Content-Type)
-      request.headers.addAll(multipartHeaders);
+      // Add headers
+      if (headers['Authorization'] != null) {
+        request.headers['Authorization'] = headers['Authorization']!;
+      }
+      headers.forEach((key, value) {
+        if (key.toLowerCase() != 'content-type') {
+          request.headers[key] = value;
+        }
+      });
 
       // Add text fields
-      if (name != null) request.fields['name'] = name;
-      if (email != null) request.fields['email'] = email;
-      if (phoneNumber != null) request.fields['phoneNumber'] = phoneNumber;
+      if (name != null && name.isNotEmpty) request.fields['name'] = name;
+      if (email != null && email.isNotEmpty) request.fields['email'] = email;
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        request.fields['phoneNumber'] = phoneNumber;
+      }
 
-      // Add the image file if provided
+      // Add image file if provided
       if (imageBytes != null && fileName != null) {
         var multipartFile = http.MultipartFile.fromBytes(
           'profilePicture',
           imageBytes,
           filename: fileName,
+          contentType: _getMediaType(fileName),
         );
         request.files.add(multipartFile);
       }
 
-      print('Update Profile with Image Request');
-      print('Fields: ${request.fields}');
-      print('Files: ${request.files.map((f) => f.filename).toList()}');
+      print('Combined Update Request:');
+      print('   Fields: ${request.fields}');
+      print(
+          '   Files: ${request.files.map((f) => '${f.field}: ${f.filename}').toList()}');
 
-      // Send the request
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      print(
-          'Update Profile with Image API Response Status: ${response.statusCode}');
-      print('Update Profile with Image API Response Body: ${response.body}');
+      print('Combined Update Response Status: ${response.statusCode}');
+      print('Combined Update Response Body: ${response.body}');
 
-      final responseData = json.decode(response.body);
+      Map<String, dynamic> responseData;
+      try {
+        responseData = json.decode(response.body);
+      } catch (e) {
+        responseData = {'message': response.body};
+      }
 
-      if (response.statusCode == 200 && responseData['user'] != null) {
-        // Update local storage with the updated profile data
+      bool isSuccess = response.statusCode == 200 || response.statusCode == 201;
+
+      if (isSuccess && responseData['user'] != null) {
         await _storeProfileDataLocally(responseData['user']);
       }
 
       return {
-        'success': response.statusCode == 200,
+        'success': isSuccess,
         'statusCode': response.statusCode,
-        'message': responseData['message'] ?? 'Unknown error occurred',
+        'message': responseData['message'] ??
+            (isSuccess ? 'Profile updated successfully' : 'Update failed'),
         'data': responseData,
       };
     } catch (e) {
@@ -350,7 +513,7 @@ class UserProfileService {
 
   // Check image file size (in bytes)
   static bool isValidImageSize(Uint8List imageBytes, {int maxSizeInMB = 5}) {
-    final maxSizeInBytes = maxSizeInMB * 1024 * 1024; // Convert MB to bytes
+    final maxSizeInBytes = maxSizeInMB * 1024 * 1024;
     return imageBytes.length <= maxSizeInBytes;
   }
 
@@ -376,21 +539,67 @@ class UserProfileService {
     return profileData != null;
   }
 
-  // Helper method to get MIME type from file extension
-  static String _getMimeType(String fileName) {
+  // Helper method to get proper MediaType for multipart files
+  static http_parser.MediaType _getMediaType(String fileName) {
     final extension = fileName.toLowerCase().split('.').last;
     switch (extension) {
       case 'jpg':
       case 'jpeg':
-        return 'image/jpeg';
+        return http_parser.MediaType('image', 'jpeg');
       case 'png':
-        return 'image/png';
+        return http_parser.MediaType('image', 'png');
       case 'gif':
-        return 'image/gif';
+        return http_parser.MediaType('image', 'gif');
       case 'webp':
-        return 'image/webp';
+        return http_parser.MediaType('image', 'webp');
+      case 'svg':
+        return http_parser.MediaType('image', 'svg+xml');
       default:
-        return 'image/jpeg'; // Default to jpeg
+        return http_parser.MediaType('image', 'jpeg');
+    }
+  }
+
+  // Debug method to check current authentication status
+  static Future<Map<String, dynamic>> debugAuthStatus() async {
+    try {
+      final headers = await AuthService.getAuthHeaders();
+      print('🔍 === AUTH DEBUG ===');
+      print('   Available headers: ${headers.keys.toList()}');
+      print('   Has Authorization: ${headers.containsKey('Authorization')}');
+
+      if (headers['Authorization'] != null) {
+        final token = headers['Authorization']!;
+        print('   Token length: ${token.length}');
+        print(
+            '   Token starts with: ${token.substring(0, min(20, token.length))}...');
+      }
+
+      // Test a simple GET request
+      final testResponse = await http.get(
+        Uri.parse('$baseUrl/user/profile'),
+        headers: headers,
+      );
+
+      print('   Test GET status: ${testResponse.statusCode}');
+      print(
+          '   Test GET response: ${testResponse.body.substring(0, min(100, testResponse.body.length))}...');
+
+      return {
+        'hasAuth': headers.containsKey('Authorization'),
+        'testStatus': testResponse.statusCode,
+        'testSuccess': testResponse.statusCode == 200,
+      };
+    } catch (e) {
+      print('❌ Auth debug error: $e');
+      return {
+        'hasAuth': false,
+        'testStatus': 0,
+        'testSuccess': false,
+        'error': e.toString(),
+      };
     }
   }
 }
+
+// Helper function for min
+int min(int a, int b) => a < b ? a : b;

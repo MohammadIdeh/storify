@@ -156,7 +156,7 @@ class MyApp extends StatelessWidget {
       switch (currentRole) {
         case 'Admin':
           print('👑 Showing DashboardScreen for Admin');
-          return const Orders();
+          return const DashboardScreen();
         case 'Supplier':
           print('🏪 Showing SupplierOrders');
           return const SupplierOrders();
