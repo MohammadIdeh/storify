@@ -13,9 +13,13 @@ import 'package:storify/services/user_profile_service.dart';
 
 class Profilepopup extends StatefulWidget {
   final VoidCallback onCloseMenu;
+  final Future<void> Function()? onLogout; // Add logout callback
 
-  const Profilepopup({super.key, required this.onCloseMenu});
-
+  const Profilepopup({
+    super.key,
+    required this.onCloseMenu,
+    this.onLogout, // Make it optional for backwards compatibility
+  });
   @override
   State<Profilepopup> createState() => _ProfilepopupState();
 }
@@ -76,55 +80,58 @@ class _ProfilepopupState extends State<Profilepopup> {
   }
 
   // Handle logout - moved inside class and improved
+// lib/GeneralWidgets/profilePopUp.dart
+// Enhanced logout method with comprehensive error handling
+
   Future<void> _logout(BuildContext context) async {
-    // First call the callback to close the popup
-    widget.onCloseMenu();
-
     try {
-      // Use AuthService to logout from all roles
-      await AuthService.logoutFromAllRoles();
-
-      // Clear ALL shared preferences data
-      final prefs = await SharedPreferences.getInstance();
-
-      // Clear profile data
-      await prefs.remove('profilePicture');
-      await prefs.remove('name');
-      await prefs.remove('currentRole');
-      await prefs.remove('email');
-      await prefs.remove('phoneNumber');
-      await prefs.remove('userId');
-      await prefs.remove('isActive');
-      await prefs.remove('registrationDate');
-
-      // Clear auth data
-      await prefs.remove('token');
-      await prefs.remove('supplierId');
-
-      // Clear location data
-      await prefs.remove('latitude');
-      await prefs.remove('longitude');
-      await prefs.remove('locationSet');
-
-      // Optional: clear all data with clear() instead of individual removes
-      // await prefs.clear();
-
-      // Navigate to login screen and prevent going back with the back button
-      if (context.mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false, // Remove all previous routes
-        );
+      if (widget.onLogout != null) {
+        // Use the callback provided by parent
+        await widget.onLogout!();
+      } else {
+        // Fallback to old method if no callback provided
+        await _logoutFallback(context);
       }
     } catch (e) {
       print('Error during logout: $e');
-      // Show error message if logout fails
-      if (context.mounted) {
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Logout failed: $e')),
         );
       }
     }
+  }
+
+  // Fallback logout method (old approach)
+  Future<void> _logoutFallback(BuildContext context) async {
+    if (!mounted || !context.mounted) return;
+
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+    await AuthService.logoutFromAllRoles();
+    final prefs = await SharedPreferences.getInstance();
+
+    // Clear data
+    await prefs.remove('profilePicture');
+    await prefs.remove('name');
+    await prefs.remove('currentRole');
+    await prefs.remove('email');
+    await prefs.remove('phoneNumber');
+    await prefs.remove('userId');
+    await prefs.remove('isActive');
+    await prefs.remove('registrationDate');
+    await prefs.remove('token');
+    await prefs.remove('supplierId');
+    await prefs.remove('latitude');
+    await prefs.remove('longitude');
+    await prefs.remove('locationSet');
+
+    rootNavigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+
+    widget.onCloseMenu();
   }
 
   @override

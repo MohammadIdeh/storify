@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
+import 'package:storify/Registration/Screens/loginScreen.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notificationPopUpAdmin.dart';
 
@@ -44,6 +47,55 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   void _openMenu() {
+    // Ensure any existing overlay is closed first
+    if (_overlayEntry != null) {
+      _closeMenu();
+      // Add a small delay to ensure cleanup
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted && !_isMenuOpen) {
+          _createAndShowOverlay();
+        }
+      });
+    } else {
+      _createAndShowOverlay();
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      print('🚪 Starting logout from navigation bar...');
+
+      // Close the menu first
+      _closeMenu();
+
+      // Perform logout operations
+      await AuthService.logoutFromAllRoles();
+
+      // Clear shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear(); // Clear all data at once
+
+      print('✅ All data cleared');
+
+      // Navigate (this widget won't be disposed)
+      if (mounted && context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+        print('🔄 Navigation to login completed');
+      }
+    } catch (e) {
+      print('Error during logout: $e');
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
+  }
+
+  void _createAndShowOverlay() {
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         return Stack(
@@ -63,7 +115,8 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               child: Material(
                 color: Colors.transparent,
                 child: Profilepopup(
-                  onCloseMenu: _closeMenu, // Pass the close menu callback
+                  onCloseMenu: _closeMenu,
+                  onLogout: _handleLogout, // Pass the logout callback
                 ),
               ),
             ),
@@ -72,18 +125,41 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       },
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
-    setState(() {
-      _isMenuOpen = true;
-    });
+    if (mounted && context.mounted) {
+      try {
+        Overlay.of(context).insert(_overlayEntry!);
+        setState(() {
+          _isMenuOpen = true;
+        });
+      } catch (e) {
+        print('Error inserting overlay: $e');
+        _overlayEntry = null;
+      }
+    }
   }
 
   void _closeMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    setState(() {
-      _isMenuOpen = false;
-    });
+    if (_overlayEntry != null) {
+      try {
+        _overlayEntry!.remove();
+      } catch (e) {
+        print('Error removing overlay: $e');
+      }
+      _overlayEntry = null;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isMenuOpen = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    // Ensure overlay is cleaned up when widget is disposed
+    _closeMenu();
+    super.dispose();
   }
 
   @override
