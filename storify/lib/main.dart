@@ -128,7 +128,22 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
+
+        // Add named routes for cleaner navigation
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/admin': (context) => const DashboardScreen(),
+          '/supplier': (context) => const SupplierOrders(),
+          '/customer': (context) => const CustomerOrders(),
+          '/warehouse': (context) => const Orders_employee(),
+        },
+
+        // Set initial route
+        initialRoute: _getInitialRoute(),
+
+        // Fallback home
         home: _getHomeScreen(),
+
         // Add error handling
         builder: (context, widget) {
           return widget ??
@@ -141,6 +156,35 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+
+  String _getInitialRoute() {
+    print(
+        '🏠 Getting initial route for logged in: $isLoggedIn, role: $currentRole');
+
+    try {
+      if (!isLoggedIn) {
+        return '/login';
+      }
+
+      switch (currentRole) {
+        case 'Admin':
+          return '/admin';
+        case 'Supplier':
+          return '/supplier';
+        case 'Customer':
+          return '/customer';
+        case 'WareHouseEmployee':
+          return '/warehouse';
+        case 'DeliveryMan':
+          return '/login'; // DeliveryMan placeholder
+        default:
+          return '/login';
+      }
+    } catch (e) {
+      print('❌ Error in _getInitialRoute: $e');
+      return '/login';
+    }
   }
 
   Widget _getHomeScreen() {
@@ -180,7 +224,6 @@ class MyApp extends StatelessWidget {
     }
   }
 }
-
 // Test credentials (remove in production)
 // admin - hamode.sh889@gmail.com - 123123 - id: 84
 // supplier ahmad - hamode.sh334@gmail.com - yism5huFJGy6SfI- - id: 4

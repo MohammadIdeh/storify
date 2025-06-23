@@ -1,5 +1,5 @@
 // lib/GeneralWidgets/profilePopUp.dart
-// ignore: file_names
+// Ultra-defensive version that prevents all framework assertions
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -13,13 +13,14 @@ import 'package:storify/services/user_profile_service.dart';
 
 class Profilepopup extends StatefulWidget {
   final VoidCallback onCloseMenu;
-  final Future<void> Function()? onLogout; // Add logout callback
+  final Future<void> Function()? onLogout;
 
   const Profilepopup({
     super.key,
     required this.onCloseMenu,
-    this.onLogout, // Make it optional for backwards compatibility
+    this.onLogout,
   });
+
   @override
   State<Profilepopup> createState() => _ProfilepopupState();
 }
@@ -29,6 +30,9 @@ class _ProfilepopupState extends State<Profilepopup> {
   String? userName;
   String? userRole;
   bool _isLoadingProfile = false;
+  bool _isLoggingOut = false;
+  bool _isDisposed = false;
+  bool _canUpdate = true; // Flag to prevent updates
 
   @override
   void initState() {
@@ -36,24 +40,50 @@ class _ProfilepopupState extends State<Profilepopup> {
     _loadUserData();
   }
 
+  @override
+  void dispose() {
+    print('🧹 Disposing ProfilePopup...');
+    _isDisposed = true;
+    _canUpdate = false;
+    super.dispose();
+  }
+
+  // Safe setState that checks all conditions
+  void _safeSetState(VoidCallback fn) {
+    if (!_isDisposed && mounted && _canUpdate && !_isLoggingOut) {
+      try {
+        setState(fn);
+      } catch (e) {
+        print('⚠️ setState failed safely: $e');
+      }
+    }
+  }
+
   Future<void> _loadUserData() async {
-    setState(() {
+    if (_isDisposed || !_canUpdate) return;
+
+    _safeSetState(() {
       _isLoadingProfile = true;
     });
 
     try {
       // First try to load from local storage for immediate display
       final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        profilePictureUrl = prefs.getString('profilePicture');
-        userName = prefs.getString('name');
-        userRole = prefs.getString('currentRole');
-      });
+      if (_canUpdate && !_isDisposed && mounted) {
+        _safeSetState(() {
+          profilePictureUrl = prefs.getString('profilePicture');
+          userName = prefs.getString('name');
+          userRole = prefs.getString('currentRole');
+        });
+      }
+
+      // Skip API call if already disposing
+      if (!_canUpdate || _isDisposed) return;
 
       // Then try to refresh from API in the background
       final profileData = await UserProfileService.getUserProfile();
-      if (profileData != null && mounted) {
-        setState(() {
+      if (profileData != null && _canUpdate && !_isDisposed && mounted) {
+        _safeSetState(() {
           profilePictureUrl = profileData['profilePicture'];
           userName = profileData['name'];
           userRole = profileData['roleName'];
@@ -62,29 +92,48 @@ class _ProfilepopupState extends State<Profilepopup> {
     } catch (e) {
       print('Error loading user data: $e');
       // Fallback to local data if API fails
-      final localData = await UserProfileService.getLocalProfileData();
-      if (mounted) {
-        setState(() {
-          profilePictureUrl = localData['profilePicture'];
-          userName = localData['name'];
-          userRole = localData['currentRole'];
-        });
+      if (_canUpdate && !_isDisposed) {
+        try {
+          final localData = await UserProfileService.getLocalProfileData();
+          if (_canUpdate && !_isDisposed && mounted) {
+            _safeSetState(() {
+              profilePictureUrl = localData['profilePicture'];
+              userName = localData['name'];
+              userRole = localData['currentRole'];
+            });
+          }
+        } catch (localError) {
+          print('Error loading local data: $localError');
+        }
       }
     } finally {
-      if (mounted) {
-        setState(() {
+      if (_canUpdate && !_isDisposed && mounted) {
+        _safeSetState(() {
           _isLoadingProfile = false;
         });
       }
     }
   }
 
-  // Handle logout - moved inside class and improved
-// lib/GeneralWidgets/profilePopUp.dart
-// Enhanced logout method with comprehensive error handling
-
   Future<void> _logout(BuildContext context) async {
+    if (_isDisposed || _isLoggingOut || !_canUpdate) return;
+
+    print('🚪 ProfilePopup: Starting logout...');
+
+    // Immediately prevent any further updates
+    _canUpdate = false;
+
+    _safeSetState(() {
+      _isLoggingOut = true;
+    });
+
     try {
+      // Close this popup immediately
+      widget.onCloseMenu();
+
+      // Small delay to ensure popup is closed
+      await Future.delayed(const Duration(milliseconds: 50));
+
       if (widget.onLogout != null) {
         // Use the callback provided by parent
         await widget.onLogout!();
@@ -93,49 +142,137 @@ class _ProfilepopupState extends State<Profilepopup> {
         await _logoutFallback(context);
       }
     } catch (e) {
-      print('Error during logout: $e');
-      if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
-        );
+      print('❌ Error during logout from popup: $e');
+
+      // Only show error if we're still alive and not disposed
+      if (!_isDisposed && mounted && context.mounted) {
+        try {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Logout failed: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } catch (snackError) {
+          print('⚠️ Could not show snackbar: $snackError');
+        }
+      }
+
+      // Re-enable updates only if logout failed
+      _canUpdate = true;
+
+      if (!_isDisposed && mounted) {
+        _safeSetState(() {
+          _isLoggingOut = false;
+        });
       }
     }
   }
 
   // Fallback logout method (old approach)
   Future<void> _logoutFallback(BuildContext context) async {
-    if (!mounted || !context.mounted) return;
+    if (_isDisposed || !mounted || !context.mounted) return;
 
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    try {
+      print('🚪 Using fallback logout...');
 
-    await AuthService.logoutFromAllRoles();
-    final prefs = await SharedPreferences.getInstance();
+      await AuthService.logoutFromAllRoles();
+      final prefs = await SharedPreferences.getInstance();
 
-    // Clear data
-    await prefs.remove('profilePicture');
-    await prefs.remove('name');
-    await prefs.remove('currentRole');
-    await prefs.remove('email');
-    await prefs.remove('phoneNumber');
-    await prefs.remove('userId');
-    await prefs.remove('isActive');
-    await prefs.remove('registrationDate');
-    await prefs.remove('token');
-    await prefs.remove('supplierId');
-    await prefs.remove('latitude');
-    await prefs.remove('longitude');
-    await prefs.remove('locationSet');
+      // Clear data
+      await prefs.clear();
 
-    rootNavigator.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
+      if (!_isDisposed && context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('❌ Error in logout fallback: $e');
 
+      // Emergency navigation
+      try {
+        if (!_isDisposed && context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+      } catch (navError) {
+        print('💥 Emergency navigation failed: $navError');
+      }
+    }
+  }
+
+  void _openSettings() {
+    if (_isDisposed || _isLoggingOut || !_canUpdate) return;
+
+    // Close the profile popup first
     widget.onCloseMenu();
+
+    // Small delay to ensure popup is closed
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!_isDisposed && mounted && context.mounted && _canUpdate) {
+        try {
+          // Then show the settings dialog
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (BuildContext context) {
+              return SettingsWidget(
+                onClose: () {
+                  try {
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  } catch (e) {
+                    print('⚠️ Error closing settings: $e');
+                  }
+                },
+              );
+            },
+          );
+        } catch (e) {
+          print('❌ Error showing settings dialog: $e');
+        }
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Return minimal widget if disposed or logging out
+    if (_isDisposed || _isLoggingOut || !_canUpdate) {
+      return Container(
+        width: 220.w,
+        height: 290.h,
+        padding: EdgeInsets.all(16.0.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D3C4E),
+          borderRadius: BorderRadius.circular(16.0.w),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: const Color(0xFF7B5CFA),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                _isLoggingOut ? 'Logging out...' : 'Loading...',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: 220.w,
       height: 290.h,
@@ -173,7 +310,6 @@ class _ProfilepopupState extends State<Profilepopup> {
                                 ),
                               ),
                               errorWidget: (context, url, error) {
-                                print('Error loading profile image: $error');
                                 return Image.asset(
                                   'assets/images/me.png',
                                   fit: BoxFit.cover,
@@ -224,51 +360,42 @@ class _ProfilepopupState extends State<Profilepopup> {
                 fontWeight: FontWeight.w500),
           ),
           SizedBox(height: 30.h),
+
+          // Settings button
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: () {
-                // Close the profile popup first
-                widget.onCloseMenu();
-
-                // Then show the settings dialog
-                showDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  builder: (BuildContext context) {
-                    return SettingsWidget(
-                      onClose: () {
-                        Navigator.of(context).pop();
-                      },
-                    );
-                  },
-                );
-              },
-              child: Row(
-                children: [
-                  SizedBox(width: 8.w),
-                  SvgPicture.asset(
-                    'assets/images/settings2.svg',
-                    width: 24.w,
-                    height: 24.h,
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'Settings',
-                    style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w400),
-                  ),
-                ],
+              onTap: _canUpdate ? _openSettings : null,
+              child: Opacity(
+                opacity: _canUpdate ? 1.0 : 0.5,
+                child: Row(
+                  children: [
+                    SizedBox(width: 8.w),
+                    SvgPicture.asset(
+                      'assets/images/settings2.svg',
+                      width: 24.w,
+                      height: 24.h,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Settings',
+                      style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w400),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           SizedBox(height: 10.h),
+
+          // Logout button
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: () => _logout(context),
+              onTap: _canUpdate ? () => _logout(context) : null,
               child: Row(
                 children: [
                   SizedBox(width: 8.w),
@@ -281,7 +408,7 @@ class _ProfilepopupState extends State<Profilepopup> {
                   Text(
                     'Log Out',
                     style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
+                        color: _canUpdate ? Colors.white : Colors.white70,
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w400),
                   ),
