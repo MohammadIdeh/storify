@@ -36,6 +36,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
   late double _costPrice;
   late double _sellPrice;
   late int _quantity;
+  late String? _unit; // New field
+  late int? _lowStock; // New field
   late bool _isActive;
 
   late String? _description;
@@ -48,6 +50,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
   late TextEditingController _costPriceController;
   late TextEditingController _sellPriceController;
   late TextEditingController _quantityController;
+  late TextEditingController _unitController; // New controller
+  late TextEditingController _lowStockController; // New controller
   late TextEditingController _warrantyController;
   late TextEditingController _descriptionController;
   late TextEditingController _prodDateController;
@@ -65,6 +69,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _costPrice = widget.product.costPrice;
     _sellPrice = widget.product.sellPrice;
     _quantity = widget.product.qty;
+    _unit = widget.product.unit; // New field
+    _lowStock = widget.product.lowStock; // New field
 
     // Extract category name from category object
     if (widget.product.category != null) {
@@ -96,6 +102,10 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _sellPriceController =
         TextEditingController(text: _sellPrice.toStringAsFixed(2));
     _quantityController = TextEditingController(text: _quantity.toString());
+    _unitController =
+        TextEditingController(text: _unit ?? ''); // New controller
+    _lowStockController = TextEditingController(
+        text: _lowStock?.toString() ?? ''); // New controller
 
     _descriptionController = TextEditingController(text: _description ?? '');
     _prodDateController = TextEditingController(
@@ -210,6 +220,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _costPriceController.dispose();
     _sellPriceController.dispose();
     _quantityController.dispose();
+    _unitController.dispose(); // Dispose new controller
+    _lowStockController.dispose(); // Dispose new controller
     _warrantyController.dispose();
     _descriptionController.dispose();
     _prodDateController.dispose();
@@ -235,7 +247,12 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _costPrice = double.tryParse(_costPriceController.text) ?? _costPrice;
     _sellPrice = double.tryParse(_sellPriceController.text) ?? _sellPrice;
     _quantity = int.tryParse(_quantityController.text) ?? _quantity;
-  
+    _unit =
+        _unitController.text.isEmpty ? null : _unitController.text; // New field
+    _lowStock = _lowStockController.text.isEmpty
+        ? null
+        : int.tryParse(_lowStockController.text); // New field
+
     _description = _descriptionController.text.isEmpty
         ? null
         : _descriptionController.text;
@@ -275,7 +292,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
       }
 
       // Add optional fields only if they have values
-
+      if (_unit != null && _unit!.isNotEmpty) updateData['unit'] = _unit;
+      if (_lowStock != null) updateData['lowStock'] = _lowStock;
       if (_description != null && _description!.isNotEmpty)
         updateData['description'] = _description;
       if (_prodDate != null)
@@ -332,11 +350,12 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
           costPrice: _costPrice,
           sellPrice: _sellPrice,
           qty: _quantity,
+          unit: _unit, // New field
+          lowStock: _lowStock, // New field
           categoryId: widget.product.categoryId,
           category: widget.product.category,
           status: _isActive ? 'Active' : 'NotActive', // Match API format
           barcode: _barcode,
-
           prodDate: _prodDate != null
               ? DateFormat('yyyy-MM-dd').format(_prodDate!)
               : null,
@@ -446,12 +465,11 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     });
   }
 
-  // Updated ProductInformationCard build method without suppliers section
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Container(
-        height: 510,
+        height: 570, // Increased height for new fields
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 36, 50, 69),
@@ -662,7 +680,24 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                 decoration: _inputDecoration("Enter quantity"),
                               )
                             : Text(
-                                "$_quantity",
+                                "$_quantity", // <-- Use this instead
+                                style: _labelStyle(),
+                              ),
+                      ),
+                      SizedBox(height: 12.h),
+                      // New Unit field
+                      _buildDetailRow(
+                        title: "Unit",
+                        child: _isEditing
+                            ? TextField(
+                                controller: _unitController,
+                                style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white),
+                                decoration: _inputDecoration(
+                                    "e.g., kg, pieces, liters"),
+                              )
+                            : Text(
+                                _unit ?? "Not specified",
                                 style: _labelStyle(),
                               ),
                       ),
@@ -691,6 +726,56 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                           _barcode ?? "Not available",
                           style: _labelStyle(),
                         ),
+                      ),
+                      SizedBox(height: 12.h),
+                      // New Low Stock field with warning indicator
+                      _buildDetailRow(
+                        title: "Low Stock Threshold",
+                        child: _isEditing
+                            ? TextField(
+                                controller: _lowStockController,
+                                keyboardType: TextInputType.number,
+                                style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white),
+                                decoration: _inputDecoration("Enter threshold"),
+                              )
+                            : Row(
+                                children: [
+                                  Text(
+                                    _lowStock?.toString() ?? "Not set",
+                                    style: _labelStyle(),
+                                  ),
+                                  if (widget.product.isLowStock) ...[
+                                    SizedBox(width: 8),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border:
+                                            Border.all(color: Colors.orange),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.warning,
+                                              color: Colors.orange, size: 16),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            "Low Stock",
+                                            style: GoogleFonts.spaceGrotesk(
+                                              color: Colors.orange,
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
@@ -737,8 +822,6 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                 ),
                               ),
                       ),
-          
-                   
                       SizedBox(height: 12.h),
                       _buildDetailRow(
                         title: "Production Date",

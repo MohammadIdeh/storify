@@ -17,9 +17,12 @@ class Supplier {
   Supplier({required this.id, required this.name});
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
+    // Debug print the JSON structure
+    print('Parsing supplier JSON: $json');
+
     return Supplier(
-      id: json['id'],
-      name: json['name'],
+      id: json['id'] ?? 0,
+      name: json['user']?['name'] ?? json['name'] ?? 'Unknown Supplier',
     );
   }
 }
@@ -58,7 +61,9 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
   final TextEditingController _sellPriceController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _barcodeController = TextEditingController();
-
+  final TextEditingController _unitController = TextEditingController();
+  final TextEditingController _lowStockController =
+      TextEditingController(text: '10'); // Default value
   final TextEditingController _descriptionController = TextEditingController();
 
   DateTime? _prodDate;
@@ -72,7 +77,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
   // Dropdown selections
   String _status = 'Active';
   int? _selectedCategoryId;
-  int? _selectedSupplierId;
+  Set<int> _selectedSupplierIds =
+      <int>{}; // Changed to Set for multiple selection
 
   // Data for dropdowns
   List<Supplier> _suppliers = [];
@@ -104,6 +110,9 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         headers: headers,
       );
 
+      print('Suppliers API Response Status: ${response.statusCode}');
+      print('Suppliers API Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['suppliers'] != null) {
@@ -112,6 +121,12 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                 .map((supplier) => Supplier.fromJson(supplier))
                 .toList();
           });
+
+          // Debug: Print supplier IDs
+          print('Fetched suppliers:');
+          for (var supplier in _suppliers) {
+            print('ID: ${supplier.id}, Name: ${supplier.name}');
+          }
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         setState(() {
@@ -199,9 +214,9 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       return;
     }
 
-    if (_selectedSupplierId == null) {
+    if (_selectedSupplierIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a supplier')),
+        const SnackBar(content: Text('Please select at least one supplier')),
       );
       return;
     }
@@ -228,13 +243,39 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       request.headers['token'] = token;
 
       // Add all product data as form fields
-      request.fields['name'] = _nameController.text;
+      request.fields['name'] = _nameController.text; // Added name field
       request.fields['costPrice'] = _costPriceController.text;
       request.fields['sellPrice'] = _sellPriceController.text;
       request.fields['quantity'] = _quantityController.text;
       request.fields['categoryId'] = _selectedCategoryId.toString();
       request.fields['status'] = _status;
-      request.fields['supplierIds[]'] = _selectedSupplierId.toString();
+
+      // Add unit and lowStock fields properly
+      if (_unitController.text.isNotEmpty) {
+        request.fields['unit'] = _unitController.text;
+        print('Adding unit field: ${_unitController.text}'); // Debug
+      }
+
+      if (_lowStockController.text.isNotEmpty) {
+        request.fields['lowStock'] = _lowStockController.text;
+        print('Adding lowStock field: ${_lowStockController.text}'); // Debug
+      }
+
+      // Add multiple suppliers using the correct array format for multipart
+      final supplierIdsList = _selectedSupplierIds.toList();
+
+      print('Selected supplier IDs: $supplierIdsList');
+
+      // Method 1: Try indexed field names (supplierIds[0], supplierIds[1], etc.)
+      for (int i = 0; i < supplierIdsList.length; i++) {
+        request.fields['supplierIds[$i]'] = supplierIdsList[i].toString();
+      }
+
+      // Debug print all fields
+      print('All request fields: ${request.fields}');
+      print(
+          'All request files: ${request.files.map((f) => '${f.field}: ${f.length} bytes').toList()}');
+
       // Add optional fields only if they have values
       if (_barcodeController.text.isNotEmpty) {
         request.fields['barcode'] = _barcodeController.text;
@@ -297,12 +338,133 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         // Product added successfully
         if (mounted) {
           Navigator.pop(context, true); // Return true to indicate success
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Product added successfully')),
+          );
+        }
+      } else if (response.statusCode == 400 &&
+          (response.body.contains('must be an array') ||
+              response.body.contains('must be a number'))) {
+        // Try alternative approach - bracket notation
+        print('Retrying with bracket notation format...');
+
+        // Create a new request with bracket notation
+        final retryRequest = http.MultipartRequest(
+          'POST',
+          Uri.parse('https://finalproject-a5ls.onrender.com/product/add'),
+        );
+
+        retryRequest.headers['token'] = token;
+
+        // Add all the same fields
+        retryRequest.fields['name'] = _nameController.text;
+        retryRequest.fields['costPrice'] = _costPriceController.text;
+        retryRequest.fields['sellPrice'] = _sellPriceController.text;
+        retryRequest.fields['quantity'] = _quantityController.text;
+        retryRequest.fields['categoryId'] = _selectedCategoryId.toString();
+        retryRequest.fields['status'] = _status;
+        retryRequest.fields['unit'] = _unitController.text;
+        retryRequest.fields['lowStock'] = _lowStockController.text;
+
+        // Try bracket notation for suppliers
+        for (int supplierId in supplierIdsList) {
+          retryRequest.fields.addAll({'supplierIds[]': supplierId.toString()});
+        }
+
+        // Add optional fields
+        if (_barcodeController.text.isNotEmpty) {
+          retryRequest.fields['barcode'] = _barcodeController.text;
+        }
+        if (_prodDate != null) {
+          retryRequest.fields['prodDate'] =
+              DateFormat('yyyy-MM-dd').format(_prodDate!);
+        }
+        if (_expDate != null) {
+          retryRequest.fields['expDate'] =
+              DateFormat('yyyy-MM-dd').format(_expDate!);
+        }
+        if (_descriptionController.text.isNotEmpty) {
+          retryRequest.fields['description'] = _descriptionController.text;
+        }
+
+        // Add image if exists
+        if (_imageFile != null) {
+          final reader = html.FileReader();
+          final completer = Completer<List<int>>();
+          reader.onLoad.listen((event) {
+            final result = reader.result;
+            if (result is String) {
+              final bytes = base64.decode(result.split(',')[1]);
+              completer.complete(bytes);
+            } else {
+              completer.completeError('Failed to read file as data URL');
+            }
+          });
+          reader.onError.listen((event) {
+            completer.completeError('Error reading file: ${reader.error}');
+          });
+          reader.readAsDataUrl(_imageFile!);
+          final bytes = await completer.future;
+          final imageFile = http.MultipartFile.fromBytes(
+            'image',
+            bytes,
+            filename: _imageFile!.name,
+            contentType: MediaType.parse(_imageFile!.type),
+          );
+          retryRequest.files.add(imageFile);
+        }
+
+        print('Retry request fields: ${retryRequest.fields}');
+
+        // Send retry request
+        final retryStreamedResponse = await retryRequest.send();
+        final retryResponse =
+            await http.Response.fromStream(retryStreamedResponse);
+
+        print('Retry response status: ${retryResponse.statusCode}');
+        print('Retry response body: ${retryResponse.body}');
+
+        if (retryResponse.statusCode == 201 ||
+            retryResponse.statusCode == 200) {
+          if (mounted) {
+            Navigator.pop(context, true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Product added successfully')),
+            );
+          }
+          return;
+        } else {
+          String errorMessage =
+              'Failed to add product: ${retryResponse.statusCode}';
+          try {
+            final errorData = json.decode(retryResponse.body);
+            errorMessage = errorData['message'] ?? errorMessage;
+          } catch (_) {}
+          throw Exception(errorMessage);
+        }
+      } else if (response.statusCode == 404 &&
+          response.body.contains('supplier IDs were not found')) {
+        // Specific error for invalid supplier IDs
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Selected suppliers not found. Please refresh and try again.'),
+              backgroundColor: Colors.orange,
+              action: SnackBarAction(
+                label: 'Refresh Suppliers',
+                onPressed: () {
+                  _fetchSuppliers();
+                },
+              ),
+            ),
           );
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
@@ -332,19 +494,6 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     }
   }
 
-  // Helper method to convert Blob to Uint8List
-  Future<Uint8List> _blobToBytes(html.Blob blob) async {
-    final completer = Completer<Uint8List>();
-    final reader = html.FileReader();
-    reader.readAsArrayBuffer(blob);
-    reader.onLoadEnd.listen((_) {
-      completer.complete(Uint8List.fromList(
-        (reader.result as dynamic).buffer.asUint8List(),
-      ));
-    });
-    return completer.future;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -353,8 +502,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        width: 800.w,
-        constraints: BoxConstraints(maxHeight: 700.h),
+        width: 900.w, // Increased width to accommodate new fields
+        constraints: BoxConstraints(maxHeight: 800.h), // Increased height
         padding: EdgeInsets.all(24.w),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -473,6 +622,35 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                                 },
                               ),
 
+                              // Unit (New Field)
+                              _buildTextField(
+                                controller: _unitController,
+                                label: 'Unit',
+                                hintText: 'e.g., kg, pieces, liters',
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter unit';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              // Low Stock (New Field)
+                              _buildTextField(
+                                controller: _lowStockController,
+                                label: 'Low Stock Threshold',
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter low stock threshold';
+                                  }
+                                  if (int.tryParse(value) == null) {
+                                    return 'Please enter a valid number';
+                                  }
+                                  return null;
+                                },
+                              ),
+
                               // Status Dropdown
                               _buildDropdown<String>(
                                 label: 'Status',
@@ -514,22 +692,13 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                                   });
                                 },
                               ),
-
-                              // Supplier Dropdown
-                              _buildDropdown<Supplier>(
-                                label: 'Supplier',
-                                items: _suppliers,
-                                displayProperty: (supplier) => supplier.name,
-                                valueProperty: (supplier) => supplier.id,
-                                value: _selectedSupplierId,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedSupplierId = value;
-                                  });
-                                },
-                              ),
                             ],
                           ),
+
+                          SizedBox(height: 16.h),
+
+                          // Suppliers (Multi-select)
+                          _buildMultiSelectSuppliers(),
 
                           SizedBox(height: 16.h),
 
@@ -656,11 +825,130 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     );
   }
 
+  Widget _buildMultiSelectSuppliers() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Suppliers (Required)',
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 36, 50, 69),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select suppliers for this product:',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontSize: 14.sp,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              if (_suppliers.isEmpty)
+                Text(
+                  'No suppliers available',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white60,
+                    fontSize: 14.sp,
+                  ),
+                )
+              else
+                Container(
+                  constraints: BoxConstraints(maxHeight: 200.h),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: _suppliers.map((supplier) {
+                        final isSelected =
+                            _selectedSupplierIds.contains(supplier.id);
+                        return CheckboxListTile(
+                          value: isSelected,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                _selectedSupplierIds.add(supplier.id);
+                              } else {
+                                _selectedSupplierIds.remove(supplier.id);
+                              }
+                            });
+                          },
+                          title: Text(
+                            '${supplier.name} (ID: ${supplier.id})',
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: const Color.fromARGB(255, 105, 65, 198),
+                          checkColor: Colors.white,
+                          contentPadding: EdgeInsets.zero,
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              if (_selectedSupplierIds.isNotEmpty) ...[
+                SizedBox(height: 12.h),
+                Text(
+                  'Selected suppliers (${_selectedSupplierIds.length}):',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 4.h,
+                  children: _selectedSupplierIds.map((supplierId) {
+                    final supplier =
+                        _suppliers.firstWhere((s) => s.id == supplierId);
+                    return Chip(
+                      label: Text(
+                        '${supplier.name} (${supplier.id})',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                      deleteIcon:
+                          Icon(Icons.close, size: 16.sp, color: Colors.white),
+                      onDeleted: () {
+                        setState(() {
+                          _selectedSupplierIds.remove(supplierId);
+                        });
+                      },
+                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                      side: BorderSide.none,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    String? hintText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -685,7 +973,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            hintText: 'Enter $label',
+            hintText: hintText ?? 'Enter $label',
             hintStyle: GoogleFonts.spaceGrotesk(
               color: Colors.white60,
             ),
@@ -845,7 +1133,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     _sellPriceController.dispose();
     _quantityController.dispose();
     _barcodeController.dispose();
-
+    _unitController.dispose();
+    _lowStockController.dispose();
     _descriptionController.dispose();
 
     // Release object URLs when disposing

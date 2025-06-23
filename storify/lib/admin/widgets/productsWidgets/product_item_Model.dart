@@ -6,6 +6,8 @@ class ProductItemInformation {
   final double costPrice;
   final double sellPrice;
   final int qty;
+  final String? unit; // New field
+  final int? lowStock; // New field
   final int categoryId;
   final String status;
   final String? barcode;
@@ -23,6 +25,8 @@ class ProductItemInformation {
     required this.costPrice,
     required this.sellPrice,
     required this.qty,
+    this.unit, // New field
+    this.lowStock, // New field
     required this.categoryId,
     required this.category,
     required this.status,
@@ -43,6 +47,8 @@ class ProductItemInformation {
       costPrice: (json['costPrice'] ?? 0).toDouble(),
       sellPrice: (json['sellPrice'] ?? 0).toDouble(),
       qty: json['quantity'] ?? 0,
+      unit: json['unit'], // New field
+      lowStock: json['lowStock'], // New field
       categoryId: json['categoryId'] ?? 0,
       category: json['category'] ??
           {'categoryName': 'Uncategorized', 'categoryID': 0},
@@ -76,6 +82,20 @@ class ProductItemInformation {
     return 'Uncategorized';
   }
 
+  // Helper to check if product is low stock
+  bool get isLowStock {
+    if (lowStock == null) return false;
+    return qty <= lowStock!;
+  }
+
+  // Helper to get formatted quantity with unit
+  String get formattedQuantity {
+    if (unit != null && unit!.isNotEmpty) {
+      return '$qty $unit';
+    }
+    return qty.toString();
+  }
+
   // Create a copy with updated fields
   ProductItemInformation copyWith({
     int? productId,
@@ -84,6 +104,8 @@ class ProductItemInformation {
     double? costPrice,
     double? sellPrice,
     int? qty,
+    String? unit,
+    int? lowStock,
     int? categoryId,
     dynamic category,
     String? status,
@@ -101,6 +123,8 @@ class ProductItemInformation {
       costPrice: costPrice ?? this.costPrice,
       sellPrice: sellPrice ?? this.sellPrice,
       qty: qty ?? this.qty,
+      unit: unit ?? this.unit,
+      lowStock: lowStock ?? this.lowStock,
       categoryId: categoryId ?? this.categoryId,
       category: category ?? this.category,
       status: status ?? this.status,
@@ -121,6 +145,8 @@ class ProductItemInformation {
       'costPrice': costPrice,
       'sellPrice': sellPrice,
       'quantity': qty,
+      'unit': unit,
+      'lowStock': lowStock,
       'categoryId': categoryId,
       'status': status,
       'barcode': barcode,
