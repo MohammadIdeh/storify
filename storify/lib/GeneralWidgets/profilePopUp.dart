@@ -1,5 +1,5 @@
 // lib/GeneralWidgets/profilePopUp.dart
-// FINAL VERSION - Fix silent navigation failure
+// FIXED VERSION - Proper user data display and clean logout
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -32,7 +32,6 @@ class _ProfilepopupState extends State<Profilepopup> {
   bool _isLoadingProfile = false;
   bool _isLoggingOut = false;
   bool _isDisposed = false;
-  bool _canUpdate = true;
 
   // Prevent multiple logout attempts
   static bool _logoutInProgress = false;
@@ -46,42 +45,22 @@ class _ProfilepopupState extends State<Profilepopup> {
   @override
   void dispose() {
     print('🧹 Disposing ProfilePopup...');
-
-    // Set all flags to prevent any further operations
     _isDisposed = true;
-    _canUpdate = false;
-    _isLoggingOut = true;
-
-    // Call super dispose
     super.dispose();
   }
 
   void _safeSetState(VoidCallback fn) {
-    // Extra defensive checks to prevent build errors
-    if (_isDisposed ||
-        !mounted ||
-        !_canUpdate ||
-        _isLoggingOut ||
-        _logoutInProgress) {
-      print('⚠️ Skipping setState - widget not ready');
-      return;
+    if (!_isDisposed && mounted && !_isLoggingOut && !_logoutInProgress) {
+      try {
+        setState(fn);
+      } catch (e) {
+        print('⚠️ setState failed safely: $e');
+      }
     }
-
-    // try {
-    //   // Check if we're in a build phase
-    //   if (WidgetsBinding.instance.debugDoingBuild) {
-    //     print('⚠️ Skipping setState during build');
-    //     return;
-    //   }
-
-    //   setState(fn);
-    // } catch (e) {
-    //   print('⚠️ setState failed safely: $e');
-    // }
   }
 
   Future<void> _loadUserData() async {
-    if (_isDisposed || !_canUpdate) return;
+    if (_isDisposed || _isLoggingOut || _logoutInProgress) return;
 
     _safeSetState(() {
       _isLoadingProfile = true;
@@ -89,54 +68,74 @@ class _ProfilepopupState extends State<Profilepopup> {
 
     try {
       final currentRole = await AuthService.getCurrentRole();
-      if (currentRole == null) return;
+      if (currentRole == null || _isDisposed) return;
 
       final profileData =
           await UserProfileService.getRoleSpecificProfile(currentRole);
 
-      if (profileData != null && _canUpdate && !_isDisposed && mounted) {
+      if (profileData != null && !_isDisposed && mounted && !_isLoggingOut) {
         _safeSetState(() {
           profilePictureUrl = profileData['profilePicture'];
           userName = profileData['name'];
           userRole = currentRole;
+          _isLoadingProfile = false;
         });
+        print('✅ Profile data loaded: name=$userName, role=$userRole');
       }
     } catch (e) {
       print('Error loading user data: $e');
-    } finally {
-      if (_canUpdate && !_isDisposed && mounted) {
+      if (!_isDisposed && mounted && !_isLoggingOut) {
         _safeSetState(() {
           _isLoadingProfile = false;
+          userName = 'Error loading';
+          userRole = 'Unknown';
         });
       }
     }
   }
 
-  // FIXED: Non-async logout to prevent disposal conflicts
   void _logout() {
-    if (_isDisposed || _isLoggingOut || !_canUpdate || _logoutInProgress) {
+    if (_isDisposed || _isLoggingOut || _logoutInProgress) {
       print('🚪 Logout blocked - already in progress');
       return;
     }
 
-    print('🚪 === STARTING CLEAN LOGOUT ===');
-
-    // Set flags immediately to prevent rebuild
+    // Set flags immediately
     _logoutInProgress = true;
-    _isLoggingOut = true;
-    _canUpdate = false;
+    _safeSetState(() {
+      _isLoggingOut = true;
+    });
 
     // Close popup immediately
     widget.onCloseMenu();
 
-    // Do cleanup and navigation in separate async call
-    _performLogoutAsync();
+    // FIXED: Only use parent callback if available, don't do double cleanup
+    if (widget.onLogout != null) {
+      print('🔄 Delegating logout to parent...');
+      _performParentLogout();
+    } else {
+      print('🚪 === STARTING PROFILE LOGOUT ===');
+      _performOwnLogout();
+    }
   }
 
-  // Separate async method to avoid disposal conflicts
-  Future<void> _performLogoutAsync() async {
+  // Delegate to parent completely - no own cleanup
+  Future<void> _performParentLogout() async {
     try {
-      // Clear data
+      await widget.onLogout!();
+      print('✅ Parent logout completed');
+    } catch (e) {
+      print('❌ Parent logout error: $e');
+    } finally {
+      Future.delayed(const Duration(seconds: 1), () {
+        _logoutInProgress = false;
+      });
+    }
+  }
+
+  // Only for standalone usage (no parent callback)
+  Future<void> _performOwnLogout() async {
+    try {
       print('🧹 Clearing data...');
       await AuthService.logoutFromAllRoles();
       await UserProfileService.clearAllRoleData();
@@ -144,25 +143,24 @@ class _ProfilepopupState extends State<Profilepopup> {
       await prefs.clear();
       print('✅ Data cleared');
 
-      // Use parent callback for navigation
-      if (widget.onLogout != null) {
-        print('🔄 Using parent logout callback...');
-        await widget.onLogout!();
-        print('✅ Parent logout completed');
+      // Navigate directly
+      if (mounted && context.mounted) {
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
       }
     } catch (e) {
       print('❌ Logout error: $e');
     } finally {
-      // Reset flags after delay
       Future.delayed(const Duration(seconds: 2), () {
         _logoutInProgress = false;
       });
     }
   }
 
-  // Settings method (working fine)
   void _openSettings() {
-    if (_isDisposed || _isLoggingOut || !_canUpdate) {
+    if (_isDisposed || _isLoggingOut || _logoutInProgress) {
       print('⚠️ Cannot open settings - invalid state');
       return;
     }
@@ -201,8 +199,8 @@ class _ProfilepopupState extends State<Profilepopup> {
   @override
   Widget build(BuildContext context) {
     // Return empty container if disposed or in bad state
-    if (_isDisposed || (_isLoggingOut && _logoutInProgress)) {
-      return SizedBox.shrink();
+    if (_isDisposed) {
+      return const SizedBox.shrink();
     }
 
     // Show loading state if logging out
@@ -254,7 +252,7 @@ class _ProfilepopupState extends State<Profilepopup> {
               Container(
                 width: 60,
                 height: 60,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                 ),
                 child: ClipRRect(
@@ -266,10 +264,10 @@ class _ProfilepopupState extends State<Profilepopup> {
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Container(
                                 color: const Color(0xFF7B5CFA).withOpacity(0.2),
-                                child: Center(
+                                child: const Center(
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: const Color(0xFF7B5CFA),
+                                    color: Color(0xFF7B5CFA),
                                   ),
                                 ),
                               ),
@@ -293,13 +291,13 @@ class _ProfilepopupState extends State<Profilepopup> {
                       shape: BoxShape.circle,
                       color: Colors.black.withOpacity(0.5),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: const Color(0xFF7B5CFA),
+                          color: Color(0xFF7B5CFA),
                         ),
                       ),
                     ),
@@ -309,7 +307,7 @@ class _ProfilepopupState extends State<Profilepopup> {
           ),
           SizedBox(height: 12.h),
 
-          // User Info
+          // User Info - FIXED: Show actual data instead of loading/guest
           Text(
             userName ?? 'Loading...',
             style: GoogleFonts.spaceGrotesk(
@@ -319,11 +317,12 @@ class _ProfilepopupState extends State<Profilepopup> {
             ),
           ),
           Text(
-            _formatRoleName(userRole) ?? 'Guest',
+            _formatRoleName(userRole) ?? 'Loading...',
             style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w500),
+              color: Colors.white70,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           SizedBox(height: 30.h),
 
@@ -331,13 +330,10 @@ class _ProfilepopupState extends State<Profilepopup> {
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: (_canUpdate && !_isLoggingOut && !_logoutInProgress)
-                  ? _openSettings
-                  : null,
+              onTap:
+                  (!_isLoggingOut && !_logoutInProgress) ? _openSettings : null,
               child: Opacity(
-                opacity: (_canUpdate && !_isLoggingOut && !_logoutInProgress)
-                    ? 1.0
-                    : 0.5,
+                opacity: (!_isLoggingOut && !_logoutInProgress) ? 1.0 : 0.5,
                 child: Row(
                   children: [
                     SizedBox(width: 8.w),
@@ -350,9 +346,10 @@ class _ProfilepopupState extends State<Profilepopup> {
                     Text(
                       'Settings',
                       style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w400),
+                        color: Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
@@ -365,9 +362,7 @@ class _ProfilepopupState extends State<Profilepopup> {
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: (_canUpdate && !_isLoggingOut && !_logoutInProgress)
-                  ? _logout
-                  : null,
+              onTap: (!_isLoggingOut && !_logoutInProgress) ? _logout : null,
               child: Row(
                 children: [
                   SizedBox(width: 8.w),
@@ -380,12 +375,12 @@ class _ProfilepopupState extends State<Profilepopup> {
                   Text(
                     'Log Out',
                     style: GoogleFonts.spaceGrotesk(
-                        color:
-                            (_canUpdate && !_isLoggingOut && !_logoutInProgress)
-                                ? Colors.white
-                                : Colors.white70,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w400),
+                      color: (!_isLoggingOut && !_logoutInProgress)
+                          ? Colors.white
+                          : Colors.white70,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ),
