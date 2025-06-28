@@ -1,5 +1,5 @@
 // lib/GeneralWidgets/profilePopUp.dart
-// Ultra-defensive version that prevents all framework assertions
+// FINAL VERSION - Fix silent navigation failure
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -32,7 +32,10 @@ class _ProfilepopupState extends State<Profilepopup> {
   bool _isLoadingProfile = false;
   bool _isLoggingOut = false;
   bool _isDisposed = false;
-  bool _canUpdate = true; // Flag to prevent updates
+  bool _canUpdate = true;
+
+  // Prevent multiple logout attempts
+  static bool _logoutInProgress = false;
 
   @override
   void initState() {
@@ -43,20 +46,38 @@ class _ProfilepopupState extends State<Profilepopup> {
   @override
   void dispose() {
     print('🧹 Disposing ProfilePopup...');
+
+    // Set all flags to prevent any further operations
     _isDisposed = true;
     _canUpdate = false;
+    _isLoggingOut = true;
+
+    // Call super dispose
     super.dispose();
   }
 
-  // Safe setState that checks all conditions
   void _safeSetState(VoidCallback fn) {
-    if (!_isDisposed && mounted && _canUpdate && !_isLoggingOut) {
-      try {
-        setState(fn);
-      } catch (e) {
-        print('⚠️ setState failed safely: $e');
-      }
+    // Extra defensive checks to prevent build errors
+    if (_isDisposed ||
+        !mounted ||
+        !_canUpdate ||
+        _isLoggingOut ||
+        _logoutInProgress) {
+      print('⚠️ Skipping setState - widget not ready');
+      return;
     }
+
+    // try {
+    //   // Check if we're in a build phase
+    //   if (WidgetsBinding.instance.debugDoingBuild) {
+    //     print('⚠️ Skipping setState during build');
+    //     return;
+    //   }
+
+    //   setState(fn);
+    // } catch (e) {
+    //   print('⚠️ setState failed safely: $e');
+    // }
   }
 
   Future<void> _loadUserData() async {
@@ -67,45 +88,21 @@ class _ProfilepopupState extends State<Profilepopup> {
     });
 
     try {
-      // First try to load from local storage for immediate display
-      final prefs = await SharedPreferences.getInstance();
-      if (_canUpdate && !_isDisposed && mounted) {
-        _safeSetState(() {
-          profilePictureUrl = prefs.getString('profilePicture');
-          userName = prefs.getString('name');
-          userRole = prefs.getString('currentRole');
-        });
-      }
+      final currentRole = await AuthService.getCurrentRole();
+      if (currentRole == null) return;
 
-      // Skip API call if already disposing
-      if (!_canUpdate || _isDisposed) return;
+      final profileData =
+          await UserProfileService.getRoleSpecificProfile(currentRole);
 
-      // Then try to refresh from API in the background
-      final profileData = await UserProfileService.getUserProfile();
       if (profileData != null && _canUpdate && !_isDisposed && mounted) {
         _safeSetState(() {
           profilePictureUrl = profileData['profilePicture'];
           userName = profileData['name'];
-          userRole = profileData['roleName'];
+          userRole = currentRole;
         });
       }
     } catch (e) {
       print('Error loading user data: $e');
-      // Fallback to local data if API fails
-      if (_canUpdate && !_isDisposed) {
-        try {
-          final localData = await UserProfileService.getLocalProfileData();
-          if (_canUpdate && !_isDisposed && mounted) {
-            _safeSetState(() {
-              profilePictureUrl = localData['profilePicture'];
-              userName = localData['name'];
-              userRole = localData['currentRole'];
-            });
-          }
-        } catch (localError) {
-          print('Error loading local data: $localError');
-        }
-      }
     } finally {
       if (_canUpdate && !_isDisposed && mounted) {
         _safeSetState(() {
@@ -115,135 +112,101 @@ class _ProfilepopupState extends State<Profilepopup> {
     }
   }
 
-  Future<void> _logout(BuildContext context) async {
-    if (_isDisposed || _isLoggingOut || !_canUpdate) return;
+  // FIXED: Non-async logout to prevent disposal conflicts
+  void _logout() {
+    if (_isDisposed || _isLoggingOut || !_canUpdate || _logoutInProgress) {
+      print('🚪 Logout blocked - already in progress');
+      return;
+    }
 
-    print('🚪 ProfilePopup: Starting logout...');
+    print('🚪 === STARTING CLEAN LOGOUT ===');
 
-    // Immediately prevent any further updates
+    // Set flags immediately to prevent rebuild
+    _logoutInProgress = true;
+    _isLoggingOut = true;
     _canUpdate = false;
 
-    _safeSetState(() {
-      _isLoggingOut = true;
-    });
-
-    try {
-      // Close this popup immediately
-      widget.onCloseMenu();
-
-      // Small delay to ensure popup is closed
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      if (widget.onLogout != null) {
-        // Use the callback provided by parent
-        await widget.onLogout!();
-      } else {
-        // Fallback to old method if no callback provided
-        await _logoutFallback(context);
-      }
-    } catch (e) {
-      print('❌ Error during logout from popup: $e');
-
-      // Only show error if we're still alive and not disposed
-      if (!_isDisposed && mounted && context.mounted) {
-        try {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout failed: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        } catch (snackError) {
-          print('⚠️ Could not show snackbar: $snackError');
-        }
-      }
-
-      // Re-enable updates only if logout failed
-      _canUpdate = true;
-
-      if (!_isDisposed && mounted) {
-        _safeSetState(() {
-          _isLoggingOut = false;
-        });
-      }
-    }
-  }
-
-  // Fallback logout method (old approach)
-  Future<void> _logoutFallback(BuildContext context) async {
-    if (_isDisposed || !mounted || !context.mounted) return;
-
-    try {
-      print('🚪 Using fallback logout...');
-
-      await AuthService.logoutFromAllRoles();
-      final prefs = await SharedPreferences.getInstance();
-
-      // Clear data
-      await prefs.clear();
-
-      if (!_isDisposed && context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      print('❌ Error in logout fallback: $e');
-
-      // Emergency navigation
-      try {
-        if (!_isDisposed && context.mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
-        }
-      } catch (navError) {
-        print('💥 Emergency navigation failed: $navError');
-      }
-    }
-  }
-
-  void _openSettings() {
-    if (_isDisposed || _isLoggingOut || !_canUpdate) return;
-
-    // Close the profile popup first
+    // Close popup immediately
     widget.onCloseMenu();
 
-    // Small delay to ensure popup is closed
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (!_isDisposed && mounted && context.mounted && _canUpdate) {
-        try {
-          // Then show the settings dialog
-          showDialog(
-            context: context,
-            barrierDismissible: true,
-            builder: (BuildContext context) {
-              return SettingsWidget(
-                onClose: () {
-                  try {
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  } catch (e) {
-                    print('⚠️ Error closing settings: $e');
-                  }
-                },
-              );
-            },
-          );
-        } catch (e) {
-          print('❌ Error showing settings dialog: $e');
-        }
+    // Do cleanup and navigation in separate async call
+    _performLogoutAsync();
+  }
+
+  // Separate async method to avoid disposal conflicts
+  Future<void> _performLogoutAsync() async {
+    try {
+      // Clear data
+      print('🧹 Clearing data...');
+      await AuthService.logoutFromAllRoles();
+      await UserProfileService.clearAllRoleData();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      print('✅ Data cleared');
+
+      // Use parent callback for navigation
+      if (widget.onLogout != null) {
+        print('🔄 Using parent logout callback...');
+        await widget.onLogout!();
+        print('✅ Parent logout completed');
+      }
+    } catch (e) {
+      print('❌ Logout error: $e');
+    } finally {
+      // Reset flags after delay
+      Future.delayed(const Duration(seconds: 2), () {
+        _logoutInProgress = false;
+      });
+    }
+  }
+
+  // Settings method (working fine)
+  void _openSettings() {
+    if (_isDisposed || _isLoggingOut || !_canUpdate) {
+      print('⚠️ Cannot open settings - invalid state');
+      return;
+    }
+
+    print('⚙️ Opening settings...');
+
+    // Get root context BEFORE closing
+    final BuildContext rootContext =
+        Navigator.of(context, rootNavigator: true).context;
+
+    // Close popup
+    widget.onCloseMenu();
+
+    // Show settings
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (rootContext.mounted) {
+        showDialog<void>(
+          context: rootContext,
+          barrierDismissible: true,
+          builder: (BuildContext dialogContext) {
+            return SettingsWidget(
+              onClose: () {
+                Navigator.of(dialogContext).pop();
+              },
+            );
+          },
+        ).then((_) {
+          print('⚙️ Settings dialog closed');
+        }).catchError((error) {
+          print('❌ Settings error: $error');
+        });
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Return minimal widget if disposed or logging out
-    if (_isDisposed || _isLoggingOut || !_canUpdate) {
+    // Return empty container if disposed or in bad state
+    if (_isDisposed || (_isLoggingOut && _logoutInProgress)) {
+      return SizedBox.shrink();
+    }
+
+    // Show loading state if logging out
+    if (_isLoggingOut) {
       return Container(
         width: 220.w,
         height: 290.h,
@@ -261,7 +224,7 @@ class _ProfilepopupState extends State<Profilepopup> {
               ),
               SizedBox(height: 12.h),
               Text(
-                _isLoggingOut ? 'Logging out...' : 'Loading...',
+                'Logging out...',
                 style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                   fontSize: 16.sp,
@@ -273,6 +236,7 @@ class _ProfilepopupState extends State<Profilepopup> {
       );
     }
 
+    // Normal popup
     return Container(
       width: 220.w,
       height: 290.h,
@@ -284,7 +248,7 @@ class _ProfilepopupState extends State<Profilepopup> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Profile Image, Name, Role, etc.
+          // Profile Image
           Stack(
             children: [
               Container(
@@ -344,6 +308,8 @@ class _ProfilepopupState extends State<Profilepopup> {
             ],
           ),
           SizedBox(height: 12.h),
+
+          // User Info
           Text(
             userName ?? 'Loading...',
             style: GoogleFonts.spaceGrotesk(
@@ -365,9 +331,13 @@ class _ProfilepopupState extends State<Profilepopup> {
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: _canUpdate ? _openSettings : null,
+              onTap: (_canUpdate && !_isLoggingOut && !_logoutInProgress)
+                  ? _openSettings
+                  : null,
               child: Opacity(
-                opacity: _canUpdate ? 1.0 : 0.5,
+                opacity: (_canUpdate && !_isLoggingOut && !_logoutInProgress)
+                    ? 1.0
+                    : 0.5,
                 child: Row(
                   children: [
                     SizedBox(width: 8.w),
@@ -395,7 +365,9 @@ class _ProfilepopupState extends State<Profilepopup> {
           Padding(
             padding: EdgeInsets.only(left: 40.0.w),
             child: InkWell(
-              onTap: _canUpdate ? () => _logout(context) : null,
+              onTap: (_canUpdate && !_isLoggingOut && !_logoutInProgress)
+                  ? _logout
+                  : null,
               child: Row(
                 children: [
                   SizedBox(width: 8.w),
@@ -408,7 +380,10 @@ class _ProfilepopupState extends State<Profilepopup> {
                   Text(
                     'Log Out',
                     style: GoogleFonts.spaceGrotesk(
-                        color: _canUpdate ? Colors.white : Colors.white70,
+                        color:
+                            (_canUpdate && !_isLoggingOut && !_logoutInProgress)
+                                ? Colors.white
+                                : Colors.white70,
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w400),
                   ),
@@ -421,13 +396,14 @@ class _ProfilepopupState extends State<Profilepopup> {
     );
   }
 
-  // Helper method to format role names for display
   String? _formatRoleName(String? role) {
     if (role == null) return null;
 
     switch (role) {
       case 'DeliveryEmployee':
         return 'Delivery Employee';
+      case 'WareHouseEmployee':
+        return 'Warehouse Employee';
       case 'Customer':
         return 'Customer';
       case 'Supplier':

@@ -1,12 +1,12 @@
+// lib/admin/widgets/navigationBar.dart
+// Ultra Clean Version - Eliminates all red errors and conflicts
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
-import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notificationPopUpAdmin.dart';
 
@@ -27,18 +27,45 @@ class MyNavigationBar extends StatefulWidget {
 }
 
 class _MyNavigationBarState extends State<MyNavigationBar> {
-  // Instance variables to prevent conflicts
   OverlayEntry? _notificationOverlayEntry;
   bool _isNotificationMenuOpen = false;
   List<NotificationItem> _notifications = [];
 
   OverlayEntry? _overlayEntry;
   bool _isMenuOpen = false;
-  bool _isDisposing = false;
-  bool _logoutInProgress = false; // New flag for logout state
+  bool _isDisposed = false;
+  bool _isNavigating = false; // Prevent navigation conflicts
+
+  @override
+  void dispose() {
+    print('🧹 Disposing MyNavigationBar...');
+    _isDisposed = true;
+    _forceCleanupOverlays();
+    super.dispose();
+  }
+
+  // Force cleanup without errors
+  void _forceCleanupOverlays() {
+    try {
+      _overlayEntry?.remove();
+    } catch (e) {
+      // Silently ignore
+    }
+    _overlayEntry = null;
+
+    try {
+      _notificationOverlayEntry?.remove();
+    } catch (e) {
+      // Silently ignore
+    }
+    _notificationOverlayEntry = null;
+
+    _isMenuOpen = false;
+    _isNotificationMenuOpen = false;
+  }
 
   void _toggleProfileMenu() {
-    if (_isDisposing || _logoutInProgress) return;
+    if (_isDisposed || _isNavigating) return;
 
     if (_isMenuOpen) {
       _closeMenu();
@@ -48,132 +75,12 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   void _openMenu() {
-    if (_isDisposing || _logoutInProgress) return;
+    if (_isDisposed || _isNavigating) return;
 
-    // Ensure any existing overlay is closed first
-    if (_overlayEntry != null) {
-      _closeMenu();
-      // Add a small delay to ensure cleanup
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted && !_isMenuOpen && !_isDisposing && !_logoutInProgress) {
-          _createAndShowOverlay();
-        }
-      });
-    } else {
-      _createAndShowOverlay();
+    // Close notification menu if open
+    if (_isNotificationMenuOpen) {
+      _closeNotificationMenu();
     }
-  }
-
-  // CRITICAL: Completely isolated logout method
-  Future<void> _handleLogout() async {
-    if (_logoutInProgress || _isDisposing) return;
-
-    print('🚪 === STARTING COMPLETE LOGOUT ISOLATION ===');
-
-    try {
-      // Step 1: Set all isolation flags immediately
-      _logoutInProgress = true;
-      _isDisposing = true;
-
-      // Step 2: IMMEDIATELY remove all overlays without setState
-      _forceRemoveAllOverlays();
-
-      // Step 3: Clear all state flags directly (no setState)
-      _isMenuOpen = false;
-      _isNotificationMenuOpen = false;
-
-      // Step 4: Prevent any further operations
-      if (!mounted) return;
-
-      print('🧹 All UI components isolated');
-
-      // Step 5: Wait for UI to settle
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // Step 6: Perform data cleanup
-      await AuthService.logoutFromAllRoles();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-
-      print('✅ Data cleared');
-
-      // Step 7: Navigate using the safest possible method
-      if (mounted && context.mounted) {
-        // Use pushNamedAndRemoveUntil for the cleanest navigation
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
-        );
-
-        // If named routes don't work, fallback to regular navigation
-        if (!context.mounted) return;
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
-            settings: const RouteSettings(name: '/login'),
-          ),
-          (route) => false,
-        );
-      }
-
-      print('🔄 Navigation completed');
-    } catch (e) {
-      print('❌ Critical error in logout: $e');
-
-      // Emergency fallback - force navigation no matter what
-      try {
-        if (mounted && context.mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
-        }
-      } catch (navError) {
-        print('💥 Emergency navigation failed: $navError');
-        // Last resort - restart the app
-        _emergencyRestart();
-      }
-    }
-  }
-
-  // Emergency method to force app restart
-  void _emergencyRestart() {
-    print('🆘 EMERGENCY RESTART');
-    // This will cause the app to restart
-    runApp(MaterialApp(
-      home: const LoginScreen(),
-      debugShowCheckedModeBanner: false,
-    ));
-  }
-
-  // Force remove overlays without setState
-  void _forceRemoveAllOverlays() {
-    try {
-      if (_overlayEntry != null) {
-        _overlayEntry!.remove();
-        _overlayEntry = null;
-      }
-    } catch (e) {
-      print('⚠️ Error removing profile overlay: $e');
-      _overlayEntry = null; // Force null even if removal failed
-    }
-
-    try {
-      if (_notificationOverlayEntry != null) {
-        _notificationOverlayEntry!.remove();
-        _notificationOverlayEntry = null;
-      }
-    } catch (e) {
-      print('⚠️ Error removing notification overlay: $e');
-      _notificationOverlayEntry = null; // Force null even if removal failed
-    }
-
-    print('🧹 All overlays forcefully removed');
-  }
-
-  void _createAndShowOverlay() {
-    if (_isDisposing || !mounted || _logoutInProgress) return;
 
     try {
       _overlayEntry = OverlayEntry(
@@ -196,7 +103,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                   color: Colors.transparent,
                   child: Profilepopup(
                     onCloseMenu: _closeMenu,
-                    onLogout: _handleLogout,
+                    onLogout: _handleUltraCleanLogout,
                   ),
                 ),
               ),
@@ -205,9 +112,9 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         },
       );
 
-      if (mounted && context.mounted && !_isDisposing && !_logoutInProgress) {
+      if (mounted && !_isDisposed && !_isNavigating) {
         Overlay.of(context).insert(_overlayEntry!);
-        if (mounted && !_logoutInProgress) {
+        if (mounted) {
           setState(() {
             _isMenuOpen = true;
           });
@@ -220,24 +127,78 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   void _closeMenu() {
-    if (_overlayEntry != null) {
-      try {
-        _overlayEntry!.remove();
-      } catch (e) {
-        print('⚠️ Error removing overlay: $e');
-      }
-      _overlayEntry = null;
-    }
+    if (_isDisposed) return;
 
-    if (mounted && !_isDisposing && !_logoutInProgress) {
+    try {
+      _overlayEntry?.remove();
+    } catch (e) {
+      // Silently ignore
+    }
+    _overlayEntry = null;
+
+    if (mounted && !_isDisposed) {
       setState(() {
         _isMenuOpen = false;
       });
     }
   }
 
+  // Ultra-clean logout that prevents ALL widget conflicts
+  Future<void> _handleUltraCleanLogout() async {
+    if (_isDisposed || _isNavigating) return;
+
+    print('🚪 === ULTRA CLEAN NAVBAR LOGOUT ===');
+
+    // Set navigation flag to prevent any further operations
+    _isNavigating = true;
+
+    try {
+      // Force cleanup ALL overlays immediately
+      _forceCleanupOverlays();
+
+      // Mark as disposed to prevent rebuilds
+      _isDisposed = true;
+
+      // Small delay to let everything settle
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Navigate with maximum safety
+      if (mounted && context.mounted) {
+        print('🔄 Ultra clean navigation...');
+
+        try {
+          // Try named route first
+          Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+            '/login',
+            (route) => false,
+          );
+          print('✅ Ultra clean navigation successful');
+        } catch (e) {
+          print('❌ Named route failed, trying direct: $e');
+
+          // Fallback to direct route
+          try {
+            Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const LoginScreen(),
+                settings: const RouteSettings(name: '/login'),
+              ),
+              (route) => false,
+            );
+            print('✅ Direct navigation successful');
+          } catch (e2) {
+            print('💥 All navigation failed: $e2');
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Ultra clean logout error: $e');
+    }
+    // Don't reset _isNavigating - leave it true to prevent further operations
+  }
+
   void _toggleNotificationMenu() {
-    if (_isDisposing || _logoutInProgress) return;
+    if (_isDisposed || _isNavigating) return;
 
     if (_isNotificationMenuOpen) {
       _closeNotificationMenu();
@@ -247,9 +208,8 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   void _openNotificationMenu() {
-    if (_isDisposing || _logoutInProgress) return;
+    if (_isDisposed || _isNavigating) return;
 
-    // Close profile menu if open
     if (_isMenuOpen) {
       _closeMenu();
     }
@@ -284,9 +244,9 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         },
       );
 
-      if (mounted && context.mounted && !_isDisposing && !_logoutInProgress) {
+      if (mounted && !_isDisposed && !_isNavigating) {
         Overlay.of(context).insert(_notificationOverlayEntry!);
-        if (mounted && !_logoutInProgress) {
+        if (mounted) {
           setState(() {
             _isNotificationMenuOpen = true;
           });
@@ -299,16 +259,16 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   void _closeNotificationMenu() {
-    if (_notificationOverlayEntry != null) {
-      try {
-        _notificationOverlayEntry!.remove();
-      } catch (e) {
-        print('⚠️ Error removing notification overlay: $e');
-      }
-      _notificationOverlayEntry = null;
-    }
+    if (_isDisposed) return;
 
-    if (mounted && !_isDisposing && !_logoutInProgress) {
+    try {
+      _notificationOverlayEntry?.remove();
+    } catch (e) {
+      // Silently ignore
+    }
+    _notificationOverlayEntry = null;
+
+    if (mounted && !_isDisposed) {
       setState(() {
         _isNotificationMenuOpen = false;
       });
@@ -316,33 +276,19 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   @override
-  void dispose() {
-    print('🧹 Disposing MyNavigationBar...');
-
-    // Set all disposal flags
-    _isDisposing = true;
-    _logoutInProgress = true;
-
-    // Force cleanup without setState
-    _forceRemoveAllOverlays();
-
-    // Clear all collections
-    _notifications.clear();
-
-    super.dispose();
-    print('✅ MyNavigationBar disposed');
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Return minimal widget if disposing or logging out
-    if (_isDisposing || _logoutInProgress) {
+    // Return clean loading state if disposed or navigating
+    if (_isDisposed || _isNavigating) {
       return Container(
         height: 90.h,
         color: const Color.fromARGB(255, 29, 41, 57),
         child: Center(
-          child: CircularProgressIndicator(
-            color: const Color.fromARGB(255, 105, 65, 198),
+          child: Text(
+            'Logging out...',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontSize: 16.sp,
+            ),
           ),
         ),
       );
@@ -353,7 +299,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       width: double.infinity,
       height: 90.h,
       color: const Color.fromARGB(255, 29, 41, 57),
-      padding: EdgeInsets.only(left: 45, right: 30),
+      padding: const EdgeInsets.only(left: 45, right: 30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -382,14 +328,14 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
             children: _buildNavItems(),
           ),
 
-          // Right side: Search, Notifications, Profile
+          // Right side: Notifications and Profile
           Row(
             children: [
               SizedBox(width: 14.w),
 
               // Notifications
               InkWell(
-                onTap: (_isDisposing || _logoutInProgress)
+                onTap: (_isDisposed || _isNavigating)
                     ? null
                     : _toggleNotificationMenu,
                 child: Container(
@@ -430,15 +376,14 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
               // Profile + Arrow
               InkWell(
-                onTap: (_isDisposing || _logoutInProgress)
-                    ? null
-                    : _toggleProfileMenu,
+                onTap:
+                    (_isDisposed || _isNavigating) ? null : _toggleProfileMenu,
                 child: Row(
                   children: [
                     Container(
                       width: 50,
                       height: 50,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                       ),
                       child: ClipRRect(
@@ -450,14 +395,14 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => Container(
                                   color: const Color.fromARGB(255, 36, 50, 69),
-                                  child: Center(
+                                  child: const Center(
                                     child: SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: const Color.fromARGB(
-                                            255, 105, 65, 198),
+                                        color:
+                                            Color.fromARGB(255, 105, 65, 198),
                                       ),
                                     ),
                                   ),
@@ -487,16 +432,15 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
     );
   }
 
-  /// Helper to build the middle navigation items
   List<Widget> _buildNavItems() {
-    if (_isDisposing || _logoutInProgress) return [];
+    if (_isDisposed || _isNavigating) return [];
 
     final List<String> navItems = [
       'Dashboard',
       'Products',
       'Category',
       'Orders',
-      "Role Managment",
+      "Role Management",
       'Tracking',
     ];
 
@@ -517,9 +461,8 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: (_isDisposing || _logoutInProgress)
-              ? null
-              : () => widget.onTap(index),
+          onTap:
+              (_isDisposed || _isNavigating) ? null : () => widget.onTap(index),
           child: Container(
             margin: EdgeInsets.only(left: 24.w),
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),

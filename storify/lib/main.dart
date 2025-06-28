@@ -1,3 +1,5 @@
+// lib/main.dart
+// Fixed version with better route handling and navigation
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -18,7 +20,6 @@ import 'package:storify/utilis/notification_service.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling background message: ${message.messageId}");
-  // Just store the message, don't do anything heavy here
 }
 
 void main() async {
@@ -27,51 +28,38 @@ void main() async {
   try {
     print('🚀 Starting Storify app...');
 
-    // Only initialize Firebase - nothing else that could block
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('✅ Firebase initialized');
 
-    // Set up background messaging handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // Get auth status quickly
     final isLoggedIn = await AuthService.isLoggedIn();
     final currentRole = await AuthService.getCurrentRole();
-    print('✅ Auth check completed');
+    print('✅ Auth check completed: loggedIn=$isLoggedIn, role=$currentRole');
 
-    // Start the app IMMEDIATELY - no notification setup yet
     runApp(MyApp(isLoggedIn: isLoggedIn, currentRole: currentRole));
     print('✅ App started successfully');
 
-    // Initialize notifications AFTER the app is running (completely non-blocking)
     _initializeNotificationsLater();
   } catch (e) {
     print('❌ Error in main: $e');
-
-    // Even if there's an error, try to start the app
     runApp(MyApp(isLoggedIn: false, currentRole: null));
   }
 }
 
-// Initialize notifications completely in the background after app is running
 void _initializeNotificationsLater() {
-  // Wait a bit for the app to fully load, then initialize notifications
   Future.delayed(Duration(seconds: 2), () async {
     try {
       print('🔔 Starting background notification initialization...');
 
-      // Quick, non-blocking notification setup
       await NotificationService.initialize();
 
-      // Set up message handlers
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         print("Foreground message received: ${message.messageId}");
-        // Handle the message through NotificationService
       });
 
-      // Handle notification clicks
       FirebaseMessaging.instance
           .getInitialMessage()
           .then((RemoteMessage? message) {
@@ -88,19 +76,16 @@ void _initializeNotificationsLater() {
         handleNotificationNavigation(message.data);
       });
 
-      // Load existing notifications
       NotificationService().processBackgroundNotifications();
       NotificationService().loadNotificationsFromFirestore();
 
       print('✅ Notifications initialized in background');
     } catch (e) {
       print('❌ Error initializing notifications (non-critical): $e');
-      // Don't throw - notifications are not critical for app function
     }
   });
 }
 
-// Helper function to handle navigation based on notification data
 void handleNotificationNavigation(Map<String, dynamic> data) {
   final notificationType = data['type'] as String?;
   final orderId = data['orderId'] as String?;
@@ -129,7 +114,7 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
 
-        // Add named routes for cleaner navigation
+        // FIXED: Better route handling
         routes: {
           '/login': (context) => const LoginScreen(),
           '/admin': (context) => const DashboardScreen(),
@@ -138,53 +123,71 @@ class MyApp extends StatelessWidget {
           '/warehouse': (context) => const Orders_employee(),
         },
 
-        // Set initial route
-        initialRoute: _getInitialRoute(),
+        // FIXED: Always set login as initial route and handle navigation programmatically
+        initialRoute: '/login',
 
-        // Fallback home
+        // FIXED: Better home logic
         home: _getHomeScreen(),
 
-        // Add error handling
-        builder: (context, widget) {
-          return widget ??
-              Container(
-                color: Colors.white,
-                child: Center(
-                  child: Text('Loading...', style: TextStyle(fontSize: 18)),
-                ),
+        // FIXED: Better error handling and fallback
+        onGenerateRoute: (RouteSettings settings) {
+          print('🔄 Generating route: ${settings.name}');
+
+          switch (settings.name) {
+            case '/login':
+              return MaterialPageRoute(
+                builder: (_) => const LoginScreen(),
+                settings: settings,
               );
+            case '/admin':
+              return MaterialPageRoute(
+                builder: (_) => const DashboardScreen(),
+                settings: settings,
+              );
+            case '/supplier':
+              return MaterialPageRoute(
+                builder: (_) => const SupplierOrders(),
+                settings: settings,
+              );
+            case '/customer':
+              return MaterialPageRoute(
+                builder: (_) => const CustomerOrders(),
+                settings: settings,
+              );
+            case '/warehouse':
+              return MaterialPageRoute(
+                builder: (_) => const Orders_employee(),
+                settings: settings,
+              );
+            default:
+              print('❌ Unknown route: ${settings.name}, redirecting to login');
+              return MaterialPageRoute(
+                builder: (_) => const LoginScreen(),
+                settings: const RouteSettings(name: '/login'),
+              );
+          }
+        },
+
+        // FIXED: Better error handling
+        builder: (context, widget) {
+          if (widget == null) {
+            print('❌ Widget is null, showing login screen');
+            return const LoginScreen();
+          }
+
+          return widget;
+        },
+
+        // FIXED: Handle unknown routes
+        onUnknownRoute: (RouteSettings settings) {
+          print('❌ Unknown route: ${settings.name}, redirecting to login');
+          return MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+            settings: const RouteSettings(name: '/login'),
+          );
         },
       ),
     );
-  }
-
-  String _getInitialRoute() {
-    print(
-        '🏠 Getting initial route for logged in: $isLoggedIn, role: $currentRole');
-
-    try {
-      if (!isLoggedIn) {
-        return '/login';
-      }
-
-      switch (currentRole) {
-        case 'Admin':
-          return '/admin';
-        case 'Supplier':
-          return '/supplier';
-        case 'Customer':
-          return '/customer';
-        case 'WareHouseEmployee':
-          return '/warehouse';
-        case 'DeliveryMan':
-          return '/login'; // DeliveryMan placeholder
-        default:
-          return '/login';
-      }
-    } catch (e) {
-      print('❌ Error in _getInitialRoute: $e');
-      return '/login';
-    }
   }
 
   Widget _getHomeScreen() {
@@ -219,11 +222,11 @@ class MyApp extends StatelessWidget {
       }
     } catch (e) {
       print('❌ Error in _getHomeScreen: $e');
-      // Fallback to login screen if there's any error
       return const LoginScreen();
     }
   }
 }
+
 // Test credentials (remove in production)
 // admin - hamode.sh889@gmail.com - 123123 - id: 84
 // supplier ahmad - hamode.sh334@gmail.com - yism5huFJGy6SfI- - id: 4

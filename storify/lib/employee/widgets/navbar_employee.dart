@@ -1,4 +1,5 @@
-// lib/supplier/widgets/navbar.dart
+// lib/employee/widgets/navbar_employee.dart
+// Fixed version with simplified logout and proper role separation
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,17 +9,21 @@ import 'package:storify/GeneralWidgets/profilePopUp.dart';
 import 'package:storify/supplier/widgets/SupplierNotificationPopup.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notification_service.dart';
+import 'package:storify/Registration/Screens/loginScreen.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/services/user_profile_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NavigationBarEmployee extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final String? profilePictureUrl; // Add this parameter
+  final String? profilePictureUrl;
 
   const NavigationBarEmployee({
     super.key,
     required this.currentIndex,
     required this.onTap,
-    this.profilePictureUrl, // Initialize it as optional
+    this.profilePictureUrl,
   });
 
   @override
@@ -26,11 +31,9 @@ class NavigationBarEmployee extends StatefulWidget {
 }
 
 class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
-  // (Optional) Key for the profile section
-  final GlobalKey _profileKey = GlobalKey();
-
   OverlayEntry? _overlayEntry;
   bool _isMenuOpen = false;
+  bool _isDisposed = false;
 
   // Notification variables
   OverlayEntry? _notificationOverlayEntry;
@@ -41,11 +44,7 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
   @override
   void initState() {
     super.initState();
-
-    // Load notifications
     _loadNotifications();
-
-    // Register for notification updates
     NotificationService()
         .registerNotificationsListChangedCallback(_onNotificationsChanged);
     NotificationService().registerNewNotificationCallback(_onNewNotification);
@@ -53,37 +52,57 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
 
   @override
   void dispose() {
-    // Unregister notification callbacks
+    print('🧹 Disposing NavigationBarEmployee...');
+    _isDisposed = true;
     NotificationService()
         .unregisterNotificationsListChangedCallback(_onNotificationsChanged);
     NotificationService().unregisterNewNotificationCallback(_onNewNotification);
+    _removeAllOverlays();
     super.dispose();
   }
 
-  // Load notifications from service
+  void _removeAllOverlays() {
+    try {
+      if (_overlayEntry != null) {
+        _overlayEntry!.remove();
+        _overlayEntry = null;
+      }
+      if (_notificationOverlayEntry != null) {
+        _notificationOverlayEntry!.remove();
+        _notificationOverlayEntry = null;
+      }
+    } catch (e) {
+      print('⚠️ Error removing overlays: $e');
+    }
+  }
+
   void _loadNotifications() {
     _notifications = NotificationService().getNotifications();
     _unreadCount = NotificationService().getUnreadCount();
     if (mounted) setState(() {});
   }
 
-  // Callback for when notification list changes
   void _onNotificationsChanged(List<NotificationItem> notifications) {
-    setState(() {
-      _notifications = notifications;
-      _unreadCount = NotificationService().getUnreadCount();
-    });
+    if (mounted && !_isDisposed) {
+      setState(() {
+        _notifications = notifications;
+        _unreadCount = NotificationService().getUnreadCount();
+      });
+    }
   }
 
-  // Callback for when a new notification arrives
   void _onNewNotification(NotificationItem notification) {
-    setState(() {
-      _notifications = NotificationService().getNotifications();
-      _unreadCount = NotificationService().getUnreadCount();
-    });
+    if (mounted && !_isDisposed) {
+      setState(() {
+        _notifications = NotificationService().getNotifications();
+        _unreadCount = NotificationService().getUnreadCount();
+      });
+    }
   }
 
   void _toggleProfileMenu() {
+    if (_isDisposed) return;
+
     if (_isMenuOpen) {
       _closeMenu();
     } else {
@@ -92,7 +111,8 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
   }
 
   void _openMenu() {
-    // Close notification menu if open
+    if (_isDisposed) return;
+
     if (_isNotificationMenuOpen) {
       _closeNotificationMenu();
     }
@@ -116,7 +136,8 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
               child: Material(
                 color: Colors.transparent,
                 child: Profilepopup(
-                  onCloseMenu: _closeMenu, // Pass the close menu callback
+                  onCloseMenu: _closeMenu,
+                  onLogout: _handleCompleteLogout,
                 ),
               ),
             ),
@@ -125,21 +146,72 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
       },
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
-    setState(() {
-      _isMenuOpen = true;
-    });
+    if (mounted && !_isDisposed) {
+      Overlay.of(context).insert(_overlayEntry!);
+      setState(() {
+        _isMenuOpen = true;
+      });
+    }
   }
 
   void _closeMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    setState(() {
-      _isMenuOpen = false;
-    });
+    if (_overlayEntry != null) {
+      try {
+        _overlayEntry!.remove();
+      } catch (e) {
+        print('⚠️ Error removing overlay: $e');
+      }
+      _overlayEntry = null;
+    }
+
+    if (mounted && !_isDisposed) {
+      setState(() {
+        _isMenuOpen = false;
+      });
+    }
+  }
+
+  // Simplified logout for employee
+  Future<void> _handleCompleteLogout() async {
+    print('🚪 === STARTING EMPLOYEE LOGOUT ===');
+
+    try {
+      _removeAllOverlays();
+      _isDisposed = true;
+
+      await AuthService.logoutFromAllRoles();
+      await UserProfileService.clearAllRoleData();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      print('✅ Employee data cleared');
+
+      if (mounted && context.mounted) {
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('❌ Error during employee logout: $e');
+
+      if (mounted && context.mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        } catch (navError) {
+          print('💥 Emergency navigation failed: $navError');
+        }
+      }
+    }
   }
 
   void _toggleNotificationMenu() {
+    if (_isDisposed) return;
+
     if (_isNotificationMenuOpen) {
       _closeNotificationMenu();
     } else {
@@ -148,7 +220,8 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
   }
 
   void _openNotificationMenu() {
-    // Close profile menu if open
+    if (_isDisposed) return;
+
     if (_isMenuOpen) {
       _closeMenu();
     }
@@ -167,7 +240,7 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
               ),
             ),
             Positioned(
-              right: 100, // Adjust position as needed
+              right: 100,
               top: 100,
               child: Material(
                 color: Colors.transparent,
@@ -182,22 +255,45 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
       },
     );
 
-    Overlay.of(context).insert(_notificationOverlayEntry!);
-    setState(() {
-      _isNotificationMenuOpen = true;
-    });
+    if (mounted && !_isDisposed) {
+      Overlay.of(context).insert(_notificationOverlayEntry!);
+      setState(() {
+        _isNotificationMenuOpen = true;
+      });
+    }
   }
 
   void _closeNotificationMenu() {
-    _notificationOverlayEntry?.remove();
-    _notificationOverlayEntry = null;
-    setState(() {
-      _isNotificationMenuOpen = false;
-    });
+    if (_notificationOverlayEntry != null) {
+      try {
+        _notificationOverlayEntry!.remove();
+      } catch (e) {
+        print('⚠️ Error removing notification overlay: $e');
+      }
+      _notificationOverlayEntry = null;
+    }
+
+    if (mounted && !_isDisposed) {
+      setState(() {
+        _isNotificationMenuOpen = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isDisposed) {
+      return Container(
+        height: 90.h,
+        color: const Color.fromARGB(255, 29, 41, 57),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: const Color.fromARGB(255, 105, 65, 198),
+          ),
+        ),
+      );
+    }
+
     return Container(
       margin: EdgeInsets.only(top: 10.h),
       width: double.infinity,
@@ -232,12 +328,12 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
             children: _buildNavItems(),
           ),
 
-          // Right side: Search, Notifications, Profile
+          // Right side: Notifications and Profile
           Row(
             children: [
               // Notifications
               InkWell(
-                onTap: _toggleNotificationMenu,
+                onTap: _isDisposed ? null : _toggleNotificationMenu,
                 child: Container(
                   width: 52.w,
                   height: 52.h,
@@ -273,10 +369,10 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
                 ),
               ),
               SizedBox(width: 14.w),
+
               // Profile + Arrow
               InkWell(
-                key: _profileKey,
-                onTap: _toggleProfileMenu,
+                onTap: _isDisposed ? null : _toggleProfileMenu,
                 child: Row(
                   children: [
                     Container(
@@ -286,8 +382,7 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
                         shape: BoxShape.circle,
                       ),
                       child: ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(25), // Make it circular
+                        borderRadius: BorderRadius.circular(25),
                         child: widget.profilePictureUrl != null &&
                                 widget.profilePictureUrl!.isNotEmpty
                             ? CachedNetworkImage(
@@ -334,10 +429,10 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
     );
   }
 
-  /// Helper to build the middle navigation items
   List<Widget> _buildNavItems() {
-    final List<String> navItems = ['Orders', 'History'];
+    if (_isDisposed) return [];
 
+    final List<String> navItems = ['Orders', 'History'];
     final List<String?> navIcons = [
       'assets/images/orders.svg',
       'assets/images/products.svg'
@@ -351,13 +446,13 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: () => widget.onTap(index),
+          onTap: _isDisposed ? null : () => widget.onTap(index),
           child: Container(
             margin: EdgeInsets.only(left: 24.w),
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color.fromARGB(255, 105, 65, 198) // Purple
+                  ? const Color.fromARGB(255, 105, 65, 198)
                   : Colors.transparent,
               border: Border.all(
                 color: isSelected

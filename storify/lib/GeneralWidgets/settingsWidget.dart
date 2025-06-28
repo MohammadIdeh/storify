@@ -1,4 +1,5 @@
 // lib/GeneralWidgets/settingsWidget.dart
+// Fixed version with role-specific data handling and improved stability
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,8 +8,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:storify/customer/widgets/mapPopUp.dart';
 import 'package:storify/GeneralWidgets/snackBar.dart';
 import 'package:storify/services/user_profile_service.dart';
+import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'dart:typed_data';
-// Import for web file picking
 import 'dart:html' as html;
 
 class SettingsWidget extends StatefulWidget {
@@ -67,6 +68,9 @@ class _SettingsWidgetState extends State<SettingsWidget>
   bool _showNewPassword = false;
   bool _showConfirmPassword = false;
 
+  // Disposal flag
+  bool _isDisposed = false;
+
   @override
   void initState() {
     super.initState();
@@ -75,23 +79,62 @@ class _SettingsWidgetState extends State<SettingsWidget>
     _loadProfileData();
   }
 
+  @override
+  void dispose() {
+    print('🧹 Disposing SettingsWidget...');
+    _isDisposed = true;
+    _tabController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // Safe setState to prevent errors
+  void _safeSetState(VoidCallback fn) {
+    if (!_isDisposed && mounted) {
+      try {
+        setState(fn);
+      } catch (e) {
+        print('⚠️ setState failed in settings: $e');
+      }
+    }
+  }
+
   Future<void> _loadUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userRole = prefs.getString('currentRole');
-    });
+    try {
+      final currentRole = await AuthService.getCurrentRole();
+      if (!_isDisposed && mounted) {
+        _safeSetState(() {
+          userRole = currentRole;
+        });
+      }
+    } catch (e) {
+      print('Error loading user role: $e');
+    }
   }
 
   Future<void> _loadProfileData() async {
-    setState(() {
+    if (_isDisposed) return;
+
+    _safeSetState(() {
       _isLoadingProfile = true;
     });
 
     try {
-      // First try to get fresh data from API
-      final profileData = await UserProfileService.getUserProfile();
+      final currentRole = await AuthService.getCurrentRole();
+      if (currentRole == null || _isDisposed) return;
 
-      if (profileData != null) {
+      print('📋 Loading profile data for role: $currentRole');
+
+      // Try to get fresh data from API first
+      final profileData =
+          await UserProfileService.getRoleSpecificProfile(currentRole);
+
+      if (profileData != null && !_isDisposed) {
         _updateFormControllers(profileData);
       } else {
         // Fallback to local data
@@ -100,31 +143,38 @@ class _SettingsWidgetState extends State<SettingsWidget>
       }
     } catch (e) {
       print('Error loading profile data: $e');
-      // Show error message
-      if (mounted) {
+      if (!_isDisposed && mounted) {
         showCustomSnackBar(
             context, 'Failed to load profile data', 'assets/images/error.svg');
       }
     } finally {
-      setState(() {
-        _isLoadingProfile = false;
-      });
+      if (!_isDisposed) {
+        _safeSetState(() {
+          _isLoadingProfile = false;
+        });
+      }
     }
   }
 
   void _updateFormControllers(Map<String, dynamic> profileData) {
-    setState(() {
-      _nameController.text = profileData['name'] ?? '';
-      _emailController.text = profileData['email'] ?? '';
-      _phoneController.text = profileData['phoneNumber'] ?? '';
-      userRole = profileData['roleName'];
-      _currentProfilePicture = profileData['profilePicture'];
+    if (_isDisposed) return;
+
+    _safeSetState(() {
+      _nameController.text = profileData['name']?.toString() ?? '';
+      _emailController.text = profileData['email']?.toString() ?? '';
+      _phoneController.text = profileData['phoneNumber']?.toString() ?? '';
+      userRole = profileData['roleName']?.toString();
+      _currentProfilePicture = profileData['profilePicture']?.toString();
       _currentUserId = profileData['userId']?.toString();
     });
+
+    print('✅ Form controllers updated for role: $userRole');
   }
 
   void _updateFormControllersFromLocal(Map<String, String> localData) {
-    setState(() {
+    if (_isDisposed) return;
+
+    _safeSetState(() {
       _nameController.text = localData['name'] ?? '';
       _emailController.text = localData['email'] ?? '';
       _phoneController.text = localData['phoneNumber'] ?? '';
@@ -132,10 +182,12 @@ class _SettingsWidgetState extends State<SettingsWidget>
       _currentProfilePicture = localData['profilePicture'];
       _currentUserId = localData['userId'];
     });
+
+    print('✅ Form controllers updated from local data for role: $userRole');
   }
 
   Future<void> _handlePasswordChange() async {
-    if (!_passwordFormKey.currentState!.validate()) {
+    if (_isDisposed || !_passwordFormKey.currentState!.validate()) {
       return;
     }
 
@@ -145,7 +197,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
       return;
     }
 
-    setState(() {
+    _safeSetState(() {
       _isChangingPassword = true;
     });
 
@@ -156,36 +208,42 @@ class _SettingsWidgetState extends State<SettingsWidget>
         confirmPassword: _confirmPasswordController.text,
       );
 
-      if (result['success']) {
-        // Clear password fields
-        _currentPasswordController.clear();
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
+      if (!_isDisposed && mounted) {
+        if (result['success']) {
+          // Clear password fields
+          _currentPasswordController.clear();
+          _newPasswordController.clear();
+          _confirmPasswordController.clear();
 
-        showCustomSnackBar(context, 'Password changed successfully',
-            'assets/images/success.svg');
-      } else {
-        showCustomSnackBar(
-            context,
-            result['message'] ?? 'Failed to change password',
-            'assets/images/error.svg');
+          showCustomSnackBar(context, 'Password changed successfully',
+              'assets/images/success.svg');
+        } else {
+          showCustomSnackBar(
+              context,
+              result['message'] ?? 'Failed to change password',
+              'assets/images/error.svg');
+        }
       }
     } catch (e) {
-      showCustomSnackBar(
-          context, 'Error changing password: $e', 'assets/images/error.svg');
+      if (!_isDisposed && mounted) {
+        showCustomSnackBar(
+            context, 'Error changing password: $e', 'assets/images/error.svg');
+      }
     } finally {
-      setState(() {
-        _isChangingPassword = false;
-      });
+      if (!_isDisposed) {
+        _safeSetState(() {
+          _isChangingPassword = false;
+        });
+      }
     }
   }
 
   Future<void> _handleProfileSave() async {
-    if (!_profileFormKey.currentState!.validate()) {
+    if (_isDisposed || !_profileFormKey.currentState!.validate()) {
       return;
     }
 
-    setState(() {
+    _safeSetState(() {
       _isSavingProfile = true;
     });
 
@@ -196,31 +254,38 @@ class _SettingsWidgetState extends State<SettingsWidget>
         phoneNumber: _phoneController.text,
       );
 
-      if (result['success']) {
-        showCustomSnackBar(context, 'Profile updated successfully',
-            'assets/images/success.svg');
-        // Refresh the form data after successful update
-        await _loadProfileData();
-      } else {
-        showCustomSnackBar(
-            context,
-            result['message'] ?? 'Failed to update profile',
-            'assets/images/error.svg');
+      if (!_isDisposed && mounted) {
+        if (result['success']) {
+          showCustomSnackBar(context, 'Profile updated successfully',
+              'assets/images/success.svg');
+          // Refresh the form data after successful update
+          await _loadProfileData();
+        } else {
+          showCustomSnackBar(
+              context,
+              result['message'] ?? 'Failed to update profile',
+              'assets/images/error.svg');
+        }
       }
     } catch (e) {
-      showCustomSnackBar(
-          context, 'Error updating profile: $e', 'assets/images/error.svg');
+      if (!_isDisposed && mounted) {
+        showCustomSnackBar(
+            context, 'Error updating profile: $e', 'assets/images/error.svg');
+      }
     } finally {
-      setState(() {
-        _isSavingProfile = false;
-      });
+      if (!_isDisposed) {
+        _safeSetState(() {
+          _isSavingProfile = false;
+        });
+      }
     }
   }
 
   // Handle image file selection for Flutter Web
   Future<void> _handleImageSelection() async {
+    if (_isDisposed) return;
+
     try {
-      // Create file input element for web
       final html.FileUploadInputElement fileInput =
           html.FileUploadInputElement();
       fileInput.accept = 'image/*';
@@ -231,16 +296,16 @@ class _SettingsWidgetState extends State<SettingsWidget>
       if (fileInput.files!.isNotEmpty) {
         final file = fileInput.files!.first;
 
-        // Validate file type
         if (!UserProfileService.isValidImageFile(file.name)) {
-          showCustomSnackBar(
-              context,
-              'Please select a valid image file (JPG, PNG, GIF, WebP)',
-              'assets/images/error.svg');
+          if (!_isDisposed && mounted) {
+            showCustomSnackBar(
+                context,
+                'Please select a valid image file (JPG, PNG, GIF, WebP)',
+                'assets/images/error.svg');
+          }
           return;
         }
 
-        // Read file as bytes
         final reader = html.FileReader();
         reader.readAsArrayBuffer(file);
 
@@ -248,75 +313,94 @@ class _SettingsWidgetState extends State<SettingsWidget>
 
         final Uint8List bytes = Uint8List.fromList(reader.result as List<int>);
 
-        // Validate file size (5MB max)
         if (!UserProfileService.isValidImageSize(bytes, maxSizeInMB: 5)) {
-          showCustomSnackBar(context, 'Image size must be less than 5MB',
-              'assets/images/error.svg');
+          if (!_isDisposed && mounted) {
+            showCustomSnackBar(context, 'Image size must be less than 5MB',
+                'assets/images/error.svg');
+          }
           return;
         }
 
-        setState(() {
-          _selectedImageBytes = bytes;
-          _selectedImageName = file.name;
-        });
+        if (!_isDisposed) {
+          _safeSetState(() {
+            _selectedImageBytes = bytes;
+            _selectedImageName = file.name;
+          });
 
-        showCustomSnackBar(
-            context,
-            'Image selected. Click "Upload Photo" to save',
-            'assets/images/info.svg');
+          if (mounted) {
+            showCustomSnackBar(
+                context,
+                'Image selected. Click "Upload Photo" to save',
+                'assets/images/info.svg');
+          }
+        }
       }
     } catch (e) {
-      showCustomSnackBar(
-          context, 'Error selecting image: $e', 'assets/images/error.svg');
+      if (!_isDisposed && mounted) {
+        showCustomSnackBar(
+            context, 'Error selecting image: $e', 'assets/images/error.svg');
+      }
     }
   }
 
-  // Handle image upload
+  // Handle image upload with role-specific storage
   Future<void> _handleImageUpload() async {
+    if (_isDisposed) return;
+
     if (_selectedImageBytes == null || _selectedImageName == null) {
       await _handleImageSelection();
       return;
     }
 
-    setState(() {
+    _safeSetState(() {
       _isUploadingImage = true;
     });
 
     try {
+      print('🖼️ Uploading image for role: $userRole');
+
       final result = await UserProfileService.uploadProfilePicture(
         _selectedImageBytes!,
         _selectedImageName!,
       );
 
-      if (result['success']) {
-        setState(() {
-          _selectedImageBytes = null;
-          _selectedImageName = null;
-        });
+      if (!_isDisposed && mounted) {
+        if (result['success']) {
+          _safeSetState(() {
+            _selectedImageBytes = null;
+            _selectedImageName = null;
+          });
 
-        showCustomSnackBar(context, 'Profile picture updated successfully',
-            'assets/images/success.svg');
+          showCustomSnackBar(context, 'Profile picture updated successfully',
+              'assets/images/success.svg');
 
-        // Refresh profile data to get the new image URL
-        await _loadProfileData();
-      } else {
-        showCustomSnackBar(
-            context,
-            result['message'] ?? 'Failed to upload image',
-            'assets/images/error.svg');
+          // Refresh profile data to get the new image URL
+          await _loadProfileData();
+        } else {
+          showCustomSnackBar(
+              context,
+              result['message'] ?? 'Failed to upload image',
+              'assets/images/error.svg');
+        }
       }
     } catch (e) {
-      showCustomSnackBar(
-          context, 'Error uploading image: $e', 'assets/images/error.svg');
+      if (!_isDisposed && mounted) {
+        showCustomSnackBar(
+            context, 'Error uploading image: $e', 'assets/images/error.svg');
+      }
     } finally {
-      setState(() {
-        _isUploadingImage = false;
-      });
+      if (!_isDisposed) {
+        _safeSetState(() {
+          _isUploadingImage = false;
+        });
+      }
     }
   }
 
   // Handle image removal
   Future<void> _handleImageRemoval() async {
+    if (_isDisposed) return;
+
     // Show confirmation dialog
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -364,55 +448,50 @@ class _SettingsWidgetState extends State<SettingsWidget>
       },
     );
 
-    if (confirmed == true) {
-      setState(() {
+    if (confirmed == true && !_isDisposed) {
+      _safeSetState(() {
         _isUploadingImage = true;
       });
 
       try {
         final result = await UserProfileService.removeProfilePicture();
 
-        if (result['success']) {
-          setState(() {
-            _selectedImageBytes = null;
-            _selectedImageName = null;
-          });
+        if (!_isDisposed && mounted) {
+          if (result['success']) {
+            _safeSetState(() {
+              _selectedImageBytes = null;
+              _selectedImageName = null;
+            });
 
-          showCustomSnackBar(context, 'Profile picture removed successfully',
-              'assets/images/success.svg');
+            showCustomSnackBar(context, 'Profile picture removed successfully',
+                'assets/images/success.svg');
 
-          // Refresh profile data
-          await _loadProfileData();
-        } else {
-          showCustomSnackBar(
-              context,
-              result['message'] ?? 'Failed to remove image',
-              'assets/images/error.svg');
+            await _loadProfileData();
+          } else {
+            showCustomSnackBar(
+                context,
+                result['message'] ?? 'Failed to remove image',
+                'assets/images/error.svg');
+          }
         }
       } catch (e) {
-        showCustomSnackBar(
-            context, 'Error removing image: $e', 'assets/images/error.svg');
+        if (!_isDisposed && mounted) {
+          showCustomSnackBar(
+              context, 'Error removing image: $e', 'assets/images/error.svg');
+        }
       } finally {
-        setState(() {
-          _isUploadingImage = false;
-        });
+        if (!_isDisposed) {
+          _safeSetState(() {
+            _isUploadingImage = false;
+          });
+        }
       }
     }
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
   void _showLocationSelectionDialog() {
+    if (_isDisposed) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -426,6 +505,20 @@ class _SettingsWidgetState extends State<SettingsWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Return minimal widget if disposed
+    if (_isDisposed) {
+      return Container(
+        width: 200,
+        height: 200,
+        color: const Color(0xFF1D2939),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: const Color(0xFF7B5CFA),
+          ),
+        ),
+      );
+    }
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
@@ -456,7 +549,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   Row(
                     children: [
                       Text(
-                        "Settings",
+                        "Settings${userRole != null ? ' ($userRole)' : ''}",
                         style: GoogleFonts.spaceGrotesk(
                           color: Colors.white,
                           fontSize: 28.sp,
@@ -565,7 +658,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Profile settings section
+  // Profile settings section with role-specific data
   Widget _buildProfileSettings() {
     return Padding(
       padding: EdgeInsets.all(24.r),
@@ -671,8 +764,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                               _selectedImageBytes != null
                                   ? "New image selected: $_selectedImageName"
                                   : _nameController.text.isNotEmpty
-                                      ? "Picture for ${_nameController.text}"
-                                      : "Upload a new profile picture or avatar",
+                                      ? "Picture for ${_nameController.text} ($userRole)"
+                                      : "Upload a new profile picture for $userRole",
                               style: GoogleFonts.spaceGrotesk(
                                 color: _selectedImageBytes != null
                                     ? const Color(0xFF7B5CFA)
@@ -731,7 +824,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                     onPressed: _isUploadingImage
                                         ? null
                                         : () {
-                                            setState(() {
+                                            _safeSetState(() {
                                               _selectedImageBytes = null;
                                               _selectedImageName = null;
                                             });
@@ -823,7 +916,6 @@ class _SettingsWidgetState extends State<SettingsWidget>
               if (value == null || value.isEmpty) {
                 return 'Phone number is required';
               }
-              // Check if it contains only numbers, spaces, hyphens, and parentheses
               if (!RegExp(r'^[0-9\s\-\(\)]+$').hasMatch(value)) {
                 return 'Phone number must contain only numbers';
               }
@@ -868,7 +960,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                     "Current Password",
                     _currentPasswordController,
                     _showCurrentPassword,
-                    (value) => setState(() => _showCurrentPassword = value),
+                    (value) =>
+                        _safeSetState(() => _showCurrentPassword = value),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Current password is required';
@@ -881,7 +974,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                     "New Password",
                     _newPasswordController,
                     _showNewPassword,
-                    (value) => setState(() => _showNewPassword = value),
+                    (value) => _safeSetState(() => _showNewPassword = value),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'New password is required';
@@ -897,7 +990,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                     "Confirm New Password",
                     _confirmPasswordController,
                     _showConfirmPassword,
-                    (value) => setState(() => _showConfirmPassword = value),
+                    (value) =>
+                        _safeSetState(() => _showConfirmPassword = value),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please confirm your password';
@@ -1072,7 +1166,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Helper method to build text fields with validation
+  // Helper methods (same as before but with _safeSetState)
   Widget _buildSettingsTextField(String label, TextEditingController controller,
       {String? Function(String?)? validator, TextInputType? keyboardType}) {
     return Column(
@@ -1141,11 +1235,9 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Helper method to build password fields
   Widget _buildPasswordTextField(String label, TextEditingController controller,
       bool isVisible, Function(bool) onVisibilityChanged,
       {String? Function(String?)? validator}) {
-    // Determine autofill hints based on the field type
     List<String> autofillHints = [];
     if (label.toLowerCase().contains('current')) {
       autofillHints = [AutofillHints.password];
@@ -1233,7 +1325,6 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Helper method to build readonly fields
   Widget _buildReadOnlyField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1272,13 +1363,14 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Helper method to format role names for display
   String? _formatRoleName(String? role) {
     if (role == null) return null;
 
     switch (role) {
       case 'DeliveryEmployee':
         return 'Delivery Employee';
+      case 'WareHouseEmployee':
+        return 'Warehouse Employee';
       case 'Customer':
         return 'Customer';
       case 'Supplier':
@@ -1290,7 +1382,6 @@ class _SettingsWidgetState extends State<SettingsWidget>
     }
   }
 
-  // Appearance settings section
   Widget _buildAppearanceSettings() {
     return Padding(
       padding: EdgeInsets.all(24.r),
@@ -1320,7 +1411,6 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Notification settings section
   Widget _buildNotificationSettings() {
     return Padding(
       padding: EdgeInsets.all(24.r),
@@ -1350,7 +1440,6 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // About/Help section
   Widget _buildAboutSection() {
     return Padding(
       padding: EdgeInsets.all(24.r),
