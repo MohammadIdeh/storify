@@ -2,7 +2,7 @@ class Category {
   final int id;
   final String name;
   final String slug;
-  final String description;
+  final String description; // Keep as non-null but handle null in fromJson
   final String status;
   final String image;
 
@@ -20,7 +20,7 @@ class Category {
       id: json['categoryID'],
       name: json['categoryName'],
       slug: json['slug'],
-      description: json['description'],
+      description: json['description'] ?? '', // ← Provide empty string if null
       status: json['status'],
       image: json['image'],
     );
@@ -54,7 +54,7 @@ class Product {
       costPrice: json['costPrice'].toDouble(),
       quantity: json['quantity'],
       image: json['image'],
-      description: json['description'],
+      description: json['description'] ?? '', // ← Also handle null here
     );
   }
 }
