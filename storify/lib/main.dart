@@ -1,5 +1,5 @@
 // lib/main.dart
-// Fixed version with better route handling and navigation
+// Fixed version with proper authentication persistence on web refresh
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -34,6 +34,9 @@ void main() async {
     print('✅ Firebase initialized');
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // Give SharedPreferences time to load properly on web
+    await Future.delayed(const Duration(milliseconds: 100));
 
     final isLoggedIn = await AuthService.isLoggedIn();
     final currentRole = await AuthService.getCurrentRole();
@@ -100,7 +103,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 Building MyApp widget...');
+    print(
+        '🎨 Building MyApp widget with auth state: $isLoggedIn, role: $currentRole');
 
     return ScreenUtilInit(
       designSize: const Size(1920, 1080),
@@ -114,7 +118,7 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
 
-        // FIXED: Better route handling
+        // FIXED: Define routes without conflicting with home
         routes: {
           '/login': (context) => const LoginScreen(),
           '/admin': (context) => const DashboardScreen(),
@@ -123,16 +127,17 @@ class MyApp extends StatelessWidget {
           '/warehouse': (context) => const Orders_employee(),
         },
 
-        // FIXED: Always set login as initial route and handle navigation programmatically
-        initialRoute: '/login',
+        // FIXED: Remove initialRoute to avoid conflicts with home
+        // Let the home property handle the initial routing based on auth state
 
-        // FIXED: Better home logic
+        // FIXED: Use only home property for initial routing
         home: _getHomeScreen(),
 
-        // FIXED: Better error handling and fallback
+        // FIXED: Handle named routes properly
         onGenerateRoute: (RouteSettings settings) {
           print('🔄 Generating route: ${settings.name}');
 
+          // Handle named routes when navigating programmatically
           switch (settings.name) {
             case '/login':
               return MaterialPageRoute(
@@ -159,31 +164,35 @@ class MyApp extends StatelessWidget {
                 builder: (_) => const Orders_employee(),
                 settings: settings,
               );
-            default:
-              print('❌ Unknown route: ${settings.name}, redirecting to login');
+            case '/delivery':
+              // Placeholder for delivery employee
               return MaterialPageRoute(
                 builder: (_) => const LoginScreen(),
-                settings: const RouteSettings(name: '/login'),
+                settings: settings,
               );
+            default:
+              print('⚠️ Unknown route: ${settings.name}, handling gracefully');
+              // Don't redirect to login for unknown routes, let the home handle it
+              return null;
           }
         },
 
         // FIXED: Better error handling
         builder: (context, widget) {
           if (widget == null) {
-            print('❌ Widget is null, showing login screen');
-            return const LoginScreen();
+            print('❌ Widget is null, showing appropriate screen');
+            return _getHomeScreen();
           }
-
           return widget;
         },
 
-        // FIXED: Handle unknown routes
+        // FIXED: Handle unknown routes gracefully
         onUnknownRoute: (RouteSettings settings) {
-          print('❌ Unknown route: ${settings.name}, redirecting to login');
+          print('❌ Unknown route: ${settings.name}, staying on current screen');
+          // Return the appropriate home screen instead of forcing login
           return MaterialPageRoute(
-            builder: (_) => const LoginScreen(),
-            settings: const RouteSettings(name: '/login'),
+            builder: (_) => _getHomeScreen(),
+            settings: const RouteSettings(name: '/'),
           );
         },
       ),
@@ -195,29 +204,33 @@ class MyApp extends StatelessWidget {
         '🏠 Getting home screen for logged in: $isLoggedIn, role: $currentRole');
 
     try {
-      if (!isLoggedIn) {
-        print('🔐 Showing LoginScreen');
+      // FIXED: Always check authentication state, don't default to login
+      if (!isLoggedIn || currentRole == null) {
+        print('🔐 No valid authentication, showing LoginScreen');
         return const LoginScreen();
       }
 
+      // FIXED: Route based on valid role
       switch (currentRole) {
         case 'Admin':
           print('👑 Showing DashboardScreen for Admin');
           return const DashboardScreen();
         case 'Supplier':
-          print('🏪 Showing SupplierOrders');
+          print('🏪 Showing SupplierOrders for Supplier');
           return const SupplierOrders();
         case 'Customer':
-          print('🛒 Showing CustomerOrders');
+          print('🛒 Showing CustomerOrders for Customer');
           return const CustomerOrders();
         case 'WareHouseEmployee':
-          print('📦 Showing Orders_employee');
+          print('📦 Showing Orders_employee for WareHouseEmployee');
           return const Orders_employee();
+        case 'DeliveryEmployee':
         case 'DeliveryMan':
-          print('🚚 Showing LoginScreen (DeliveryMan placeholder)');
+          print(
+              '🚚 Showing LoginScreen for DeliveryEmployee (not implemented yet)');
           return const LoginScreen();
         default:
-          print('❓ Unknown role, showing LoginScreen');
+          print('❓ Unknown role: $currentRole, showing LoginScreen');
           return const LoginScreen();
       }
     } catch (e) {
