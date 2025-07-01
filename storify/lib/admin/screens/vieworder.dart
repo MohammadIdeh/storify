@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
 
-// Define our OrderLineItem model for the items in an order
+// Updated OrderLineItem model with production and expiry dates
 class OrderLineItem {
   final String name;
   final String? imageUrl;
@@ -15,6 +15,8 @@ class OrderLineItem {
   final int quantity;
   final double total;
   final String? status; // Add status for partially accepted orders
+  final String? prodDate; // Production date
+  final String? expDate; // Expiry date
 
   OrderLineItem({
     required this.name,
@@ -23,6 +25,8 @@ class OrderLineItem {
     required this.quantity,
     required this.total,
     this.status,
+    this.prodDate,
+    this.expDate,
   });
 }
 
@@ -165,8 +169,12 @@ class _VieworderState extends State<Vieworder> {
                 }
               }
 
+              // Extract production and expiry dates
+              String? prodDate = item['prodDate'];
+              String? expDate = item['expDate'];
+
               print(
-                  "Item: ${product['name']} - Price: $costPrice, Qty: $quantity, Total: $subtotal, Status: $itemStatus"); // Debug
+                  "Item: ${product['name']} - Price: $costPrice, Qty: $quantity, Total: $subtotal, Status: $itemStatus, ProdDate: $prodDate, ExpDate: $expDate"); // Debug
 
               processedItems.add(OrderLineItem(
                 name: product['name'] ?? 'Unknown Product',
@@ -175,6 +183,8 @@ class _VieworderState extends State<Vieworder> {
                 quantity: quantity,
                 total: subtotal,
                 status: itemStatus, // Include item status in OrderLineItem
+                prodDate: prodDate, // Include production date
+                expDate: expDate, // Include expiry date
               ));
             }
           }
@@ -294,8 +304,13 @@ class _VieworderState extends State<Vieworder> {
                   : double.tryParse(item['subtotal'].toString()) ?? 0.0;
             }
 
+            // For customer orders, production and expiry dates might not be available
+            // But we'll check if they exist in the response
+            String? prodDate = item['prodDate'];
+            String? expDate = item['expDate'];
+
             print(
-                "Item: $productName, Price: $price, Quantity: $quantity, Subtotal: $subtotal, Status: $itemStatus");
+                "Item: $productName, Price: $price, Quantity: $quantity, Subtotal: $subtotal, Status: $itemStatus, ProdDate: $prodDate, ExpDate: $expDate");
 
             // Create the line item
             processedItems.add(OrderLineItem(
@@ -305,6 +320,10 @@ class _VieworderState extends State<Vieworder> {
               quantity: quantity,
               total: subtotal,
               status: itemStatus, // Include item status
+              prodDate:
+                  prodDate, // Include production date (might be null for customer orders)
+              expDate:
+                  expDate, // Include expiry date (might be null for customer orders)
             ));
           }
         }
@@ -331,6 +350,20 @@ class _VieworderState extends State<Vieworder> {
         _errorMessage = 'Error fetching customer order details: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  // Helper method to format date for display
+  String _formatDateForDisplay(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return 'N/A';
+    }
+
+    try {
+      final DateTime date = DateTime.parse(dateString);
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (e) {
+      return dateString; // Return original string if parsing fails
     }
   }
 
@@ -808,10 +841,9 @@ class _VieworderState extends State<Vieworder> {
                                       // Items table
                                       SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
-                                        child: // Replace the DataTable section with this modern styled version
-
-                                            Container(
-                                          width: 1170,
+                                        child: Container(
+                                          width:
+                                              1250, // Optimized for both date columns
                                           decoration: BoxDecoration(
                                             borderRadius:
                                                 BorderRadius.circular(16.r),
@@ -870,8 +902,8 @@ class _VieworderState extends State<Vieworder> {
                                                 headingRowHeight: 60.h,
                                                 dataRowMinHeight: 70.h,
                                                 dataRowMaxHeight: 80.h,
-                                                horizontalMargin: 20.w,
-                                                columnSpacing: 30.w,
+                                                horizontalMargin: 16.w,
+                                                columnSpacing: 20.w,
                                                 showCheckboxColumn: false,
                                                 border: TableBorder(
                                                   horizontalInside: BorderSide(
@@ -1027,6 +1059,70 @@ class _VieworderState extends State<Vieworder> {
                                                       ),
                                                     ),
                                                     numeric: true,
+                                                  ),
+                                                  // Production Date column
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .production_quantity_limits_rounded,
+                                                            color: Colors.white,
+                                                            size: 16.sp,
+                                                          ),
+                                                          SizedBox(width: 4.w),
+                                                          Text(
+                                                            "Prod Date",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 13.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  // Expiry Date column
+                                                  DataColumn(
+                                                    label: Container(
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .schedule_rounded,
+                                                            color: Colors.white,
+                                                            size: 16.sp,
+                                                          ),
+                                                          SizedBox(width: 4.w),
+                                                          Text(
+                                                            "Exp Date",
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 13.sp,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                   ),
                                                   // Only show Status column for PartiallyAccepted orders
                                                   if (_localOrder.status ==
@@ -1467,6 +1563,134 @@ class _VieworderState extends State<Vieworder> {
                                                                 ),
                                                               ),
                                                             ],
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      // Production Date cell
+                                                      DataCell(
+                                                        Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      8.w,
+                                                                  vertical:
+                                                                      4.h),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: item.prodDate !=
+                                                                    null
+                                                                ? const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        76,
+                                                                        175,
+                                                                        80)
+                                                                    .withOpacity(
+                                                                        0.2)
+                                                                : Colors.grey
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        6.r),
+                                                            border: Border.all(
+                                                              color: item.prodDate !=
+                                                                      null
+                                                                  ? const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      76,
+                                                                      175,
+                                                                      80)
+                                                                  : Colors.grey,
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            _formatDateForDisplay(
+                                                                item.prodDate),
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color: item.prodDate !=
+                                                                      null
+                                                                  ? const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      76,
+                                                                      175,
+                                                                      80)
+                                                                  : Colors.grey,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 11.sp,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+
+                                                      // Expiry Date cell
+                                                      DataCell(
+                                                        Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      8.w,
+                                                                  vertical:
+                                                                      4.h),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: item.expDate !=
+                                                                    null
+                                                                ? const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        255,
+                                                                        152,
+                                                                        0)
+                                                                    .withOpacity(
+                                                                        0.2)
+                                                                : Colors.grey
+                                                                    .withOpacity(
+                                                                        0.2),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        6.r),
+                                                            border: Border.all(
+                                                              color: item.expDate !=
+                                                                      null
+                                                                  ? const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      255,
+                                                                      152,
+                                                                      0)
+                                                                  : Colors.grey,
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            _formatDateForDisplay(
+                                                                item.expDate),
+                                                            style: GoogleFonts
+                                                                .spaceGrotesk(
+                                                              color: item.expDate !=
+                                                                      null
+                                                                  ? const Color
+                                                                      .fromARGB(
+                                                                      255,
+                                                                      255,
+                                                                      152,
+                                                                      0)
+                                                                  : Colors.grey,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 11.sp,
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
