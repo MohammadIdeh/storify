@@ -12,10 +12,14 @@ import 'package:storify/admin/widgets/categoryWidgets/model.dart'; // Add this i
 class Categoriestable extends StatefulWidget {
   final List<CategoryItem> categories; // Provided list from parent.
   final ValueChanged<CategoryItem> onCategorySelected;
+  final Function(int categoryID, String newStatus)?
+      onCategoryUpdated; // Add this callback
+
   const Categoriestable({
     Key? key,
     required this.categories,
     required this.onCategorySelected,
+    this.onCategoryUpdated, // Add this parameter
   }) : super(key: key);
 
   @override
@@ -26,29 +30,14 @@ class _CategoriestableState extends State<Categoriestable> {
   // Pagination settings.
   final int _itemsPerPage = 5;
   int _currentPage = 1;
+
+  // Keep track of categories being updated
+  Set<int> _updatingCategories = {};
+
   Future<void> _updateCategoryStatus(int categoryID, bool isActive) async {
-    // Store current categories state to allow modification
-    List<CategoryItem> currentCategories = List.from(widget.categories);
-
-    // Find the category to update
-    int categoryIndex = -1;
-    for (int i = 0; i < currentCategories.length; i++) {
-      if (currentCategories[i].categoryID == categoryID) {
-        categoryIndex = i;
-        break;
-      }
-    }
-
-    if (categoryIndex == -1) return; // Category not found
-
-    // Store original status for potential revert
-    final String originalStatus = currentCategories[categoryIndex].status;
-
-    // Update local state immediately
+    // Add this category to updating set
     setState(() {
-      // Create a copy of the category with updated status
-      currentCategories[categoryIndex].status =
-          isActive ? 'Active' : 'NotActive';
+      _updatingCategories.add(categoryID);
     });
 
     try {
@@ -56,38 +45,70 @@ class _CategoriestableState extends State<Categoriestable> {
       final token = await AuthService.getToken();
       if (token == null) {
         print('No token available for category status update');
-
-        // Revert on error
-        setState(() {
-          currentCategories[categoryIndex].status = originalStatus;
-        });
+        _showError('Authentication required. Please log in again.');
         return;
       }
+
+      // Prepare the new status
+      final newStatus = isActive ? 'Active' : 'NotActive';
 
       // Perform API request to update status
       final response = await http.put(
         Uri.parse(
             'https://finalproject-a5ls.onrender.com/category/$categoryID'),
-        headers: {'Content-Type': 'application/json', 'token': token},
-        body: json.encode({'status': isActive ? 'Active' : 'NotActive'}),
+        headers: {
+          'Content-Type': 'application/json',
+          'token': token // Use 'token' header as per API requirement
+        },
+        body: json.encode({'status': newStatus}),
       );
 
-      if (response.statusCode != 200) {
+      print('API Response: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Success - update the parent state through callback
+        if (widget.onCategoryUpdated != null) {
+          widget.onCategoryUpdated!(categoryID, newStatus);
+        }
+        print('Category status updated successfully');
+      } else {
         print('Failed to update category status: ${response.statusCode}');
         print('Response: ${response.body}');
 
-        // If the API call fails, revert to original status
-        setState(() {
-          currentCategories[categoryIndex].status = originalStatus;
-        });
+        // Try to parse error message
+        try {
+          final responseData = json.decode(response.body);
+          _showError(
+              responseData['message'] ?? 'Failed to update category status');
+        } catch (e) {
+          _showError(
+              'Failed to update category status: ${response.statusCode}');
+        }
       }
     } catch (e) {
       print('Error updating category status: $e');
-
-      // Revert on error
+      _showError('Network error: $e');
+    } finally {
+      // Remove from updating set
       setState(() {
-        currentCategories[categoryIndex].status = originalStatus;
+        _updatingCategories.remove(categoryID);
       });
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: GoogleFonts.spaceGrotesk(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -192,6 +213,9 @@ class _CategoriestableState extends State<Categoriestable> {
                       ),
                     ],
                     rows: _visibleCategories.map((cat) {
+                      final isUpdating =
+                          _updatingCategories.contains(cat.categoryID);
+
                       return DataRow(
                         onSelectChanged: (selected) {
                           if (selected == true) {
@@ -247,32 +271,39 @@ class _CategoriestableState extends State<Categoriestable> {
                             ),
                           ),
                           DataCell(
-                            // Wrap in a Container to increase tap area
                             Container(
-                              width: 60, // Give it some width
+                              width: 80,
                               alignment: Alignment.center,
-                              child: GestureDetector(
-                                // Add explicit GestureDetector to handle taps
-                                onTap: () {
-                                  // Toggle status directly on tap
-                                  final newValue = !cat.isActive;
-                                  _updateCategoryStatus(
-                                      cat.categoryID, newValue);
-                                },
-                                child: Transform.scale(
-                                  scale: 0.7,
-                                  child: CupertinoSwitch(
-                                    value: cat.isActive,
-                                    activeColor:
-                                        const Color.fromARGB(255, 105, 65, 198),
-                                    // Keep this for when the switch itself is interacted with
-                                    onChanged: (value) {
-                                      _updateCategoryStatus(
-                                          cat.categoryID, value);
-                                    },
-                                  ),
-                                ),
-                              ),
+                              child: isUpdating
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: const Color.fromARGB(
+                                            255, 105, 65, 198),
+                                      ),
+                                    )
+                                  : GestureDetector(
+                                      onTap: () {
+                                        // Toggle status directly on tap
+                                        final newValue = !cat.isActive;
+                                        _updateCategoryStatus(
+                                            cat.categoryID, newValue);
+                                      },
+                                      child: Transform.scale(
+                                        scale: 0.7,
+                                        child: CupertinoSwitch(
+                                          value: cat.isActive,
+                                          activeColor: const Color.fromARGB(
+                                              255, 105, 65, 198),
+                                          onChanged: (value) {
+                                            _updateCategoryStatus(
+                                                cat.categoryID, value);
+                                          },
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                         ],

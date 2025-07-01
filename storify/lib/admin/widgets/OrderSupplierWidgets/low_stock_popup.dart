@@ -769,33 +769,41 @@ class _LowStockPopupState extends State<LowStockPopup> {
                   color: Colors.white.withOpacity(0.2),
                 ),
               ),
-              child: TextField(
-                controller: quantityController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+              alignment: Alignment.center, // Added alignment
+              child: Center(
+                // Wrapped with Center widget
+                child: TextField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    isCollapsed: true, // Ensures perfect vertical centering
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  onChanged: (value) =>
+                      _updateQuantity(item.product.productId, value),
                 ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                onChanged: (value) =>
-                    _updateQuantity(item.product.productId, value),
               ),
             ),
           ),
 
+          SizedBox(
+            width: 20,
+          ),
           // Alert Level
           Expanded(
             flex: 1,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
               decoration: BoxDecoration(
                 color: _getAlertColor(item.alertLevel).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12.r),
@@ -815,7 +823,9 @@ class _LowStockPopupState extends State<LowStockPopup> {
               ),
             ),
           ),
-
+          SizedBox(
+            width: 20,
+          ),
           // Supplier Dropdown (only show if not using global supplier)
           if (!_useGlobalSupplier)
             Expanded(

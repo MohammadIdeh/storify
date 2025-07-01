@@ -1,4 +1,4 @@
-// model.dart with field name correction
+// model.dart with field name correction and mutable properties
 class ProductDetail {
   final dynamic productID; // Store any ID type
   String image;
@@ -73,11 +73,11 @@ class ProductDetail {
 
 class CategoryItem {
   final int categoryID;
-  final String categoryName;
+  String categoryName; // Made mutable for editing
   final String slug;
-  final String description;
-  late final String status; // "Active" or "NotActive"
-  final String image;
+  String description; // Made mutable for editing
+  String status; // Made mutable for status updates - "Active" or "NotActive"
+  String image; // Made mutable for image updates
   int products; // This isn't part of the API response, but we'll keep it
 
   CategoryItem({
@@ -93,6 +93,11 @@ class CategoryItem {
   // Helper getter to convert status string to bool for the UI
   bool get isActive => status == "Active";
 
+  // Setter for updating status through the UI
+  set isActive(bool value) {
+    status = value ? "Active" : "NotActive";
+  }
+
   // Factory constructor to create from JSON
   factory CategoryItem.fromJson(Map<String, dynamic> json) {
     return CategoryItem(
@@ -103,5 +108,31 @@ class CategoryItem {
       status: json['status'],
       image: json['image'],
     );
+  }
+
+  // Method to create a copy with updated values
+  CategoryItem copyWith({
+    int? categoryID,
+    String? categoryName,
+    String? slug,
+    String? description,
+    String? status,
+    String? image,
+    int? products,
+  }) {
+    return CategoryItem(
+      categoryID: categoryID ?? this.categoryID,
+      categoryName: categoryName ?? this.categoryName,
+      slug: slug ?? this.slug,
+      description: description ?? this.description,
+      status: status ?? this.status,
+      image: image ?? this.image,
+      products: products ?? this.products,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'CategoryItem(id: $categoryID, name: $categoryName, status: $status)';
   }
 }

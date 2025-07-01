@@ -20,7 +20,6 @@ import 'package:storify/admin/widgets/categoryWidgets/model.dart';
 enum PanelType { addCat, products }
 
 /// Holds data about a currently opened panel.
-// In categories_screen.dart, update PanelDescriptor class:
 class PanelDescriptor {
   final PanelType type;
   final String? categoryName; // used if type == products
@@ -131,7 +130,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-// New method to fetch products for a specific category
+  // New method to fetch products for a specific category
   Future<void> _fetchProductsForCategory(int categoryID) async {
     // Mark this category as loading products
     setState(() {
@@ -251,7 +250,19 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _fetchCategories();
   }
 
-// In categories_screen.dart, update _handleCategorySelected method:
+  // Add this callback to handle category updates from table
+  void _updateCategoryInList(int categoryID, String newStatus) {
+    setState(() {
+      for (var cat in _allCategories) {
+        if (cat.categoryID == categoryID) {
+          cat.status = newStatus;
+          break;
+        }
+      }
+    });
+  }
+
+  // In categories_screen.dart, update _handleCategorySelected method:
   void _handleCategorySelected(CategoryItem cat) {
     setState(() {
       _openedPanels.removeWhere(
@@ -314,10 +325,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         preferredSize: const Size.fromHeight(200),
         child: MyNavigationBar(
           currentIndex: _currentIndex,
-
           profilePictureUrl:
               profilePictureUrl, // Pass the profile picture URL here
-
           onTap: (index) {
             setState(() {
               _currentIndex = index;
@@ -503,6 +512,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 Categoriestable(
                   categories: _filteredCategories,
                   onCategorySelected: _handleCategorySelected,
+                  onCategoryUpdated: _updateCategoryInList, // Add this callback
                 ),
 
               SizedBox(height: 30.h),
@@ -720,6 +730,32 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             _categoryProductsMap[categoryID] ?? <ProductDetail>[];
         currentList.remove(deletedProduct);
         _updateProductsForCategory(categoryID, currentList);
+      },
+      onCategoryUpdate: (updatedCategory) {
+        // Handle category update callback
+        setState(() {
+          for (var cat in _allCategories) {
+            if (cat.categoryID == categoryID) {
+              cat.categoryName = updatedCategory.categoryName;
+              cat.description = updatedCategory.description;
+              cat.status = updatedCategory.status;
+              cat.image = updatedCategory.image;
+              break;
+            }
+          }
+        });
+
+        // Update the panel with new data
+        final panelIndex = _openedPanels.indexWhere(
+            (p) => p.type == PanelType.products && p.categoryID == categoryID);
+        if (panelIndex != -1) {
+          _openedPanels[panelIndex] = PanelDescriptor(
+            type: PanelType.products,
+            categoryName: updatedCategory.categoryName,
+            categoryID: categoryID,
+            description: updatedCategory.description,
+          );
+        }
       },
     );
   }
