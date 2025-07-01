@@ -30,9 +30,16 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   final Map<int, bool> _selectedProducts = {};
   // Keep track of edited prices
   final Map<int, double> _editedPrices = {};
+  // Keep track of product dates and notes
+  final Map<int, DateTime> _productionDates = {};
+  final Map<int, DateTime> _expiryDates = {};
+  final Map<int, String> _productNotes = {};
+
   // Track if any price was edited
   bool get _hasPriceEdits => _editedPrices.isNotEmpty;
   bool get _hasSelectedProducts => _selectedProducts.values.contains(true);
+  bool get _hasDateEdits =>
+      _productionDates.isNotEmpty || _expiryDates.isNotEmpty;
 
   @override
   void initState() {
@@ -264,7 +271,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     Padding(
                       padding: EdgeInsets.only(right: 16.w),
                       child: Text(
-                        "Tap price to edit",
+                        "Tap to edit details",
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w400,
@@ -316,157 +323,158 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   widget.orderDetails.status == "PartiallyAccepted" &&
                       product.status != null;
 
+              // Check if this product has custom dates or notes (from API or local editing)
+              final bool hasCustomData =
+                  _productionDates.containsKey(product.id) ||
+                      _expiryDates.containsKey(product.id) ||
+                      _productNotes.containsKey(product.id) ||
+                      _editedPrices.containsKey(product.id) ||
+                      product.hasCustomData; // Also check data from API
+
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                child: Row(
+                child: Column(
                   children: [
-                    // Checkbox for selection (only shown for pending orders)
-                    if (showSelectionControls)
-                      Padding(
-                        padding: EdgeInsets.only(right: 8.w),
-                        child: Checkbox(
-                          value: isSelected,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              _selectedProducts[product.id] = value ?? false;
-                            });
-                          },
-                          activeColor: const Color.fromARGB(255, 229, 62, 62),
-                          checkColor: Colors.white,
-                          side: BorderSide(color: Colors.white54),
-                        ),
-                      ),
-
-                    Container(
-                      width: 48.w,
-                      height: 48.h,
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 36, 50, 69),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Center(
-                        child: product.imageUrl != null
-                            ? Image.network(
-                                product.imageUrl!,
-                                width: 40.w,
-                                height: 40.h,
-                                fit: BoxFit.cover,
-                              )
-                            : Icon(
-                                Icons.inventory_2_outlined,
-                                color: Colors.white70,
-                                size: 24.sp,
-                              ),
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.name,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                    Row(
+                      children: [
+                        // Checkbox for selection (only shown for pending orders)
+                        if (showSelectionControls)
+                          Padding(
+                            padding: EdgeInsets.only(right: 8.w),
+                            child: Checkbox(
+                              value: isSelected,
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  _selectedProducts[product.id] =
+                                      value ?? false;
+                                });
+                              },
+                              activeColor:
+                                  const Color.fromARGB(255, 229, 62, 62),
+                              checkColor: Colors.white,
+                              side: BorderSide(color: Colors.white54),
                             ),
                           ),
-                          SizedBox(height: 4.h),
-                          Row(
-                            children: [
-                              Text(
-                                "ID: ${product.productId}",
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 14.sp,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                              if (showProductStatus) ...[
-                                SizedBox(width: 8.w),
-                                _buildProductStatusPill(product.status!),
-                              ],
-                            ],
+
+                        Container(
+                          width: 48.w,
+                          height: 48.h,
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 36, 50, 69),
+                            borderRadius: BorderRadius.circular(8.r),
                           ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Total price display
-                        Text(
-                          "\$${currentTotalPrice.toStringAsFixed(2)}",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                          child: Center(
+                            child: product.imageUrl != null
+                                ? Image.network(
+                                    product.imageUrl!,
+                                    width: 40.w,
+                                    height: 40.h,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Icon(
+                                    Icons.inventory_2_outlined,
+                                    color: Colors.white70,
+                                    size: 24.sp,
+                                  ),
                           ),
                         ),
-                        SizedBox(height: 4.h),
-                        // Price per unit with edit functionality
-                        if (canEditPrices)
-                          GestureDetector(
-                            onTap: () => _showPriceEditDialog(context, product),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 6.w, vertical: 2.h),
-                              decoration: BoxDecoration(
-                                color: _editedPrices.containsKey(product.id)
-                                    ? const Color.fromARGB(255, 105, 65, 198)
-                                        .withOpacity(0.2)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(4.r),
-                                border: Border.all(
-                                  color: _editedPrices.containsKey(product.id)
-                                      ? const Color.fromARGB(255, 105, 65, 198)
-                                      : Colors.transparent,
-                                  width: 1,
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                              SizedBox(height: 4.h),
+                              Row(
                                 children: [
                                   Text(
-                                    "${product.quantity} × \$${currentPrice.toStringAsFixed(2)}",
+                                    "ID: ${product.productId}",
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 14.sp,
-                                      color:
-                                          _editedPrices.containsKey(product.id)
-                                              ? const Color.fromARGB(
-                                                  255, 105, 65, 198)
-                                              : Colors.white70,
-                                      fontWeight:
-                                          _editedPrices.containsKey(product.id)
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
+                                      color: Colors.white70,
                                     ),
                                   ),
-                                  if (_editedPrices
-                                      .containsKey(product.id)) ...[
-                                    SizedBox(width: 4.w),
+                                  if (showProductStatus) ...[
+                                    SizedBox(width: 8.w),
+                                    _buildProductStatusPill(product.status!),
+                                  ],
+                                  if (hasCustomData) ...[
+                                    SizedBox(width: 8.w),
                                     Icon(
                                       Icons.edit,
-                                      size: 12.sp,
+                                      size: 14.sp,
                                       color: const Color.fromARGB(
                                           255, 105, 65, 198),
                                     ),
-                                  ]
+                                  ],
                                 ],
                               ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            // Total price display
+                            Text(
+                              "\$${currentTotalPrice.toStringAsFixed(2)}",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
-                          )
-                        else
-                          Text(
-                            "${product.quantity} × \$${currentPrice.toStringAsFixed(2)}",
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              color: Colors.white70,
+                            SizedBox(height: 4.h),
+                            // Price per unit
+                            Text(
+                              "${product.quantity} × \$${currentPrice.toStringAsFixed(2)}",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                color: _editedPrices.containsKey(product.id)
+                                    ? const Color.fromARGB(255, 105, 65, 198)
+                                    : Colors.white70,
+                                fontWeight:
+                                    _editedPrices.containsKey(product.id)
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Edit button for pending orders
+                        if (canEditPrices)
+                          Padding(
+                            padding: EdgeInsets.only(left: 8.w),
+                            child: IconButton(
+                              onPressed: () =>
+                                  _showProductEditDialog(context, product),
+                              icon: Icon(
+                                Icons.edit,
+                                color: hasCustomData
+                                    ? const Color.fromARGB(255, 105, 65, 198)
+                                    : Colors.white54,
+                                size: 20.sp,
+                              ),
                             ),
                           ),
                       ],
                     ),
+                    // Show custom dates and notes if available (for all order statuses)
+                    if (hasCustomData)
+                      Padding(
+                        padding: EdgeInsets.only(
+                            top: 8.h,
+                            left: showSelectionControls ? 68.w : 60.w),
+                        child: _buildProductCustomInfo(product),
+                      ),
                   ],
                 ),
               );
@@ -477,228 +485,506 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     );
   }
 
-  // Method to show price edit dialog
-  void _showPriceEditDialog(BuildContext context, OrderProduct product) {
-    // Current price (either edited or original)
-    final currentPrice = _editedPrices[product.id] ?? product.price;
+  Widget _buildProductCustomInfo(OrderProduct product) {
+    List<Widget> infoChips = [];
 
-    // Controller for the text field, initialized with current price
+    // Check for production date (local editing takes priority over API data)
+    DateTime? displayProdDate;
+    if (_productionDates.containsKey(product.id)) {
+      displayProdDate = _productionDates[product.id];
+    } else if (product.productionDateTime != null) {
+      displayProdDate = product.productionDateTime;
+    }
+
+    if (displayProdDate != null) {
+      infoChips.add(_buildInfoChip(
+        "Prod: ${displayProdDate.day}/${displayProdDate.month}/${displayProdDate.year}",
+        Colors.blue,
+        icon: Icons.production_quantity_limits,
+      ));
+    }
+
+    // Check for expiry date (local editing takes priority over API data)
+    DateTime? displayExpDate;
+    if (_expiryDates.containsKey(product.id)) {
+      displayExpDate = _expiryDates[product.id];
+    } else if (product.expiryDateTime != null) {
+      displayExpDate = product.expiryDateTime;
+    }
+
+    if (displayExpDate != null) {
+      infoChips.add(_buildInfoChip(
+        "Exp: ${displayExpDate.day}/${displayExpDate.month}/${displayExpDate.year}",
+        Colors.orange,
+        icon: Icons.schedule,
+      ));
+    }
+
+    // Check for notes (local editing takes priority over API data)
+    String? displayNotes;
+    if (_productNotes.containsKey(product.id) &&
+        _productNotes[product.id]!.isNotEmpty) {
+      displayNotes = _productNotes[product.id];
+    } else if (product.notes != null && product.notes!.isNotEmpty) {
+      displayNotes = product.notes;
+    }
+
+    if (displayNotes != null) {
+      infoChips.add(_buildInfoChip(
+        displayNotes,
+        Colors.purple,
+        icon: Icons.note,
+      ));
+    }
+
+    // Show price modification indicator if price was edited
+    if (_editedPrices.containsKey(product.id)) {
+      infoChips.add(_buildInfoChip(
+        "Price Modified",
+        const Color.fromARGB(255, 105, 65, 198),
+        icon: Icons.attach_money,
+      ));
+    }
+
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 4.h,
+      children: infoChips,
+    );
+  }
+
+  Widget _buildInfoChip(String text, Color color, {IconData? icon}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 12.sp,
+              color: color,
+            ),
+            SizedBox(width: 4.w),
+          ],
+          Text(
+            text,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Method to show product edit dialog (combines price, dates, and notes)
+  void _showProductEditDialog(BuildContext context, OrderProduct product) {
+    // Current values (either edited, from API, or default)
+    final double currentPrice = _editedPrices[product.id] ?? product.price;
+
+    // For dates, use local editing state, then API data, then default
+    final DateTime currentProdDate = _productionDates[product.id] ??
+        product.productionDateTime ??
+        DateTime.now();
+    final DateTime currentExpDate = _expiryDates[product.id] ??
+        product.expiryDateTime ??
+        DateTime.now().add(Duration(days: 30));
+
+    // For notes, use local editing state, then API data, then empty
+    final String currentNotes =
+        _productNotes[product.id] ?? product.notes ?? "";
+
+    // Controllers
     final TextEditingController priceController = TextEditingController(
       text: currentPrice.toStringAsFixed(2),
     );
+    final TextEditingController notesController = TextEditingController(
+      text: currentNotes,
+    );
+
+    // State variables for the dialog
+    DateTime selectedProdDate = currentProdDate;
+    DateTime selectedExpDate = currentExpDate;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        title: Text(
-          "Edit Price",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Product: ${product.name}",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+          title: Text(
+            "Edit Product Details",
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            SizedBox(height: 8.h),
-            Text(
-              "Original Price: \$${product.price.toStringAsFixed(2)}",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              "Enter new price per unit:",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 29, 41, 57),
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 34, 53, 62),
-                  width: 1,
-                ),
-              ),
-              child: TextField(
-                controller: priceController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                ),
-                decoration: InputDecoration(
-                  prefixText: '\$ ',
-                  prefixStyle: GoogleFonts.spaceGrotesk(
-                    color: Colors.white70,
-                  ),
-                  hintText: "0.00",
-                  hintStyle: GoogleFonts.spaceGrotesk(
-                    color: Colors.white30,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(12.r),
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              "Quantity: ${product.quantity}",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            StatefulBuilder(
-              builder: (context, setState) {
-                // Try to parse the current price input
-                double newPrice = 0.0;
-                try {
-                  newPrice = double.parse(priceController.text);
-                } catch (e) {
-                  newPrice = 0.0;
-                }
-
-                // Calculate new total
-                final double newTotal = newPrice * product.quantity;
-
-                return Container(
-                  padding: EdgeInsets.all(12.r),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 29, 41, 57),
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(
-                      color: const Color.fromARGB(255, 34, 53, 62),
-                      width: 1,
+          ),
+          content: Container(
+            width: 400.w,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Product: ${product.name}",
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "New Total:",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      Text(
-                        "\$${newTotal.toStringAsFixed(2)}",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: const Color.fromARGB(255, 105, 65, 198),
-                        ),
-                      ),
-                    ],
+                  SizedBox(height: 16.h),
+
+                  // Price section
+                  Text(
+                    "Price per unit:",
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
                   ),
-                );
-              },
+                  SizedBox(height: 8.h),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 29, 41, 57),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: const Color.fromARGB(255, 34, 53, 62),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: priceController,
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d{0,2}')),
+                      ],
+                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                      decoration: InputDecoration(
+                        prefixText: '\$ ',
+                        prefixStyle:
+                            GoogleFonts.spaceGrotesk(color: Colors.white70),
+                        hintText: "0.00",
+                        hintStyle:
+                            GoogleFonts.spaceGrotesk(color: Colors.white30),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(12.r),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+
+                  // Production Date section
+                  Text(
+                    "Production Date:",
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  GestureDetector(
+                    onTap: () async {
+                      final DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: selectedProdDate,
+                        firstDate: DateTime.now().subtract(Duration(days: 365)),
+                        lastDate: DateTime.now().add(Duration(days: 30)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: ColorScheme.dark(
+                                primary:
+                                    const Color.fromARGB(255, 105, 65, 198),
+                                surface: const Color.fromARGB(255, 36, 50, 69),
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (pickedDate != null) {
+                        setDialogState(() {
+                          selectedProdDate = pickedDate;
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 29, 41, 57),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 34, 53, 62),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "${selectedProdDate.day}/${selectedProdDate.month}/${selectedProdDate.year}",
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                          ),
+                          Icon(Icons.calendar_today,
+                              color: Colors.white70, size: 20.sp),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+
+                  // Expiry Date section
+                  Text(
+                    "Expiry Date:",
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  GestureDetector(
+                    onTap: () async {
+                      final DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: selectedExpDate,
+                        firstDate: selectedProdDate,
+                        lastDate:
+                            DateTime.now().add(Duration(days: 1095)), // 3 years
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: ColorScheme.dark(
+                                primary:
+                                    const Color.fromARGB(255, 105, 65, 198),
+                                surface: const Color.fromARGB(255, 36, 50, 69),
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (pickedDate != null) {
+                        setDialogState(() {
+                          selectedExpDate = pickedDate;
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 29, 41, 57),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 34, 53, 62),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "${selectedExpDate.day}/${selectedExpDate.month}/${selectedExpDate.year}",
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                          ),
+                          Icon(Icons.calendar_today,
+                              color: Colors.white70, size: 20.sp),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+
+                  // Notes section
+                  Text(
+                    "Notes (optional):",
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 29, 41, 57),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: const Color.fromARGB(255, 34, 53, 62),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: notesController,
+                      maxLines: 3,
+                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText:
+                            "e.g., Fresh dairy batch, Organic certified...",
+                        hintStyle:
+                            GoogleFonts.spaceGrotesk(color: Colors.white30),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(12.r),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+
+                  // Calculate new total
+                  StatefulBuilder(
+                    builder: (context, setState) {
+                      double newPrice = 0.0;
+                      try {
+                        newPrice = double.parse(priceController.text);
+                      } catch (e) {
+                        newPrice = 0.0;
+                      }
+                      final double newTotal = newPrice * product.quantity;
+
+                      return Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 29, 41, 57),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 34, 53, 62),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "New Total:",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            Text(
+                              "\$${newTotal.toStringAsFixed(2)}",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        actions: [
-          // Reset button (only show if the price has been edited)
-          if (_editedPrices.containsKey(product.id))
+          ),
+          actions: [
+            // Reset button
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 setState(() {
-                  // Remove this product from edited prices to revert to original
+                  // Remove local editing data (this will revert to API data if available)
                   _editedPrices.remove(product.id);
+                  _productionDates.remove(product.id);
+                  _expiryDates.remove(product.id);
+                  _productNotes.remove(product.id);
                 });
               },
               child: Text(
-                "Reset to Original",
+                "Reset to ${product.hasCustomData ? 'Original' : 'Default'}",
                 style: GoogleFonts.spaceGrotesk(
                   color: Colors.white70,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               ),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            ),
-            onPressed: () {
-              try {
-                final double newPrice = double.parse(priceController.text);
-                if (newPrice <= 0) {
+              onPressed: () {
+                try {
+                  final double newPrice = double.parse(priceController.text);
+                  if (newPrice <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Price must be greater than zero'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(context);
+                  setState(() {
+                    // Update price only if different from original
+                    if (newPrice != product.price) {
+                      _editedPrices[product.id] = newPrice;
+                    } else {
+                      _editedPrices.remove(product.id);
+                    }
+
+                    // Update dates
+                    _productionDates[product.id] = selectedProdDate;
+                    _expiryDates[product.id] = selectedExpDate;
+
+                    // Update notes
+                    if (notesController.text.trim().isNotEmpty) {
+                      _productNotes[product.id] = notesController.text.trim();
+                    } else {
+                      _productNotes.remove(product.id);
+                    }
+                  });
+                } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Price must be greater than zero'),
+                      content: Text('Please enter a valid price'),
                       backgroundColor: Colors.red,
                     ),
                   );
-                  return;
                 }
-
-                Navigator.pop(context);
-                setState(() {
-                  // Only store the edited price if it's different from the original
-                  if (newPrice != product.price) {
-                    _editedPrices[product.id] = newPrice;
-                  } else {
-                    // If the price is the same as original, remove it from edited
-                    _editedPrices.remove(product.id);
-                  }
-                });
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Please enter a valid price'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: Text(
-              "Update Price",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              },
+              child: Text(
+                "Update Details",
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -856,7 +1142,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           Expanded(
             child: _buildActionButton(
               "Accept Partially" +
-                  (_hasPriceEdits ? " with Price Changes" : ""),
+                  (_hasPriceEdits || _hasDateEdits ? " with Changes" : ""),
               const Color.fromARGB(255, 255, 136, 0), // orange
               () => _showPartialAcceptanceDialog(context),
               isPrimary: true,
@@ -876,7 +1162,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           SizedBox(width: 16.w),
           Expanded(
             child: _buildActionButton(
-              "Accept" + (_hasPriceEdits ? " with Price Changes" : ""),
+              "Accept" +
+                  (_hasPriceEdits || _hasDateEdits ? " with Changes" : ""),
               const Color.fromARGB(255, 105, 65, 198),
               () => _updateOrderStatus(context, "Accepted"),
               isPrimary: true,
@@ -985,6 +1272,17 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                 ),
               ),
             ],
+            if (_hasDateEdits) ...[
+              SizedBox(height: 8.h),
+              Text(
+                "Production and expiry dates have been set for products.",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: const Color.fromARGB(255, 105, 65, 198),
+                ),
+              ),
+            ],
             SizedBox(height: 16.h),
             Text(
               "Please provide a reason for partial acceptance:",
@@ -1009,9 +1307,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   color: Colors.white,
                 ),
                 decoration: InputDecoration(
-                  hintText: _hasPriceEdits
-                      ? "e.g., Some products are out of stock and prices updated"
-                      : "e.g., Some products are out of stock",
+                  hintText:
+                      "e.g., Some products are out of stock, dates updated for freshness",
                   hintStyle: GoogleFonts.spaceGrotesk(
                     color: Colors.white30,
                   ),
@@ -1075,57 +1372,57 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
   // Method to accept order partially
   void _acceptPartially(BuildContext context, String note) {
-    // Create list of declined items and price updates
-    List<Map<String, dynamic>> declinedItems = [];
-    List<Map<String, dynamic>> priceUpdates = [];
+    // Create list of declined items and all updates
+    List<Map<String, dynamic>> updatedItems = [];
     int declinedCount = 0;
 
-    // Process declined products
-    _selectedProducts.forEach((itemId, isSelected) {
-      if (isSelected) {
+    // Process each product
+    for (var product in widget.orderDetails.products) {
+      final bool isDeclined = _selectedProducts[product.id] ?? false;
+
+      Map<String, dynamic> itemData = {
+        "id": product.productId, // Use productId instead of item ID
+      };
+
+      if (isDeclined) {
         declinedCount++;
+        itemData["status"] = "Declined";
+      } else {
+        itemData["status"] = "Accepted";
 
-        // Find the product to get its productId (not item ID)
-        final product = widget.orderDetails.products.firstWhere(
-          (p) => p.id == itemId,
-        );
-
-        // Send productId (not item ID) to the API
-        declinedItems.add({
-          "id": product.productId, // Use productId instead of item ID
-          "status": "Declined"
-        });
+        // Add price if edited
+        if (_editedPrices.containsKey(product.id)) {
+          itemData["costPrice"] = _editedPrices[product.id];
+        }
       }
-    });
 
-    // Process price updates for all non-declined products
-    _editedPrices.forEach((itemId, newPrice) {
-      // Only update prices for products that are not declined
-      final bool isDeclined = _selectedProducts[itemId] ?? false;
-      if (!isDeclined) {
-        // Find the product to get its productId
-        final product = widget.orderDetails.products.firstWhere(
-          (p) => p.id == itemId,
-        );
-
-        priceUpdates.add({"id": product.productId, "costPrice": newPrice});
+      // Add dates if set (for both accepted and declined items)
+      if (_productionDates.containsKey(product.id)) {
+        final prodDate = _productionDates[product.id]!;
+        itemData["prodDate"] =
+            "${prodDate.year}-${prodDate.month.toString().padLeft(2, '0')}-${prodDate.day.toString().padLeft(2, '0')}";
       }
-    });
 
-    // Combine declined items and price updates
-    List<Map<String, dynamic>> updatedItems = [];
+      if (_expiryDates.containsKey(product.id)) {
+        final expDate = _expiryDates[product.id]!;
+        itemData["expDate"] =
+            "${expDate.year}-${expDate.month.toString().padLeft(2, '0')}-${expDate.day.toString().padLeft(2, '0')}";
+      }
 
-    // Add all declined items
-    updatedItems.addAll(declinedItems);
+      // Add notes if set
+      if (_productNotes.containsKey(product.id) &&
+          _productNotes[product.id]!.isNotEmpty) {
+        itemData["notes"] = _productNotes[product.id];
+      }
 
-    // Add price updates for non-declined items
-    updatedItems.addAll(priceUpdates);
+      updatedItems.add(itemData);
+    }
 
     // If all products are declined, change overall status to "Declined"
-    final String orderStatus = (declinedCount >=
-            widget.orderDetails.products.length)
-        ? "Declined"
-        : "Accepted"; // If not all products declined, backend will set to PartiallyAccepted
+    final String orderStatus =
+        (declinedCount >= widget.orderDetails.products.length)
+            ? "Declined"
+            : "Accepted"; // Backend will set to PartiallyAccepted
 
     // Call update method with partial acceptance details
     _updateOrderStatus(
@@ -1149,21 +1446,44 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       print('Starting order status update: $status');
       print('Note: $note');
 
-      // If accepting the entire order with price changes, create items array with price updates
+      // If accepting the entire order with changes, create items array
       if (status == "Accepted" &&
-          _hasPriceEdits &&
+          (_hasPriceEdits || _hasDateEdits || _productNotes.isNotEmpty) &&
           (declinedItems == null || declinedItems.isEmpty)) {
         declinedItems = [];
 
-        // Add price updates for all products
-        _editedPrices.forEach((itemId, newPrice) {
-          // Find the product to get its productId
-          final product = widget.orderDetails.products.firstWhere(
-            (p) => p.id == itemId,
-          );
+        for (var product in widget.orderDetails.products) {
+          Map<String, dynamic> itemData = {
+            "id": product.productId,
+            "status": "Accepted",
+          };
 
-          declinedItems!.add({"id": product.productId, "costPrice": newPrice});
-        });
+          // Add price if edited
+          if (_editedPrices.containsKey(product.id)) {
+            itemData["costPrice"] = _editedPrices[product.id];
+          }
+
+          // Add dates if set
+          if (_productionDates.containsKey(product.id)) {
+            final prodDate = _productionDates[product.id]!;
+            itemData["prodDate"] =
+                "${prodDate.year}-${prodDate.month.toString().padLeft(2, '0')}-${prodDate.day.toString().padLeft(2, '0')}";
+          }
+
+          if (_expiryDates.containsKey(product.id)) {
+            final expDate = _expiryDates[product.id]!;
+            itemData["expDate"] =
+                "${expDate.year}-${expDate.month.toString().padLeft(2, '0')}-${expDate.day.toString().padLeft(2, '0')}";
+          }
+
+          // Add notes if set
+          if (_productNotes.containsKey(product.id) &&
+              _productNotes[product.id]!.isNotEmpty) {
+            itemData["notes"] = _productNotes[product.id];
+          }
+
+          declinedItems.add(itemData);
+        }
       }
 
       print('Updated items: $declinedItems');
@@ -1201,17 +1521,20 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
             isPartial: declinedItems != null &&
                 declinedItems.isNotEmpty &&
                 status == "Accepted" &&
-                declinedItems.any((item) => item.containsKey("status")));
+                declinedItems.any((item) =>
+                    item.containsKey("status") &&
+                    item["status"] == "Declined"));
 
         // Show success message
         String statusMessage = status;
         if (status == "Accepted") {
           if (declinedItems != null &&
               declinedItems.isNotEmpty &&
-              declinedItems.any((item) => item.containsKey("status"))) {
+              declinedItems.any((item) =>
+                  item.containsKey("status") && item["status"] == "Declined")) {
             statusMessage = "partially accepted";
-          } else if (_hasPriceEdits) {
-            statusMessage = "accepted with price changes";
+          } else if (_hasPriceEdits || _hasDateEdits) {
+            statusMessage = "accepted with changes";
           }
         }
 
@@ -1276,10 +1599,10 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         title = "Order Partially Accepted";
         message =
             "Order ${widget.orderDetails.orderId} has been partially accepted by supplier.";
-      } else if (_hasPriceEdits) {
-        title = "Order Accepted with Price Changes";
+      } else if (_hasPriceEdits || _hasDateEdits) {
+        title = "Order Accepted with Changes";
         message =
-            "Order ${widget.orderDetails.orderId} has been accepted by supplier with price changes.";
+            "Order ${widget.orderDetails.orderId} has been accepted by supplier with changes.";
       } else {
         title = "Order Accepted";
         message =

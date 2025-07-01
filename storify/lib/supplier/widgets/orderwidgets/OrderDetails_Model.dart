@@ -69,6 +69,9 @@ class OrderProduct {
   final String name;
   final String? imageUrl;
   final String? status; // Add status field to track item-level status
+  final String? prodDate; // Production date
+  final String? expDate; // Expiry date
+  final String? notes; // Product notes
 
   OrderProduct({
     required this.id,
@@ -81,6 +84,9 @@ class OrderProduct {
     required this.name,
     this.imageUrl,
     this.status,
+    this.prodDate,
+    this.expDate,
+    this.notes,
   });
 
   factory OrderProduct.fromJson(Map<String, dynamic> json) {
@@ -95,8 +101,57 @@ class OrderProduct {
       name: json['product']?['name'] ?? "Product #${json['productId']}",
       imageUrl: json['product']?['image'],
       status: json['status'], // Get item status if available
+      prodDate: json['prodDate'], // Get production date if available
+      expDate: json['expDate'], // Get expiry date if available
+      notes: json['notes'], // Get notes if available
     );
   }
 
   double get totalPrice => quantity * price;
+
+  // Computed properties for formatted dates
+  String? get formattedProdDate {
+    if (prodDate == null) return null;
+    try {
+      final date = DateTime.parse(prodDate!);
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (e) {
+      return prodDate; // Return original if parsing fails
+    }
+  }
+
+  String? get formattedExpDate {
+    if (expDate == null) return null;
+    try {
+      final date = DateTime.parse(expDate!);
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (e) {
+      return expDate; // Return original if parsing fails
+    }
+  }
+
+  // Check if product has any custom data
+  bool get hasCustomData {
+    return prodDate != null || expDate != null || notes != null;
+  }
+
+  // Get production date as DateTime object
+  DateTime? get productionDateTime {
+    if (prodDate == null) return null;
+    try {
+      return DateTime.parse(prodDate!);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get expiry date as DateTime object
+  DateTime? get expiryDateTime {
+    if (expDate == null) return null;
+    try {
+      return DateTime.parse(expDate!);
+    } catch (e) {
+      return null;
+    }
+  }
 }

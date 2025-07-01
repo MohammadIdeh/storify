@@ -144,7 +144,6 @@ class _SupplierProductsState extends State<SupplierProducts> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-         
               Text(
                 "Product Management",
                 style: GoogleFonts.spaceGrotesk(
