@@ -29,19 +29,19 @@ class _RolemanegmentState extends State<Rolemanegment> {
   int _selectedFilterIndex = 0;
   String _searchQuery = "";
   String? profilePictureUrl;
+  bool _isLoading = false;
+
   final List<String> _filters = [
     "All Users",
     "Admin",
-    "Employee",
+    "WareHouseEmployee",
     "Customer",
     "Supplier",
-    "Delivery Employee"
+    "DeliveryEmployee"
   ];
 
-  // This list will be populated from the API.
   List<RoleItem> _roleList = [];
-  // API endpoints.
-  // Make sure your API returns the fields exactly as needed for the table.
+
   final String getUsersApi =
       "https://finalproject-a5ls.onrender.com/auth/users";
   final String addUserApi =
@@ -61,8 +61,11 @@ class _RolemanegmentState extends State<Rolemanegment> {
     });
   }
 
+  // Updated to handle Active/NotActive format
   Future<RoleItem?> _updateUser(RoleItem updatedUser) async {
     try {
+      setState(() => _isLoading = true);
+
       final url = Uri.parse(
           "https://finalproject-a5ls.onrender.com/auth/${updatedUser.userId}");
       final bodyMap = {
@@ -70,8 +73,9 @@ class _RolemanegmentState extends State<Rolemanegment> {
         "email": updatedUser.email,
         "phoneNumber": updatedUser.phoneNo,
         "roleName": updatedUser.role,
-        // Send the active value as "1" or "0"
-        "isActive": updatedUser.isActive ? "1" : "0",
+        "isActive": updatedUser.isActive
+            ? "Active"
+            : "NotActive", // Changed to Active/NotActive
       };
 
       if (updatedUser.role.toLowerCase() == "customer" &&
@@ -88,8 +92,6 @@ class _RolemanegmentState extends State<Rolemanegment> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        jsonDecode(response.body);
-        // Optionally update dateAdded if needed.
         return updatedUser.copyWith(
           dateAdded: DateFormat("MM-dd-yyyy HH:mm").format(DateTime.now()),
         );
@@ -98,68 +100,110 @@ class _RolemanegmentState extends State<Rolemanegment> {
       }
     } catch (e) {
       print("Error updating user: $e");
+      _showErrorSnackBar("Failed to update user: $e");
       return null;
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // New method to handle switch toggle
+  Future<void> _toggleUserActiveStatus(RoleItem user) async {
+    final updatedUser = user.copyWith(isActive: !user.isActive);
+    final result = await _updateUser(updatedUser);
+
+    if (result != null) {
+      setState(() {
+        final index = _roleList.indexWhere((r) => r.userId == user.userId);
+        if (index != -1) {
+          _roleList[index] = result;
+        }
+      });
+      _showSuccessSnackBar("User status updated successfully");
     }
   }
 
   Future<bool> _deleteUser(String userId) async {
     try {
+      setState(() => _isLoading = true);
+
       final url =
           Uri.parse("https://finalproject-a5ls.onrender.com/auth/$userId");
       final response = await http.delete(url, headers: {
         "Content-Type": "application/json",
       });
-      return response.statusCode == 200 || response.statusCode == 204;
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _showSuccessSnackBar("User deleted successfully");
+        return true;
+      } else {
+        _showErrorSnackBar("Failed to delete user");
+        return false;
+      }
     } catch (e) {
       print("Error deleting user: $e");
+      _showErrorSnackBar("Error deleting user: $e");
       return false;
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _fetchUsers() async {
     try {
+      setState(() => _isLoading = true);
+
       final response = await http.get(
         Uri.parse(getUsersApi),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: {"Content-Type": "application/json"},
       );
 
-      final decodedJson = jsonDecode(response.body);
-      List<dynamic> data = [];
-      if (decodedJson is Map<String, dynamic> &&
-          decodedJson.containsKey("users")) {
-        data = decodedJson["users"] ?? [];
-      } else if (decodedJson is List) {
-        data = decodedJson;
+      if (response.statusCode == 200) {
+        final decodedJson = jsonDecode(response.body);
+        List<dynamic> data = [];
+
+        if (decodedJson is Map<String, dynamic> &&
+            decodedJson.containsKey("users")) {
+          data = decodedJson["users"] ?? [];
+        } else if (decodedJson is List) {
+          data = decodedJson;
+        } else {
+          throw Exception(
+              "The API did not return the expected JSON structure.");
+        }
+
+        List<RoleItem> loadedUsers = data.map((json) {
+          return RoleItem(
+            userId: json['userId'].toString(),
+            name: json['name'] ?? "",
+            email: json['email'] ?? "",
+            phoneNo: json['phoneNumber'] ?? "",
+            dateAdded: DateFormat("MM-dd-yyyy HH:mm")
+                .format(DateTime.parse(json['registrationDate'])),
+            role: json['roleName'] ?? "",
+            isActive: parseIsActive(json['isActive']),
+            address: json['address'] ?? "",
+            profilePicture:
+                json['profilePicture'], // Added profile picture parsing
+          );
+        }).toList();
+
+        setState(() {
+          _roleList = loadedUsers;
+        });
+
+        print("Fetched ${_roleList.length} users");
       } else {
-        throw Exception("The API did not return the expected JSON structure.");
+        throw Exception("Failed to fetch users: ${response.statusCode}");
       }
-      List<RoleItem> loadedUsers = data.map((json) {
-        return RoleItem(
-          userId: json['userId'].toString(),
-          name: json['name'] ?? "",
-          email: json['email'] ?? "",
-          phoneNo: json['phoneNumber'] ?? "",
-          dateAdded: DateFormat("MM-dd-yyyy HH:mm")
-              .format(DateTime.parse(json['registrationDate'])),
-          role: json['roleName'] ?? "",
-          isActive: parseIsActive(json['isActive']),
-          address: json['address'] ?? "",
-        );
-      }).toList();
-
-      setState(() {
-        _roleList = loadedUsers;
-      });
-
-      print("Fetched ${_roleList.length} users");
     } catch (e) {
       print("Error fetching users: $e");
+      _showErrorSnackBar("Failed to load users: $e");
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  // Navigation using bottom nav bar.
   void _onNavItemTap(int index) {
     setState(() {
       _currentIndex = index;
@@ -202,7 +246,6 @@ class _RolemanegmentState extends State<Rolemanegment> {
         ));
         break;
       case 4:
-        // Current screen.
         break;
       case 5:
         Navigator.of(context).push(PageRouteBuilder(
@@ -216,9 +259,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
     }
   }
 
-  // Function to show the Add/Edit User dialog.
+  // Updated dialog with non-editable role during edit
   Future<RoleItem?> _showUserDialog({RoleItem? roleToEdit}) async {
-    // Initialize controllers with roleToEdit's data if editing
     final nameController = TextEditingController(text: roleToEdit?.name ?? "");
     final emailController =
         TextEditingController(text: roleToEdit?.email ?? "");
@@ -227,10 +269,9 @@ class _RolemanegmentState extends State<Rolemanegment> {
     final addressController =
         TextEditingController(text: roleToEdit?.address ?? "");
 
-    // For the role dropdown, exclude "All Users".
-    String selectedRole = roleToEdit?.role ?? _filters[1]; // default "Admin"
-    // Use a local variable for isActive.
+    String selectedRole = roleToEdit?.role ?? _filters[1];
     bool localIsActive = roleToEdit?.isActive ?? true;
+    bool isEditMode = roleToEdit != null;
 
     return showDialog<RoleItem>(
       context: context,
@@ -238,240 +279,286 @@ class _RolemanegmentState extends State<Rolemanegment> {
         return StatefulBuilder(builder: (context, setStateDialog) {
           return Center(
             child: SizedBox(
-              width: 550.w,
+              width: 580.w,
               child: Dialog(
                 backgroundColor: const Color.fromARGB(255, 36, 50, 69),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: SingleChildScrollView(
                   child: Padding(
                     padding:
-                        EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                        EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          roleToEdit == null ? "Add User" : "Edit User",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-                        TextField(
-                          controller: nameController,
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Name",
-                            labelStyle:
-                                GoogleFonts.spaceGrotesk(color: Colors.white70),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-                        TextField(
-                          controller: emailController,
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Email",
-                            labelStyle:
-                                GoogleFonts.spaceGrotesk(color: Colors.white70),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-                        TextField(
-                          controller: phoneController,
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Phone Number",
-                            labelStyle:
-                                GoogleFonts.spaceGrotesk(color: Colors.white70),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-                        // Display address field based on selectedRole.
-                        if (selectedRole.toLowerCase() == "customer")
-                          TextField(
-                            controller: addressController,
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: "Address",
-                              labelStyle: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white70),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white54),
-                              ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white),
-                              ),
-                            ),
-                          )
-                        else
-                          TextField(
-                            controller: addressController,
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: "Address (Optional)",
-                              labelStyle: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white70),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white54),
-                              ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        SizedBox(height: 16.h),
-                        DropdownButtonFormField<String>(
-                          value: selectedRole,
-                          dropdownColor: const Color.fromARGB(255, 36, 50, 69),
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Role",
-                            labelStyle:
-                                GoogleFonts.spaceGrotesk(color: Colors.white70),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white),
-                            ),
-                          ),
-                          items: _filters
-                              .where((role) => role != "All Users")
-                              .map((role) => DropdownMenuItem(
-                                    value: role,
-                                    child: Text(role),
-                                  ))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setStateDialog(() {
-                                selectedRole = val;
-                              });
-                            }
-                          },
-                        ),
-                        SizedBox(height: 16.h),
-                        // "Is Active" switch using the dialog local state.
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              "Is Active",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white70,
-                                fontSize: 16.sp,
+                            Container(
+                              padding: EdgeInsets.all(8.w),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                isEditMode ? Icons.edit : Icons.person_add,
+                                color: Colors.white,
+                                size: 24.sp,
                               ),
                             ),
-                            CupertinoSwitch(
-                              value: localIsActive,
-                              activeColor: Colors.green,
-                              onChanged: (value) {
-                                setStateDialog(() {
-                                  localIsActive = value;
-                                });
-                              },
+                            SizedBox(width: 12.w),
+                            Text(
+                              isEditMode ? "Edit User" : "Add New User",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 24.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 20.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                side: BorderSide(
-                                    color: Colors.white54, width: 1.5),
+                        SizedBox(height: 24.h),
+
+                        // Name Field
+                        _buildInputField(
+                          controller: nameController,
+                          label: "Full Name",
+                          icon: Icons.person_outline,
+                        ),
+                        SizedBox(height: 16.h),
+
+                        // Email Field
+                        _buildInputField(
+                          controller: emailController,
+                          label: "Email Address",
+                          icon: Icons.email_outlined,
+                          enabled: !isEditMode, // Disable email editing
+                        ),
+                        SizedBox(height: 16.h),
+
+                        // Phone Field
+                        _buildInputField(
+                          controller: phoneController,
+                          label: "Phone Number",
+                          icon: Icons.phone_outlined,
+                        ),
+                        SizedBox(height: 16.h),
+
+                        // Address Field
+                        _buildInputField(
+                          controller: addressController,
+                          label: selectedRole.toLowerCase() == "customer"
+                              ? "Address (Required)"
+                              : "Address (Optional)",
+                          icon: Icons.location_on_outlined,
+                        ),
+                        SizedBox(height: 16.h),
+
+                        // Role Dropdown - Disabled during edit
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isEditMode
+                                ? const Color.fromARGB(255, 45, 62, 85)
+                                    .withOpacity(0.5)
+                                : const Color.fromARGB(255, 45, 62, 85),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 105, 65, 198)
+                                  .withOpacity(0.3),
+                            ),
+                          ),
+                          child: DropdownButtonFormField<String>(
+                            value: selectedRole,
+                            dropdownColor:
+                                const Color.fromARGB(255, 36, 50, 69),
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: "Role",
+                              labelStyle: GoogleFonts.spaceGrotesk(
+                                  color: isEditMode
+                                      ? Colors.white38
+                                      : Colors.white70),
+                              prefixIcon: Icon(
+                                Icons.admin_panel_settings_outlined,
+                                color: isEditMode
+                                    ? Colors.white38
+                                    : const Color.fromARGB(255, 105, 65, 198),
+                                size: 20.sp,
                               ),
-                              onPressed: () => Navigator.pop(ctx),
-                              child: Text(
-                                "Cancel",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white70,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16.w, vertical: 16.h),
+                            ),
+                            items: _filters
+                                .where((role) => role != "All Users")
+                                .map((role) => DropdownMenuItem(
+                                      value: role,
+                                      child: Text(role),
+                                    ))
+                                .toList(),
+                            onChanged: isEditMode
+                                ? null
+                                : (val) {
+                                    if (val != null) {
+                                      setStateDialog(() {
+                                        selectedRole = val;
+                                      });
+                                    }
+                                  },
+                          ),
+                        ),
+
+                        if (isEditMode) ...[
+                          SizedBox(height: 8.h),
+                          Text(
+                            "Note: Role cannot be changed during edit",
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.orange.withOpacity(0.8),
+                              fontSize: 12.sp,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+
+                        SizedBox(height: 20.h),
+
+                        // Active Status Switch
+                        Container(
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 45, 62, 85),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 105, 65, 198)
+                                  .withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.toggle_on_outlined,
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                                size: 20.sp,
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Account Status",
+                                      style: GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      localIsActive ? "Active" : "Inactive",
+                                      style: GoogleFonts.spaceGrotesk(
+                                        color: localIsActive
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Transform.scale(
+                                scale: 0.8,
+                                child: CupertinoSwitch(
+                                  value: localIsActive,
+                                  activeColor: Colors.green,
+                                  onChanged: (value) {
+                                    setStateDialog(() {
+                                      localIsActive = value;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 24.h),
+
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: const BorderSide(
+                                      color: Colors.white54, width: 1.5),
+                                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                                ),
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(
+                                  "Cancel",
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white70,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 105, 65, 198),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      const Color.fromARGB(255, 105, 65, 198),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                  padding: EdgeInsets.symmetric(vertical: 12.h),
                                 ),
-                                elevation: 0,
-                              ),
-                              onPressed: () {
-                                // Validate that all required fields are filled.
-                                if (nameController.text.trim().isEmpty ||
-                                    phoneController.text.trim().isEmpty ||
-                                    selectedRole.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Please fill all required fields",
-                                        style: GoogleFonts.spaceGrotesk(),
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                  return;
-                                }
-                                // Create the new RoleItem object and use localIsActive
-                                final newRole = RoleItem(
-                                  userId: roleToEdit?.userId ??
-                                      "new_${DateTime.now().millisecondsSinceEpoch}",
-                                  name: nameController.text.trim(),
-                                  email: emailController.text.trim(),
-                                  phoneNo: phoneController.text.trim(),
-                                  dateAdded: DateFormat("MM-dd-yyyy HH:mm")
-                                      .format(DateTime.now()),
-                                  role: selectedRole,
-                                  address:
-                                      selectedRole.toLowerCase() == "customer"
+                                onPressed: () {
+                                  if (_validateForm(
+                                      nameController,
+                                      emailController,
+                                      phoneController,
+                                      addressController,
+                                      selectedRole)) {
+                                    final newRole = RoleItem(
+                                      userId: roleToEdit?.userId ??
+                                          "new_${DateTime.now().millisecondsSinceEpoch}",
+                                      name: nameController.text.trim(),
+                                      email: emailController.text.trim(),
+                                      phoneNo: phoneController.text.trim(),
+                                      dateAdded: DateFormat("MM-dd-yyyy HH:mm")
+                                          .format(DateTime.now()),
+                                      role: selectedRole,
+                                      address: selectedRole.toLowerCase() ==
+                                              "customer"
                                           ? addressController.text.trim()
                                           : (addressController.text
                                                   .trim()
                                                   .isNotEmpty
                                               ? addressController.text.trim()
                                               : null),
-                                  isActive: localIsActive,
-                                );
-                                Navigator.pop(ctx, newRole);
-                              },
-                              child: Text(
-                                roleToEdit == null ? "Add" : "Save",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
+                                      isActive: localIsActive,
+                                      profilePicture: roleToEdit
+                                          ?.profilePicture, // Preserve existing profile picture
+                                    );
+                                    Navigator.pop(ctx, newRole);
+                                  }
+                                },
+                                child: Text(
+                                  isEditMode ? "Update User" : "Create User",
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -489,16 +576,85 @@ class _RolemanegmentState extends State<Rolemanegment> {
     );
   }
 
-  // Handler for the Add User button.
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool enabled = true,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: enabled
+            ? const Color.fromARGB(255, 45, 62, 85)
+            : const Color.fromARGB(255, 45, 62, 85).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color.fromARGB(255, 105, 65, 198).withOpacity(0.3),
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        enabled: enabled,
+        style: GoogleFonts.spaceGrotesk(
+            color: enabled ? Colors.white : Colors.white54),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.spaceGrotesk(
+              color: enabled ? Colors.white70 : Colors.white38),
+          prefixIcon: Icon(
+            icon,
+            color: enabled
+                ? const Color.fromARGB(255, 105, 65, 198)
+                : Colors.white38,
+            size: 20.sp,
+          ),
+          border: InputBorder.none,
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        ),
+      ),
+    );
+  }
+
+  bool _validateForm(
+    TextEditingController nameController,
+    TextEditingController emailController,
+    TextEditingController phoneController,
+    TextEditingController addressController,
+    String selectedRole,
+  ) {
+    if (nameController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
+        phoneController.text.trim().isEmpty) {
+      _showErrorSnackBar("Please fill all required fields");
+      return false;
+    }
+
+    if (selectedRole.toLowerCase() == "customer" &&
+        addressController.text.trim().isEmpty) {
+      _showErrorSnackBar("Address is required for customers");
+      return false;
+    }
+
+    // Basic email validation
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+        .hasMatch(emailController.text.trim())) {
+      _showErrorSnackBar("Please enter a valid email address");
+      return false;
+    }
+
+    return true;
+  }
+
   void _handleAddUser() async {
     final newUser = await _showUserDialog();
     if (newUser != null) {
-      // Call API to add user.
       final addedUser = await _addUser(newUser);
       if (addedUser != null) {
         setState(() {
           _roleList.add(addedUser);
         });
+        _showSuccessSnackBar("User added successfully");
       }
     }
   }
@@ -512,34 +668,26 @@ class _RolemanegmentState extends State<Rolemanegment> {
           final index = _roleList.indexWhere((r) => r.userId == role.userId);
           if (index != -1) {
             _roleList[index] = resultUser;
-            // Also update the switch state mapping.
-            // For example, if _switchStates is defined in the RolesTable and provided from parent
-            // You might want to update that list as well if necessary.
           }
         });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to update user",
-                style: GoogleFonts.spaceGrotesk()),
-          ),
-        );
+        _showSuccessSnackBar("User updated successfully");
       }
     }
   }
 
-  // API call for adding a user.
   Future<RoleItem?> _addUser(RoleItem newUser) async {
     try {
+      setState(() => _isLoading = true);
+
       final url = Uri.parse(addUserApi);
-      // Build the request body using the correct keys and value types.
       final bodyMap = {
         "name": newUser.name,
         "email": newUser.email,
-        "phoneNumber": newUser.phoneNo, // lowercase key
+        "phoneNumber": newUser.phoneNo,
         "roleName": newUser.role,
-        // Send "1" if true, "0" otherwise.
-        "isActive": newUser.isActive ? "1" : "0",
+        "isActive": newUser.isActive
+            ? "Active"
+            : "NotActive", // Changed to Active/NotActive
       };
 
       if (newUser.role.toLowerCase() == "customer" &&
@@ -547,12 +695,13 @@ class _RolemanegmentState extends State<Rolemanegment> {
           newUser.address!.isNotEmpty) {
         bodyMap["address"] = newUser.address!;
       }
+
       final body = jsonEncode(bodyMap);
       final response = await http.post(url,
           headers: {"Content-Type": "application/json"}, body: body);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final json = jsonDecode(response.body);
-        // Assume the API returns the new user id.
         final newUserId = json["user"]["id"].toString();
         return newUser.copyWith(
           userId: newUserId,
@@ -563,7 +712,10 @@ class _RolemanegmentState extends State<Rolemanegment> {
       }
     } catch (e) {
       print("Error adding user: $e");
+      _showErrorSnackBar("Failed to add user: $e");
       return null;
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -575,19 +727,27 @@ class _RolemanegmentState extends State<Rolemanegment> {
           _selectedFilterIndex = index;
         });
       },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: isSelected
               ? const Color.fromARGB(255, 105, 65, 198)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? const Color.fromARGB(255, 105, 65, 198)
+                : Colors.transparent,
+            width: 1,
+          ),
         ),
         child: Text(
           label,
           style: GoogleFonts.spaceGrotesk(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w500,
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w600,
             color: isSelected
                 ? Colors.white
                 : const Color.fromARGB(255, 230, 230, 230),
@@ -597,15 +757,55 @@ class _RolemanegmentState extends State<Rolemanegment> {
     );
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 20.sp),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.spaceGrotesk(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.white, size: 20.sp),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.spaceGrotesk(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    print(
-        "*************************************************^^^^*******************************************************Rolemanegment build: _roleList.length = ${_roleList.length}");
-
-    // Change header text based on selected filter.
     String headerText = _selectedFilterIndex == 0
-        ? "User Managment"
-        : _filters[_selectedFilterIndex];
+        ? "User Management"
+        : "${_filters[_selectedFilterIndex]} Management";
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
@@ -614,157 +814,204 @@ class _RolemanegmentState extends State<Rolemanegment> {
         child: MyNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavItemTap,
-          profilePictureUrl:
-              profilePictureUrl, // Pass the profile picture URL here
+          profilePictureUrl: profilePictureUrl,
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row with dynamic text.
-              Row(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    headerText,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 35.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Search box
+                  // Header Section
                   Container(
-                    width: 300.w,
-                    height: 55.h,
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 36, 50, 69),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                    padding: EdgeInsets.symmetric(vertical: 20.h),
                     child: Row(
                       children: [
-                        SizedBox(
-                          width: 120.w,
-                          child: TextField(
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                            },
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              headerText,
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 32.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                             ),
-                            decoration: InputDecoration(
-                              hintText: 'Search ID',
-                              hintStyle: GoogleFonts.spaceGrotesk(
+                            SizedBox(height: 4.h),
+                            Text(
+                              "Manage and monitor all user accounts",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
                                 color: Colors.white70,
                               ),
-                              border: InputBorder.none,
-                              isDense: true,
                             ),
-                          ),
+                          ],
                         ),
                         const Spacer(),
-                        SvgPicture.asset(
-                          'assets/images/search.svg',
-                          width: 20.w,
-                          height: 20.h,
+
+                        // Search box
+                        Container(
+                          width: 320.w,
+                          height: 50.h,
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 36, 50, 69),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 105, 65, 198)
+                                  .withOpacity(0.3),
+                            ),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.search,
+                                color: Colors.white70,
+                                size: 20.sp,
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: TextField(
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _searchQuery = value;
+                                    });
+                                  },
+                                  style: GoogleFonts.spaceGrotesk(
+                                      color: Colors.white),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search by User ID...',
+                                    hintStyle: GoogleFonts.spaceGrotesk(
+                                        color: Colors.white54),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(width: 16.w),
+
+                        // Add User Button
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 105, 65, 198),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20.w, vertical: 12.h),
+                            elevation: 2,
+                          ),
+                          onPressed: _handleAddUser,
+                          icon: Icon(Icons.person_add, size: 18.sp),
+                          label: Text(
+                            'Add User',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(width: 15.w),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromARGB(255, 105, 65, 198),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        fixedSize: Size(160.w, 50.h),
-                        elevation: 1,
+
+                  SizedBox(height: 20.h),
+
+                  // Filter Chips
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 36, 50, 69),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color.fromARGB(255, 105, 65, 198)
+                            .withOpacity(0.2),
                       ),
-                      onPressed: _handleAddUser,
-                      child: Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/images/addCat.svg',
-                            width: 18.w,
-                            height: 18.h,
-                          ),
-                          SizedBox(width: 12.w),
-                          Text(
-                            'Add User',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 17.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      )),
+                    ),
+                    padding: EdgeInsets.all(16.w),
+                    child: Wrap(
+                      spacing: 12.w,
+                      runSpacing: 8.h,
+                      children: List.generate(_filters.length, (index) {
+                        return _buildFilterChip(_filters[index], index);
+                      }),
+                    ),
+                  ),
+
+                  SizedBox(height: 30.h),
+
+                  // Users Table
+                  RolesTable(
+                    roles: _roleList,
+                    filter: _filters[_selectedFilterIndex],
+                    searchQuery: _searchQuery,
+                    onDeleteRole: (role) {
+                      setState(() {
+                        _roleList.removeWhere((r) => r.userId == role.userId);
+                      });
+                    },
+                    onDeleteUser: _deleteUser,
+                    onEditRole: _handleEditUser,
+                    onToggleActiveStatus:
+                        _toggleUserActiveStatus, // Add this callback
+                  ),
                 ],
               ),
-              SizedBox(height: 20.h),
-              // Filter Chips row.
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 36, 50, 69),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-                child: Row(
-                  children: [
-                    _buildFilterChip(_filters[0], 0),
-                    SizedBox(width: 190.w),
-                    _buildFilterChip(_filters[1], 1),
-                    SizedBox(width: 195.w),
-                    _buildFilterChip(_filters[2], 2),
-                    SizedBox(width: 195.w),
-                    _buildFilterChip(_filters[3], 3),
-                    SizedBox(width: 195.w),
-                    _buildFilterChip(_filters[4], 4),
-                    SizedBox(width: 190.w),
-                    _buildFilterChip(_filters[5], 5),
-                  ],
-                ),
-              ),
-              SizedBox(height: 40.h),
-              RolesTable(
-                roles: _roleList,
-                filter: _filters[_selectedFilterIndex],
-                searchQuery: _searchQuery,
-                onDeleteRole: (role) {
-                  setState(() {
-                    _roleList.removeWhere((r) => r.userId == role.userId);
-                  });
-                },
-                // Pass the parent's _deleteUser method as a callback.
-                onDeleteUser: _deleteUser,
-                onEditRole: (role) {
-                  _handleEditUser(role);
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // Loading Overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black54,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 36, 50, 69),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: Color.fromARGB(255, 105, 65, 198),
+                      ),
+                      SizedBox(height: 16.h),
+                      Text(
+                        "Processing...",
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 16.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-// Helper function to parse isActive value.
+// Updated helper function to handle Active/NotActive
 bool parseIsActive(dynamic value) {
   if (value is bool) {
     return value;
   }
   if (value is String) {
-    return value == "1";
+    return value.toLowerCase() == "active";
   }
   return false;
 }

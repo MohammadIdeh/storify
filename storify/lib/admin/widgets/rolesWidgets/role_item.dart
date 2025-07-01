@@ -7,9 +7,10 @@ class RoleItem {
   final String role;
   final bool isActive;
   final String? address;
+  final String? profilePicture; // Added profile picture field
 
   RoleItem({
-    required this.userId, 
+    required this.userId,
     required this.name,
     required this.email,
     required this.phoneNo,
@@ -17,6 +18,7 @@ class RoleItem {
     required this.role,
     required this.isActive,
     this.address,
+    this.profilePicture, // Added to constructor
   });
 
   RoleItem copyWith({
@@ -28,6 +30,7 @@ class RoleItem {
     String? role,
     bool? isActive,
     String? address,
+    String? profilePicture, // Added to copyWith
   }) {
     return RoleItem(
       userId: userId ?? this.userId,
@@ -38,6 +41,8 @@ class RoleItem {
       role: role ?? this.role,
       isActive: isActive ?? this.isActive,
       address: address ?? this.address,
+      profilePicture:
+          profilePicture ?? this.profilePicture, // Added to copyWith
     );
   }
 }
