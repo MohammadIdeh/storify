@@ -7,6 +7,84 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/employee/widgets/orderServiceEmp.dart';
 
+// Batch Alert model
+class BatchAlert {
+  final int productId;
+  final String productName;
+  final String alertType;
+  final String alertMessage;
+  final List<ExistingBatch> existingBatches;
+  final SupplierDates supplierDates;
+
+  BatchAlert({
+    required this.productId,
+    required this.productName,
+    required this.alertType,
+    required this.alertMessage,
+    required this.existingBatches,
+    required this.supplierDates,
+  });
+
+  factory BatchAlert.fromJson(Map<String, dynamic> json) {
+    return BatchAlert(
+      productId: json['productId'] ?? 0,
+      productName: json['productName'] ?? '',
+      alertType: json['alertType'] ?? '',
+      alertMessage: json['alertMessage'] ?? '',
+      existingBatches: (json['existingBatches'] as List? ?? [])
+          .map((batch) => ExistingBatch.fromJson(batch))
+          .toList(),
+      supplierDates: SupplierDates.fromJson(json['supplierDates'] ?? {}),
+    );
+  }
+}
+
+class ExistingBatch {
+  final int quantity;
+  final String? prodDate;
+  final String? expDate;
+  final String receivedDate;
+
+  ExistingBatch({
+    required this.quantity,
+    this.prodDate,
+    this.expDate,
+    required this.receivedDate,
+  });
+
+  factory ExistingBatch.fromJson(Map<String, dynamic> json) {
+    return ExistingBatch(
+      quantity: json['quantity'] ?? 0,
+      prodDate: json['prodDate'],
+      expDate: json['expDate'],
+      receivedDate: json['receivedDate'] ?? '',
+    );
+  }
+}
+
+class SupplierDates {
+  final String? prodDate;
+  final String? expDate;
+  final String? batchNumber;
+  final String? notes;
+
+  SupplierDates({
+    this.prodDate,
+    this.expDate,
+    this.batchNumber,
+    this.notes,
+  });
+
+  factory SupplierDates.fromJson(Map<String, dynamic> json) {
+    return SupplierDates(
+      prodDate: json['prodDate'],
+      expDate: json['expDate'],
+      batchNumber: json['batchNumber'],
+      notes: json['notes'],
+    );
+  }
+}
+
 // Line item model for order details
 class OrderLineItem {
   final int id;
@@ -23,6 +101,7 @@ class OrderLineItem {
   final String? expDate;
   final double? originalCostPrice;
   final String? status;
+  final BatchAlert? itemBatchAlert; // Add batch alert for individual items
 
   OrderLineItem({
     required this.id,
@@ -37,6 +116,7 @@ class OrderLineItem {
     this.expDate,
     this.originalCostPrice,
     this.status,
+    this.itemBatchAlert,
   });
 
   // Factory method to create from customer order item
@@ -60,6 +140,20 @@ class OrderLineItem {
   factory OrderLineItem.fromSupplierJson(Map<String, dynamic> json) {
     final product = json['product'] ?? {};
 
+    // Parse batch alert if present
+    BatchAlert? batchAlert;
+    if (json['batchAlert'] != null && json['batchAlert'] is Map) {
+      final batchAlertData = json['batchAlert'] as Map<String, dynamic>;
+      if (batchAlertData['hasAlert'] == true ||
+          batchAlertData.containsKey('productId')) {
+        try {
+          batchAlert = BatchAlert.fromJson(batchAlertData);
+        } catch (e) {
+          print('Error parsing batch alert: $e');
+        }
+      }
+    }
+
     return OrderLineItem(
       id: json['id'] ?? 0,
       name: product['name'] ?? 'Unknown Product',
@@ -80,6 +174,7 @@ class OrderLineItem {
       status: json['status'],
       prodDate: json['prodDate'],
       expDate: json['expDate'],
+      itemBatchAlert: batchAlert,
     );
   }
 
@@ -98,6 +193,7 @@ class OrderLineItem {
       expDate: expDate,
       originalCostPrice: originalCostPrice,
       status: status,
+      itemBatchAlert: itemBatchAlert,
     );
   }
 
@@ -130,6 +226,10 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   Map<String, dynamic>? _orderDetails;
   List<OrderLineItem> _lineItems = [];
 
+  // Batch alerts for supplier orders
+  List<BatchAlert> _batchAlerts = [];
+  Map<String, dynamic>? _alertSummary;
+
   // For supplier orders, track edited quantities
   Map<int, int> _editedQuantities = {};
   bool _hasQuantityChanges = false;
@@ -146,7 +246,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   // Fetch order details from API
-// Add this to the start of _fetchOrderDetails method
   Future<void> _fetchOrderDetails() async {
     setState(() {
       _isLoading = true;
@@ -259,14 +358,15 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     });
   }
 
-  // Process supplier order details
-// In ViewOrderScreen class
+  // Process supplier order details with new structure
   void _processSupplierOrderDetails(Map<String, dynamic> response) {
     setState(() {
       _orderDetails = response;
 
-      // Extract the order object which contains all the data
-      final orderData = response['order'];
+      // The new structure has order data directly in the response
+      final orderData =
+          response['order'] ?? response; // Fallback to response root
+
       if (orderData == null) {
         print('Error: No order data found in supplier response');
         _lineItems = [];
@@ -284,6 +384,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             .map((item) => OrderLineItem.fromSupplierJson(item))
             .toList();
       }
+
+      // Extract batch alerts
+      _batchAlerts = [];
+      if (response['batchAlerts'] != null) {
+        _batchAlerts = (response['batchAlerts'] as List)
+            .map((alert) => BatchAlert.fromJson(alert))
+            .toList();
+      }
+
+      // Extract alert summary
+      _alertSummary = response['alertSummary'];
 
       // Extract supplier and user data
       final supplier = orderData['supplier'];
@@ -392,7 +503,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   // Update supplier order status
-// Update supplier order status
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
     // Check if order is already in this status
     if (_localOrder.status == newStatus) {
@@ -419,8 +529,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         updatedItems = _editedQuantities.entries.map((entry) {
           return {
             'id': entry.key,
-            'receivedQuantity':
-                entry.value, // Changed from 'quantity' to 'receivedQuantity'
+            'receivedQuantity': entry.value,
           };
         }).toList();
       }
@@ -497,6 +606,161 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return _lineItems.fold(0, (sum, item) => sum + item.total);
   }
 
+  // Build batch alert widget
+  Widget _buildBatchAlertSection() {
+    if (_localOrder.type != "Supplier" ||
+        (_batchAlerts.isEmpty && _alertSummary == null)) {
+      return SizedBox.shrink();
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: _alertSummary?['hasAlerts'] == true
+              ? Colors.amber
+              : const Color.fromARGB(255, 47, 71, 82),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _alertSummary?['hasAlerts'] == true
+                    ? Icons.warning_amber_rounded
+                    : Icons.info_outline,
+                color: _alertSummary?['hasAlerts'] == true
+                    ? Colors.amber
+                    : Colors.blue,
+                size: 20.sp,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                "Batch Information",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+
+          // Alert summary
+          if (_alertSummary != null) ...[
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: _alertSummary!['hasAlerts'] == true
+                    ? Colors.amber.withOpacity(0.1)
+                    : Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _alertSummary!['message'] ?? 'No alerts',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: _alertSummary!['hasAlerts'] == true
+                          ? Colors.amber
+                          : Colors.blue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (_alertSummary!['recommendation'] != null) ...[
+                    SizedBox(height: 8.h),
+                    Text(
+                      _alertSummary!['recommendation'],
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12.sp,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            SizedBox(height: 12.h),
+          ],
+
+          // Individual batch alerts
+          if (_batchAlerts.isNotEmpty) ...[
+            Text(
+              "Product Alerts:",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            ...(_batchAlerts.map((alert) => _buildIndividualBatchAlert(alert))),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndividualBatchAlert(BatchAlert alert) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6.r),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            alert.productName,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.orange,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            alert.alertMessage,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 11.sp,
+              color: Colors.orange.withOpacity(0.9),
+            ),
+          ),
+          if (alert.existingBatches.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Text(
+              "Existing batches:",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.white60,
+              ),
+            ),
+            ...alert.existingBatches.take(2).map((batch) => Text(
+                  "• Qty: ${batch.quantity}, Prod: ${batch.prodDate ?? 'N/A'}, Exp: ${batch.expDate ?? 'N/A'}",
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 9.sp,
+                    color: Colors.white70,
+                  ),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Wrap the entire build method in a try-catch to prevent app crashes
@@ -566,7 +830,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Content same as before...
                             // Top row: "Back" button and "Order Details" with buttons
                             Row(
                               children: [
@@ -656,8 +919,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                             ),
                             SizedBox(height: 30.h),
 
-                            // Rest of the content...
-                            // (Keep the entire existing UI structure here)
+                            // Batch Alert Section (only for supplier orders)
+                            _buildBatchAlertSection(),
+
                             // Main content row: left (items table) + right (order details)
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,6 +1071,20 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                                       ),
                                                       numeric: true,
                                                     ),
+                                                    // Add batch info column for supplier orders
+                                                    if (_localOrder.type ==
+                                                        "Supplier")
+                                                      DataColumn(
+                                                        label: Text(
+                                                          "Batch Info",
+                                                          style: GoogleFonts
+                                                              .spaceGrotesk(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ),
                                                   ],
                                                   rows: _visibleLineItems
                                                       .map((item) {
@@ -986,6 +1264,98 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                                             color: Colors.white,
                                                           ),
                                                         )),
+                                                        // Batch Info cell for supplier orders
+                                                        if (_localOrder.type ==
+                                                            "Supplier")
+                                                          DataCell(
+                                                            Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                if (item.prodDate !=
+                                                                    null)
+                                                                  Text(
+                                                                    "Prod: ${item.prodDate}",
+                                                                    style: GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          10.sp,
+                                                                    ),
+                                                                  ),
+                                                                if (item.expDate !=
+                                                                    null)
+                                                                  Text(
+                                                                    "Exp: ${item.expDate}",
+                                                                    style: GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          10.sp,
+                                                                    ),
+                                                                  ),
+                                                                if (item.itemBatchAlert !=
+                                                                    null)
+                                                                  Container(
+                                                                    margin: EdgeInsets
+                                                                        .only(
+                                                                            top:
+                                                                                2.h),
+                                                                    padding: EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            4.w,
+                                                                        vertical:
+                                                                            2.h),
+                                                                    decoration:
+                                                                        BoxDecoration(
+                                                                      color: Colors
+                                                                          .amber
+                                                                          .withOpacity(
+                                                                              0.2),
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              4.r),
+                                                                    ),
+                                                                    child: Row(
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        Icon(
+                                                                          Icons
+                                                                              .warning_amber_outlined,
+                                                                          color:
+                                                                              Colors.amber,
+                                                                          size:
+                                                                              10.sp,
+                                                                        ),
+                                                                        SizedBox(
+                                                                            width:
+                                                                                2.w),
+                                                                        Text(
+                                                                          "Alert",
+                                                                          style:
+                                                                              GoogleFonts.spaceGrotesk(
+                                                                            color:
+                                                                                Colors.amber,
+                                                                            fontSize:
+                                                                                8.sp,
+                                                                            fontWeight:
+                                                                                FontWeight.w600,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ),
                                                       ],
                                                     );
                                                   }).toList(),
