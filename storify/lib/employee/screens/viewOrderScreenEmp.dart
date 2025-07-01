@@ -761,6 +761,544 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
+  // Modern helper methods for the new design
+  Widget _buildEmptyState() {
+    return Container(
+      height: 200.h,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 29, 41, 57).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: const Color.fromARGB(255, 47, 71, 82).withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 48.sp,
+              color: Colors.white.withOpacity(0.3),
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              "No items found",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              "This order doesn't contain any items",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14.sp,
+                color: Colors.white38,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernItemCard(OrderLineItem item, int index) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 29, 41, 57),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: const Color.fromARGB(255, 47, 71, 82),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Main item row
+          Row(
+            children: [
+              // Product image
+              Container(
+                width: 60.w,
+                height: 60.h,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: const Color.fromARGB(255, 47, 71, 82),
+                    width: 1,
+                  ),
+                ),
+                child: item.imageUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12.r),
+                        child: Image.network(
+                          item.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.image_not_supported_outlined,
+                              color: Colors.white54,
+                              size: 24.sp,
+                            );
+                          },
+                        ),
+                      )
+                    : Icon(
+                        Icons.inventory_2_outlined,
+                        color: Colors.white54,
+                        size: 24.sp,
+                      ),
+              ),
+              SizedBox(width: 16.w),
+
+              // Item details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 6.h),
+                    Row(
+                      children: [
+                        _buildInfoChip(
+                          "Unit Price",
+                          "\$${item.unitPrice.toStringAsFixed(2)}",
+                          const Color.fromARGB(255, 0, 196, 255),
+                        ),
+                        SizedBox(width: 8.w),
+                        _buildInfoChip(
+                          "Qty",
+                          item.quantity.toString(),
+                          const Color.fromARGB(255, 255, 150, 30),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Edit quantity controls for supplier orders
+              if (_localOrder.type == "Supplier" &&
+                  _localOrder.status == "Accepted") ...[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 36, 50, 69),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildQuantityButton(
+                        icon: Icons.remove,
+                        color: Colors.red,
+                        onTap: () {
+                          if (item.quantity > 1) {
+                            _updateItemQuantity(item.id, item.quantity - 1);
+                          }
+                        },
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        item.quantity.toString(),
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      _buildQuantityButton(
+                        icon: Icons.add,
+                        color: Colors.green,
+                        onTap: () {
+                          _updateItemQuantity(item.id, item.quantity + 1);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 16.w),
+              ],
+
+              // Total price
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color:
+                      const Color.fromARGB(178, 0, 224, 116).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: const Color.fromARGB(178, 0, 224, 116),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  "\$${item.total.toStringAsFixed(2)}",
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color.fromARGB(178, 0, 224, 116),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Batch info for supplier orders
+          if (_localOrder.type == "Supplier" &&
+              (item.prodDate != null ||
+                  item.expDate != null ||
+                  item.itemBatchAlert != null)) ...[
+            SizedBox(height: 12.h),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 36, 50, 69).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: item.itemBatchAlert != null
+                      ? Colors.amber.withOpacity(0.5)
+                      : const Color.fromARGB(255, 47, 71, 82).withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        item.itemBatchAlert != null
+                            ? Icons.warning_amber_outlined
+                            : Icons.info_outline,
+                        color: item.itemBatchAlert != null
+                            ? Colors.amber
+                            : Colors.blue,
+                        size: 16.sp,
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        "Batch Information",
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    children: [
+                      if (item.prodDate != null) ...[
+                        _buildBatchInfoChip("Prod Date", item.prodDate!),
+                        SizedBox(width: 8.w),
+                      ],
+                      if (item.expDate != null) ...[
+                        _buildBatchInfoChip("Exp Date", item.expDate!),
+                      ],
+                    ],
+                  ),
+                  if (item.itemBatchAlert != null) ...[
+                    SizedBox(height: 8.h),
+                    Container(
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.amber,
+                            size: 14.sp,
+                          ),
+                          SizedBox(width: 6.w),
+                          Expanded(
+                            child: Text(
+                              "Batch Alert: ${item.itemBatchAlert!.alertType}",
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 11.sp,
+                                color: Colors.amber,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, String value, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: color.withOpacity(0.5), width: 1),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: "$label: ",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 11.sp,
+                color: color.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 11.sp,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBatchInfoChip(String label, String value) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        "$label: $value",
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 10.sp,
+          color: Colors.blue,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28.w,
+        height: 28.h,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: color.withOpacity(0.5), width: 1),
+        ),
+        child: Icon(
+          icon,
+          color: color,
+          size: 16.sp,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaginationControls() {
+    final totalPages = (_lineItems.length / _lineItemsPerPage).ceil();
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: const Color.fromARGB(255, 47, 71, 82),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.chevron_left,
+              color: _lineItemsCurrentPage > 1 ? Colors.white : Colors.white38,
+              size: 20.sp,
+            ),
+            onPressed: _lineItemsCurrentPage > 1
+                ? () {
+                    setState(() {
+                      _lineItemsCurrentPage--;
+                    });
+                  }
+                : null,
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            "Page $_lineItemsCurrentPage of $totalPages",
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          IconButton(
+            icon: Icon(
+              Icons.chevron_right,
+              color: _lineItemsCurrentPage < totalPages
+                  ? Colors.white
+                  : Colors.white38,
+              size: 20.sp,
+            ),
+            onPressed: _lineItemsCurrentPage < totalPages
+                ? () {
+                    setState(() {
+                      _lineItemsCurrentPage++;
+                    });
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalSection() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 36, 50, 69),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: const Color.fromARGB(255, 105, 65, 198),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Subtotal:",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  color: Colors.white70,
+                ),
+              ),
+              Text(
+                "\$${_calculatedTotal.toStringAsFixed(2)}",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Divider(color: Colors.white24, height: 1),
+          SizedBox(height: 8.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Grand Total:",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                "\$${_calculatedTotal.toStringAsFixed(2)}",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color.fromARGB(255, 105, 65, 198),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChangesWarning() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.amber, width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.amber,
+            size: 20.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Quantity Changes Detected",
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.amber,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  "Your changes will be applied when updating the order status.",
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 11.sp,
+                    color: Colors.amber.withOpacity(0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Wrap the entire build method in a try-catch to prevent app crashes
@@ -922,587 +1460,127 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                             // Batch Alert Section (only for supplier orders)
                             _buildBatchAlertSection(),
 
-                            // Main content row: left (items table) + right (order details)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Left side: Items table (flex = 2)
-                                Expanded(
-                                  flex: 2,
-                                  child: Container(
-                                    padding: EdgeInsets.all(16.w),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          const Color.fromARGB(255, 36, 50, 69),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(30.r),
-                                        topRight: Radius.circular(30.r),
-                                        bottomRight: Radius.circular(30.r),
-                                        bottomLeft: Radius.circular(30.r),
-                                      ),
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Items",
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 20.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        SizedBox(height: 16.h),
-                                        // Items table
-                                        _lineItems.isEmpty
-                                            ? Center(
-                                                child: Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      vertical: 30.h),
-                                                  child: Text(
-                                                    "No items found for this order",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      fontSize: 16.sp,
-                                                      color: Colors.white70,
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                            : SingleChildScrollView(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                child: DataTable(
-                                                  dataRowColor:
-                                                      MaterialStateProperty
-                                                          .resolveWith<Color?>(
-                                                    (Set<MaterialState>
-                                                            states) =>
-                                                        Colors.transparent,
-                                                  ),
-                                                  headingRowColor:
-                                                      MaterialStateProperty.all<
-                                                          Color>(
-                                                    const Color.fromARGB(
-                                                        255, 47, 71, 82),
-                                                  ),
-                                                  border: TableBorder(
-                                                    horizontalInside:
-                                                        BorderSide(
-                                                      color: Colors.white
-                                                          .withOpacity(0.1),
-                                                    ),
-                                                  ),
-                                                  columnSpacing: 20.w,
-                                                  columns: [
-                                                    DataColumn(
-                                                      label: Text(
-                                                        "Image",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text(
-                                                        "Item",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text(
-                                                        "Unit Price",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      numeric: true,
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text(
-                                                        "Qty",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      numeric: true,
-                                                    ),
-                                                    // Add Qty controls for supplier orders in Accepted status
-                                                    if (_localOrder.type ==
-                                                            "Supplier" &&
-                                                        _localOrder.status ==
-                                                            "Accepted")
-                                                      DataColumn(
-                                                        label: Text(
-                                                          "Edit Qty",
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    DataColumn(
-                                                      label: Text(
-                                                        "Total",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      numeric: true,
-                                                    ),
-                                                    // Add batch info column for supplier orders
-                                                    if (_localOrder.type ==
-                                                        "Supplier")
-                                                      DataColumn(
-                                                        label: Text(
-                                                          "Batch Info",
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                  ],
-                                                  rows: _visibleLineItems
-                                                      .map((item) {
-                                                    // Pre-format all strings for display
-                                                    final String nameStr =
-                                                        item.name;
-                                                    final String unitPriceStr =
-                                                        "\$${item.unitPrice.toStringAsFixed(2)}";
-                                                    final String qtyStr = item
-                                                        .quantity
-                                                        .toString();
-                                                    final String totalStr =
-                                                        "\$${item.total.toStringAsFixed(2)}";
-
-                                                    return DataRow(
-                                                      cells: [
-                                                        // Image cell
-                                                        DataCell(
-                                                          Container(
-                                                            width: 40.w,
-                                                            height: 40.h,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: Colors
-                                                                  .white
-                                                                  .withOpacity(
-                                                                      0.1),
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          6.r),
-                                                            ),
-                                                            child:
-                                                                item.imageUrl !=
-                                                                        null
-                                                                    ? ClipRRect(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(6.r),
-                                                                        child: Image
-                                                                            .network(
-                                                                          item.imageUrl!,
-                                                                          fit: BoxFit
-                                                                              .cover,
-                                                                          errorBuilder: (context,
-                                                                              error,
-                                                                              stackTrace) {
-                                                                            return Icon(
-                                                                              Icons.image_not_supported_outlined,
-                                                                              color: Colors.white54,
-                                                                              size: 20.sp,
-                                                                            );
-                                                                          },
-                                                                        ),
-                                                                      )
-                                                                    : Icon(
-                                                                        Icons
-                                                                            .image_outlined,
-                                                                        color: Colors
-                                                                            .white54,
-                                                                        size: 20
-                                                                            .sp,
-                                                                      ),
-                                                          ),
-                                                        ),
-                                                        // Name cell
-                                                        DataCell(Text(
-                                                          nameStr,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                          ),
-                                                        )),
-                                                        // Unit price cell
-                                                        DataCell(Text(
-                                                          unitPriceStr,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                          ),
-                                                        )),
-                                                        // Quantity cell
-                                                        DataCell(Text(
-                                                          qtyStr,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                          ),
-                                                        )),
-                                                        // Edit Quantity controls for supplier orders in Accepted status
-                                                        if (_localOrder.type ==
-                                                                "Supplier" &&
-                                                            _localOrder
-                                                                    .status ==
-                                                                "Accepted")
-                                                          DataCell(
-                                                            Row(
-                                                              children: [
-                                                                // Decrease button
-                                                                InkWell(
-                                                                  onTap: () {
-                                                                    if (item.quantity >
-                                                                        1) {
-                                                                      _updateItemQuantity(
-                                                                          item
-                                                                              .id,
-                                                                          item.quantity -
-                                                                              1);
-                                                                    }
-                                                                  },
-                                                                  child:
-                                                                      Container(
-                                                                    width: 24.w,
-                                                                    height:
-                                                                        24.h,
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: Colors
-                                                                          .red
-                                                                          .withOpacity(
-                                                                              0.2),
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              4.r),
-                                                                    ),
-                                                                    child: Icon(
-                                                                      Icons
-                                                                          .remove,
-                                                                      color: Colors
-                                                                          .white,
-                                                                      size:
-                                                                          16.sp,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                SizedBox(
-                                                                    width: 6.w),
-                                                                // Increase button
-                                                                InkWell(
-                                                                  onTap: () {
-                                                                    _updateItemQuantity(
-                                                                        item.id,
-                                                                        item.quantity +
-                                                                            1);
-                                                                  },
-                                                                  child:
-                                                                      Container(
-                                                                    width: 24.w,
-                                                                    height:
-                                                                        24.h,
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: Colors
-                                                                          .green
-                                                                          .withOpacity(
-                                                                              0.2),
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              4.r),
-                                                                    ),
-                                                                    child: Icon(
-                                                                      Icons.add,
-                                                                      color: Colors
-                                                                          .white,
-                                                                      size:
-                                                                          16.sp,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        // Total cell
-                                                        DataCell(Text(
-                                                          totalStr,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                          ),
-                                                        )),
-                                                        // Batch Info cell for supplier orders
-                                                        if (_localOrder.type ==
-                                                            "Supplier")
-                                                          DataCell(
-                                                            Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                if (item.prodDate !=
-                                                                    null)
-                                                                  Text(
-                                                                    "Prod: ${item.prodDate}",
-                                                                    style: GoogleFonts
-                                                                        .spaceGrotesk(
-                                                                      color: Colors
-                                                                          .white70,
-                                                                      fontSize:
-                                                                          10.sp,
-                                                                    ),
-                                                                  ),
-                                                                if (item.expDate !=
-                                                                    null)
-                                                                  Text(
-                                                                    "Exp: ${item.expDate}",
-                                                                    style: GoogleFonts
-                                                                        .spaceGrotesk(
-                                                                      color: Colors
-                                                                          .white70,
-                                                                      fontSize:
-                                                                          10.sp,
-                                                                    ),
-                                                                  ),
-                                                                if (item.itemBatchAlert !=
-                                                                    null)
-                                                                  Container(
-                                                                    margin: EdgeInsets
-                                                                        .only(
-                                                                            top:
-                                                                                2.h),
-                                                                    padding: EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            4.w,
-                                                                        vertical:
-                                                                            2.h),
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: Colors
-                                                                          .amber
-                                                                          .withOpacity(
-                                                                              0.2),
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              4.r),
-                                                                    ),
-                                                                    child: Row(
-                                                                      mainAxisSize:
-                                                                          MainAxisSize
-                                                                              .min,
-                                                                      children: [
-                                                                        Icon(
-                                                                          Icons
-                                                                              .warning_amber_outlined,
-                                                                          color:
-                                                                              Colors.amber,
-                                                                          size:
-                                                                              10.sp,
-                                                                        ),
-                                                                        SizedBox(
-                                                                            width:
-                                                                                2.w),
-                                                                        Text(
-                                                                          "Alert",
-                                                                          style:
-                                                                              GoogleFonts.spaceGrotesk(
-                                                                            color:
-                                                                                Colors.amber,
-                                                                            fontSize:
-                                                                                8.sp,
-                                                                            fontWeight:
-                                                                                FontWeight.w600,
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    );
-                                                  }).toList(),
-                                                ),
-                                              ),
-
-                                        // Pagination controls if more than one page
-                                        if (_lineItems.length >
-                                            _lineItemsPerPage) ...[
-                                          SizedBox(height: 16.h),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.arrow_back_ios,
-                                                  color: Colors.white,
-                                                  size: 16.sp,
-                                                ),
-                                                onPressed:
-                                                    _lineItemsCurrentPage > 1
-                                                        ? () {
-                                                            setState(() {
-                                                              _lineItemsCurrentPage--;
-                                                            });
-                                                          }
-                                                        : null,
-                                              ),
-                                              Text(
-                                                "Page $_lineItemsCurrentPage of ${(_lineItems.length / _lineItemsPerPage).ceil()}",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.arrow_forward_ios,
-                                                  color: Colors.white,
-                                                  size: 16.sp,
-                                                ),
-                                                onPressed: _lineItemsCurrentPage <
-                                                        (_lineItems.length /
-                                                                _lineItemsPerPage)
-                                                            .ceil()
-                                                    ? () {
-                                                        setState(() {
-                                                          _lineItemsCurrentPage++;
-                                                        });
-                                                      }
-                                                    : null,
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-
-                                        SizedBox(height: 20.h),
-                                        // Grand Total
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: Padding(
-                                            padding:
-                                                EdgeInsets.only(bottom: 6.h),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  "Grand Total: ",
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    fontSize: 16.sp,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white70,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  "\$${_calculatedTotal.toStringAsFixed(2)}",
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    fontSize: 16.sp,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white70,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-
-                                        // Show changes warning if quantities were edited
-                                        if (_hasQuantityChanges) ...[
-                                          SizedBox(height: 10.h),
-                                          Container(
-                                            padding: EdgeInsets.all(10.w),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  Colors.amber.withOpacity(0.2),
-                                              borderRadius:
-                                                  BorderRadius.circular(8.r),
-                                              border: Border.all(
-                                                  color: Colors.amber),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.warning_amber_rounded,
-                                                  color: Colors.amber,
-                                                  size: 20.sp,
-                                                ),
-                                                SizedBox(width: 10.w),
-                                                Expanded(
-                                                  child: Text(
-                                                    "You have made changes to item quantities. These changes will be applied when updating the order status.",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      fontSize: 12.sp,
-                                                      color: Colors.amber,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
+                            // Modern Full-width Items Section
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(20.w),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 36, 50, 69),
+                                borderRadius: BorderRadius.circular(20.r),
+                                border: Border.all(
+                                  color: const Color.fromARGB(255, 47, 71, 82),
+                                  width: 1,
                                 ),
-                                SizedBox(width: 20.w),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header with title and item count
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Order Items",
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 22.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 12.w, vertical: 6.h),
+                                        decoration: BoxDecoration(
+                                          color: const Color.fromARGB(
+                                                  255, 105, 65, 198)
+                                              .withOpacity(0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(20.r),
+                                          border: Border.all(
+                                            color: const Color.fromARGB(
+                                                255, 105, 65, 198),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          "${_lineItems.length} items",
+                                          style: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color.fromARGB(
+                                                255, 105, 65, 198),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 20.h),
 
-                                // Right side: Order Info and Customer/Supplier Info
-                                Expanded(
-                                  flex: 1,
-                                  child: Container(
-                                    padding: EdgeInsets.all(16.w),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          const Color.fromARGB(255, 36, 50, 69),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
+                                  // Items list
+                                  _lineItems.isEmpty
+                                      ? _buildEmptyState()
+                                      : Column(
+                                          children: [
+                                            // Items cards
+                                            ...(_visibleLineItems
+                                                .asMap()
+                                                .entries
+                                                .map((entry) {
+                                              final index = entry.key;
+                                              final item = entry.value;
+                                              return _buildModernItemCard(
+                                                  item, index);
+                                            }).toList()),
+
+                                            // Pagination if needed
+                                            if (_lineItems.length >
+                                                _lineItemsPerPage) ...[
+                                              SizedBox(height: 20.h),
+                                              _buildPaginationControls(),
+                                            ],
+
+                                            SizedBox(height: 24.h),
+
+                                            // Total section
+                                            _buildTotalSection(),
+
+                                            // Changes warning if quantities were edited
+                                            if (_hasQuantityChanges) ...[
+                                              SizedBox(height: 16.h),
+                                              _buildChangesWarning(),
+                                            ],
+                                          ],
+                                        ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: 24.h),
+
+                            // Order Info Section (now below the table)
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.all(20.w),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 36, 50, 69),
+                                borderRadius: BorderRadius.circular(16.r),
+                                border: Border.all(
+                                  color: const Color.fromARGB(255, 47, 71, 82),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Order Info (Left)
+                                  Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "Order Info",
+                                          "Order Information",
                                           style: GoogleFonts.spaceGrotesk(
                                             fontSize: 18.sp,
                                             fontWeight: FontWeight.w700,
@@ -1529,9 +1607,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                                           0)
                                                   ? "Paid"
                                                   : "Pending"),
-                                        Divider(
-                                            color: Colors.white24,
-                                            height: 20.h),
+
                                         Row(
                                           children: [
                                             Text(
@@ -1748,8 +1824,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                             ),
                                           ),
                                         ],
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 32.w),
 
-                                        SizedBox(height: 20.h),
+                                  // Customer/Supplier Info (Right)
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
                                         Text(
                                           _localOrder.type == "Supplier"
                                               ? "Supplier Info"
@@ -1764,13 +1849,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                         _buildInfoRow("Name", _localOrder.name),
                                         _buildInfoRow(
                                             "Phone", _localOrder.phoneNo),
-
-                                        // Show email if available in the API response
                                       ],
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             SizedBox(height: 40.h),
                           ],

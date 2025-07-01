@@ -14,20 +14,22 @@ class CategoryProductsRow extends StatefulWidget {
   final String categoryName;
   final int categoryID;
   final String? description;
+  final String? currentImage; // Add this to get current image
   final List<ProductDetail> products;
   final VoidCallback? onClose;
   final ValueChanged<ProductDetail> onProductDelete;
-  final ValueChanged<CategoryItem>? onCategoryUpdate; // Add this callback
+  final ValueChanged<CategoryItem>? onCategoryUpdate;
 
   const CategoryProductsRow({
     super.key,
     required this.categoryName,
     required this.categoryID,
     this.description,
+    this.currentImage, // Add this parameter
     required this.products,
     this.onClose,
     required this.onProductDelete,
-    this.onCategoryUpdate, // Add this parameter
+    this.onCategoryUpdate,
   });
 
   @override
@@ -62,8 +64,8 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
   void _initializeEditingValues() {
     _editingName = widget.categoryName;
     _editingDescription = widget.description ?? '';
-    _editingIsActive = true; // We'll get this from the actual category data
-    _editingImage = ''; // We'll need to get this from category data
+    _editingIsActive = true;
+    _editingImage = widget.currentImage ?? ''; // Use current image
 
     _nameController = TextEditingController(text: _editingName);
     _descriptionController = TextEditingController(text: _editingDescription);
@@ -149,6 +151,9 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
       if (_isEditing) {
         _saveChanges();
       } else {
+        // When starting edit mode, load current image
+        _editingImage = widget.currentImage ?? '';
+        _base64Image = null; // Reset new image selection
         _isEditing = true;
       }
     });
@@ -279,15 +284,27 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
   InputDecoration _buildInputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.spaceGrotesk(color: Colors.white70),
+      labelStyle:
+          GoogleFonts.spaceGrotesk(color: Colors.white70, fontSize: 12.sp),
       filled: true,
       fillColor: const Color.fromARGB(255, 54, 68, 88),
-      border: const OutlineInputBorder(borderSide: BorderSide.none),
-      enabledBorder: const OutlineInputBorder(borderSide: BorderSide.none),
-      focusedBorder: const OutlineInputBorder(borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
       errorBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.red.shade300, width: 1),
+        borderRadius: BorderRadius.circular(8.r),
       ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
     );
   }
 
@@ -296,8 +313,9 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
     return Padding(
       padding: const EdgeInsets.only(top: 20.0),
       child: Container(
-        constraints: const BoxConstraints(
-            maxHeight: 450), // Increased height for edit mode
+        constraints: BoxConstraints(
+          maxHeight: _isEditing ? 350 : 450, // Smaller when editing
+        ),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 36, 50, 69),
@@ -318,7 +336,7 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red),
+                    Icon(Icons.error_outline, color: Colors.red, size: 16.sp),
                     SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
@@ -334,43 +352,116 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
               ),
             ],
 
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_isEditing) ...[
-                        // Edit mode - Category name input
-                        TextField(
-                          controller: _nameController,
-                          decoration: _buildInputDecoration("Category Name"),
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+            if (_isEditing) ...[
+              // EDIT MODE - Clean, compact layout
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left side - Image area (square)
+                  InkWell(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 120.w,
+                      height: 120.w, // Square aspect ratio
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 54, 68, 88),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: _editingImage.isEmpty
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt,
+                                    color: Colors.white70, size: 24.sp),
+                                SizedBox(height: 4.h),
+                                Text(
+                                  "Upload\nImage",
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white70,
+                                    fontSize: 10.sp,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: Image.network(
+                                _editingImage,
+                                width: 120.w,
+                                height: 120.w,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 120.w,
+                                    height: 120.w,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade600,
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.white70,
+                                      size: 24.sp,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  SizedBox(width: 16.w),
+
+                  // Right side - Form fields
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category name input (compact)
+                        SizedBox(
+                          width: 300.w, // Fixed smaller width
+                          child: TextField(
+                            controller: _nameController,
+                            decoration: _buildInputDecoration("Category Name"),
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        SizedBox(height: 12),
-                        // Edit mode - Description input
-                        TextField(
-                          controller: _descriptionController,
-                          decoration: _buildInputDecoration("Description"),
-                          maxLines: 2,
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.grey[400],
-                            fontSize: 12,
+
+                        SizedBox(height: 12.h),
+
+                        // Description input (compact)
+                        SizedBox(
+                          width: 400.w, // Fixed smaller width
+                          child: TextField(
+                            controller: _descriptionController,
+                            decoration: _buildInputDecoration("Description"),
+                            maxLines: 2,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                            ),
                           ),
                         ),
-                        SizedBox(height: 12),
-                        // Edit mode - Status toggle
+
+                        SizedBox(height: 12.h),
+
+                        // Status toggle
                         Row(
                           children: [
                             Text(
                               "Status: ",
                               style: GoogleFonts.spaceGrotesk(
                                 color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: 14.sp,
                               ),
                             ),
                             Switch(
@@ -387,17 +478,114 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
                               _editingIsActive ? "Active" : "NotActive",
                               style: GoogleFonts.spaceGrotesk(
                                 color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: 14.sp,
                               ),
                             ),
                           ],
                         ),
-                      ] else ...[
-                        // View mode
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 20.h),
+
+              // Action buttons for edit mode
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // Cancel button
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      side: BorderSide(
+                          color: Colors.white.withOpacity(0.3), width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    onPressed: _isUpdating
+                        ? null
+                        : () {
+                            setState(() {
+                              _isEditing = false;
+                              _errorMessage = null;
+                              // Reset to original values
+                              _nameController.text = widget.categoryName;
+                              _descriptionController.text =
+                                  widget.description ?? '';
+                              _editingImage = widget.currentImage ?? '';
+                              _base64Image = null;
+                            });
+                          },
+                    child: Text(
+                      "Cancel",
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: _isUpdating
+                            ? Colors.white.withOpacity(0.5)
+                            : Colors.white,
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(width: 12.w),
+
+                  // Save button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 34, 139, 34),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      elevation: 1,
+                    ),
+                    onPressed: _isUpdating ? null : _saveChanges,
+                    child: _isUpdating
+                        ? SizedBox(
+                            width: 16.w,
+                            height: 16.h,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.save,
+                                  color: Colors.white, size: 16.sp),
+                              SizedBox(width: 4.w),
+                              Text(
+                                "Save",
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // VIEW MODE - Original layout with products
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
                           widget.categoryName,
                           style: GoogleFonts.spaceGrotesk(
-                            fontSize: 24,
+                            fontSize: 24.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -409,7 +597,7 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
                             child: Text(
                               widget.description!,
                               style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: Colors.grey[400],
                                 fontStyle: FontStyle.italic,
                               ),
@@ -418,15 +606,13 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
                             ),
                           ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
 
-                if (!_isEditing) ...[
-                  // Search field (only in view mode)
+                  // Search field
                   SizedBox(
-                    width: 200,
-                    height: 40,
+                    width: 200.w,
+                    height: 40.h,
                     child: TextField(
                       onChanged: (value) {
                         setState(() {
@@ -450,182 +636,120 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                ],
 
-                // Edit/Save button with pin icon
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isEditing
-                        ? const Color.fromARGB(255, 34, 139, 34)
-                        : const Color.fromARGB(255, 105, 65, 198),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  // Edit button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      fixedSize: Size(100.w, 50.h),
+                      elevation: 1,
                     ),
-                    fixedSize: Size(100.w, 50.h),
-                    elevation: 1,
-                  ),
-                  onPressed: _isUpdating ? null : _toggleEditing,
-                  child: _isUpdating
-                      ? SizedBox(
-                          width: 20.w,
-                          height: 20.h,
-                          child: CircularProgressIndicator(
+                    onPressed: _toggleEditing,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit, color: Colors.white, size: 18.sp),
+                        SizedBox(width: 4.w),
+                        Text(
+                          "Edit",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _isEditing ? Icons.save : Icons.push_pin,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              _isEditing ? "Save" : "Edit",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-                const SizedBox(width: 16),
-
-                // Close button
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.withOpacity(0.8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    fixedSize: Size(100.w, 50.h),
-                    elevation: 1,
-                  ),
-                  onPressed: _isEditing || _isUpdating ? null : widget.onClose,
-                  child: Text(
-                    "Close",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: _isEditing || _isUpdating
-                          ? Colors.white.withOpacity(0.5)
-                          : Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Image upload section (only in edit mode)
-            if (_isEditing) ...[
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: _pickImage,
-                child: Container(
-                  height: 80,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 54, 68, 88),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: _editingImage.isEmpty
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.cloud_upload,
-                                color: Colors.white70, size: 24),
-                            SizedBox(height: 4),
-                            Text(
-                              "Click to upload new image (optional)",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            _editingImage,
-                            height: 80,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
                           ),
                         ),
-                ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Close button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      fixedSize: Size(100.w, 50.h),
+                      elevation: 1,
+                    ),
+                    onPressed: widget.onClose,
+                    child: Text(
+                      "Close",
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Products section
-            if (widget.products.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 48,
-                        color: Colors.white.withOpacity(0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "No products in this category",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 18,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Products added to this category will appear here",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14,
+              // Products section (only show when NOT editing)
+              if (widget.products.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 48,
                           color: Colors.white.withOpacity(0.5),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          "No products in this category",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Products added to this category will appear here",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: _filteredProducts
+                          .map((prod) => SizedBox(
+                                width: 250,
+                                key: ValueKey(prod.productID ?? prod.name),
+                                child: ProductDetailCard(
+                                  product: prod,
+                                  categoryID: widget.categoryID,
+                                  onUpdate: (updatedProduct) {
+                                    print(
+                                        "Updated product: ${updatedProduct.name}");
+                                  },
+                                  onDelete: () {
+                                    widget.onProductDelete(prod);
+                                  },
+                                ),
+                              ))
+                          .toList(),
+                    ),
                   ),
                 ),
-              )
-            else
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: _filteredProducts
-                        .map((prod) => SizedBox(
-                              width: 250,
-                              key: ValueKey(prod.productID ?? prod.name),
-                              child: ProductDetailCard(
-                                product: prod,
-                                categoryID: widget.categoryID,
-                                onUpdate: (updatedProduct) {
-                                  print(
-                                      "Updated product: ${updatedProduct.name}");
-                                },
-                                onDelete: () {
-                                  widget.onProductDelete(prod);
-                                },
-                              ),
-                            ))
-                        .toList(),
-                  ),
-                ),
-              ),
+            ],
           ],
         ),
       ),

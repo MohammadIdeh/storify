@@ -715,10 +715,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     // Normal case: display the products
     final products = _categoryProductsMap[categoryID] ?? [];
 
+    // Get current category image
+    String? currentImage;
+    for (var cat in _allCategories) {
+      if (cat.categoryID == categoryID) {
+        currentImage = cat.image;
+        break;
+      }
+    }
+
     return CategoryProductsRow(
       categoryName: categoryName,
       categoryID: categoryID, // Pass the categoryID to the component
       description: description, // Pass the description
+      currentImage: currentImage, // Pass the current image
       products: products,
       onClose: () {
         setState(() {
