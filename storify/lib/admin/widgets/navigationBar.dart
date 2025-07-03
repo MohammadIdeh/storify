@@ -143,7 +143,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   Future<void> _handleSimpleLogout() async {
     if (_isDisposed || _isLoggingOut) return;
 
-    print('🚪 === SIMPLE ADMIN LOGOUT ===');
+    print('🚪 === CLEAN ADMIN LOGOUT ===');
 
     // Set logout flag
     _isLoggingOut = true;
@@ -163,11 +163,12 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
       print('✅ Admin data cleared');
 
-      // Navigate with single method
+      // ✅ CLEAN NAVIGATION: Clear all history including admin dashboard
       if (mounted && context.mounted) {
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        Navigator.pushNamedAndRemoveUntil(
+          context,
           '/login',
-          (route) => false,
+          (route) => false, // Remove ALL previous routes
         );
         print('✅ Admin logout navigation completed');
       }
@@ -177,12 +178,10 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       // Emergency navigation
       if (mounted && context.mounted) {
         try {
-          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-              settings: const RouteSettings(name: '/login'),
-            ),
-            (route) => false,
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false, // Clear history even in emergency
           );
         } catch (navError) {
           print('💥 Emergency navigation failed: $navError');

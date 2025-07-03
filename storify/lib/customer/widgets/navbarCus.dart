@@ -173,7 +173,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
 
   // Simplified logout for customer
   Future<void> _handleCompleteLogout() async {
-    print('🚪 === STARTING CUSTOMER LOGOUT ===');
+    print('🚪 === CLEAN CUSTOMER LOGOUT ===');
 
     try {
       _removeAllOverlays();
@@ -187,20 +187,24 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
 
       print('✅ Customer data cleared');
 
+      // ✅ CLEAN NAVIGATION: Clear all history including customer screens
       if (mounted && context.mounted) {
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        Navigator.pushNamedAndRemoveUntil(
+          context,
           '/login',
-          (route) => false,
+          (route) => false, // Remove ALL previous routes
         );
+        print('✅ Customer logout navigation completed');
       }
     } catch (e) {
       print('❌ Error during customer logout: $e');
 
       if (mounted && context.mounted) {
         try {
-          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false, // Clear history even in emergency
           );
         } catch (navError) {
           print('💥 Emergency navigation failed: $navError');

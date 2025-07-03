@@ -1,3 +1,6 @@
+// lib/Registration/Screens/loginScreen.dart
+// ✅ UPDATED WITH CLEAN URL ROUTING AND NAVIGATION HISTORY FIX
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/gestures.dart';
@@ -11,11 +14,7 @@ import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
-import 'package:storify/admin/screens/dashboard.dart';
-import 'package:storify/customer/screens/orderScreenCustomer.dart';
 import 'package:storify/customer/widgets/mapPopUp.dart';
-import 'package:storify/employee/screens/orders_screen.dart';
-import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,8 +33,54 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  /// Makes a POST request to the API for login and navigates based on the roleName.
-  /// Makes a POST request to the API for login and navigates based on the roleName.
+  @override
+  void initState() {
+    super.initState();
+    _emailFocusNode.addListener(() => setState(() {}));
+    _passwordFocusNode.addListener(() => setState(() {}));
+
+    // ✅ CHECK IF USER IS ALREADY AUTHENTICATED
+    _checkAuthenticationStatus();
+  }
+
+  // ✅ NEW: Auto-redirect if user is already authenticated
+  Future<void> _checkAuthenticationStatus() async {
+    try {
+      final isLoggedIn = await AuthService.isLoggedIn();
+      final currentRole = await AuthService.getCurrentRole();
+
+      if (isLoggedIn && currentRole != null && mounted) {
+        print('🔄 User already authenticated as $currentRole, redirecting...');
+
+        // Redirect to appropriate dashboard based on role
+        String targetRoute = _getRouteForRole(currentRole);
+
+        // Use pushReplacementNamed to avoid back-to-login issue
+        Navigator.pushReplacementNamed(context, targetRoute);
+      }
+    } catch (e) {
+      print('⚠️ Error checking auth status: $e');
+      // Continue to show login screen if there's an error
+    }
+  }
+
+  // ✅ NEW: Helper to get route based on role
+  String _getRouteForRole(String role) {
+    switch (role) {
+      case 'Admin':
+        return '/admin';
+      case 'Customer':
+        return '/customer';
+      case 'Supplier':
+        return '/supplier';
+      case 'WareHouseEmployee':
+        return '/warehouse';
+      default:
+        return '/login';
+    }
+  }
+
+  /// ✅ UPDATED: Clean navigation with URL routing
   Future<void> _performLogin() async {
     setState(() {
       _isLoading = true;
@@ -67,31 +112,27 @@ class _LoginScreenState extends State<LoginScreen> {
         body: json.encode(loginData),
       );
 
-      // Handle the API response.
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         print('Login Successful: $responseData');
 
-        // Extract token, roleName, and profilePicture
+        // Extract user data
         String token = responseData['token'];
         String roleName = responseData['user']['roleName'];
         String profilePicture = responseData['user']['profilePicture'] ?? '';
-        String userName =
-            responseData['user']['name'] ?? responseData['user']['name'] ?? '';
+        String userName = responseData['user']['name'] ?? '';
 
-        // Extract supplierId if role is Supplier
+        // Handle Supplier ID if applicable
         if (roleName == 'Supplier' &&
             responseData['user']['supplierId'] != null) {
           int supplierId = responseData['user']['supplierId'];
-          // Save supplierId to SharedPreferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('supplierId', supplierId);
           print('📦 stored supplierId = "$supplierId"');
         }
 
-        // Save the token with the role and profilePicture locally
+        // Save authentication data
         await AuthService.saveToken(token, roleName);
-
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('profilePicture', profilePicture);
         await prefs.setString('name', userName);
@@ -100,122 +141,8 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(content: Text('Login Successful as a $roleName')),
         );
 
-        // Navigate based on role
-        if (roleName == 'Admin') {
-          print('🗝️ stored token = "$token" (length ${token.length})');
-          print('📷 stored profilePicture = "$profilePicture"');
-
-          Navigator.of(context).push(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const DashboardScreen(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
-              },
-              transitionDuration: const Duration(milliseconds: 600),
-            ),
-          );
-        } else if (roleName == 'Supplier') {
-          // Get the saved supplierId for confirmation
-          final prefs = await SharedPreferences.getInstance();
-          int? supplierId = prefs.getInt('supplierId');
-          print('🔄 using supplierId = "$supplierId" for navigation');
-
-          Navigator.of(context).push(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const SupplierOrders(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
-              },
-              transitionDuration: const Duration(milliseconds: 600),
-            ),
-          );
-        } else if (roleName == 'WareHouseEmployee') {
-          Navigator.of(context).push(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const Orders_employee(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
-              },
-              transitionDuration: const Duration(milliseconds: 600),
-            ),
-          );
-        } else if (roleName == 'Delivery') {
-          // Handle Delivery role
-        } else if (roleName == 'Customer') {
-          setState(() {
-            _isLoading = false;
-          });
-
-          // First navigate to the main Customer screen
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const CustomerOrders(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
-              },
-              transitionDuration: const Duration(milliseconds: 600),
-            ),
-          );
-
-          // Check if location is set in the login response
-          final latitude = responseData['user']['latitude'];
-          final longitude = responseData['user']['longitude'];
-          final bool isLocationSet = latitude != null && longitude != null;
-
-          // If location is not set, show the popup after a short delay
-          // to allow the navigation to complete
-          if (!isLocationSet) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (context.mounted) {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => LocationSelectionPopup(
-                    onLocationSaved: () {
-                      // No need to navigate since we're already on the CustomerOrders screen
-                    },
-                  ),
-                );
-              }
-            });
-          } else {
-            // If location is already set, navigate directly to main screen
-            Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const CustomerOrders(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 600),
-              ),
-            );
-          }
-        }
+        // ✅ NAVIGATE WITH CLEAN URL ROUTING AND CLEAR HISTORY
+        await _handleLoginSuccess(roleName, responseData);
       } else {
         final responseData = json.decode(response.body);
         String errorMessage = 'Login failed';
@@ -240,11 +167,86 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _emailFocusNode.addListener(() => setState(() {}));
-    _passwordFocusNode.addListener(() => setState(() {}));
+  // ✅ NEW: Clean login success handling with URL routing
+  Future<void> _handleLoginSuccess(
+      String roleName, Map<String, dynamic> responseData) async {
+    try {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (roleName == 'Admin') {
+        print('🗝️ Navigating to Admin Dashboard');
+
+        // ✅ CLEAN NAVIGATION: Remove all previous routes including login
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/admin',
+          (route) => false, // Clear ALL navigation history
+        );
+      } else if (roleName == 'Supplier') {
+        print('🔄 Navigating to Supplier Dashboard');
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/supplier',
+          (route) => false, // Clear ALL navigation history
+        );
+      } else if (roleName == 'WareHouseEmployee') {
+        print('📦 Navigating to Warehouse Dashboard');
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/warehouse',
+          (route) => false, // Clear ALL navigation history
+        );
+      } else if (roleName == 'Customer') {
+        print('🛒 Navigating to Customer Dashboard');
+
+        // Check if location is set
+        final latitude = responseData['user']['latitude'];
+        final longitude = responseData['user']['longitude'];
+        final bool isLocationSet = latitude != null && longitude != null;
+
+        // Navigate to customer dashboard first
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/customer',
+          (route) => false, // Clear ALL navigation history
+        );
+
+        // Show location popup if needed (after navigation completes)
+        if (!isLocationSet) {
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (context.mounted) {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => LocationSelectionPopup(
+                  onLocationSaved: () {
+                    // Customer is already on the correct screen
+                  },
+                ),
+              );
+            }
+          });
+        }
+      } else if (roleName == 'Delivery') {
+        // Handle Delivery role when implemented
+        print('🚚 Delivery role navigation not implemented yet');
+      } else {
+        // Unknown role, stay on login
+        print('❓ Unknown role: $roleName');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error in navigation: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -497,27 +499,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                       const Color.fromARGB(
                                                           255, 105, 65, 198);
                                                 });
-                                                Navigator.of(context).push(
-                                                  PageRouteBuilder(
-                                                    pageBuilder: (context,
-                                                            animation,
-                                                            secondaryAnimation) =>
-                                                        const Forgotpassword(),
-                                                    transitionsBuilder:
-                                                        (context,
-                                                            animation,
-                                                            secondaryAnimation,
-                                                            child) {
-                                                      return FadeTransition(
-                                                        opacity: animation,
-                                                        child: child,
-                                                      );
-                                                    },
-                                                    transitionDuration:
-                                                        const Duration(
-                                                            milliseconds: 600),
-                                                  ),
-                                                );
+                                                // ✅ UPDATED: Use named route for forgot password
+                                                Navigator.pushNamed(context,
+                                                    '/forgot-password');
                                               }
                                               ..onTapCancel = () {
                                                 setState(() {
