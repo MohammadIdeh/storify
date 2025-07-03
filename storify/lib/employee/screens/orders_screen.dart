@@ -9,6 +9,7 @@ import 'package:storify/employee/screens/order_history_screen.dart';
 import 'package:storify/employee/screens/viewOrderScreenEmp.dart';
 import 'package:storify/employee/widgets/navbar_employee.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:storify/employee/widgets/network_diagnostics.dart';
 import 'package:storify/employee/widgets/orderServiceEmp.dart';
 
 // OrderItem model now properly matches the API response structure
@@ -520,6 +521,7 @@ class _OrdersState extends State<Orders_employee> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      NetworkDiagnosticsWidget(),
                       Icon(
                         Icons.error_outline,
                         color: Colors.redAccent,
