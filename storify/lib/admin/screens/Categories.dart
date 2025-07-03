@@ -334,70 +334,22 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             // Navigation logic:
             switch (index) {
               case 0:
-                Navigator.of(context).pushReplacement(
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const DashboardScreen(),
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                    transitionDuration: const Duration(milliseconds: 700),
-                  ),
-                );
+                Navigator.pushNamed(context, '/admin/dashboard');
                 break;
               case 1:
-                Navigator.of(context).pushReplacement(
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const Productsscreen(),
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                    transitionDuration: const Duration(milliseconds: 700),
-                  ),
-                );
+                Navigator.pushNamed(context, '/admin/products');
                 break;
               case 2:
-                // Current Categories screen.
+                // Current Categories screen - no navigation needed
                 break;
-
               case 3:
-                Navigator.of(context).push(
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const Orders(),
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    transitionDuration: const Duration(milliseconds: 700),
-                  ),
-                );
+                Navigator.pushNamed(context, '/admin/orders');
                 break;
               case 4:
-                Navigator.of(context).push(
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const Rolemanegment(),
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                    transitionDuration: const Duration(milliseconds: 700),
-                  ),
-                );
+                Navigator.pushNamed(context, '/admin/roles');
                 break;
               case 5:
-                Navigator.of(context).push(PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      const Track(),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) =>
-                          FadeTransition(opacity: animation, child: child),
-                  transitionDuration: const Duration(milliseconds: 700),
-                ));
+                Navigator.pushNamed(context, '/admin/tracking');
                 break;
             }
           },

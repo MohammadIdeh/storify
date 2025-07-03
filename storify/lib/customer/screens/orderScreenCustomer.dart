@@ -102,27 +102,20 @@ class _CustomerOrdersState extends State<CustomerOrders> {
     }
   }
 
-  void _onNavItemTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    switch (index) {
-      case 0:
-        break;
-      case 1:
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const HistoryScreenCustomer(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 700),
-          ),
-        );
-        break;
-    }
+void _onNavItemTap(int index) {
+  setState(() {
+    _currentIndex = index;
+  });
+  switch (index) {
+    case 0:
+      // Current Orders - no navigation needed
+      break;
+    case 1:
+      Navigator.pushNamed(context, '/customer/history');
+      break;
   }
+}
+
 
   void _selectCategory(int categoryId) {
     setState(() {

@@ -91,18 +91,11 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
     });
     switch (index) {
       case 0:
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const CustomerOrders(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 700),
-          ),
-        );
+        // Navigate to orders with URL change
+        Navigator.pushNamed(context, '/customer/orders');
         break;
       case 1:
+        // Current History screen - no navigation needed
         break;
     }
   }

@@ -738,7 +738,8 @@ class _VieworderState extends State<Vieworder> {
                                   elevation: 1,
                                 ),
                                 onPressed: () {
-                                  Navigator.pop(context, _localOrder);
+                                  // Use named route to go back to orders with URL change
+                                  Navigator.pushNamed(context, '/admin/orders');
                                 },
                                 child: Row(
                                   children: [

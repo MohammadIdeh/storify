@@ -58,7 +58,8 @@ class _ProductoverviewState extends State<Productoverview> {
                       elevation: 1,
                     ),
                     onPressed: () {
-                      Navigator.pop(context, _currentProduct);
+                      // Use named route to go back to products with URL change
+                      Navigator.pushNamed(context, '/admin/products');
                     },
                     child: Row(
                       children: [
