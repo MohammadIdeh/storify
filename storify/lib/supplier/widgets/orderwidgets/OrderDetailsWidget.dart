@@ -471,8 +471,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     if (hasCustomData)
                       Padding(
                         padding: EdgeInsets.only(
-                            top: 8.h,
-                            left: showSelectionControls ? 68.w : 60.w),
+                            top: 8.h, left: showSelectionControls ? 40.w : 0.w),
                         child: _buildProductCustomInfo(product),
                       ),
                   ],
@@ -546,10 +545,14 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       ));
     }
 
-    return Wrap(
-      spacing: 8.w,
-      runSpacing: 4.h,
-      children: infoChips,
+    return SizedBox(
+      width: double.infinity, // Add this to take full width
+      child: Wrap(
+        alignment: WrapAlignment.start, // Add this to align to start
+        spacing: 8.w,
+        runSpacing: 4.h,
+        children: infoChips,
+      ),
     );
   }
 

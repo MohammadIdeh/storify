@@ -686,8 +686,9 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   Row(
                     children: [
                       Container(
-                        width: 80.w,
-                        height: 80.h,
+                        width: 80.w, // Use same unit for both width and height
+                        height: 80
+                            .w, // Changed from 80.h to 80.w to ensure perfect square
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -695,21 +696,30 @@ class _SettingsWidgetState extends State<SettingsWidget>
                             width: 2,
                           ),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(40.r),
+                        child: ClipOval(
+                          // Changed from ClipRRect to ClipOval for perfect circle
                           child: _selectedImageBytes != null
                               ? Image.memory(
                                   _selectedImageBytes!,
+                                  width: 80.w, // Use same unit
+                                  height: 80.w, // Use same unit
                                   fit: BoxFit.cover,
                                 )
                               : _currentProfilePicture != null &&
                                       _currentProfilePicture!.isNotEmpty
                                   ? CachedNetworkImage(
                                       imageUrl: _currentProfilePicture!,
+                                      width: 80.w, // Use same unit
+                                      height: 80.w, // Use same unit
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) => Container(
-                                        color: const Color(0xFF7B5CFA)
-                                            .withOpacity(0.2),
+                                        width: 80.w,
+                                        height: 80.w, // Use same unit
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: const Color(0xFF7B5CFA)
+                                              .withOpacity(0.2),
+                                        ),
                                         child: Center(
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
@@ -721,8 +731,13 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                         print(
                                             'Error loading profile image: $error');
                                         return Container(
-                                          color: const Color(0xFF7B5CFA)
-                                              .withOpacity(0.2),
+                                          width: 80.w,
+                                          height: 80.w, // Use same unit
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: const Color(0xFF7B5CFA)
+                                                .withOpacity(0.2),
+                                          ),
                                           child: Center(
                                             child: Icon(
                                               Icons.person,
@@ -734,8 +749,13 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                       },
                                     )
                                   : Container(
-                                      color: const Color(0xFF7B5CFA)
-                                          .withOpacity(0.2),
+                                      width: 80.w,
+                                      height: 80.w, // Use same unit
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFF7B5CFA)
+                                            .withOpacity(0.2),
+                                      ),
                                       child: Center(
                                         child: Icon(
                                           Icons.person,
