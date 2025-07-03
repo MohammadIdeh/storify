@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/supplier/widgets/orderwidgets/OrderDetails_Model.dart';
@@ -59,7 +60,7 @@ class ApiService {
         body['items'] = declinedItems;
 
         // Debug print to verify the structure
-        print('Sending items to API: ${json.encode(declinedItems)}');
+        debugPrint('Sending items to API: ${json.encode(declinedItems)}');
 
         // Validate that each item has the required structure
         for (var item in declinedItems) {
@@ -90,7 +91,7 @@ class ApiService {
         }
       }
 
-      print('Sending request body: ${json.encode(body)}');
+      debugPrint('Sending request body: ${json.encode(body)}');
 
       final response = await http.put(
         Uri.parse('$baseUrl/supplierOrders/$orderId/status'),
@@ -101,8 +102,8 @@ class ApiService {
         body: json.encode(body),
       );
 
-      print('API Response Status: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
+      debugPrint('API Response Status: ${response.statusCode}');
+      debugPrint('API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         return true;
@@ -126,7 +127,7 @@ class ApiService {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Error in updateOrderStatus: $e');
+      debugPrint('Error in updateOrderStatus: $e');
       throw Exception('Error updating order status: $e');
     }
   }

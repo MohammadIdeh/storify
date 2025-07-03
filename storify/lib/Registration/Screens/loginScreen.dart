@@ -50,7 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final currentRole = await AuthService.getCurrentRole();
 
       if (isLoggedIn && currentRole != null && mounted) {
-        print('🔄 User already authenticated as $currentRole, redirecting...');
+        debugPrint(
+            '🔄 User already authenticated as $currentRole, redirecting...');
 
         // Redirect to appropriate dashboard based on role
         String targetRoute = _getRouteForRole(currentRole);
@@ -59,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, targetRoute);
       }
     } catch (e) {
-      print('⚠️ Error checking auth status: $e');
+      debugPrint('⚠️ Error checking auth status: $e');
       // Continue to show login screen if there's an error
     }
   }
@@ -114,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print('Login Successful: $responseData');
+        debugPrint('Login Successful: $responseData');
 
         // Extract user data
         String token = responseData['token'];
@@ -128,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
           int supplierId = responseData['user']['supplierId'];
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('supplierId', supplierId);
-          print('📦 stored supplierId = "$supplierId"');
+          debugPrint('📦 stored supplierId = "$supplierId"');
         }
 
         // Save authentication data
@@ -157,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     } catch (error) {
-      print('Error during login: $error');
+      debugPrint('Error during login: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Network error. Please try again.')),
       );
@@ -176,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       if (roleName == 'Admin') {
-        print('🗝️ Navigating to Admin Dashboard');
+        debugPrint('🗝️ Navigating to Admin Dashboard');
 
         // ✅ CLEAN NAVIGATION: Remove all previous routes including login
         Navigator.pushNamedAndRemoveUntil(
@@ -185,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false, // Clear ALL navigation history
         );
       } else if (roleName == 'Supplier') {
-        print('🔄 Navigating to Supplier Dashboard');
+        debugPrint('🔄 Navigating to Supplier Dashboard');
 
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -193,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false, // Clear ALL navigation history
         );
       } else if (roleName == 'WareHouseEmployee') {
-        print('📦 Navigating to Warehouse Dashboard');
+        debugPrint('📦 Navigating to Warehouse Dashboard');
 
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -201,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false, // Clear ALL navigation history
         );
       } else if (roleName == 'Customer') {
-        print('🛒 Navigating to Customer Dashboard');
+        debugPrint('🛒 Navigating to Customer Dashboard');
 
         // Check if location is set
         final latitude = responseData['user']['latitude'];
@@ -233,16 +234,16 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else if (roleName == 'Delivery') {
         // Handle Delivery role when implemented
-        print('🚚 Delivery role navigation not implemented yet');
+        debugPrint('🚚 Delivery role navigation not implemented yet');
       } else {
         // Unknown role, stay on login
-        print('❓ Unknown role: $roleName');
+        debugPrint('❓ Unknown role: $roleName');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('❌ Error in navigation: $e');
+      debugPrint('❌ Error in navigation: $e');
       setState(() {
         _isLoading = false;
       });

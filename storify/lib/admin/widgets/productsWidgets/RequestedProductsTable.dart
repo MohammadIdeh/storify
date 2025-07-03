@@ -67,8 +67,8 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     try {
       // Get auth headers from AuthService
       final headers = await AuthService.getAuthHeaders();
-      print('📤 Fetching requested products');
-      print('🔑 Using auth headers: $headers');
+      debugPrint('📤 Fetching requested products');
+      debugPrint('🔑 Using auth headers: $headers');
 
       final response = await http.get(
         Uri.parse('https://finalproject-a5ls.onrender.com/request-product/'),

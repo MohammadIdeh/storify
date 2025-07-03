@@ -102,20 +102,19 @@ class _CustomerOrdersState extends State<CustomerOrders> {
     }
   }
 
-void _onNavItemTap(int index) {
-  setState(() {
-    _currentIndex = index;
-  });
-  switch (index) {
-    case 0:
-      // Current Orders - no navigation needed
-      break;
-    case 1:
-      Navigator.pushNamed(context, '/customer/history');
-      break;
+  void _onNavItemTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    switch (index) {
+      case 0:
+        // Current Orders - no navigation needed
+        break;
+      case 1:
+        Navigator.pushNamed(context, '/customer/history');
+        break;
+    }
   }
-}
-
 
   void _selectCategory(int categoryId) {
     setState(() {
@@ -220,13 +219,13 @@ void _onNavItemTap(int index) {
 
   // UI Helpers for showing dialogs and popups
   void _showLocationPopup() {
-    print('📍 Showing location popup');
+    debugPrint('📍 Showing location popup');
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => LocationSelectionPopup(
         onLocationSaved: () {
-          print('📍 Location saved callback - placing order again');
+          debugPrint('📍 Location saved callback - placing order again');
           // After saving location, try placing order again
           _placeOrder();
         },

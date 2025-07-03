@@ -144,22 +144,22 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             'https://finalproject-a5ls.onrender.com/category/$categoryID/products'),
       );
 
-      print('API Response [GET products]: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('API Response [GET products]: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         if (data is Map && data.containsKey('products')) {
           final productsJson = data['products'] as List;
-          print(
+          debugPrint(
               'Found ${productsJson.length} products for category $categoryID');
 
           final products = productsJson.map((json) {
             // Add debugging to see each product's ID
-            print('Product JSON: $json');
+            debugPrint('Product JSON: $json');
             final product = ProductDetail.fromJson(json);
-            print('Parsed product ID: ${product.productID}');
+            debugPrint('Parsed product ID: ${product.productID}');
             return product;
           }).toList();
 
@@ -175,7 +175,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             }
           });
         } else {
-          print('Invalid response format: $data');
+          debugPrint('Invalid response format: $data');
           setState(() {
             _categoryProductsMap[categoryID] = [];
             _loadingProductsForCategory[categoryID] = false;
@@ -183,7 +183,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           });
         }
       } else {
-        print('Failed to load products: HTTP ${response.statusCode}');
+        debugPrint('Failed to load products: HTTP ${response.statusCode}');
         setState(() {
           _categoryProductsMap[categoryID] = [];
           _loadingProductsForCategory[categoryID] = false;
@@ -192,7 +192,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         });
       }
     } catch (e) {
-      print('Error fetching products: $e');
+      debugPrint('Error fetching products: $e');
       setState(() {
         _categoryProductsMap[categoryID] = [];
         _loadingProductsForCategory[categoryID] = false;

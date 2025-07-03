@@ -116,7 +116,7 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
         }
       }
     } catch (e) {
-      print('Error checking for better price: $e');
+      debugPrint('Error checking for better price: $e');
     }
   }
 

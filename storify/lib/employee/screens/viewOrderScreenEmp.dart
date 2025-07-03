@@ -149,7 +149,7 @@ class OrderLineItem {
         try {
           batchAlert = BatchAlert.fromJson(batchAlertData);
         } catch (e) {
-          print('Error parsing batch alert: $e');
+          debugPrint('Error parsing batch alert: $e');
         }
       }
     }
@@ -262,7 +262,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         }
 
         // Debug the response structure
-        print('Customer Order Response Structure: ${json.encode(response)}');
+        debugPrint(
+            'Customer Order Response Structure: ${json.encode(response)}');
 
         _processCustomerOrderDetails(response);
       } else {
@@ -273,7 +274,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         }
 
         // Debug the response structure
-        print('Supplier Order Response Structure: ${json.encode(response)}');
+        debugPrint(
+            'Supplier Order Response Structure: ${json.encode(response)}');
 
         _processSupplierOrderDetails(response);
       }
@@ -282,7 +284,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error in _fetchOrderDetails: $e');
+      debugPrint('Error in _fetchOrderDetails: $e');
       setState(() {
         _errorMessage = 'Error loading order details: $e';
         _isLoading = false;
@@ -297,7 +299,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       // Extract the order object which contains all the data
       final orderData = response['order'];
       if (orderData == null) {
-        print('Error: No order data found in customer response');
+        debugPrint('Error: No order data found in customer response');
         _lineItems = [];
         _localOrder = widget.order; // Keep existing data
         return;
@@ -306,7 +308,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       // Extract items from the order object
       final items = orderData['items'];
       if (items == null || items.isEmpty) {
-        print('Warning: items is null or empty in customer order details');
+        debugPrint('Warning: items is null or empty in customer order details');
         _lineItems = [];
       } else {
         _lineItems = (items as List)
@@ -326,12 +328,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           formattedDate =
               '${orderDate.month}-${orderDate.day}-${orderDate.year}';
         } catch (e) {
-          print('Error parsing date: ${orderData['createdAt']}');
+          debugPrint('Error parsing date: ${orderData['createdAt']}');
           final now = DateTime.now();
           formattedDate = '${now.month}-${now.day}-${now.year}';
         }
       } else {
-        print('Warning: createdAt is null in order details');
+        debugPrint('Warning: createdAt is null in order details');
         final now = DateTime.now();
         formattedDate = '${now.month}-${now.day}-${now.year}';
       }
@@ -368,7 +370,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           response['order'] ?? response; // Fallback to response root
 
       if (orderData == null) {
-        print('Error: No order data found in supplier response');
+        debugPrint('Error: No order data found in supplier response');
         _lineItems = [];
         _localOrder = widget.order; // Keep existing data
         return;
@@ -377,7 +379,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       // Extract items from the order object
       final items = orderData['items'];
       if (items == null || items.isEmpty) {
-        print('Warning: items is null or empty in supplier order details');
+        debugPrint('Warning: items is null or empty in supplier order details');
         _lineItems = [];
       } else {
         _lineItems = (items as List)
@@ -408,12 +410,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           formattedDate =
               '${orderDate.month}-${orderDate.day}-${orderDate.year}';
         } catch (e) {
-          print('Error parsing date: ${orderData['createdAt']}');
+          debugPrint('Error parsing date: ${orderData['createdAt']}');
           final now = DateTime.now();
           formattedDate = '${now.month}-${now.day}-${now.year}';
         }
       } else {
-        print('Warning: createdAt is null in order details');
+        debugPrint('Warning: createdAt is null in order details');
         final now = DateTime.now();
         formattedDate = '${now.month}-${now.day}-${now.year}';
       }
@@ -1864,7 +1866,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       );
     } catch (e) {
       // If any error occurs during build, show a fallback error screen
-      print('Error in view order screen build: $e');
+      debugPrint('Error in view order screen build: $e');
       return Scaffold(
         backgroundColor: const Color.fromARGB(255, 29, 41, 57),
         body: SafeArea(

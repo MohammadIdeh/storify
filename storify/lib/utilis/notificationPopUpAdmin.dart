@@ -44,7 +44,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
     if (mounted) {
       setState(() {
         _notifications = notifications;
-        print(
+        debugPrint(
             'NotificationPopup updated with ${_notifications.length} notifications');
       });
     }
@@ -194,7 +194,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
 
     return InkWell(
       onTap: () async {
-        print('🔔 Notification tapped: ${notification.title}');
+        debugPrint('🔔 Notification tapped: ${notification.title}');
 
         // Mark as read when tapped
         NotificationService().markAsRead(notification.id);
@@ -204,7 +204,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
 
         // Handle low stock notifications specially
         if (isLowStockNotification) {
-          print('🔔 Low stock notification tapped, handling specially...');
+          debugPrint('🔔 Low stock notification tapped, handling specially...');
 
           // Add a small delay to ensure the popup is closed first
           Future.delayed(Duration(milliseconds: 100), () {
@@ -213,7 +213,7 @@ class _NotificationPopupState extends State<NotificationPopup> {
                 NotificationService().handleNotificationTap(notification);
 
             if (!handled) {
-              print(
+              debugPrint(
                   '⚠️ Low stock notification not handled - no handler registered');
               // Show a fallback message
               if (mounted) {

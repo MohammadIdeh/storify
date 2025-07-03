@@ -205,17 +205,12 @@ class DashboardService {
         url += '?' + queryParams.join('&');
       }
 
-      print('🌐 Making profit chart request to: $url'); // Debug log
-
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
       );
 
-      print(
-          '📡 Profit chart response status: ${response.statusCode}'); // Debug log
-      print('📡 Profit chart response body: ${response.body}'); // Debug log
-
+     
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return ProfitChartResponse.fromJson(jsonData);
@@ -227,7 +222,7 @@ class DashboardService {
             'Failed to load profit chart: ${response.statusCode}\nResponse: ${response.body}');
       }
     } catch (e) {
-      print('💥 Exception in getProfitChart: $e'); // Debug log
+     
       throw Exception('Error fetching profit chart: $e');
     }
   }

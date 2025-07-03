@@ -77,7 +77,6 @@ class ProductItemInformation {
         return category;
       }
     } catch (e) {
-      print('Error getting categoryName: $e');
     }
     return 'Uncategorized';
   }

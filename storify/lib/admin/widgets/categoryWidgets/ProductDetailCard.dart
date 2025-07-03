@@ -55,7 +55,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     _productID = widget.product.productID;
 
     // Debug log to check product ID
-    print(
+    debugPrint(
         'ProductDetailCard initialized with ID: ${widget.product.productID} (${widget.product.productID.runtimeType})');
 
     _nameController = TextEditingController(text: _name);
@@ -165,7 +165,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   Future<bool> _updateProductInAPI(ProductDetail product) async {
     try {
       // Debug check for product ID before API call
-      print(
+      debugPrint(
           'Attempting update with productID: $_productID (${_productID.runtimeType})');
 
       if (_productID == null) {
@@ -192,10 +192,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       final headers = await AuthService.getAuthHeaders();
 
       // Log complete request information
-      print('PUT API Request:');
-      print('URL: https://finalproject-a5ls.onrender.com/product/$_productID');
-      print('Headers: $headers');
-      print('Body: ${json.encode(requestBody)}');
+      debugPrint('PUT API Request:');
+      debugPrint(
+          'URL: https://finalproject-a5ls.onrender.com/product/$_productID');
+      debugPrint('Headers: $headers');
+      debugPrint('Body: ${json.encode(requestBody)}');
 
       // Make the API call with auth headers
       final response = await http
@@ -208,8 +209,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           .timeout(const Duration(seconds: 1000));
 
       // Log response for debugging
-      print('API Response: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('API Response: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return true;
@@ -222,7 +223,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               headers['Authorization']?.replaceAll('Bearer ', '') ?? '',
         };
 
-        print('Trying alternative header format: $alternativeHeaders');
+        debugPrint('Trying alternative header format: $alternativeHeaders');
         final retryResponse = await http
             .put(
               Uri.parse(
@@ -233,7 +234,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
             .timeout(const Duration(seconds: 15));
 
         if (retryResponse.statusCode == 200) {
-          print('Product updated successfully with alternative headers');
+          debugPrint('Product updated successfully with alternative headers');
           return true;
         }
 
@@ -421,9 +422,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         'Accept': 'application/json'
       };
 
-      print(
+      debugPrint(
           'DELETE API Request: https://finalproject-a5ls.onrender.com/product/$_productID');
-      print('Headers: $headers');
+      debugPrint('Headers: $headers');
 
       final response = await http
           .delete(
@@ -433,8 +434,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           )
           .timeout(const Duration(seconds: 15));
 
-      print('API Response: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('API Response: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return true;
@@ -446,7 +447,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           'Accept': 'application/json'
         };
 
-        print('Trying alternative header format: $alternativeHeaders');
+        debugPrint('Trying alternative header format: $alternativeHeaders');
         final retryResponse = await http
             .delete(
               Uri.parse(

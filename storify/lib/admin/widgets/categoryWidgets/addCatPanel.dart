@@ -56,7 +56,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
             _errorMessage =
                 "Image size exceeds 5MB limit. Please choose a smaller image.";
           });
-          print(
+          debugPrint(
               "File too large: ${(fileSize / (1024 * 1024)).toStringAsFixed(2)}MB (max 5MB)");
           return;
         }
@@ -81,13 +81,13 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
 
             // Log the file size for debugging
             final decodedImageBytes = base64Decode(_base64Image!).length;
-            print(
+            debugPrint(
                 "Image loaded: ${(decodedImageBytes / (1024 * 1024)).toStringAsFixed(2)}MB of 5MB limit");
           } catch (e) {
             setState(() {
               _errorMessage = "Error processing image: $e";
             });
-            print("Error processing image: $e");
+            debugPrint("Error processing image: $e");
           }
         });
       }
@@ -137,7 +137,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
         return;
       }
 
-      print('Creating multipart request...');
+      debugPrint('Creating multipart request...');
 
       // Create a multipart request
       final request = http.MultipartRequest(
@@ -174,7 +174,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
         request.files.add(imageFile);
       }
 
-      print(
+      debugPrint(
           'Sending multipart request with token: ${token.substring(0, 20)}...');
 
       // Send the request
@@ -187,14 +187,14 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
 
       // Get the response
       final response = await http.Response.fromStream(streamedResponse);
-      print('API response received: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('API response received: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       // Process the response
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Parse response data
         final responseData = json.decode(response.body);
-        print('Success response: $responseData');
+        debugPrint('Success response: $responseData');
 
         // Success case
         if (widget.onPublish != null) {
@@ -215,9 +215,9 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
           if (responseData.containsKey('message')) {
             errorMsg = responseData['message'];
           }
-          print('Error response: $responseData');
+          debugPrint('Error response: $responseData');
         } catch (e) {
-          print('Could not parse error response: $e');
+          debugPrint('Could not parse error response: $e');
         }
 
         setState(() {
@@ -226,7 +226,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
         });
       }
     } catch (e) {
-      print('Exception during API call: $e');
+      debugPrint('Exception during API call: $e');
       // Retry logic...
       if (_retryCount < _maxRetries) {
         _retryCount++;

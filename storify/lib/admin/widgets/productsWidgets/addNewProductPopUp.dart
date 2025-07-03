@@ -18,7 +18,7 @@ class Supplier {
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
     // Debug print the JSON structure
-    print('Parsing supplier JSON: $json');
+    debugPrint('Parsing supplier JSON: $json');
 
     return Supplier(
       id: json['id'] ?? 0,
@@ -110,8 +110,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         headers: headers,
       );
 
-      print('Suppliers API Response Status: ${response.statusCode}');
-      print('Suppliers API Response Body: ${response.body}');
+      debugPrint('Suppliers API Response Status: ${response.statusCode}');
+      debugPrint('Suppliers API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -123,9 +123,9 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
           });
 
           // Debug: Print supplier IDs
-          print('Fetched suppliers:');
+          debugPrint('Fetched suppliers:');
           for (var supplier in _suppliers) {
-            print('ID: ${supplier.id}, Name: ${supplier.name}');
+            debugPrint('ID: ${supplier.id}, Name: ${supplier.name}');
           }
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
@@ -164,18 +164,20 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
             _categories = (data['categories'] as List)
                 .map((category) => Category.fromJson(category))
                 .toList();
-            print("Loaded ${_categories.length} categories"); // Debug print
+            debugPrint(
+                "Loaded ${_categories.length} categories"); // Debug print
           });
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        print('Not authorized to fetch categories: ${response.statusCode}');
+        debugPrint(
+            'Not authorized to fetch categories: ${response.statusCode}');
         // We don't set error message here as we'll show it from suppliers fetch
       } else {
         // If categories can't be loaded, we can still continue
-        print('Failed to load categories: ${response.statusCode}');
+        debugPrint('Failed to load categories: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching categories: $e');
+      debugPrint('Error fetching categories: $e');
     }
   }
 
@@ -253,18 +255,19 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       // Add unit and lowStock fields properly
       if (_unitController.text.isNotEmpty) {
         request.fields['unit'] = _unitController.text;
-        print('Adding unit field: ${_unitController.text}'); // Debug
+        debugPrint('Adding unit field: ${_unitController.text}'); // Debug
       }
 
       if (_lowStockController.text.isNotEmpty) {
         request.fields['lowStock'] = _lowStockController.text;
-        print('Adding lowStock field: ${_lowStockController.text}'); // Debug
+        debugPrint(
+            'Adding lowStock field: ${_lowStockController.text}'); // Debug
       }
 
       // Add multiple suppliers using the correct array format for multipart
       final supplierIdsList = _selectedSupplierIds.toList();
 
-      print('Selected supplier IDs: $supplierIdsList');
+      debugPrint('Selected supplier IDs: $supplierIdsList');
 
       // Method 1: Try indexed field names (supplierIds[0], supplierIds[1], etc.)
       for (int i = 0; i < supplierIdsList.length; i++) {
@@ -272,8 +275,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       }
 
       // Debug print all fields
-      print('All request fields: ${request.fields}');
-      print(
+      debugPrint('All request fields: ${request.fields}');
+      debugPrint(
           'All request files: ${request.files.map((f) => '${f.field}: ${f.length} bytes').toList()}');
 
       // Add optional fields only if they have values
@@ -338,8 +341,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         // Product added successfully
@@ -353,7 +356,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
           (response.body.contains('must be an array') ||
               response.body.contains('must be a number'))) {
         // Try alternative approach - bracket notation
-        print('Retrying with bracket notation format...');
+        debugPrint('Retrying with bracket notation format...');
 
         // Create a new request with bracket notation
         final retryRequest = http.MultipartRequest(
@@ -421,15 +424,15 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
           retryRequest.files.add(imageFile);
         }
 
-        print('Retry request fields: ${retryRequest.fields}');
+        debugPrint('Retry request fields: ${retryRequest.fields}');
 
         // Send retry request
         final retryStreamedResponse = await retryRequest.send();
         final retryResponse =
             await http.Response.fromStream(retryStreamedResponse);
 
-        print('Retry response status: ${retryResponse.statusCode}');
-        print('Retry response body: ${retryResponse.body}');
+        debugPrint('Retry response status: ${retryResponse.statusCode}');
+        debugPrint('Retry response body: ${retryResponse.body}');
 
         if (retryResponse.statusCode == 201 ||
             retryResponse.statusCode == 200) {

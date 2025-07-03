@@ -76,7 +76,8 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   }
 
   void refreshProducts() {
-    print('Refreshing requested products table, clearing existing data...');
+    debugPrint(
+        'Refreshing requested products table, clearing existing data...');
 
     // Clear existing products first
     setState(() {
@@ -87,7 +88,7 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     // Force a clean fetch with a delay
     Future.delayed(const Duration(milliseconds: 500), () {
       _fetchRequestedProducts().then((_) {
-        print(
+        debugPrint(
             'Products refresh completed. Found ${_allProducts.length} requested products');
       });
     });
@@ -99,18 +100,19 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     setState(() {
       _supplierId = prefs.getInt('supplierId');
     });
-    print('📦 Loaded supplierId for requested products table: $_supplierId');
+    debugPrint(
+        '📦 Loaded supplierId for requested products table: $_supplierId');
 
     // Print the token to check if it contains the correct supplier ID
     final token = await AuthService.getToken();
-    print(
+    debugPrint(
         '🔑 Using auth token: ${token?.substring(0, 20)}... (${token?.length} chars)');
   }
 
   // Fetch requested products from the API
   Future<void> _fetchRequestedProducts() async {
     if (_supplierId == null) {
-      print('⚠️ No supplierId found, cannot fetch requested products');
+      debugPrint('⚠️ No supplierId found, cannot fetch requested products');
       setState(() {
         _isLoading = false;
       });
@@ -119,7 +121,8 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
 
     try {
       final headers = await AuthService.getAuthHeaders();
-      print('📤 Fetching requested products for supplier ID: $_supplierId');
+      debugPrint(
+          '📤 Fetching requested products for supplier ID: $_supplierId');
 
       final response = await http.get(
         Uri.parse(
@@ -127,11 +130,11 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
         headers: headers,
       );
 
-      print('📥 Response status: ${response.statusCode}');
+      debugPrint('📥 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print(
+        debugPrint(
             '📦 Data received: ${data['productRequests']?.length ?? 0} requested products');
 
         if (data['productRequests'] != null &&
@@ -146,22 +149,23 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
             _allProducts = products;
             _isLoading = false;
           });
-          print('✅ Table updated with ${products.length} requested products');
+          debugPrint(
+              '✅ Table updated with ${products.length} requested products');
         } else {
-          print('⚠️ Invalid response format: ${response.body}');
+          debugPrint('⚠️ Invalid response format: ${response.body}');
           setState(() {
             _isLoading = false;
           });
         }
       } else {
-        print(
+        debugPrint(
             '⚠️ Error fetching requested products: ${response.statusCode}, Body: ${response.body}');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('⚠️ Exception fetching requested products: $e');
+      debugPrint('⚠️ Exception fetching requested products: $e');
       setState(() {
         _isLoading = false;
       });

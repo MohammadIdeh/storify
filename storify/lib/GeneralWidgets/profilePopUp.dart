@@ -44,7 +44,7 @@ class _ProfilepopupState extends State<Profilepopup> {
 
   @override
   void dispose() {
-    print('🧹 Disposing ProfilePopup...');
+    debugPrint('🧹 Disposing ProfilePopup...');
     _isDisposed = true;
     super.dispose();
   }
@@ -54,7 +54,7 @@ class _ProfilepopupState extends State<Profilepopup> {
       try {
         setState(fn);
       } catch (e) {
-        print('⚠️ setState failed safely: $e');
+        debugPrint('⚠️ setState failed safely: $e');
       }
     }
   }
@@ -80,10 +80,10 @@ class _ProfilepopupState extends State<Profilepopup> {
           userRole = currentRole;
           _isLoadingProfile = false;
         });
-        print('✅ Profile data loaded: name=$userName, role=$userRole');
+        debugPrint('✅ Profile data loaded: name=$userName, role=$userRole');
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
       if (!_isDisposed && mounted && !_isLoggingOut) {
         _safeSetState(() {
           _isLoadingProfile = false;
@@ -96,7 +96,7 @@ class _ProfilepopupState extends State<Profilepopup> {
 
   void _logout() {
     if (_isDisposed || _isLoggingOut || _logoutInProgress) {
-      print('🚪 Logout blocked - already in progress');
+      debugPrint('🚪 Logout blocked - already in progress');
       return;
     }
 
@@ -111,10 +111,10 @@ class _ProfilepopupState extends State<Profilepopup> {
 
     // FIXED: Only use parent callback if available, don't do double cleanup
     if (widget.onLogout != null) {
-      print('🔄 Delegating logout to parent...');
+      debugPrint('🔄 Delegating logout to parent...');
       _performParentLogout();
     } else {
-      print('🚪 === STARTING PROFILE LOGOUT ===');
+      debugPrint('🚪 === STARTING PROFILE LOGOUT ===');
       _performOwnLogout();
     }
   }
@@ -123,9 +123,9 @@ class _ProfilepopupState extends State<Profilepopup> {
   Future<void> _performParentLogout() async {
     try {
       await widget.onLogout!();
-      print('✅ Parent logout completed');
+      debugPrint('✅ Parent logout completed');
     } catch (e) {
-      print('❌ Parent logout error: $e');
+      debugPrint('❌ Parent logout error: $e');
     } finally {
       Future.delayed(const Duration(seconds: 1), () {
         _logoutInProgress = false;
@@ -136,12 +136,12 @@ class _ProfilepopupState extends State<Profilepopup> {
   // Only for standalone usage (no parent callback)
   Future<void> _performOwnLogout() async {
     try {
-      print('🧹 Clearing data...');
+      debugPrint('🧹 Clearing data...');
       await AuthService.logoutFromAllRoles();
       await UserProfileService.clearAllRoleData();
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      print('✅ Data cleared');
+      debugPrint('✅ Data cleared');
 
       // Navigate directly
       if (mounted && context.mounted) {
@@ -151,7 +151,7 @@ class _ProfilepopupState extends State<Profilepopup> {
         );
       }
     } catch (e) {
-      print('❌ Logout error: $e');
+      debugPrint('❌ Logout error: $e');
     } finally {
       Future.delayed(const Duration(seconds: 2), () {
         _logoutInProgress = false;
@@ -161,11 +161,11 @@ class _ProfilepopupState extends State<Profilepopup> {
 
   void _openSettings() {
     if (_isDisposed || _isLoggingOut || _logoutInProgress) {
-      print('⚠️ Cannot open settings - invalid state');
+      debugPrint('⚠️ Cannot open settings - invalid state');
       return;
     }
 
-    print('⚙️ Opening settings...');
+    debugPrint('⚙️ Opening settings...');
 
     // Get root context BEFORE closing
     final BuildContext rootContext =
@@ -188,9 +188,9 @@ class _ProfilepopupState extends State<Profilepopup> {
             );
           },
         ).then((_) {
-          print('⚙️ Settings dialog closed');
+          debugPrint('⚙️ Settings dialog closed');
         }).catchError((error) {
-          print('❌ Settings error: $error');
+          debugPrint('❌ Settings error: $error');
         });
       }
     });

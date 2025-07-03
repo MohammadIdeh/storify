@@ -44,7 +44,7 @@ class NotificationService {
     final instance = NotificationService();
 
     if (instance._isInitialized || instance._isInitializing) {
-      print('NotificationService already initialized or initializing');
+      debugPrint('NotificationService already initialized or initializing');
       return;
     }
 
@@ -60,14 +60,14 @@ class NotificationService {
       // 3. Set up message handlers immediately
       FirebaseMessaging.onMessage.listen(instance._handleForegroundMessage);
 
-      print('NotificationService: Quick initialization completed');
+      debugPrint('NotificationService: Quick initialization completed');
       instance._isInitialized = true;
       instance._isInitializing = false;
 
       // 4. Do heavy operations in background (non-blocking)
       _initializeInBackground();
     } catch (e) {
-      print('Error in quick notification initialization: $e');
+      debugPrint('Error in quick notification initialization: $e');
       instance._isInitializing = false;
       // Don't throw - let app continue without notifications
     }
@@ -80,7 +80,8 @@ class NotificationService {
     // Run heavy operations in background
     Future.microtask(() async {
       try {
-        print('NotificationService: Starting background initialization...');
+        debugPrint(
+            'NotificationService: Starting background initialization...');
 
         // Handle permissions based on platform
         if (kIsWeb) {
@@ -97,22 +98,22 @@ class NotificationService {
         );
 
         if (token != null) {
-          print('FCM Token obtained: ${token.substring(0, 20)}...');
+          debugPrint('FCM Token obtained: ${token.substring(0, 20)}...');
 
           // Send token to backend (non-blocking)
           instance._sendTokenToBackend(token).catchError((e) {
-            print('Error sending token to backend: $e');
+            debugPrint('Error sending token to backend: $e');
           });
         }
 
         // Load from Firestore in background
         instance.loadNotificationsFromFirestore().catchError((e) {
-          print('Error loading from Firestore: $e');
+          debugPrint('Error loading from Firestore: $e');
         });
 
-        print('NotificationService: Background initialization completed');
+        debugPrint('NotificationService: Background initialization completed');
       } catch (e) {
-        print('Error in background notification initialization: $e');
+        debugPrint('Error in background notification initialization: $e');
         // Don't throw - notifications are not critical for app function
       }
     });
@@ -126,7 +127,7 @@ class NotificationService {
           await FirebaseMessaging.instance.getNotificationSettings();
 
       if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
-        print('Requesting web notification permissions...');
+        debugPrint('Requesting web notification permissions...');
 
         // Request permission (this may show popup but won't block since it's in background)
         final newSettings = await FirebaseMessaging.instance.requestPermission(
@@ -139,22 +140,22 @@ class NotificationService {
           sound: true,
         );
 
-        print('Web permission result: ${newSettings.authorizationStatus}');
+        debugPrint('Web permission result: ${newSettings.authorizationStatus}');
 
         if (newSettings.authorizationStatus == AuthorizationStatus.authorized) {
-          print('Web notifications permission granted');
+          debugPrint('Web notifications permission granted');
         } else {
-          print('Web notifications permission denied or not determined');
+          debugPrint('Web notifications permission denied or not determined');
         }
       } else if (settings.authorizationStatus ==
           AuthorizationStatus.authorized) {
-        print('Web notifications already authorized');
+        debugPrint('Web notifications already authorized');
       } else {
-        print(
+        debugPrint(
             'Web notifications not authorized: ${settings.authorizationStatus}');
       }
     } catch (e) {
-      print('Error requesting web permissions: $e');
+      debugPrint('Error requesting web permissions: $e');
     }
   }
 
@@ -172,9 +173,9 @@ class NotificationService {
         sound: true,
       );
 
-      print('Mobile permission result: ${settings.authorizationStatus}');
+      debugPrint('Mobile permission result: ${settings.authorizationStatus}');
     } catch (e) {
-      print('Error requesting mobile permissions: $e');
+      debugPrint('Error requesting mobile permissions: $e');
     }
   }
 
@@ -196,13 +197,13 @@ class NotificationService {
       await flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          print('Notification tapped: ${response.payload}');
+          debugPrint('Notification tapped: ${response.payload}');
         },
       );
 
-      print('Local notifications initialized');
+      debugPrint('Local notifications initialized');
     } catch (e) {
-      print('Error initializing local notifications: $e');
+      debugPrint('Error initializing local notifications: $e');
     }
   }
 
@@ -230,14 +231,14 @@ class NotificationService {
         payload: message.data.toString(),
       );
     } catch (e) {
-      print('Error showing local notification: $e');
+      debugPrint('Error showing local notification: $e');
     }
   }
 
   // Background message handler
   static Future<void> _firebaseMessagingBackgroundHandler(
       RemoteMessage message) async {
-    print("Handling a background message: ${message.messageId}");
+    debugPrint("Handling a background message: ${message.messageId}");
     // Store the notification for when app is opened
     final notification = NotificationItem.fromFirebaseMessage(message);
     await _storeBackgroundNotification(notification);
@@ -274,7 +275,7 @@ class NotificationService {
       await prefs.setString(
           'background_notifications', jsonEncode(bgNotifications));
     } catch (e) {
-      print('Error storing background notification: $e');
+      debugPrint('Error storing background notification: $e');
     }
   }
 
@@ -315,12 +316,12 @@ class NotificationService {
         // Save to Firestore in background (non-blocking)
         for (var notification in _notifications) {
           _databaseService.saveNotification(notification).catchError((e) {
-            print('Error saving background notification to Firestore: $e');
+            debugPrint('Error saving background notification to Firestore: $e');
           });
         }
       }
     } catch (e) {
-      print('Error processing background notifications: $e');
+      debugPrint('Error processing background notifications: $e');
     }
   }
 
@@ -345,7 +346,7 @@ class NotificationService {
         if (supplierId != null) 'supplierId': supplierId,
       };
 
-      print('Sending token to backend...');
+      debugPrint('Sending token to backend...');
 
       // Send to your backend with timeout
       final response = await http
@@ -358,12 +359,12 @@ class NotificationService {
           .timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        print('Successfully registered FCM token with backend');
+        debugPrint('Successfully registered FCM token with backend');
       } else {
-        print('Failed to register FCM token: ${response.statusCode}');
+        debugPrint('Failed to register FCM token: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error sending token to backend: $e');
+      debugPrint('Error sending token to backend: $e');
       // Don't throw - token registration failure shouldn't break the app
     }
   }
@@ -384,7 +385,7 @@ class NotificationService {
   // NEW: Register low stock notification handler
   void registerLowStockNotificationHandler(Function() handler) {
     _lowStockNotificationHandler = handler;
-    print('🔔 Low stock notification handler registered');
+    debugPrint('🔔 Low stock notification handler registered');
   }
 
   // Unregister callbacks when they're no longer needed
@@ -399,11 +400,12 @@ class NotificationService {
 
   // Handle incoming foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
-    print('Got a message whilst in the foreground!');
-    print('Message data: ${message.data}');
+    debugPrint('Got a message whilst in the foreground!');
+    debugPrint('Message data: ${message.data}');
 
     if (message.notification != null) {
-      print('Message also contained a notification: ${message.notification}');
+      debugPrint(
+          'Message also contained a notification: ${message.notification}');
 
       // Show local notification
       showNotification(message);
@@ -419,7 +421,7 @@ class NotificationService {
 
       // Save to Firestore in background (non-blocking)
       _databaseService.saveNotification(notification).catchError((e) {
-        print('Error saving notification to Firestore: $e');
+        debugPrint('Error saving notification to Firestore: $e');
       });
 
       // Notify listeners
@@ -472,7 +474,7 @@ class NotificationService {
 
       // Save to Firestore in background (non-blocking)
       _databaseService.markAsRead(id).catchError((e) {
-        print('Error marking as read in Firestore: $e');
+        debugPrint('Error marking as read in Firestore: $e');
       });
 
       // Notify listeners
@@ -507,7 +509,7 @@ class NotificationService {
 
     // Save to Firestore in background (non-blocking)
     _databaseService.markAllAsRead().catchError((e) {
-      print('Error marking all as read in Firestore: $e');
+      debugPrint('Error marking all as read in Firestore: $e');
     });
 
     // Notify listeners
@@ -532,7 +534,7 @@ class NotificationService {
         'data': additionalData,
       };
 
-      print('Sending supplier notification...');
+      debugPrint('Sending supplier notification...');
 
       // Send to your backend with timeout
       final response = await http
@@ -545,9 +547,9 @@ class NotificationService {
           .timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        print('Successfully sent notification to supplier');
+        debugPrint('Successfully sent notification to supplier');
       } else {
-        print(
+        debugPrint(
             'Failed to send notification to supplier: ${response.statusCode}');
 
         // Add a local notification for immediate feedback
@@ -565,7 +567,7 @@ class NotificationService {
 
         // Save to Firestore in background
         _databaseService.saveNotification(testNotification).catchError((e) {
-          print('Error saving to Firestore: $e');
+          debugPrint('Error saving to Firestore: $e');
         });
 
         // Notify listeners
@@ -574,7 +576,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('Error sending notification to supplier: $e');
+      debugPrint('Error sending notification to supplier: $e');
     }
   }
 
@@ -593,7 +595,7 @@ class NotificationService {
         'data': additionalData,
       };
 
-      print('Sending admin notification...');
+      debugPrint('Sending admin notification...');
 
       // Send to your backend with timeout
       final response = await http
@@ -606,9 +608,10 @@ class NotificationService {
           .timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        print('Successfully sent notification to admin');
+        debugPrint('Successfully sent notification to admin');
       } else {
-        print('Failed to send notification to admin: ${response.statusCode}');
+        debugPrint(
+            'Failed to send notification to admin: ${response.statusCode}');
       }
 
       // Add a local notification for immediate feedback regardless of API response
@@ -626,7 +629,7 @@ class NotificationService {
 
       // Save to Firestore in background
       _databaseService.saveNotification(testNotification).catchError((e) {
-        print('Error saving to Firestore: $e');
+        debugPrint('Error saving to Firestore: $e');
       });
 
       // Notify listeners
@@ -634,7 +637,7 @@ class NotificationService {
         callback(_notifications);
       }
     } catch (e) {
-      print('Error sending notification to admin: $e');
+      debugPrint('Error sending notification to admin: $e');
 
       // Even if there's an error, add a local notification
       final errorNotification = NotificationItem(
@@ -666,7 +669,7 @@ class NotificationService {
 
       await prefs.setString('notifications', jsonEncode(notificationsJson));
     } catch (e) {
-      print('Error saving notifications: $e');
+      debugPrint('Error saving notifications: $e');
     }
   }
 
@@ -703,11 +706,11 @@ class NotificationService {
                 _enhancedNotificationFromMap(item as Map<String, dynamic>))
             .toList();
 
-        print(
+        debugPrint(
             'Loaded ${_notifications.length} notifications from SharedPreferences');
       }
     } catch (e) {
-      print('Error loading notifications: $e');
+      debugPrint('Error loading notifications: $e');
       _notifications = [];
     }
   }
@@ -715,12 +718,12 @@ class NotificationService {
   // OPTIMIZED: Load notifications from Firestore (background, non-blocking)
   Future<void> loadNotificationsFromFirestore() async {
     try {
-      print('Loading notifications from Firestore...');
+      debugPrint('Loading notifications from Firestore...');
       final firestoreNotifications =
           await _databaseService.getAllNotifications();
 
       if (firestoreNotifications.isNotEmpty) {
-        print(
+        debugPrint(
             'Loaded ${firestoreNotifications.length} notifications from Firestore');
 
         // Merge with existing notifications, avoiding duplicates
@@ -742,7 +745,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('Error loading notifications from Firestore: $e');
+      debugPrint('Error loading notifications from Firestore: $e');
     }
   }
 
@@ -804,7 +807,7 @@ class NotificationService {
   // Check Firestore connection
   Future<void> checkFirestoreConnection() async {
     try {
-      print('Checking Firestore connection...');
+      debugPrint('Checking Firestore connection...');
 
       // Try to write a test document with timeout
       final testDoc = {
@@ -818,14 +821,14 @@ class NotificationService {
           .add(testDoc)
           .timeout(Duration(seconds: 5));
 
-      print('Successfully wrote test document to Firestore');
+      debugPrint('Successfully wrote test document to Firestore');
 
       // Force reload notifications in background
       loadNotificationsFromFirestore().catchError((e) {
-        print('Error reloading notifications: $e');
+        debugPrint('Error reloading notifications: $e');
       });
     } catch (e) {
-      print('Firestore connection test failed: $e');
+      debugPrint('Firestore connection test failed: $e');
     }
   }
 
@@ -860,7 +863,7 @@ class NotificationService {
 
       // Save to database in background (non-blocking)
       _databaseService.saveNotification(notification).catchError((e) {
-        print('Error saving notification to database: $e');
+        debugPrint('Error saving notification to database: $e');
       });
 
       // Notify listeners
@@ -872,7 +875,7 @@ class NotificationService {
         callback(_notifications);
       }
     } catch (e) {
-      print('Error saving notification: $e');
+      debugPrint('Error saving notification: $e');
     }
   }
 
@@ -887,7 +890,7 @@ class NotificationService {
 
       // Save to database in background (non-blocking)
       _databaseService.saveNotification(notification).catchError((e) {
-        print('Error saving low stock notification to database: $e');
+        debugPrint('Error saving low stock notification to database: $e');
       });
 
       // Notify listeners
@@ -899,9 +902,9 @@ class NotificationService {
         callback(_notifications);
       }
 
-      print('Saved low stock notification: ${notification.title}');
+      debugPrint('Saved low stock notification: ${notification.title}');
     } catch (e) {
-      print('Error saving low stock notification: $e');
+      debugPrint('Error saving low stock notification: $e');
     }
   }
 
@@ -909,14 +912,14 @@ class NotificationService {
   bool handleNotificationTap(NotificationItem notification) {
     if (notification.title.contains('Stock Alert') ||
         notification.title.contains('Low Stock')) {
-      print('🔔 Low stock notification tapped: ${notification.title}');
+      debugPrint('🔔 Low stock notification tapped: ${notification.title}');
 
       // Call the registered handler if available
       if (_lowStockNotificationHandler != null) {
         _lowStockNotificationHandler!();
         return true; // Handled
       } else {
-        print('⚠️ No low stock notification handler registered');
+        debugPrint('⚠️ No low stock notification handler registered');
         return false; // Not handled
       }
     }

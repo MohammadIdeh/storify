@@ -99,7 +99,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
         throw Exception("Failed to update user: ${response.body}");
       }
     } catch (e) {
-      print("Error updating user: $e");
+      debugPrint("Error updating user: $e");
       _showErrorSnackBar("Failed to update user: $e");
       return null;
     } finally {
@@ -141,7 +141,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
         return false;
       }
     } catch (e) {
-      print("Error deleting user: $e");
+      debugPrint("Error deleting user: $e");
       _showErrorSnackBar("Error deleting user: $e");
       return false;
     } finally {
@@ -192,12 +192,12 @@ class _RolemanegmentState extends State<Rolemanegment> {
           _roleList = loadedUsers;
         });
 
-        print("Fetched ${_roleList.length} users");
+        debugPrint("Fetched ${_roleList.length} users");
       } else {
         throw Exception("Failed to fetch users: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error fetching users: $e");
+      debugPrint("Error fetching users: $e");
       _showErrorSnackBar("Failed to load users: $e");
     } finally {
       setState(() => _isLoading = false);
@@ -682,7 +682,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
         throw Exception("Failed to add user: ${response.body}");
       }
     } catch (e) {
-      print("Error adding user: $e");
+      debugPrint("Error adding user: $e");
       _showErrorSnackBar("Failed to add user: $e");
       return null;
     } finally {
@@ -879,7 +879,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             padding: EdgeInsets.symmetric(
-                                horizontal: 20.w, vertical: 12.h),
+                                horizontal: 20.w, vertical: 20.h),
                             elevation: 2,
                           ),
                           onPressed: _handleAddUser,
@@ -939,37 +939,6 @@ class _RolemanegmentState extends State<Rolemanegment> {
               ),
             ),
           ),
-
-          // Loading Overlay
-          if (_isLoading)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: Container(
-                  padding: EdgeInsets.all(20.w),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: Color.fromARGB(255, 105, 65, 198),
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        "Processing...",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 16.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

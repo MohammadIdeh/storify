@@ -17,9 +17,9 @@ class ProductDetail {
   // Factory constructor to create from API JSON response
   factory ProductDetail.fromJson(Map<String, dynamic> json) {
     // Verbose debugging to track the exact shape of JSON we're receiving
-    print('=== ProductDetail.fromJson called with: ===');
+  
     json.forEach((key, value) {
-      print(' $key: $value (${value?.runtimeType})');
+
     });
 
     // The crucial fix: Check for 'productId' (lowercase 'i') which is the field name in your API
@@ -45,8 +45,7 @@ class ProductDetail {
       idSource = 'product_id';
     }
 
-    print(
-        'Extracted productID: $id (${id?.runtimeType}) from field: $idSource');
+
 
     return ProductDetail(
       productID: id,

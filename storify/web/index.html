@@ -144,7 +144,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-messaging-compat.js"></script>
 
   <script>
-    console.log('🚀 Starting Storify web app...');
 
     let appReady = false;
     let loadingTimeout;
@@ -154,14 +153,12 @@
       if (statusEl) {
         statusEl.textContent = message;
       }
-      console.log('📱', message);
     }
 
     function hideLoadingScreen() {
       if (appReady) return;
       appReady = true;
 
-      console.log('✅ Hiding loading screen, showing Flutter app');
       clearTimeout(loadingTimeout);
 
       const loading = document.getElementById('loading');
@@ -177,7 +174,6 @@
 
           setTimeout(() => {
             loading.style.display = 'none';
-            console.log('✅ Loading screen hidden successfully');
           }, 500);
         }, 200);
       }
@@ -185,7 +181,6 @@
 
     // Set up loading timeout (show app even if Flutter doesn't signal ready)
     loadingTimeout = setTimeout(() => {
-      console.log('⏰ Loading timeout - forcing app to show');
       updateStatus('Loading timeout - showing app...');
       hideLoadingScreen();
     }, 8000);
@@ -203,14 +198,11 @@
 
     updateStatus('Initializing Firebase...');
     firebase.initializeApp(firebaseConfig);
-    console.log('🔥 Firebase initialized');
 
     // DO NOT REQUEST PERMISSIONS HERE - let Flutter handle it later
     if (firebase.messaging.isSupported()) {
-      console.log('🔔 Messaging supported - will be initialized by Flutter');
       updateStatus('Firebase ready');
     } else {
-      console.log('❌ Messaging not supported');
       updateStatus('Starting app...');
     }
 
@@ -218,16 +210,13 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then(function (registration) {
-          console.log('✅ Service Worker registered');
         })
         .catch(function (error) {
-          console.log('❌ Service Worker failed:', error);
         });
     }
 
     // Listen for Flutter events
     window.addEventListener('flutter-first-frame', function () {
-      console.log('✅ Flutter first frame event received');
       updateStatus('App loaded!');
       setTimeout(hideLoadingScreen, 100);
     });
@@ -239,7 +228,6 @@
         document.querySelector('flutter-view') ||
         document.querySelector('[flt-renderer]') ||
         document.body.children.length > 3) {
-        console.log('✅ Flutter content detected in DOM');
         clearInterval(flutterCheckInterval);
         updateStatus('App ready!');
         setTimeout(hideLoadingScreen, 500);
@@ -253,18 +241,15 @@
 
     // Error handling
     window.addEventListener('error', function (event) {
-      console.error('❌ JavaScript error:', event.error);
       updateStatus('Error occurred - loading anyway...');
       setTimeout(hideLoadingScreen, 1000);
     });
 
     // Debug: Log when DOM is ready
     document.addEventListener('DOMContentLoaded', function () {
-      console.log('✅ DOM Content Loaded');
       updateStatus('DOM ready, loading Flutter...');
     });
 
-    console.log('🚀 Web initialization complete - waiting for Flutter');
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

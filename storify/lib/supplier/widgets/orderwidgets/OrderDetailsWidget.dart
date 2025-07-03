@@ -1446,8 +1446,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     BuildContext? dialogContext;
 
     try {
-      print('Starting order status update: $status');
-      print('Note: $note');
+      debugPrint('Starting order status update: $status');
+      debugPrint('Note: $note');
 
       // If accepting the entire order with changes, create items array
       if (status == "Accepted" &&
@@ -1489,7 +1489,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         }
       }
 
-      print('Updated items: $declinedItems');
+      debugPrint('Updated items: $declinedItems');
 
       // Show loading dialog
       showDialog(
@@ -1511,7 +1511,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         declinedItems: declinedItems,
       );
 
-      print('API call completed, success: $success');
+      debugPrint('API call completed, success: $success');
 
       // Close loading dialog
       if (dialogContext != null && Navigator.canPop(dialogContext!)) {
@@ -1572,7 +1572,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         }
       }
     } catch (e) {
-      print('Error in _updateOrderStatus: $e');
+      debugPrint('Error in _updateOrderStatus: $e');
 
       // Close loading dialog
       if (dialogContext != null && Navigator.canPop(dialogContext!)) {

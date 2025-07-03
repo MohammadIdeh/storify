@@ -1,5 +1,6 @@
 // lib/employee/widgets/orderServiceEmp.dart - Enhanced version
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 
@@ -9,12 +10,12 @@ class OrderService {
   // Enhanced error handling
   static Future<Map<String, dynamic>> _handleResponse(
       http.Response response, String operation) async {
-    print('=== API Response Debug Info ===');
-    print('Operation: $operation');
-    print('Status Code: ${response.statusCode}');
-    print('Headers: ${response.headers}');
-    print('Response Body: ${response.body}');
-    print('Request URL: ${response.request?.url}');
+    debugPrint('=== API Response Debug Info ===');
+    debugPrint('Operation: $operation');
+    debugPrint('Status Code: ${response.statusCode}');
+    debugPrint('Headers: ${response.headers}');
+    debugPrint('Response Body: ${response.body}');
+    debugPrint('Request URL: ${response.request?.url}');
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
@@ -32,10 +33,10 @@ class OrderService {
         }
       }
 
-      print('=== 403 Error Details ===');
-      print('Error Message: $errorMessage');
-      print('User IP might be blocked or restricted');
-      print('Check server logs for IP-based restrictions');
+      debugPrint('=== 403 Error Details ===');
+      debugPrint('Error Message: $errorMessage');
+      debugPrint('User IP might be blocked or restricted');
+      debugPrint('Check server logs for IP-based restrictions');
 
       throw Exception('$operation failed: $errorMessage (Status: 403)');
     } else {
@@ -60,11 +61,11 @@ class OrderService {
     try {
       final headers = await AuthService.getAuthHeaders();
 
-      print('=== API Request Debug Info ===');
-      print('Method: $method');
-      print('URL: $url');
-      print('Headers: $headers');
-      if (body != null) print('Body: ${jsonEncode(body)}');
+      debugPrint('=== API Request Debug Info ===');
+      debugPrint('Method: $method');
+      debugPrint('URL: $url');
+      debugPrint('Headers: $headers');
+      if (body != null) debugPrint('Body: ${jsonEncode(body)}');
 
       http.Response response;
 
@@ -82,7 +83,7 @@ class OrderService {
 
       return response;
     } catch (e) {
-      print('Error making request: $e');
+      debugPrint('Error making request: $e');
       rethrow;
     }
   }
@@ -94,7 +95,7 @@ class OrderService {
           await _makeRequest('GET', '$baseUrl/worker/customer-orders');
       return await _handleResponse(response, 'Get customer orders');
     } catch (e) {
-      print('Error fetching customer orders: $e');
+      debugPrint('Error fetching customer orders: $e');
       rethrow;
     }
   }
@@ -106,7 +107,7 @@ class OrderService {
           await _makeRequest('GET', '$baseUrl/worker/supplier-orders');
       return await _handleResponse(response, 'Get supplier orders');
     } catch (e) {
-      print('Error fetching supplier orders: $e');
+      debugPrint('Error fetching supplier orders: $e');
       rethrow;
     }
   }
@@ -119,7 +120,7 @@ class OrderService {
           await _makeRequest('GET', '$baseUrl/worker/customer-orders/$orderId');
       return await _handleResponse(response, 'Get customer order details');
     } catch (e) {
-      print('Error fetching customer order details: $e');
+      debugPrint('Error fetching customer order details: $e');
       rethrow;
     }
   }
@@ -138,7 +139,7 @@ class OrderService {
           body: body);
       return await _handleResponse(response, 'Update customer order status');
     } catch (e) {
-      print('Error updating customer order: $e');
+      debugPrint('Error updating customer order: $e');
       rethrow;
     }
   }
@@ -151,7 +152,7 @@ class OrderService {
           await _makeRequest('GET', '$baseUrl/worker/supplier-orders/$orderId');
       return await _handleResponse(response, 'Get supplier order details');
     } catch (e) {
-      print('Error fetching supplier order details: $e');
+      debugPrint('Error fetching supplier order details: $e');
       rethrow;
     }
   }
@@ -176,7 +177,7 @@ class OrderService {
           body: body);
       return await _handleResponse(response, 'Update supplier order status');
     } catch (e) {
-      print('Error updating supplier order: $e');
+      debugPrint('Error updating supplier order: $e');
       rethrow;
     }
   }
@@ -191,7 +192,7 @@ class OrderService {
           'GET', '$baseUrl/worker/orders-history?page=$page&limit=$limit');
       return await _handleResponse(response, 'Get order history');
     } catch (e) {
-      print('Error fetching order history: $e');
+      debugPrint('Error fetching order history: $e');
       rethrow;
     }
   }
@@ -209,7 +210,7 @@ class OrderService {
         };
       }
     } catch (e) {
-      print('Error getting network info: $e');
+      debugPrint('Error getting network info: $e');
     }
 
     return {

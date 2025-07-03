@@ -54,7 +54,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
       profilePictureUrl = prefs.getString('profilePicture');
       supplierId = prefs.getInt('supplierId');
     });
-    print(
+    debugPrint(
         '📦 Loaded supplierId: $supplierId and profilePic: $profilePictureUrl');
   }
 
@@ -88,24 +88,24 @@ class _SupplierProductsState extends State<SupplierProducts> {
       _showAddProductForm = false;
     });
 
-    print('Product added, refreshing tables after delay...');
+    debugPrint('Product added, refreshing tables after delay...');
 
     // Increase the delay to 2 seconds to ensure API has time to process
     Future.delayed(const Duration(milliseconds: 2000), () {
       // Refresh product tables
       if (_productsTableKey.currentState != null) {
         _productsTableKey.currentState!.refreshProducts();
-        print('Products table refresh called');
+        debugPrint('Products table refresh called');
       } else {
-        print('Products table state is null, cannot refresh');
+        debugPrint('Products table state is null, cannot refresh');
       }
 
       // Also refresh requested products table
       if (_requestedProductsTableKey.currentState != null) {
         _requestedProductsTableKey.currentState!.refreshProducts();
-        print('Requested products table refresh called');
+        debugPrint('Requested products table refresh called');
       } else {
-        print('Requested products table state is null, cannot refresh');
+        debugPrint('Requested products table state is null, cannot refresh');
       }
     });
 

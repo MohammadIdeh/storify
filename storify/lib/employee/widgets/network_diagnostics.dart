@@ -44,7 +44,7 @@ class _NetworkDiagnosticsWidgetState extends State<NetworkDiagnosticsWidget> {
       // 4. Test API endpoints
       await _testAPIEndpoints();
     } catch (e) {
-      print('Diagnostics error: $e');
+      debugPrint('Diagnostics error: $e');
     } finally {
       setState(() {
         _isRunning = false;

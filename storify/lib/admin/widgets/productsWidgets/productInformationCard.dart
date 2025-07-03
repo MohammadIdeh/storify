@@ -142,12 +142,12 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                   _imageUrl = reader.result as String;
                   _imageChanged = true;
                 });
-                print("Image updated via drop");
+                debugPrint("Image updated via drop");
               });
             }
           });
         } catch (e) {
-          print("Error attaching drop listener: $e");
+          debugPrint("Error attaching drop listener: $e");
         }
       }
     });
@@ -167,7 +167,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         }
       }
     } catch (e) {
-      print("Error parsing date: $e");
+      debugPrint("Error parsing date: $e");
     }
     return DateTime.now(); // Default fallback
   }
@@ -304,11 +304,11 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         updateData['barcode'] = _barcode;
 
       // Debug the request body
-      print('Sending update with body: ${json.encode(updateData)}');
+      debugPrint('Sending update with body: ${json.encode(updateData)}');
 
       // Make API request with authentication headers
       final headers = await AuthService.getAuthHeaders();
-      print('Making authenticated API request with headers: $headers');
+      debugPrint('Making authenticated API request with headers: $headers');
 
       // First attempt - with all data including image if changed
       http.Response response = await http.put(
@@ -318,14 +318,14 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         body: json.encode(updateData),
       );
 
-      print('API Response status: ${response.statusCode}');
-      print('API Response body: ${response.body}');
+      debugPrint('API Response status: ${response.statusCode}');
+      debugPrint('API Response body: ${response.body}');
 
       // If first attempt fails and we included the image, try again without image
       if (response.statusCode != 200 &&
           _imageChanged &&
           (response.body.contains('image') || response.statusCode == 400)) {
-        print('First attempt failed. Trying without image field.');
+        debugPrint('First attempt failed. Trying without image field.');
         // Remove image from update data
         updateData.remove('image');
 
@@ -337,8 +337,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
           body: json.encode(updateData),
         );
 
-        print('Second attempt status: ${response.statusCode}');
-        print('Second attempt body: ${response.body}');
+        debugPrint('Second attempt status: ${response.statusCode}');
+        debugPrint('Second attempt body: ${response.body}');
       }
 
       if (response.statusCode == 200) {

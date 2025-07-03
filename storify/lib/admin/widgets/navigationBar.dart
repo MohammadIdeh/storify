@@ -41,7 +41,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
   @override
   void dispose() {
-    print('🧹 Disposing MyNavigationBar...');
+    debugPrint('🧹 Disposing MyNavigationBar...');
     _isDisposed = true;
     _cleanupOverlays();
     super.dispose();
@@ -54,7 +54,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       _notificationOverlayEntry?.remove();
       _notificationOverlayEntry = null;
     } catch (e) {
-      print('⚠️ Error cleaning overlays: $e');
+      debugPrint('⚠️ Error cleaning overlays: $e');
     }
     _isMenuOpen = false;
     _isNotificationMenuOpen = false;
@@ -117,7 +117,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         }
       }
     } catch (e) {
-      print('❌ Error creating overlay: $e');
+      debugPrint('❌ Error creating overlay: $e');
       _overlayEntry = null;
     }
   }
@@ -128,7 +128,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
     try {
       _overlayEntry?.remove();
     } catch (e) {
-      print('⚠️ Error removing menu overlay: $e');
+      debugPrint('⚠️ Error removing menu overlay: $e');
     }
     _overlayEntry = null;
 
@@ -143,7 +143,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   Future<void> _handleSimpleLogout() async {
     if (_isDisposed || _isLoggingOut) return;
 
-    print('🚪 === CLEAN ADMIN LOGOUT ===');
+    debugPrint('🚪 === CLEAN ADMIN LOGOUT ===');
 
     // Set logout flag
     _isLoggingOut = true;
@@ -161,7 +161,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      print('✅ Admin data cleared');
+      debugPrint('✅ Admin data cleared');
 
       // ✅ CLEAN NAVIGATION: Clear all history including admin dashboard
       if (mounted && context.mounted) {
@@ -170,10 +170,10 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
           '/login',
           (route) => false, // Remove ALL previous routes
         );
-        print('✅ Admin logout navigation completed');
+        debugPrint('✅ Admin logout navigation completed');
       }
     } catch (e) {
-      print('❌ Admin logout error: $e');
+      debugPrint('❌ Admin logout error: $e');
 
       // Emergency navigation
       if (mounted && context.mounted) {
@@ -184,7 +184,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
             (route) => false, // Clear history even in emergency
           );
         } catch (navError) {
-          print('💥 Emergency navigation failed: $navError');
+          debugPrint('💥 Emergency navigation failed: $navError');
         }
       }
     }
@@ -246,7 +246,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         }
       }
     } catch (e) {
-      print('❌ Error creating notification overlay: $e');
+      debugPrint('❌ Error creating notification overlay: $e');
       _notificationOverlayEntry = null;
     }
   }
@@ -257,7 +257,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
     try {
       _notificationOverlayEntry?.remove();
     } catch (e) {
-      print('⚠️ Error removing notification overlay: $e');
+      debugPrint('⚠️ Error removing notification overlay: $e');
     }
     _notificationOverlayEntry = null;
 

@@ -90,7 +90,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
         _errorMessage = 'Error loading categories: $e';
         _isLoading = false;
       });
-      print('Error loading categories: $e');
+      debugPrint('Error loading categories: $e');
     }
   }
 
@@ -194,7 +194,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
           });
 
           if (request.status == 201) {
-            print(
+            debugPrint(
                 '✅ Product added successfully! Response: ${request.responseText}');
 
             // Add a short delay before calling onAddProduct to ensure server processing is complete
@@ -222,7 +222,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
                 }
               } catch (e) {
                 // Parsing error, use default message
-                print('Error parsing response: $e');
+                debugPrint('Error parsing response: $e');
               }
             }
 
@@ -237,7 +237,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
 
         // Add debugging for response errors
         request.onError.listen((event) {
-          print('Request error: ${request.statusText}');
+          debugPrint('Request error: ${request.statusText}');
           setState(() {
             _isUploading = false;
           });
@@ -252,7 +252,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
 
         request.send(formData);
       } catch (e) {
-        print('Error submitting product: $e');
+        debugPrint('Error submitting product: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),

@@ -89,7 +89,7 @@ class DeliveryService {
             'Failed to assign orders. Status code: ${response.statusCode}, Body: ${response.body}');
       }
     } catch (e) {
-      print('Error assigning orders: $e');
+      
       return null;
     }
   }

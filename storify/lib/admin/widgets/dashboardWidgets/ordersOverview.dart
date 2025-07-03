@@ -35,7 +35,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
   }
 
   Future<void> _fetchOrdersChart({String? startDate, String? endDate}) async {
-    print(
+    debugPrint(
         '🔄 Fetching orders chart with startDate: $startDate, endDate: $endDate');
 
     setState(() {
@@ -49,10 +49,10 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
         endDate: endDate,
       );
 
-      print(
+      debugPrint(
           '✅ Orders chart data received: ${response.data.length} data points');
-      print('📊 Total revenue: ${response.totalRevenue}');
-      print(
+      debugPrint('📊 Total revenue: ${response.totalRevenue}');
+      debugPrint(
           '📅 Date range: ${response.dateRange.start} - ${response.dateRange.end}');
 
       setState(() {
@@ -60,7 +60,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error fetching orders chart: $e');
+      debugPrint('❌ Error fetching orders chart: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -214,9 +214,10 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                   ElevatedButton(
                     onPressed: () {
                       // Test the endpoint directly
-                      print('🧪 Testing DashboardService.isAdminLoggedIn()');
+                      debugPrint(
+                          '🧪 Testing DashboardService.isAdminLoggedIn()');
                       DashboardService.isAdminLoggedIn().then((isLoggedIn) {
-                        print('👤 Is admin logged in: $isLoggedIn');
+                        debugPrint('👤 Is admin logged in: $isLoggedIn');
                       });
                     },
                     style: ElevatedButton.styleFrom(

@@ -17,11 +17,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-console.log('🔥 Storify Firebase messaging service worker initialized');
 
 // Enhanced background message handler
 messaging.onBackgroundMessage((payload) => {
-  console.log("📱 Background message received:", payload);
 
   // Extract notification details
   const notificationTitle = payload.notification?.title || 'Storify Notification';
@@ -72,14 +70,12 @@ messaging.onBackgroundMessage((payload) => {
     }
   }
 
-  console.log('🔔 Showing notification:', notificationTitle);
 
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', function (event) {
-  console.log('🔔 Notification clicked:', event);
 
   const notification = event.notification;
   const action = event.action;
@@ -90,12 +86,10 @@ self.addEventListener('notificationclick', function (event) {
 
   // Handle dismiss action
   if (action === 'dismiss') {
-    console.log('🔔 Notification dismissed by user');
     return;
   }
 
   // Handle open action or default click
-  console.log('🔔 Opening Storify app...');
 
   event.waitUntil(
     clients.matchAll({
@@ -107,7 +101,6 @@ self.addEventListener('notificationclick', function (event) {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
         if (client.url.includes(location.origin)) {
-          console.log('🔔 Found existing Storify window, focusing it');
 
           // Send navigation data to the existing window
           if (data.type || data.orderId) {
@@ -125,7 +118,6 @@ self.addEventListener('notificationclick', function (event) {
       }
 
       // No existing window, open new one
-      console.log('🔔 Opening new Storify window');
 
       let url = '/';
 
@@ -142,30 +134,25 @@ self.addEventListener('notificationclick', function (event) {
         return clients.openWindow(url);
       }
     }).catch(function (error) {
-      console.error('❌ Error handling notification click:', error);
     })
   );
 });
 
 // Handle notification close
 self.addEventListener('notificationclose', function (event) {
-  console.log('🔔 Notification closed:', event.notification.tag);
 });
 
 // Service Worker lifecycle
 self.addEventListener('install', function (event) {
-  console.log('🔧 Storify Service Worker installing...');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', function (event) {
-  console.log('🔧 Storify Service Worker activated');
   event.waitUntil(clients.claim());
 });
 
 // Handle messages from main app
 self.addEventListener('message', function (event) {
-  console.log('📨 Service Worker message received:', event.data);
 
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -174,7 +161,5 @@ self.addEventListener('message', function (event) {
 
 // Error handling
 self.addEventListener('error', function (event) {
-  console.error('❌ Service Worker error:', event.error);
 });
 
-console.log('✅ Storify service worker setup complete');

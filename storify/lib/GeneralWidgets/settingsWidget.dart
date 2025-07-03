@@ -81,7 +81,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
 
   @override
   void dispose() {
-    print('🧹 Disposing SettingsWidget...');
+    debugPrint('🧹 Disposing SettingsWidget...');
     _isDisposed = true;
     _tabController.dispose();
     _nameController.dispose();
@@ -99,7 +99,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
       try {
         setState(fn);
       } catch (e) {
-        print('⚠️ setState failed in settings: $e');
+        debugPrint('⚠️ setState failed in settings: $e');
       }
     }
   }
@@ -113,7 +113,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
         });
       }
     } catch (e) {
-      print('Error loading user role: $e');
+      debugPrint('Error loading user role: $e');
     }
   }
 
@@ -128,7 +128,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
       final currentRole = await AuthService.getCurrentRole();
       if (currentRole == null || _isDisposed) return;
 
-      print('📋 Loading profile data for role: $currentRole');
+      debugPrint('📋 Loading profile data for role: $currentRole');
 
       // Try to get fresh data from API first
       final profileData =
@@ -142,7 +142,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
         _updateFormControllersFromLocal(localData);
       }
     } catch (e) {
-      print('Error loading profile data: $e');
+      debugPrint('Error loading profile data: $e');
       if (!_isDisposed && mounted) {
         showCustomSnackBar(
             context, 'Failed to load profile data', 'assets/images/error.svg');
@@ -168,7 +168,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
       _currentUserId = profileData['userId']?.toString();
     });
 
-    print('✅ Form controllers updated for role: $userRole');
+    debugPrint('✅ Form controllers updated for role: $userRole');
   }
 
   void _updateFormControllersFromLocal(Map<String, String> localData) {
@@ -183,7 +183,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
       _currentUserId = localData['userId'];
     });
 
-    print('✅ Form controllers updated from local data for role: $userRole');
+    debugPrint(
+        '✅ Form controllers updated from local data for role: $userRole');
   }
 
   Future<void> _handlePasswordChange() async {
@@ -357,7 +358,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
     });
 
     try {
-      print('🖼️ Uploading image for role: $userRole');
+      debugPrint('🖼️ Uploading image for role: $userRole');
 
       final result = await UserProfileService.uploadProfilePicture(
         _selectedImageBytes!,
@@ -728,7 +729,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                         ),
                                       ),
                                       errorWidget: (context, url, error) {
-                                        print(
+                                        debugPrint(
                                             'Error loading profile image: $error');
                                         return Container(
                                           width: 80.w,

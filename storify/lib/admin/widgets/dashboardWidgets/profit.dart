@@ -30,7 +30,7 @@ class _ProfitState extends State<Profit> {
   }
 
   Future<void> _fetchProfitChart({String? startDate, String? endDate}) async {
-    print(
+    debugPrint(
         '🔄 Fetching profit chart with startDate: $startDate, endDate: $endDate');
 
     setState(() {
@@ -44,17 +44,17 @@ class _ProfitState extends State<Profit> {
         endDate: endDate,
       );
 
-      print(
+      debugPrint(
           '✅ Profit chart data received: ${response.data.length} data points');
-      print('💰 Total profit: ${response.profit}');
-      print('📈 Growth: ${response.growth}%');
+      debugPrint('💰 Total profit: ${response.profit}');
+      debugPrint('📈 Growth: ${response.growth}%');
 
       setState(() {
         _profitData = response;
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error fetching profit chart: $e');
+      debugPrint('❌ Error fetching profit chart: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;

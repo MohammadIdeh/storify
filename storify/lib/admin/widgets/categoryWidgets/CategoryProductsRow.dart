@@ -246,7 +246,7 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
         request.files.add(imageFile);
       }
 
-      print('Updating category ${widget.categoryID}...');
+      debugPrint('Updating category ${widget.categoryID}...');
 
       final streamedResponse = await request.send().timeout(
             const Duration(seconds: 30),
@@ -254,8 +254,8 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
 
       final response = await http.Response.fromStream(streamedResponse);
 
-      print('API Response: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('API Response: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return true;
@@ -737,7 +737,7 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
                                   product: prod,
                                   categoryID: widget.categoryID,
                                   onUpdate: (updatedProduct) {
-                                    print(
+                                    debugPrint(
                                         "Updated product: ${updatedProduct.name}");
                                   },
                                   onDelete: () {

@@ -49,8 +49,9 @@ class _RequestedProductDetailState extends State<RequestedProductDetail> {
       // Add Content-Type to headers
       headers['Content-Type'] = 'application/json';
 
-      print('🔄 Processing request for product ${widget.product.id}: $status');
-      print('📤 Request headers: $headers');
+      debugPrint(
+          '🔄 Processing request for product ${widget.product.id}: $status');
+      debugPrint('📤 Request headers: $headers');
 
       final response = await http.patch(
         Uri.parse(

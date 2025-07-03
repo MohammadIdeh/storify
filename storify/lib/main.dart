@@ -1,13 +1,12 @@
 // lib/main.dart
-// COMPLETE ROUTING IMPLEMENTATION - ALL USER ROLES
-// ✅ Added comprehensive named routes for ALL screens across all user roles
-// ✅ Added registration flow routes with clean URLs
-// ✅ Added supplier routes with clean URLs
-// ✅ Added employee/warehouse routes with clean URLs
-// ✅ Implemented role-based route protection and access control
-// ✅ Set up proper URL structure for all roles
-// ✅ Clean navigation history management across all flows
-
+// COMPLETE ROUTING IMPLEMENTATION WITH YOUR EXISTING AUTH SERVICE
+// ✅ Works with your token-based authentication system
+// ✅ Supports role switching capabilities
+// ✅ Added real-time authentication checks for all route changes
+// ✅ Added proper redirect logic for unauthorized access
+// ✅ Simple and clean implementation without unnecessary complexity
+import 'dart:ui' as html;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -42,59 +41,57 @@ import 'package:storify/utilis/notification_service.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("Handling background message: ${message.messageId}");
+  debugPrint("Handling background message: ${message.messageId}");
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
   try {
-    print('🚀 Starting Storify app...');
+    debugPrint('🚀 Starting Storify app...');
 
     // ✅ ROUTING: Remove # from URLs for cleaner web experience
     usePathUrlStrategy();
-    print('✅ URL strategy configured for clean web URLs');
+    debugPrint('✅ URL strategy configured for clean web URLs');
 
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase initialized');
+    debugPrint('✅ Firebase initialized');
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // Give SharedPreferences time to load properly on web
     await Future.delayed(const Duration(milliseconds: 100));
 
-    final isLoggedIn = await AuthService.isLoggedIn();
-    final currentRole = await AuthService.getCurrentRole();
-    print('✅ Auth check completed: loggedIn=$isLoggedIn, role=$currentRole');
-
-    runApp(MyApp(isLoggedIn: isLoggedIn, currentRole: currentRole));
-    print('✅ App started successfully');
+    runApp(MyApp());
+    debugPrint('✅ App started successfully');
 
     _initializeNotificationsLater();
   } catch (e) {
-    print('❌ Error in main: $e');
-    runApp(MyApp(isLoggedIn: false, currentRole: null));
+    debugPrint('❌ Error in main: $e');
+    runApp(MyApp());
   }
 }
 
 void _initializeNotificationsLater() {
   Future.delayed(Duration(seconds: 2), () async {
     try {
-      print('🔔 Starting background notification initialization...');
+      debugPrint('🔔 Starting background notification initialization...');
 
       await NotificationService.initialize();
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print("Foreground message received: ${message.messageId}");
+        debugPrint("Foreground message received: ${message.messageId}");
       });
 
       FirebaseMessaging.instance
           .getInitialMessage()
           .then((RemoteMessage? message) {
         if (message != null) {
-          print("App opened from terminated state by notification");
+          debugPrint("App opened from terminated state by notification");
           Future.delayed(Duration(seconds: 1), () {
             handleNotificationNavigation(message.data);
           });
@@ -102,16 +99,16 @@ void _initializeNotificationsLater() {
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print("App opened from background state by notification");
+        debugPrint("App opened from background state by notification");
         handleNotificationNavigation(message.data);
       });
 
       NotificationService().processBackgroundNotifications();
       NotificationService().loadNotificationsFromFirestore();
 
-      print('✅ Notifications initialized in background');
+      debugPrint('✅ Notifications initialized in background');
     } catch (e) {
-      print('❌ Error initializing notifications (non-critical): $e');
+      debugPrint('❌ Error initializing notifications (non-critical): $e');
     }
   });
 }
@@ -119,19 +116,214 @@ void _initializeNotificationsLater() {
 void handleNotificationNavigation(Map<String, dynamic> data) {
   final notificationType = data['type'] as String?;
   final orderId = data['orderId'] as String?;
-  print("Should navigate to: type=$notificationType, orderId=$orderId");
+  debugPrint("Should navigate to: type=$notificationType, orderId=$orderId");
 }
 
-class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-  final String? currentRole;
+// ✅ SIMPLE ROUTE GUARD - Works with your existing AuthService
+class RouteGuard extends StatefulWidget {
+  final Widget child;
+  final String requiredRole;
+  final String routeName;
 
-  const MyApp({super.key, required this.isLoggedIn, this.currentRole});
+  const RouteGuard({
+    Key? key,
+    required this.child,
+    required this.requiredRole,
+    required this.routeName,
+  }) : super(key: key);
+
+  @override
+  State<RouteGuard> createState() => _RouteGuardState();
+}
+
+class _RouteGuardState extends State<RouteGuard> {
+  bool _isLoading = true;
+  bool _isAuthorized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _validateAccess();
+  }
+
+  Future<void> _validateAccess() async {
+    try {
+      debugPrint('🔐 Validating access for route: ${widget.routeName}');
+
+      // ✅ CHECK 1: Is user logged in with required role?
+      final hasRequiredRole =
+          await AuthService.isLoggedInAsRole(widget.requiredRole);
+
+      if (!hasRequiredRole) {
+        debugPrint('🚫 User not logged in as ${widget.requiredRole}');
+        setState(() {
+          _isLoading = false;
+          _isAuthorized = false;
+        });
+        _handleUnauthorizedAccess();
+        return;
+      }
+
+      // ✅ CHECK 2: Is the current active role correct?
+      final currentRole = await AuthService.getCurrentRole();
+
+      if (currentRole != widget.requiredRole) {
+        debugPrint(
+            '🔄 Current role ($currentRole) != required role (${widget.requiredRole})');
+
+        // Try to switch to the required role
+        final switched = await AuthService.switchToRole(widget.requiredRole);
+
+        if (!switched) {
+          debugPrint('🚫 Failed to switch to required role');
+          setState(() {
+            _isLoading = false;
+            _isAuthorized = false;
+          });
+          _handleUnauthorizedAccess();
+          return;
+        }
+
+        debugPrint('✅ Successfully switched to ${widget.requiredRole}');
+      }
+
+      // ✅ CHECK 3: Verify token is still valid
+      final token = await AuthService.getToken();
+
+      if (token == null || token.isEmpty) {
+        debugPrint('🚫 No valid token found');
+        setState(() {
+          _isLoading = false;
+          _isAuthorized = false;
+        });
+        _handleUnauthorizedAccess();
+        return;
+      }
+
+      // ✅ ALL CHECKS PASSED
+      debugPrint('✅ Access granted to ${widget.routeName}');
+      setState(() {
+        _isLoading = false;
+        _isAuthorized = true;
+      });
+    } catch (e) {
+      debugPrint('❌ Error validating access: $e');
+      setState(() {
+        _isLoading = false;
+        _isAuthorized = false;
+      });
+      _handleUnauthorizedAccess();
+    }
+  }
+
+  void _handleUnauthorizedAccess() {
+    if (!mounted) return;
+
+    // Show unauthorized message and redirect to login
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/login',
+          (route) => false,
+          arguments: {
+            'message':
+                'Please log in as ${widget.requiredRole} to access this page',
+            'redirectUrl': widget.routeName,
+          },
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    print(
-        '🎨 Building MyApp widget with auth state: $isLoggedIn, role: $currentRole');
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Verifying access...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!_isAuthorized) {
+      // Show loading while redirect happens
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.security, size: 64, color: Colors.orange),
+              SizedBox(height: 16),
+              Text('Redirecting to login...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ✅ ACCESS GRANTED - Show the protected content
+    return widget.child;
+  }
+}
+
+// ✅ ENHANCED LOGIN SCREEN - Shows unauthorized access messages
+class EnhancedLoginScreen extends StatelessWidget {
+  const EnhancedLoginScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final message = args?['message'] as String?;
+    final redirectUrl = args?['redirectUrl'] as String?;
+
+    return Scaffold(
+      body: Column(
+        children: [
+          if (message != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.orange[100],
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange[800]),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        color: Colors.orange[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: LoginScreen(), // Your existing login screen
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('🎨 Building MyApp widget');
 
     return ScreenUtilInit(
       designSize: const Size(1920, 1080),
@@ -145,202 +337,183 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
 
-        // ✅ ROUTING: COMPLETE named routes for ALL screens across ALL user roles
+        // ✅ ROUTING: COMPLETE named routes with PROTECTION
         routes: {
           // ═══════════════════════════════════════════════════════════════
-          // AUTHENTICATION & REGISTRATION ROUTES
+          // PUBLIC ROUTES (No authentication required)
           // ═══════════════════════════════════════════════════════════════
-          '/': (context) => _getHomeScreen(),
-          '/login': (context) => const LoginScreen(),
+          '/login': (context) => const EnhancedLoginScreen(),
           '/forgot-password': (context) => const Forgotpassword(),
           '/email-code': (context) => const Emailcode(),
           '/change-password': (context) => _buildChangePasswordRoute(context),
           '/changed-thanks': (context) => const Changedthanks(),
 
           // ═══════════════════════════════════════════════════════════════
-          // ADMIN ROUTES - Complete admin dashboard and management
+          // PROTECTED ADMIN ROUTES
           // ═══════════════════════════════════════════════════════════════
-          '/admin': (context) => const DashboardScreen(),
-          '/admin/dashboard': (context) => const DashboardScreen(),
-          '/admin/categories': (context) => const CategoriesScreen(),
-          '/admin/products': (context) => const Productsscreen(),
-          '/admin/orders': (context) => const Orders(),
-          '/admin/roles': (context) => const Rolemanegment(),
-          '/admin/tracking': (context) => const Track(),
-          // Note: Product overview and view order require parameters, handled in onGenerateRoute
+          '/admin': (context) => RouteGuard(
+                child: const DashboardScreen(),
+                requiredRole: 'Admin',
+                routeName: '/admin',
+              ),
+          '/admin/dashboard': (context) => RouteGuard(
+                child: const DashboardScreen(),
+                requiredRole: 'Admin',
+                routeName: '/admin/dashboard',
+              ),
+          '/admin/categories': (context) => RouteGuard(
+                child: const CategoriesScreen(),
+                requiredRole: 'Admin',
+                routeName: '/admin/categories',
+              ),
+          '/admin/products': (context) => RouteGuard(
+                child: const Productsscreen(),
+                requiredRole: 'Admin',
+                routeName: '/admin/products',
+              ),
+          '/admin/orders': (context) => RouteGuard(
+                child: const Orders(),
+                requiredRole: 'Admin',
+                routeName: '/admin/orders',
+              ),
+          '/admin/roles': (context) => RouteGuard(
+                child: const Rolemanegment(),
+                requiredRole: 'Admin',
+                routeName: '/admin/roles',
+              ),
+          '/admin/tracking': (context) => RouteGuard(
+                child: const Track(),
+                requiredRole: 'Admin',
+                routeName: '/admin/tracking',
+              ),
 
           // ═══════════════════════════════════════════════════════════════
-          // CUSTOMER ROUTES - Customer order management and history
+          // PROTECTED CUSTOMER ROUTES
           // ═══════════════════════════════════════════════════════════════
-          '/customer': (context) => const CustomerOrders(),
-          '/customer/orders': (context) => const CustomerOrders(),
-          '/customer/history': (context) => const HistoryScreenCustomer(),
+          '/customer': (context) => RouteGuard(
+                child: const CustomerOrders(),
+                requiredRole: 'Customer',
+                routeName: '/customer',
+              ),
+          '/customer/orders': (context) => RouteGuard(
+                child: const CustomerOrders(),
+                requiredRole: 'Customer',
+                routeName: '/customer/orders',
+              ),
+          '/customer/history': (context) => RouteGuard(
+                child: const HistoryScreenCustomer(),
+                requiredRole: 'Customer',
+                routeName: '/customer/history',
+              ),
 
           // ═══════════════════════════════════════════════════════════════
-          // SUPPLIER ROUTES - Supplier order and product management
+          // PROTECTED SUPPLIER ROUTES
           // ═══════════════════════════════════════════════════════════════
-          '/supplier': (context) => const SupplierOrders(),
-          '/supplier/orders': (context) => const SupplierOrders(),
-          '/supplier/products': (context) => const SupplierProducts(),
+          '/supplier': (context) => RouteGuard(
+                child: const SupplierOrders(),
+                requiredRole: 'Supplier',
+                routeName: '/supplier',
+              ),
+          '/supplier/orders': (context) => RouteGuard(
+                child: const SupplierOrders(),
+                requiredRole: 'Supplier',
+                routeName: '/supplier/orders',
+              ),
+          '/supplier/products': (context) => RouteGuard(
+                child: const SupplierProducts(),
+                requiredRole: 'Supplier',
+                routeName: '/supplier/products',
+              ),
 
           // ═══════════════════════════════════════════════════════════════
-          // EMPLOYEE/WAREHOUSE ROUTES - Employee order processing
+          // PROTECTED WAREHOUSE EMPLOYEE ROUTES
           // ═══════════════════════════════════════════════════════════════
-          '/warehouse': (context) => const Orders_employee(),
-          '/warehouse/orders': (context) => const Orders_employee(),
-          '/warehouse/history': (context) => const OrderHistoryScreen(),
-          // Note: ViewOrderScreen requires parameters, handled in onGenerateRoute
+          '/warehouse': (context) => RouteGuard(
+                child: const Orders_employee(),
+                requiredRole: 'WareHouseEmployee',
+                routeName: '/warehouse',
+              ),
+          '/warehouse/orders': (context) => RouteGuard(
+                child: const Orders_employee(),
+                requiredRole: 'WareHouseEmployee',
+                routeName: '/warehouse/orders',
+              ),
+          '/warehouse/history': (context) => RouteGuard(
+                requiredRole: 'WareHouseEmployee',
+                routeName: '/warehouse/history',
+                child: const OrderHistoryScreen(),
+              ),
         },
 
-        // ✅ ROUTING: Set initial route based on authentication
-        initialRoute: _getInitialRoute(),
+        // ✅ ROUTING: Smart initial route determination
+        initialRoute:
+            '/login', // Always start with login, then redirect properly
 
-        // ✅ ROUTING: Handle parameterized routes and advanced navigation
+        // ✅ ROUTING: Enhanced route generation with protection
         onGenerateRoute: (RouteSettings settings) {
-          print('🔄 Generating route: ${settings.name}');
+          debugPrint('🔄 Generating route: ${settings.name}');
 
           // ═══════════════════════════════════════════════════════════════
-          // REGISTRATION FLOW PARAMETERIZED ROUTES
+          // PARAMETERIZED ROUTES WITH PROTECTION
           // ═══════════════════════════════════════════════════════════════
-          if (settings.name?.startsWith('/change-password') == true) {
-            // Handle change password with email/code parameters from email verification
-            return MaterialPageRoute(
-              builder: (_) => _buildChangePasswordRoute(_),
-              settings: settings,
-            );
-          }
 
-          // ═══════════════════════════════════════════════════════════════
-          // ADMIN PARAMETERIZED ROUTES
-          // ═══════════════════════════════════════════════════════════════
           if (settings.name?.startsWith('/admin/product/') == true) {
-            // Extract product ID for product overview
             return MaterialPageRoute(
-              builder: (_) =>
-                  const Productsscreen(), // Navigate to products then to specific product
+              builder: (_) => RouteGuard(
+                child: const Productsscreen(),
+                requiredRole: 'Admin',
+                routeName: settings.name!,
+              ),
               settings: settings,
             );
           }
 
           if (settings.name?.startsWith('/admin/order/') == true) {
-            // Handle view order route with order ID
             return MaterialPageRoute(
-              builder: (_) =>
-                  const Orders(), // Navigate to orders then to specific order
+              builder: (_) => RouteGuard(
+                child: const Orders(),
+                requiredRole: 'Admin',
+                routeName: settings.name!,
+              ),
               settings: settings,
             );
           }
 
-          // ═══════════════════════════════════════════════════════════════
-          // EMPLOYEE PARAMETERIZED ROUTES
-          // ═══════════════════════════════════════════════════════════════
           if (settings.name?.startsWith('/warehouse/order/') == true) {
-            // Handle view order details route - requires OrderItem parameter
-            // Since we can't pass objects through routes, redirect to orders screen
             return MaterialPageRoute(
-              builder: (_) => const Orders_employee(),
+              builder: (_) => RouteGuard(
+                child: const Orders_employee(),
+                requiredRole: 'WareHouseEmployee',
+                routeName: settings.name!,
+              ),
               settings: settings,
             );
           }
 
-          // ═══════════════════════════════════════════════════════════════
-          // ROLE-BASED ACCESS PROTECTION
-          // ═══════════════════════════════════════════════════════════════
-          final currentRoute = settings.name;
-          if (!_canAccessRoute(currentRoute)) {
-            print('🚫 Access denied to route: $currentRoute');
+          // ✅ HANDLE ROOT ROUTE WITH SMART REDIRECT
+          if (settings.name == '/') {
             return MaterialPageRoute(
-              builder: (_) => const LoginScreen(),
-              settings: const RouteSettings(name: '/login'),
+              builder: (_) => SmartRootRedirect(),
+              settings: settings,
             );
           }
 
-          // If route exists in routes table, let it handle normally
           return null;
         },
 
-        // ✅ ROUTING: Better error handling for unknown routes
+        // ✅ ROUTING: Better error handling
         onUnknownRoute: (RouteSettings settings) {
-          print('❌ Unknown route: ${settings.name}, redirecting appropriately');
+          debugPrint('❌ Unknown route: ${settings.name}');
           return MaterialPageRoute(
-            builder: (_) => _getHomeScreen(),
-            settings: const RouteSettings(name: '/'),
+            builder: (_) => const EnhancedLoginScreen(),
+            settings: const RouteSettings(name: '/login'),
           );
         },
       ),
     );
   }
 
-  // ✅ ROUTING: Determine initial route based on auth state
-  String _getInitialRoute() {
-    if (!isLoggedIn || currentRole == null) {
-      return '/login';
-    }
-
-    switch (currentRole) {
-      case 'Admin':
-        return '/admin';
-      case 'Customer':
-        return '/customer';
-      case 'Supplier':
-        return '/supplier';
-      case 'WareHouseEmployee':
-        return '/warehouse';
-      default:
-        return '/login';
-    }
-  }
-
-  // ✅ ROUTING: Role-based route access control for ALL user types
-  bool _canAccessRoute(String? route) {
-    if (route == null) return false;
-
-    // Public routes (accessible to everyone)
-    final publicRoutes = [
-      '/login',
-      '/forgot-password',
-      '/email-code',
-      '/change-password',
-      '/changed-thanks',
-      '/'
-    ];
-
-    if (publicRoutes.contains(route)) {
-      return true;
-    }
-
-    // Must be logged in for protected routes
-    if (!isLoggedIn || currentRole == null) {
-      return false;
-    }
-
-    // Admin can access all admin routes
-    if (route.startsWith('/admin') && currentRole == 'Admin') {
-      return true;
-    }
-
-    // Customer can access all customer routes
-    if (route.startsWith('/customer') && currentRole == 'Customer') {
-      return true;
-    }
-
-    // Supplier can access all supplier routes
-    if (route.startsWith('/supplier') && currentRole == 'Supplier') {
-      return true;
-    }
-
-    // Warehouse employee can access warehouse routes
-    if (route.startsWith('/warehouse') && currentRole == 'WareHouseEmployee') {
-      return true;
-    }
-
-    return false;
-  }
-
-  // ✅ ROUTING: Helper to build change password route with parameters
   Widget _buildChangePasswordRoute(BuildContext context) {
-    // For now, return basic ChangePassword screen
-    // In a real implementation, you'd extract email/code from route arguments
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
 
@@ -351,46 +524,181 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    // Fallback - redirect to email code if no parameters
     return const Emailcode();
   }
+}
 
-  Widget _getHomeScreen() {
-    print(
-        '🏠 Getting home screen for logged in: $isLoggedIn, role: $currentRole');
+// ✅ SMART ROOT REDIRECT - Works with your AuthService
+class SmartRootRedirect extends StatefulWidget {
+  @override
+  State<SmartRootRedirect> createState() => _SmartRootRedirectState();
+}
 
+class _SmartRootRedirectState extends State<SmartRootRedirect> {
+  @override
+  void initState() {
+    super.initState();
+    _performSmartRedirect();
+  }
+
+  Future<void> _performSmartRedirect() async {
     try {
-      if (!isLoggedIn || currentRole == null) {
-        print('🔐 No valid authentication, showing LoginScreen');
-        return const LoginScreen();
+      // ✅ GET CURRENT ROLE AND CHECK IF LOGGED IN
+      final currentRole = await AuthService.getCurrentRole();
+
+      if (currentRole == null) {
+        debugPrint('🔍 No current role, checking for any logged in roles...');
+
+        // Check if user is logged in with any role
+        final loggedInRoles = await AuthService.getLoggedInRoles();
+
+        if (loggedInRoles.isEmpty) {
+          debugPrint('🚫 No logged in roles found, redirecting to login');
+          Navigator.pushReplacementNamed(context, '/login');
+          return;
+        }
+
+        // Switch to the first available role
+        final firstRole = loggedInRoles.first;
+        await AuthService.switchToRole(firstRole);
+        debugPrint('🔄 Switched to available role: $firstRole');
+        _redirectToRoleDashboard(firstRole);
+        return;
       }
 
-      switch (currentRole) {
-        case 'Admin':
-          print('👑 Showing DashboardScreen for Admin');
-          return const DashboardScreen();
-        case 'Supplier':
-          print('🏪 Showing SupplierOrders for Supplier');
-          return const SupplierOrders();
-        case 'Customer':
-          print('🛒 Showing CustomerOrders for Customer');
-          return const CustomerOrders();
-        case 'WareHouseEmployee':
-          print('📦 Showing Orders_employee for WareHouseEmployee');
-          return const Orders_employee();
-        case 'DeliveryEmployee':
-        case 'DeliveryMan':
-          print(
-              '🚚 Showing LoginScreen for DeliveryEmployee (not implemented yet)');
-          return const LoginScreen();
-        default:
-          print('❓ Unknown role: $currentRole, showing LoginScreen');
-          return const LoginScreen();
+      // ✅ VALIDATE CURRENT ROLE HAS VALID TOKEN
+      final hasValidToken = await AuthService.isLoggedInAsRole(currentRole);
+
+      if (!hasValidToken) {
+        debugPrint('🚫 Current role has no valid token, redirecting to login');
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
       }
+
+      // ✅ VALID SESSION - Redirect to appropriate dashboard
+      debugPrint('✅ Valid session for role: $currentRole');
+      _redirectToRoleDashboard(currentRole);
     } catch (e) {
-      print('❌ Error in _getHomeScreen: $e');
-      return const LoginScreen();
+      debugPrint('❌ Error in smart redirect: $e');
+      Navigator.pushReplacementNamed(context, '/login');
     }
+  }
+
+  void _redirectToRoleDashboard(String role) {
+    String targetRoute;
+    switch (role) {
+      case 'Admin':
+        targetRoute = '/admin';
+        break;
+      case 'Customer':
+        targetRoute = '/customer';
+        break;
+      case 'Supplier':
+        targetRoute = '/supplier';
+        break;
+      case 'WareHouseEmployee':
+        targetRoute = '/warehouse';
+        break;
+      default:
+        targetRoute = '/login';
+    }
+
+    Navigator.pushReplacementNamed(context, targetRoute);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading your dashboard...'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ✅ OPTIONAL: Role Switcher Widget for users with multiple roles
+class RoleSwitcher extends StatefulWidget {
+  @override
+  State<RoleSwitcher> createState() => _RoleSwitcherState();
+}
+
+class _RoleSwitcherState extends State<RoleSwitcher> {
+  String? currentRole;
+  List<String> availableRoles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoles();
+  }
+
+  Future<void> _loadRoles() async {
+    final current = await AuthService.getCurrentRole();
+    final available = await AuthService.getLoggedInRoles();
+
+    setState(() {
+      currentRole = current;
+      availableRoles = available;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (availableRoles.length <= 1) {
+      return SizedBox.shrink(); // Don't show if only one role
+    }
+
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.account_circle),
+      tooltip: 'Switch Role',
+      onSelected: (String role) async {
+        if (role != currentRole) {
+          final success = await AuthService.switchToRole(role);
+          if (success) {
+            // Redirect to new role's dashboard
+            switch (role) {
+              case 'Admin':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/admin', (route) => false);
+                break;
+              case 'Customer':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/customer', (route) => false);
+                break;
+              case 'Supplier':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/supplier', (route) => false);
+                break;
+              case 'WareHouseEmployee':
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/warehouse', (route) => false);
+                break;
+            }
+          }
+        }
+      },
+      itemBuilder: (BuildContext context) {
+        return availableRoles.map((String role) {
+          return PopupMenuItem<String>(
+            value: role,
+            child: Row(
+              children: [
+                if (role == currentRole) Icon(Icons.check, size: 16),
+                if (role == currentRole) SizedBox(width: 8),
+                Text(role),
+              ],
+            ),
+          );
+        }).toList();
+      },
+    );
   }
 }
 

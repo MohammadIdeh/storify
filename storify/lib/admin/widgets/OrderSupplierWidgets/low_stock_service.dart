@@ -27,7 +27,7 @@ class LowStockService {
 
       return false;
     } catch (e) {
-      print('Error checking notification status: $e');
+   
       return true; // Default to showing if there's an error
     }
   }
@@ -41,7 +41,7 @@ class LowStockService {
       await prefs.setString(_lastCheckKey, today);
       await prefs.setBool(_hasShownNotificationKey, true);
     } catch (e) {
-      print('Error marking notification as shown: $e');
+   
     }
   }
 
@@ -51,7 +51,7 @@ class LowStockService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_hasShownNotificationKey, false);
     } catch (e) {
-      print('Error resetting notification status: $e');
+    
     }
   }
 
@@ -65,18 +65,18 @@ class LowStockService {
         headers: headers,
       );
 
-      print('Low stock API response status: ${response.statusCode}');
-      print('Low stock API response body: ${response.body}');
+   
+      
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return LowStockResponse.fromJson(data);
       } else {
-        print('Failed to get low stock items. Status: ${response.statusCode}');
+      
         return null;
       }
     } catch (e) {
-      print('Error getting low stock items: $e');
+   
       return null;
     }
   }
@@ -92,8 +92,7 @@ class LowStockService {
       );
 
       if (item.suppliers.isNotEmpty) {
-        print(
-            'Found ${item.suppliers.length} suppliers for product $productId from low stock data');
+     
         return item.suppliers;
       }
 
@@ -105,8 +104,7 @@ class LowStockService {
         headers: headers,
       );
 
-      print('Product suppliers API response status: ${response.statusCode}');
-      print('Product suppliers API response body: ${response.body}');
+ 
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -124,17 +122,14 @@ class LowStockService {
                 ))
             .toList();
 
-        print(
-            'Found ${lowStockSuppliers.length} suppliers for product $productId from fallback API');
+   
         return lowStockSuppliers;
       } else {
-        print(
-            'Failed to get product suppliers. Status: ${response.statusCode}');
+      
         return null;
       }
     } catch (e) {
-      print('Error getting product suppliers: $e');
-      print('Stack trace: ${StackTrace.current}');
+     
       return null;
     }
   }
@@ -176,8 +171,7 @@ class LowStockService {
         customSuppliers: jsonCustomSuppliers,
       );
 
-      print('Generate orders request: ${request.toString()}');
-      print('Generate orders JSON: ${json.encode(request.toJson())}');
+     
 
       final response = await http.post(
         Uri.parse('$baseUrl/low-stock/generate-orders'),
@@ -185,20 +179,17 @@ class LowStockService {
         body: json.encode(request.toJson()),
       );
 
-      print('Generate orders API response status: ${response.statusCode}');
-      print('Generate orders API response body: ${response.body}');
+    
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         return GenerateOrdersResponse.fromJson(data);
       } else {
-        print('Failed to generate orders. Status: ${response.statusCode}');
-        print('Response body: ${response.body}');
+     
         return null;
       }
     } catch (e) {
-      print('Error generating orders: $e');
-      print('Stack trace: ${StackTrace.current}');
+      
       return null;
     }
   }
@@ -269,7 +260,6 @@ class LowStockService {
       LowStockItem item, LowStockSupplier newSupplier) async {
     // This would update the supplier for the product in the backend if needed
     // For now, we'll just update it locally in the UI
-    print(
-        'Updated supplier for product ${item.product.name} to ${newSupplier.supplierName}');
+ 
   }
 }

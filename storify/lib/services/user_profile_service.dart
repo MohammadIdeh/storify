@@ -2,6 +2,7 @@
 // Fixed version with role-specific profile data storage
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +16,7 @@ class UserProfileService {
     try {
       final currentRole = await AuthService.getCurrentRole();
       if (currentRole == null) {
-        print('❌ No current role found');
+        debugPrint('❌ No current role found');
         return null;
       }
 
@@ -26,8 +27,8 @@ class UserProfileService {
         headers: headers,
       );
 
-      print('Profile API Response Status: ${response.statusCode}');
-      print('Profile API Response Body: ${response.body}');
+      debugPrint('Profile API Response Status: ${response.statusCode}');
+      debugPrint('Profile API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -40,7 +41,7 @@ class UserProfileService {
       }
       return null;
     } catch (e) {
-      print('Error fetching user profile: $e');
+      debugPrint('Error fetching user profile: $e');
       return null;
     }
   }
@@ -62,7 +63,7 @@ class UserProfileService {
       final localData = await _getRoleSpecificLocalData(role);
       return localData.isNotEmpty ? localData : null;
     } catch (e) {
-      print('Error getting role-specific profile: $e');
+      debugPrint('Error getting role-specific profile: $e');
       return null;
     }
   }
@@ -92,7 +93,7 @@ class UserProfileService {
     await prefs.setString('currentRole', role);
     await prefs.setString('userId', userData['userId']?.toString() ?? '');
 
-    print('✅ Role-specific profile data stored for $role');
+    debugPrint('✅ Role-specific profile data stored for $role');
   }
 
   // Get role-specific local data
@@ -136,7 +137,7 @@ class UserProfileService {
         'confirmPassword': confirmPassword,
       });
 
-      print('Change Password Request Body: $body');
+      debugPrint('Change Password Request Body: $body');
 
       final response = await http.put(
         Uri.parse('$baseUrl/user/change-password'),
@@ -144,8 +145,8 @@ class UserProfileService {
         body: body,
       );
 
-      print('Change Password API Response Status: ${response.statusCode}');
-      print('Change Password API Response Body: ${response.body}');
+      debugPrint('Change Password API Response Status: ${response.statusCode}');
+      debugPrint('Change Password API Response Body: ${response.body}');
 
       final responseData = json.decode(response.body);
 
@@ -156,7 +157,7 @@ class UserProfileService {
         'data': responseData,
       };
     } catch (e) {
-      print('Error changing password: $e');
+      debugPrint('Error changing password: $e');
       return {
         'success': false,
         'statusCode': 0,
@@ -180,7 +181,7 @@ class UserProfileService {
       if (email != null) body['email'] = email;
       if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
 
-      print('Update Profile Request Body: ${json.encode(body)}');
+      debugPrint('Update Profile Request Body: ${json.encode(body)}');
 
       final response = await http.put(
         Uri.parse('$baseUrl/user/profile'),
@@ -188,8 +189,8 @@ class UserProfileService {
         body: json.encode(body),
       );
 
-      print('Update Profile API Response Status: ${response.statusCode}');
-      print('Update Profile API Response Body: ${response.body}');
+      debugPrint('Update Profile API Response Status: ${response.statusCode}');
+      debugPrint('Update Profile API Response Body: ${response.body}');
 
       final responseData = json.decode(response.body);
 
@@ -205,7 +206,7 @@ class UserProfileService {
         'data': responseData,
       };
     } catch (e) {
-      print('Error updating profile: $e');
+      debugPrint('Error updating profile: $e');
       return {
         'success': false,
         'statusCode': 0,
@@ -218,7 +219,7 @@ class UserProfileService {
   // Upload profile picture (role-specific)
   static Future<Map<String, dynamic>> uploadProfilePicture(
       Uint8List imageBytes, String fileName) async {
-    print('🌐 === ROLE-SPECIFIC IMAGE UPLOAD START ===');
+    debugPrint('🌐 === ROLE-SPECIFIC IMAGE UPLOAD START ===');
 
     try {
       final currentRole = await AuthService.getCurrentRole();
@@ -229,10 +230,10 @@ class UserProfileService {
         };
       }
 
-      print('📋 Uploading for role: $currentRole');
+      debugPrint('📋 Uploading for role: $currentRole');
 
       final headers = await AuthService.getAuthHeaders();
-      print('🔑 Auth headers available: ${headers.keys.toList()}');
+      debugPrint('🔑 Auth headers available: ${headers.keys.toList()}');
 
       var request = http.MultipartRequest(
         'PUT',
@@ -242,7 +243,7 @@ class UserProfileService {
       // Add authorization header
       if (headers['Authorization'] != null) {
         request.headers['Authorization'] = headers['Authorization']!;
-        print('✅ Authorization header added to request');
+        debugPrint('✅ Authorization header added to request');
       }
 
       // Add other headers except Content-Type
@@ -262,14 +263,7 @@ class UserProfileService {
 
       request.files.add(multipartFile);
 
-      print('📤 === REQUEST DETAILS ===');
-      print('   URL: ${request.url}');
-      print('   Method: ${request.method}');
-      print('   File field name: ${multipartFile.field}');
-      print('   File name: ${multipartFile.filename}');
-      print('   File size: ${multipartFile.length} bytes');
-
-      print('⏳ Sending multipart request...');
+    
 
       var streamedResponse = await request.send().timeout(
         Duration(seconds: 30),
@@ -280,16 +274,14 @@ class UserProfileService {
 
       var response = await http.Response.fromStream(streamedResponse);
 
-      print('📥 === RESPONSE DETAILS ===');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Body: ${response.body}');
+    
 
       Map<String, dynamic> responseData;
       try {
         responseData = json.decode(response.body);
-        print('✅ Response successfully parsed as JSON');
+       
       } catch (e) {
-        print('❌ Failed to parse response as JSON: $e');
+        debugPrint('❌ Failed to parse response as JSON: $e');
         responseData = {
           'message':
               response.body.isNotEmpty ? response.body : 'Empty response',
@@ -297,16 +289,16 @@ class UserProfileService {
       }
 
       bool isSuccess = response.statusCode == 200 || response.statusCode == 201;
-      print('🎯 Upload Success Status: $isSuccess');
+      debugPrint('🎯 Upload Success Status: $isSuccess');
 
       if (isSuccess) {
-        print('🎉 Upload successful for role: $currentRole');
+        debugPrint('🎉 Upload successful for role: $currentRole');
 
         if (responseData['user'] != null) {
           // Store updated profile data with role-specific keys
           await _storeRoleSpecificProfileData(
               responseData['user'], currentRole);
-          print('💾 Role-specific profile data updated');
+          debugPrint('💾 Role-specific profile data updated');
         }
       }
 
@@ -322,8 +314,8 @@ class UserProfileService {
         'profilePictureUrl': responseData['user']?['profilePicture'],
       };
     } catch (e, stackTrace) {
-      print('💥 === UPLOAD EXCEPTION ===');
-      print('   Error: $e');
+      debugPrint('💥 === UPLOAD EXCEPTION ===');
+      debugPrint('   Error: $e');
 
       return {
         'success': false,
@@ -349,7 +341,7 @@ class UserProfileService {
       final headers = await AuthService.getAuthHeaders();
 
       // Try DELETE endpoint first
-      print('🗑️ Trying DELETE endpoint for role: $currentRole');
+      debugPrint('🗑️ Trying DELETE endpoint for role: $currentRole');
       try {
         final deleteResponse = await http.delete(
           Uri.parse('$baseUrl/user/profile/picture'),
@@ -375,7 +367,7 @@ class UserProfileService {
           };
         }
       } catch (e) {
-        print('⚠️ DELETE endpoint not available: $e');
+        debugPrint('⚠️ DELETE endpoint not available: $e');
       }
 
       // Fallback to multipart approach
@@ -420,7 +412,7 @@ class UserProfileService {
         'data': responseData,
       };
     } catch (e) {
-      print('Error removing profile picture: $e');
+      debugPrint('Error removing profile picture: $e');
       return {
         'success': false,
         'statusCode': 0,
@@ -509,7 +501,7 @@ class UserProfileService {
       await prefs.remove(key);
     }
 
-    print('✅ Cleared data for role: $role');
+    debugPrint('✅ Cleared data for role: $role');
   }
 
   // Clear all role data
@@ -536,7 +528,7 @@ class UserProfileService {
     await prefs.remove('isActive');
     await prefs.remove('registrationDate');
 
-    print('✅ Cleared all role data');
+    debugPrint('✅ Cleared all role data');
   }
 }
 

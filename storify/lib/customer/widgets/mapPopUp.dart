@@ -150,7 +150,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         _isMapLoading = false;
       });
     } catch (e) {
-      print('Error initializing map: $e');
+      debugPrint('Error initializing map: $e');
       setState(() {
         _isMapLoading = false;
       });
@@ -181,7 +181,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
           _registerMapWidget();
         });
       }).catchError((error) {
-        print("Browser geolocation error: $error");
+        debugPrint("Browser geolocation error: $error");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text(
@@ -193,7 +193,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         });
       });
     } catch (e) {
-      print("Error getting location: $e");
+      debugPrint("Error getting location: $e");
       setState(() {
         _isLoading = false;
         _useCurrentLocation = false;

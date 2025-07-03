@@ -52,7 +52,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
 
   @override
   void dispose() {
-    print('🧹 Disposing NavigationBarSupplier...');
+    debugPrint('🧹 Disposing NavigationBarSupplier...');
     _isDisposed = true;
     NotificationService()
         .unregisterNotificationsListChangedCallback(_onNotificationsChanged);
@@ -72,7 +72,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
         _notificationOverlayEntry = null;
       }
     } catch (e) {
-      print('⚠️ Error removing overlays: $e');
+      debugPrint('⚠️ Error removing overlays: $e');
     }
   }
 
@@ -159,7 +159,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
       try {
         _overlayEntry!.remove();
       } catch (e) {
-        print('⚠️ Error removing overlay: $e');
+        debugPrint('⚠️ Error removing overlay: $e');
       }
       _overlayEntry = null;
     }
@@ -173,7 +173,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
 
   // Simplified logout for supplier
   Future<void> _handleCompleteLogout() async {
-    print('🚪 === STARTING SUPPLIER LOGOUT ===');
+    debugPrint('🚪 === STARTING SUPPLIER LOGOUT ===');
 
     try {
       _removeAllOverlays();
@@ -185,7 +185,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      print('✅ Supplier data cleared');
+      debugPrint('✅ Supplier data cleared');
 
       if (mounted && context.mounted) {
         Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
@@ -194,7 +194,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
         );
       }
     } catch (e) {
-      print('❌ Error during supplier logout: $e');
+      debugPrint('❌ Error during supplier logout: $e');
 
       if (mounted && context.mounted) {
         try {
@@ -203,7 +203,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
             (route) => false,
           );
         } catch (navError) {
-          print('💥 Emergency navigation failed: $navError');
+          debugPrint('💥 Emergency navigation failed: $navError');
         }
       }
     }
@@ -268,7 +268,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
       try {
         _notificationOverlayEntry!.remove();
       } catch (e) {
-        print('⚠️ Error removing notification overlay: $e');
+        debugPrint('⚠️ Error removing notification overlay: $e');
       }
       _notificationOverlayEntry = null;
     }
@@ -403,7 +403,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
                                   ),
                                 ),
                                 errorWidget: (context, url, error) {
-                                  print(
+                                  debugPrint(
                                       'Error loading profile image: $error from URL: $url');
                                   return Image.asset('assets/images/me.png',
                                       fit: BoxFit.cover);

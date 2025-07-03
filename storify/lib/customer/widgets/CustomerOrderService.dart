@@ -1,5 +1,6 @@
 // lib/customer/services/customer_order_service.dart
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
@@ -112,18 +113,18 @@ class CustomerOrderService {
           final hasLongitude = customer.containsKey('longitude') &&
               customer['longitude'] != null;
 
-          print(
+          debugPrint(
               '📍 LOCATION CHECK - hasLat: $hasLatitude, hasLng: $hasLongitude');
           return hasLatitude && hasLongitude;
         }
 
         return false;
       } else {
-        print('❌ Profile API error: ${response.statusCode}');
+        debugPrint('❌ Profile API error: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      print('❌ Exception in isLocationSet: $e');
+      debugPrint('❌ Exception in isLocationSet: $e');
       return false;
     }
   }

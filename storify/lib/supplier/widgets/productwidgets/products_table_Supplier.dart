@@ -44,7 +44,7 @@ class ProductModel {
       normalizedStatus = "Active";
     }
 
-    print(
+    debugPrint(
         '📊 Parsing product: ${json['name']} with status: ${json['status']} → normalized to: $normalizedStatus');
 
     return ProductModel(
@@ -100,7 +100,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   }
 
   void refreshProducts() {
-    print('Refreshing products table, clearing existing data...');
+    debugPrint('Refreshing products table, clearing existing data...');
 
     setState(() {
       _allProducts = [];
@@ -124,13 +124,13 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     setState(() {
       _supplierId = prefs.getInt('supplierId');
     });
-    print('📦 Loaded supplierId for table: $_supplierId');
+    debugPrint('📦 Loaded supplierId for table: $_supplierId');
   }
 
   // Fetch products from the API with cache-busting
   Future<void> _fetchProducts() async {
     if (_supplierId == null) {
-      print('⚠️ No supplierId found, cannot fetch products');
+      debugPrint('⚠️ No supplierId found, cannot fetch products');
       setState(() {
         _isLoading = false;
       });
@@ -147,7 +147,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       final url = Uri.parse(
           'https://finalproject-a5ls.onrender.com/supplierOrders/supplier/$_supplierId/products?t=$timestamp');
 
-      print('🌐 Fetching products from: $url');
+      debugPrint('🌐 Fetching products from: $url');
 
       final response = await http.get(
         url,
@@ -156,13 +156,14 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('📦 Data received: ${data['products']?.length ?? 0} products');
+        debugPrint(
+            '📦 Data received: ${data['products']?.length ?? 0} products');
 
         if (data['products'] != null && data['products'] is List) {
           List<ProductModel> products = [];
 
           for (var product in data['products']) {
-            print(
+            debugPrint(
                 'Product ${product['name']} raw status: ${product['status']}');
             products.add(ProductModel.fromJson(product));
           }
@@ -172,22 +173,22 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
             _isLoading = false;
           });
 
-          print('✅ Table updated with ${products.length} products');
+          debugPrint('✅ Table updated with ${products.length} products');
         } else {
-          print('⚠️ Invalid response format: ${response.body}');
+          debugPrint('⚠️ Invalid response format: ${response.body}');
           setState(() {
             _isLoading = false;
           });
         }
       } else {
-        print(
+        debugPrint(
             '⚠️ Error fetching products: ${response.statusCode}, Body: ${response.body}');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('⚠️ Exception fetching products: $e');
+      debugPrint('⚠️ Exception fetching products: $e');
       setState(() {
         _isLoading = false;
       });
@@ -202,11 +203,11 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
     // Initialize status switch
     // _statusSwitch = product.status == "Active";
-    print('🔍 Current product status before dialog: ${product.status}');
+    debugPrint('🔍 Current product status before dialog: ${product.status}');
     bool isProductActive = (product.status == "Active");
     _statusSwitch = isProductActive;
 
-    print(
+    debugPrint(
         '🔄 Setting status switch to: $_statusSwitch (Active: $isProductActive)');
 
     return showDialog<void>(
@@ -379,7 +380,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                   // Status has changed?
                   final statusChanged = (newStatus != product.status);
 
-                  print(
+                  debugPrint(
                       '🔄 Status changed: $statusChanged (Original: ${product.status}, New: $newStatus)');
 
                   // Price has changed?
@@ -550,7 +551,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     headers['Content-Type'] = 'application/json';
     headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
 
-    print('🔄 Updating price for product $productId to $price');
+    debugPrint('🔄 Updating price for product $productId to $price');
 
     final url = Uri.parse(
         'https://finalproject-a5ls.onrender.com/supplierOrders/$_supplierId/products/$productId/price');
@@ -561,7 +562,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       body: json.encode({'priceSupplier': price}),
     );
 
-    print('📥 Price update response: ${response.statusCode}');
+    debugPrint('📥 Price update response: ${response.statusCode}');
 
     if (response.statusCode != 200) {
       final message =
@@ -580,7 +581,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     headers['Content-Type'] = 'application/json';
     headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
 
-    print('🔄 Updating status for product $productId to $status');
+    debugPrint('🔄 Updating status for product $productId to $status');
 
     final url = Uri.parse(
         'https://finalproject-a5ls.onrender.com/supplierOrders/$_supplierId/products/$productId/price');
@@ -591,7 +592,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       body: json.encode({'status': status}),
     );
 
-    print('📥 Status update response: ${response.statusCode}');
+    debugPrint('📥 Status update response: ${response.statusCode}');
 
     if (response.statusCode != 200) {
       final message =

@@ -103,10 +103,12 @@ class ProductSellingHistoryWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ProductSellingHistoryWidgetState createState() => _ProductSellingHistoryWidgetState();
+  _ProductSellingHistoryWidgetState createState() =>
+      _ProductSellingHistoryWidgetState();
 }
 
-class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidget> {
+class _ProductSellingHistoryWidgetState
+    extends State<ProductSellingHistoryWidget> {
   // API data
   ProductSellingHistoryResponse? _historyData;
   bool _isLoading = true;
@@ -114,7 +116,8 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
 
   // Pagination
   int _currentPage = 1;
-  final int _itemsPerPage = 6; // Display 6 items per page to match your original design
+  final int _itemsPerPage =
+      6; // Display 6 items per page to match your original design
 
   // Sorting
   int? _sortColumnIndex;
@@ -133,10 +136,12 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
     });
 
     try {
-      print('🔄 Fetching selling history for product ${widget.productId}, page $_currentPage');
+      debugPrint(
+          '🔄 Fetching selling history for product ${widget.productId}, page $_currentPage');
 
       // Build URL with pagination
-      final String url = 'https://finalproject-a5ls.onrender.com/dashboard/product-selling-history/${widget.productId}?page=$_currentPage&limit=$_itemsPerPage';
+      final String url =
+          'https://finalproject-a5ls.onrender.com/dashboard/product-selling-history/${widget.productId}?page=$_currentPage&limit=$_itemsPerPage';
 
       final headers = await AuthService.getAuthHeaders();
       final response = await http.get(
@@ -146,22 +151,22 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Selling history data received');
-        print('📊 Total items: ${data['pagination']['totalItems']}');
+        debugPrint('✅ Selling history data received');
+        debugPrint('📊 Total items: ${data['pagination']['totalItems']}');
 
         setState(() {
           _historyData = ProductSellingHistoryResponse.fromJson(data);
           _isLoading = false;
         });
       } else {
-        print('❌ Error fetching selling history: ${response.statusCode}');
+        debugPrint('❌ Error fetching selling history: ${response.statusCode}');
         setState(() {
           _error = 'Failed to load selling history: ${response.statusCode}';
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('❌ Exception fetching selling history: $e');
+      debugPrint('❌ Exception fetching selling history: $e');
       setState(() {
         _error = 'Network error: $e';
         _isLoading = false;
@@ -259,7 +264,10 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
 
   /// Navigate to a specific page
   void _goToPage(int page) {
-    if (page != _currentPage && page >= 1 && _historyData != null && page <= _historyData!.pagination.totalPages) {
+    if (page != _currentPage &&
+        page >= 1 &&
+        _historyData != null &&
+        page <= _historyData!.pagination.totalPages) {
       setState(() {
         _currentPage = page;
       });
@@ -417,8 +425,12 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
       if (_sortColumnIndex == 1) {
         // Sort by order price (remove $ and convert to double)
         sortedHistory.sort((a, b) {
-          final priceA = double.tryParse(a.orderPrice.replaceAll('\$', '').replaceAll(',', '')) ?? 0;
-          final priceB = double.tryParse(b.orderPrice.replaceAll('\$', '').replaceAll(',', '')) ?? 0;
+          final priceA = double.tryParse(
+                  a.orderPrice.replaceAll('\$', '').replaceAll(',', '')) ??
+              0;
+          final priceB = double.tryParse(
+                  b.orderPrice.replaceAll('\$', '').replaceAll(',', '')) ??
+              0;
           return priceA.compareTo(priceB);
         });
       } else if (_sortColumnIndex == 4) {
@@ -529,7 +541,7 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
             ),
           ),
           SizedBox(height: 20.h),
-          
+
           // Pagination row with total items info
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -543,18 +555,19 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
                   color: Colors.white70,
                 ),
               ),
-              
+
               // Pagination controls
               Row(
                 children: [
                   // Left arrow
                   IconButton(
-                    icon: Icon(Icons.arrow_back, size: 20.sp, color: Colors.white70),
+                    icon: Icon(Icons.arrow_back,
+                        size: 20.sp, color: Colors.white70),
                     onPressed: pagination.hasPreviousPage
                         ? () => _goToPage(_currentPage - 1)
                         : null,
                   ),
-                  
+
                   // Page number buttons (show max 5 pages)
                   ...List.generate(
                     pagination.totalPages > 5 ? 5 : pagination.totalPages,
@@ -575,10 +588,11 @@ class _ProductSellingHistoryWidgetState extends State<ProductSellingHistoryWidge
                       return _buildPageButton(pageNumber);
                     },
                   ),
-                  
+
                   // Right arrow
                   IconButton(
-                    icon: Icon(Icons.arrow_forward, size: 20.sp, color: Colors.white70),
+                    icon: Icon(Icons.arrow_forward,
+                        size: 20.sp, color: Colors.white70),
                     onPressed: pagination.hasNextPage
                         ? () => _goToPage(_currentPage + 1)
                         : null,

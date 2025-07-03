@@ -95,14 +95,14 @@ class _OrdersState extends State<Orders> {
 
   // NEW: Handle low stock notification taps
   Future<void> _handleLowStockNotificationTap() async {
-    print(
+    debugPrint(
         '🔔 Low stock notification tapped, fetching current low stock items...');
 
     try {
       final response = await LowStockService.getLowStockItems();
 
       if (response != null && response.lowStockItems.isNotEmpty && mounted) {
-        print(
+        debugPrint(
             '✅ Found ${response.lowStockItems.length} current low stock items');
 
         // Show the popup with current low stock items
@@ -117,7 +117,7 @@ class _OrdersState extends State<Orders> {
           },
         );
       } else {
-        print('❌ No current low stock items found');
+        debugPrint('❌ No current low stock items found');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -128,7 +128,7 @@ class _OrdersState extends State<Orders> {
         }
       }
     } catch (e) {
-      print('💥 Error fetching current low stock items: $e');
+      debugPrint('💥 Error fetching current low stock items: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -142,74 +142,77 @@ class _OrdersState extends State<Orders> {
 
   // NEW: Check for low stock items - Enhanced with better debugging
   Future<void> _checkLowStockItems() async {
-    print('🔍 Starting low stock check...');
-    print('🐛 DEBUG: _isSupplierMode = $_isSupplierMode');
-    print('🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
+    debugPrint('🔍 Starting low stock check...');
+    debugPrint('🐛 DEBUG: _isSupplierMode = $_isSupplierMode');
+    debugPrint(
+        '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
 
     setState(() {
       _isCheckingLowStock = true;
     });
 
     try {
-      print('🌐 Calling low stock API...');
+      debugPrint('🌐 Calling low stock API...');
       final response = await LowStockService.getLowStockItems();
 
-      print('📊 API Response: ${response?.message}');
-      print('📦 Low stock items count: ${response?.lowStockItems.length ?? 0}');
+      debugPrint('📊 API Response: ${response?.message}');
+      debugPrint(
+          '📦 Low stock items count: ${response?.lowStockItems.length ?? 0}');
 
       // DEBUG: Add more detailed checks
-      print('🐛 DEBUG: response != null: ${response != null}');
-      print(
+      debugPrint('🐛 DEBUG: response != null: ${response != null}');
+      debugPrint(
           '🐛 DEBUG: response.lowStockItems.isNotEmpty: ${response?.lowStockItems.isNotEmpty}');
-      print('🐛 DEBUG: mounted: $mounted');
+      debugPrint('🐛 DEBUG: mounted: $mounted');
 
       if (response != null && response.lowStockItems.isNotEmpty && mounted) {
-        print('✅ Found ${response.lowStockItems.length} low stock items');
+        debugPrint('✅ Found ${response.lowStockItems.length} low stock items');
 
-        print('🐛 DEBUG: About to setState...');
+        debugPrint('🐛 DEBUG: About to setState...');
         setState(() {
           _lowStockItems = response.lowStockItems;
           _hasCheckedLowStock = true;
           _shouldShowLowStockButton = true; // Set the flag to show button
         });
 
-        print('🐛 DEBUG: After setState:');
-        print('🐛 DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
-        print('🐛 DEBUG: _hasCheckedLowStock = $_hasCheckedLowStock');
-        print(
+        debugPrint('🐛 DEBUG: After setState:');
+        debugPrint(
+            '🐛 DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
+        debugPrint('🐛 DEBUG: _hasCheckedLowStock = $_hasCheckedLowStock');
+        debugPrint(
             '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
 
         // Check if we should show notification
         final shouldShow = await LowStockService.shouldShowNotification();
-        print('📋 Should show notification: $shouldShow');
+        debugPrint('📋 Should show notification: $shouldShow');
 
         if (shouldShow) {
           // Show notification
-          print('🔔 Creating notification...');
+          debugPrint('🔔 Creating notification...');
           await _showLowStockNotification(response.lowStockItems);
 
           // Mark that we've shown the notification
           await LowStockService.markNotificationShown();
 
-          print('✅ Notification created and marked as shown');
+          debugPrint('✅ Notification created and marked as shown');
         } else {
-          print('🚫 Notification already shown today, skipping');
+          debugPrint('🚫 Notification already shown today, skipping');
         }
       } else {
-        print('❌ No low stock items found or response is null');
-        print('🐛 DEBUG: About to setState (no items)...');
+        debugPrint('❌ No low stock items found or response is null');
+        debugPrint('🐛 DEBUG: About to setState (no items)...');
         setState(() {
           _hasCheckedLowStock = true;
           _shouldShowLowStockButton = false; // Don't show button if no items
           _lowStockItems.clear();
         });
-        print('🐛 DEBUG: After setState (no items):');
-        print(
+        debugPrint('🐛 DEBUG: After setState (no items):');
+        debugPrint(
             '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
       }
     } catch (e) {
-      print('💥 Error checking low stock items: $e');
-      print('📍 Stack trace: ${StackTrace.current}');
+      debugPrint('💥 Error checking low stock items: $e');
+      debugPrint('📍 Stack trace: ${StackTrace.current}');
       setState(() {
         _hasCheckedLowStock = true;
         _shouldShowLowStockButton = false;
@@ -220,11 +223,12 @@ class _OrdersState extends State<Orders> {
         setState(() {
           _isCheckingLowStock = false;
         });
-        print('🐛 DEBUG: Final state:');
-        print('🐛 DEBUG: _isSupplierMode = $_isSupplierMode');
-        print(
+        debugPrint('🐛 DEBUG: Final state:');
+        debugPrint('🐛 DEBUG: _isSupplierMode = $_isSupplierMode');
+        debugPrint(
             '🐛 DEBUG: _shouldShowLowStockButton = $_shouldShowLowStockButton');
-        print('🐛 DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
+        debugPrint(
+            '🐛 DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
       }
     }
   }
@@ -249,9 +253,9 @@ class _OrdersState extends State<Orders> {
       // Add to notification service with special type
       await NotificationService().saveLowStockNotification(notification);
 
-      print('Added low stock notification: ${notification.title}');
+      debugPrint('Added low stock notification: ${notification.title}');
     } catch (e) {
-      print('Error showing low stock notification: $e');
+      debugPrint('Error showing low stock notification: $e');
     }
   }
 
@@ -313,10 +317,10 @@ class _OrdersState extends State<Orders> {
                 .toList();
           });
         } else {
-          print('Failed to load supplier orders: ${data['message']}');
+          debugPrint('Failed to load supplier orders: ${data['message']}');
         }
       } else {
-        print(
+        debugPrint(
             'Failed to load supplier orders. Status code: ${supplierResponse.statusCode}');
       }
 
@@ -351,14 +355,14 @@ class _OrdersState extends State<Orders> {
           _isLoading = false;
         });
       } else {
-        print(
+        debugPrint(
             'Failed to load customer orders. Status code: ${customerResponse.statusCode}');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Error fetching orders: $e');
+      debugPrint('Error fetching orders: $e');
       setState(() {
         _errorMessage = 'Error fetching orders: $e';
         _isLoading = false;
@@ -665,9 +669,9 @@ class _OrdersState extends State<Orders> {
                     SizedBox(width: 16.w),
                     Builder(
                       builder: (context) {
-                        print(
+                        debugPrint(
                             '🐛 BUILD DEBUG: Low stock button is being built!');
-                        print(
+                        debugPrint(
                             '🐛 BUILD DEBUG: _lowStockItems.length = ${_lowStockItems.length}');
                         return ElevatedButton(
                           style: ElevatedButton.styleFrom(
@@ -682,7 +686,7 @@ class _OrdersState extends State<Orders> {
                             elevation: 1,
                           ),
                           onPressed: () {
-                            print('🔔 Low stock button pressed!');
+                            debugPrint('🔔 Low stock button pressed!');
                             _showLowStockPopupDialog();
                           },
                           child: Row(

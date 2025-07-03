@@ -142,9 +142,9 @@ class _ProductSalesOverviewWidgetState
   }
 
   Future<void> _fetchProductSales({String? startDate, String? endDate}) async {
-    print('🔄 Fetching product sales for product ${widget.productId}');
+    debugPrint('🔄 Fetching product sales for product ${widget.productId}');
     if (startDate != null && endDate != null) {
-      print('📅 Date range: $startDate to $endDate');
+      debugPrint('📅 Date range: $startDate to $endDate');
     }
 
     setState(() {
@@ -168,23 +168,23 @@ class _ProductSalesOverviewWidgetState
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ Product sales data received');
-        print('📊 Total sold: ${data['sales']['totalSold']}');
-        print('💰 Revenue: ${data['sales']['revenue']}');
+        debugPrint('✅ Product sales data received');
+        debugPrint('📊 Total sold: ${data['sales']['totalSold']}');
+        debugPrint('💰 Revenue: ${data['sales']['revenue']}');
 
         setState(() {
           _salesData = ProductSalesResponse.fromJson(data);
           _isLoading = false;
         });
       } else {
-        print('❌ Error fetching product sales: ${response.statusCode}');
+        debugPrint('❌ Error fetching product sales: ${response.statusCode}');
         setState(() {
           _error = 'Failed to load sales data: ${response.statusCode}';
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('❌ Exception fetching product sales: $e');
+      debugPrint('❌ Exception fetching product sales: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;

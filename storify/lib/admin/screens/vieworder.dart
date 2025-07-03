@@ -84,7 +84,7 @@ class _VieworderState extends State<Vieworder> {
         await _fetchCustomerOrderDetails();
       }
     } catch (e) {
-      print("Error in fetch order details: $e");
+      debugPrint("Error in fetch order details: $e");
       setState(() {
         _errorMessage = 'Error fetching order details: $e';
         _isLoading = false;
@@ -110,7 +110,7 @@ class _VieworderState extends State<Vieworder> {
 
         if (data['message'] == 'Order retrieved successfully') {
           final orderData = data['order'];
-          print("Order data: $orderData"); // Debug
+          debugPrint("Order data: $orderData"); // Debug
 
           // Extract totalCost directly
           double totalCost = 0.0;
@@ -122,7 +122,7 @@ class _VieworderState extends State<Vieworder> {
                   double.tryParse(orderData['totalCost'].toString()) ?? 0.0;
             }
           }
-          print("Extracted totalCost: $totalCost"); // Debug
+          debugPrint("Extracted totalCost: $totalCost"); // Debug
 
           // Process items one by one
           List<OrderLineItem> processedItems = [];
@@ -173,7 +173,7 @@ class _VieworderState extends State<Vieworder> {
               String? prodDate = item['prodDate'];
               String? expDate = item['expDate'];
 
-              print(
+              debugPrint(
                   "Item: ${product['name']} - Price: $costPrice, Qty: $quantity, Total: $subtotal, Status: $itemStatus, ProdDate: $prodDate, ExpDate: $expDate"); // Debug
 
               processedItems.add(OrderLineItem(
@@ -223,7 +223,7 @@ class _VieworderState extends State<Vieworder> {
         });
       }
     } catch (e) {
-      print("Error in fetch supplier order details: $e"); // Debug
+      debugPrint("Error in fetch supplier order details: $e"); // Debug
       rethrow;
     }
   }
@@ -243,7 +243,7 @@ class _VieworderState extends State<Vieworder> {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print("API Response: $responseData"); // Debug output
+        debugPrint("API Response: $responseData"); // Debug output
 
         // Extract the order data from the nested 'order' property
         final orderData = responseData['order'];
@@ -251,7 +251,7 @@ class _VieworderState extends State<Vieworder> {
           throw Exception('Order data not found in response');
         }
 
-        print("Customer order data: $orderData"); // Debug output
+        debugPrint("Customer order data: $orderData"); // Debug output
 
         // Extract totalCost directly from the API response
         double totalCost = 0.0;
@@ -263,14 +263,14 @@ class _VieworderState extends State<Vieworder> {
                 double.tryParse(orderData['totalCost'].toString()) ?? 0.0;
           }
         }
-        print("Total cost from API: $totalCost");
+        debugPrint("Total cost from API: $totalCost");
 
         // Process items
         List<OrderLineItem> processedItems = [];
 
         if (orderData['items'] != null && orderData['items'] is List) {
           final itemsList = orderData['items'] as List;
-          print("Found ${itemsList.length} items");
+          debugPrint("Found ${itemsList.length} items");
 
           for (var item in itemsList) {
             // Get product information
@@ -309,7 +309,7 @@ class _VieworderState extends State<Vieworder> {
             String? prodDate = item['prodDate'];
             String? expDate = item['expDate'];
 
-            print(
+            debugPrint(
                 "Item: $productName, Price: $price, Quantity: $quantity, Subtotal: $subtotal, Status: $itemStatus, ProdDate: $prodDate, ExpDate: $expDate");
 
             // Create the line item
@@ -345,7 +345,7 @@ class _VieworderState extends State<Vieworder> {
         });
       }
     } catch (e) {
-      print("Error in fetch customer order details: $e"); // Debug error
+      debugPrint("Error in fetch customer order details: $e"); // Debug error
       setState(() {
         _errorMessage = 'Error fetching customer order details: $e';
         _isLoading = false;

@@ -58,7 +58,8 @@ class _LowStockPopupState extends State<LowStockPopup> {
   void _initializeSuppliers() {
     // Get all unique suppliers from all items
     _allSuppliers = LowStockService.getAllUniqueSuppliers(_items);
-    print('Found ${_allSuppliers.length} unique suppliers across all items');
+    debugPrint(
+        'Found ${_allSuppliers.length} unique suppliers across all items');
 
     // Set default suppliers for each item
     for (var item in _items) {
@@ -72,16 +73,16 @@ class _LowStockPopupState extends State<LowStockPopup> {
               (supplier) =>
                   supplier.supplierName == item.lastOrder!.supplierName,
             );
-            print(
+            debugPrint(
                 'Set default supplier for product ${item.product.productId} from last order: ${defaultSupplier.supplierName}');
           } catch (e) {
             defaultSupplier = item.suppliers.first;
-            print(
+            debugPrint(
                 'Set first available supplier for product ${item.product.productId}: ${defaultSupplier.supplierName}');
           }
         } else {
           defaultSupplier = item.suppliers.first;
-          print(
+          debugPrint(
               'Set first available supplier for product ${item.product.productId}: ${defaultSupplier.supplierName}');
         }
 
@@ -926,7 +927,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
         ),
       );
     } catch (e) {
-      print('Error building supplier dropdown for product $productId: $e');
+      debugPrint('Error building supplier dropdown for product $productId: $e');
       return Container(
         padding: EdgeInsets.symmetric(vertical: 8.h),
         child: Text(

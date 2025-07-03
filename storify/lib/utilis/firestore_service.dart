@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -7,7 +8,8 @@ class FirestoreService {
 
   // Collection references
   CollectionReference get users => _firestore.collection('users');
-  CollectionReference get notifications => _firestore.collection('notifications');
+  CollectionReference get notifications =>
+      _firestore.collection('notifications');
 
   // Save FCM token to user document
   Future<void> saveToken(String token) async {
@@ -22,8 +24,8 @@ class FirestoreService {
   // Get all notifications for current user
   Stream<QuerySnapshot> getUserNotifications() {
     String userId = _auth.currentUser?.uid ?? 'anonymous';
-    print('Current user ID: $userId');
-    
+    debugPrint('Current user ID: $userId');
+
     // First try to get all notifications to see if there are any
     return notifications
         // .where('userId', isEqualTo: userId) // Temporarily comment this out to see all notifications

@@ -95,7 +95,6 @@ class SupplierService {
             'Failed to create order. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error creating order: $e');
       return false;
     }
   }
@@ -119,9 +118,7 @@ class SupplierService {
       await NotificationService().sendNotificationToSupplier(
           supplierId, title, message, additionalData);
 
-      print('Notification sent to supplier ID: $supplierId');
     } catch (e) {
-      print('Error sending notification to supplier: $e');
     }
   }
 
@@ -165,7 +162,6 @@ class SupplierService {
 
       return null;
     } catch (e) {
-      print('Error finding lower price product: $e');
       return null;
     }
   }

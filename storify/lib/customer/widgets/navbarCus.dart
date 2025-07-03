@@ -52,7 +52,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
 
   @override
   void dispose() {
-    print('🧹 Disposing NavigationBarCustomer...');
+    debugPrint('🧹 Disposing NavigationBarCustomer...');
     _isDisposed = true;
     NotificationService()
         .unregisterNotificationsListChangedCallback(_onNotificationsChanged);
@@ -72,7 +72,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
         _notificationOverlayEntry = null;
       }
     } catch (e) {
-      print('⚠️ Error removing overlays: $e');
+      debugPrint('⚠️ Error removing overlays: $e');
     }
   }
 
@@ -159,7 +159,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
       try {
         _overlayEntry!.remove();
       } catch (e) {
-        print('⚠️ Error removing overlay: $e');
+        debugPrint('⚠️ Error removing overlay: $e');
       }
       _overlayEntry = null;
     }
@@ -173,7 +173,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
 
   // Simplified logout for customer
   Future<void> _handleCompleteLogout() async {
-    print('🚪 === CLEAN CUSTOMER LOGOUT ===');
+    debugPrint('🚪 === CLEAN CUSTOMER LOGOUT ===');
 
     try {
       _removeAllOverlays();
@@ -185,7 +185,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      print('✅ Customer data cleared');
+      debugPrint('✅ Customer data cleared');
 
       // ✅ CLEAN NAVIGATION: Clear all history including customer screens
       if (mounted && context.mounted) {
@@ -194,10 +194,10 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
           '/login',
           (route) => false, // Remove ALL previous routes
         );
-        print('✅ Customer logout navigation completed');
+        debugPrint('✅ Customer logout navigation completed');
       }
     } catch (e) {
-      print('❌ Error during customer logout: $e');
+      debugPrint('❌ Error during customer logout: $e');
 
       if (mounted && context.mounted) {
         try {
@@ -207,7 +207,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
             (route) => false, // Clear history even in emergency
           );
         } catch (navError) {
-          print('💥 Emergency navigation failed: $navError');
+          debugPrint('💥 Emergency navigation failed: $navError');
         }
       }
     }
@@ -272,7 +272,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
       try {
         _notificationOverlayEntry!.remove();
       } catch (e) {
-        print('⚠️ Error removing notification overlay: $e');
+        debugPrint('⚠️ Error removing notification overlay: $e');
       }
       _notificationOverlayEntry = null;
     }
@@ -407,7 +407,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                                   ),
                                 ),
                                 errorWidget: (context, url, error) {
-                                  print(
+                                  debugPrint(
                                       'Error loading profile image: $error from URL: $url');
                                   return Image.asset('assets/images/me.png',
                                       fit: BoxFit.cover);

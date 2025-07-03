@@ -147,10 +147,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   Future<List<LatLng>> _getDirectionsFromBackend(
       LatLng origin, LatLng destination) async {
     try {
-      print('🗺️ Requesting directions from backend proxy...');
-      print(
+      debugPrint('🗺️ Requesting directions from backend proxy...');
+      debugPrint(
           '📍 From: ${origin.latitude.toStringAsFixed(6)}, ${origin.longitude.toStringAsFixed(6)}');
-      print(
+      debugPrint(
           '📍 To: ${destination.latitude.toStringAsFixed(6)}, ${destination.longitude.toStringAsFixed(6)}');
 
       // Get admin auth headers
@@ -172,11 +172,11 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         },
       );
 
-      print('📥 Backend response status: ${response.statusCode}');
+      debugPrint('📥 Backend response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('📊 Backend response status: ${data['status']}');
+        debugPrint('📊 Backend response status: ${data['status']}');
 
         if (data['status'] == 'success' && data['route'] != null) {
           final routeData = data['route'];
@@ -190,35 +190,35 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               final distance = routeData['distance']?['text'] ?? 'Unknown';
               final duration = routeData['duration']?['text'] ?? 'Unknown';
 
-              print('✅ Backend directions success:');
-              print('   📏 Distance: $distance');
-              print('   ⏱️ Duration: $duration');
-              print('   🛣️ Route points: ${polylinePoints.length}');
+              debugPrint('✅ Backend directions success:');
+              debugPrint('   📏 Distance: $distance');
+              debugPrint('   ⏱️ Duration: $duration');
+              debugPrint('   🛣️ Route points: ${polylinePoints.length}');
 
               return polylinePoints;
             }
           }
         } else {
-          print(
+          debugPrint(
               '❌ Backend directions error: ${data['error'] ?? 'Unknown error'}');
         }
       } else if (response.statusCode == 400) {
         final data = json.decode(response.body);
-        print('❌ Backend directions bad request: ${data['error']}');
+        debugPrint('❌ Backend directions bad request: ${data['error']}');
       } else if (response.statusCode == 401) {
-        print('❌ Backend directions: Authentication failed');
+        debugPrint('❌ Backend directions: Authentication failed');
       } else if (response.statusCode == 503) {
-        print('❌ Backend directions: Service unavailable');
+        debugPrint('❌ Backend directions: Service unavailable');
       } else {
-        print('❌ Backend directions HTTP error: ${response.statusCode}');
-        print('❌ Response body: ${response.body}');
+        debugPrint('❌ Backend directions HTTP error: ${response.statusCode}');
+        debugPrint('❌ Response body: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error calling backend directions API: $e');
+      debugPrint('❌ Error calling backend directions API: $e');
     }
 
     // Fallback to straight line if backend fails
-    print('⚠️ Falling back to straight line between points');
+    debugPrint('⚠️ Falling back to straight line between points');
     return [origin, destination];
   }
 
@@ -226,7 +226,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   Future<Map<int, List<LatLng>>> _getBatchDirectionsFromBackend(
       List<Map<String, dynamic>> routeRequests) async {
     try {
-      print('🗺️ Requesting batch directions from backend...');
+      debugPrint('🗺️ Requesting batch directions from backend...');
 
       final headers = await AuthService.getAuthHeaders(role: 'Admin');
 
@@ -258,7 +258,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         },
       );
 
-      print('📥 Backend batch response status: ${response.statusCode}');
+      debugPrint('📥 Backend batch response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -279,13 +279,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             }
           }
 
-          print(
+          debugPrint(
               '✅ Batch directions success: ${routeMap.length} routes received');
           return routeMap;
         }
       }
     } catch (e) {
-      print('❌ Error calling backend batch directions: $e');
+      debugPrint('❌ Error calling backend batch directions: $e');
     }
 
     return {};
@@ -295,7 +295,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   List<LatLng> _decodePolylineEnhanced(String encoded) {
     try {
       if (encoded.isEmpty) {
-        print('❌ Empty polyline string');
+        debugPrint('❌ Empty polyline string');
         return [];
       }
 
@@ -341,15 +341,16 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         if (latLng.latitude.abs() <= 90 && latLng.longitude.abs() <= 180) {
           polylineCoordinates.add(latLng);
         } else {
-          print(
+          debugPrint(
               '⚠️ Invalid decoded coordinate: ${latLng.latitude}, ${latLng.longitude}');
         }
       }
 
-      print('🔄 Decoded ${polylineCoordinates.length} points from polyline');
+      debugPrint(
+          '🔄 Decoded ${polylineCoordinates.length} points from polyline');
       return polylineCoordinates;
     } catch (e) {
-      print('❌ Error decoding polyline: $e');
+      debugPrint('❌ Error decoding polyline: $e');
       return [];
     }
   }
@@ -497,7 +498,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             );
           }
 
-          print(isRealRoute
+          debugPrint(isRealRoute
               ? '✅ Real route added for Order #$orderId with ${routePoints.length} points'
               : '⚠️ Fallback route used for Order #$orderId');
         }
@@ -543,7 +544,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       _focusOnRoute(selectedOrder);
     }
 
-    print('Selected order: $orderId');
+    debugPrint('Selected order: $orderId');
   }
 
   Future<BitmapDescriptor> _getDeliveryManIcon(String urgency) async {

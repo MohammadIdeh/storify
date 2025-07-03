@@ -1,22 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:storify/utilis/notificationModel.dart';
 
 class NotificationDatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   // Collection references
-  CollectionReference get notificationsCollection => _firestore.collection('notifications');
-  
+  CollectionReference get notificationsCollection =>
+      _firestore.collection('notifications');
+
   // Get current user ID
   String get currentUserId => _auth.currentUser?.uid ?? 'anonymous';
-  
+
   // Save notification to Firestore
   Future<void> saveNotification(NotificationItem notification) async {
     try {
-      print('Saving notification to Firestore: ${notification.title}');
-      
+      debugPrint('Saving notification to Firestore: ${notification.title}');
+
       await notificationsCollection.add({
         'id': notification.id,
         'title': notification.title,
@@ -28,14 +30,14 @@ class NotificationDatabaseService {
         'supplierId': notification.supplierId,
         'supplierName': notification.supplierName,
       });
-      
-      print('Successfully saved notification to Firestore');
+
+      debugPrint('Successfully saved notification to Firestore');
     } catch (e) {
-      print('Error saving notification to Firestore: $e');
-      print('Stack trace: ${StackTrace.current}');
+      debugPrint('Error saving notification to Firestore: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
     }
   }
-  
+
   // Get notifications from Firestore
   Stream<List<NotificationItem>> getNotificationsStream() {
     return notificationsCollection
@@ -43,51 +45,16 @@ class NotificationDatabaseService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            
-            // Calculate time ago
-            String timeAgo = 'Just now';
-            if (data['createdAt'] != null) {
-              final createdAt = DateTime.parse(data['createdAt']);
-              timeAgo = _getTimeAgo(createdAt);
-            }
-            
-            return NotificationItem(
-              id: data['id'] ?? doc.id,
-              title: data['title'] ?? 'Notification',
-              message: data['message'] ?? '',
-              timeAgo: timeAgo,
-              isRead: data['isRead'] ?? false,
-            );
-          }).toList();
-        });
-  }
-  
-  // Get all notifications from Firestore
-  Future<List<NotificationItem>> getAllNotifications() async {
-    try {
-      print('Fetching all notifications from Firestore for user: $currentUserId');
-      
-      final querySnapshot = await notificationsCollection
-          .orderBy('timestamp', descending: true)
-          .get();
-          
-      print('Firestore returned ${querySnapshot.docs.length} documents');
-      
-      final notifications = querySnapshot.docs.map((doc) {
+      return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        
-        print('Processing Firestore document: ${doc.id}');
-        print('Document data: $data');
-        
+
         // Calculate time ago
         String timeAgo = 'Just now';
         if (data['createdAt'] != null) {
           final createdAt = DateTime.parse(data['createdAt']);
           timeAgo = _getTimeAgo(createdAt);
         }
-        
+
         return NotificationItem(
           id: data['id'] ?? doc.id,
           title: data['title'] ?? 'Notification',
@@ -96,16 +63,53 @@ class NotificationDatabaseService {
           isRead: data['isRead'] ?? false,
         );
       }).toList();
-      
-      print('Processed ${notifications.length} notifications from Firestore');
+    });
+  }
+
+  // Get all notifications from Firestore
+  Future<List<NotificationItem>> getAllNotifications() async {
+    try {
+      debugPrint(
+          'Fetching all notifications from Firestore for user: $currentUserId');
+
+      final querySnapshot = await notificationsCollection
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      debugPrint('Firestore returned ${querySnapshot.docs.length} documents');
+
+      final notifications = querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+
+        debugPrint('Processing Firestore document: ${doc.id}');
+        debugPrint('Document data: $data');
+
+        // Calculate time ago
+        String timeAgo = 'Just now';
+        if (data['createdAt'] != null) {
+          final createdAt = DateTime.parse(data['createdAt']);
+          timeAgo = _getTimeAgo(createdAt);
+        }
+
+        return NotificationItem(
+          id: data['id'] ?? doc.id,
+          title: data['title'] ?? 'Notification',
+          message: data['message'] ?? '',
+          timeAgo: timeAgo,
+          isRead: data['isRead'] ?? false,
+        );
+      }).toList();
+
+      debugPrint(
+          'Processed ${notifications.length} notifications from Firestore');
       return notifications;
     } catch (e) {
-      print('Error getting all notifications from Firestore: $e');
-      print('Stack trace: ${StackTrace.current}');
+      debugPrint('Error getting all notifications from Firestore: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
       return [];
     }
   }
-  
+
   // Mark notification as read in Firestore
   Future<void> markAsRead(String notificationId) async {
     try {
@@ -114,40 +118,40 @@ class NotificationDatabaseService {
           .where('id', isEqualTo: notificationId)
           .limit(1)
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         final docId = querySnapshot.docs.first.id;
         await notificationsCollection.doc(docId).update({
           'isRead': true,
         });
-        print('Marked notification as read in Firestore: $notificationId');
+        debugPrint('Marked notification as read in Firestore: $notificationId');
       }
     } catch (e) {
-      print('Error marking notification as read in Firestore: $e');
+      debugPrint('Error marking notification as read in Firestore: $e');
     }
   }
-  
+
   // Mark all notifications as read in Firestore
   Future<void> markAllAsRead() async {
     try {
       final batch = _firestore.batch();
-      
+
       final querySnapshot = await notificationsCollection
           .where('userId', isEqualTo: currentUserId)
           .where('isRead', isEqualTo: false)
           .get();
-      
+
       for (var doc in querySnapshot.docs) {
         batch.update(doc.reference, {'isRead': true});
       }
-      
+
       await batch.commit();
-      print('Marked all notifications as read in Firestore');
+      debugPrint('Marked all notifications as read in Firestore');
     } catch (e) {
-      print('Error marking all notifications as read in Firestore: $e');
+      debugPrint('Error marking all notifications as read in Firestore: $e');
     }
   }
-  
+
   // Delete notification from Firestore
   Future<void> deleteNotification(String notificationId) async {
     try {
@@ -155,17 +159,17 @@ class NotificationDatabaseService {
           .where('id', isEqualTo: notificationId)
           .limit(1)
           .get();
-      
+
       if (querySnapshot.docs.isNotEmpty) {
         final docId = querySnapshot.docs.first.id;
         await notificationsCollection.doc(docId).delete();
-        print('Deleted notification from Firestore: $notificationId');
+        debugPrint('Deleted notification from Firestore: $notificationId');
       }
     } catch (e) {
-      print('Error deleting notification from Firestore: $e');
+      debugPrint('Error deleting notification from Firestore: $e');
     }
   }
-  
+
   // Helper to calculate time ago
   String _getTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
@@ -185,32 +189,33 @@ class NotificationDatabaseService {
   }
 
   // Get notifications for a specific supplier
-  Stream<List<NotificationItem>> getSupplierNotificationsStream(int supplierId) {
+  Stream<List<NotificationItem>> getSupplierNotificationsStream(
+      int supplierId) {
     return notificationsCollection
         .where('supplierId', isEqualTo: supplierId)
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            
-            // Calculate time ago
-            String timeAgo = 'Just now';
-            if (data['createdAt'] != null) {
-              final createdAt = DateTime.parse(data['createdAt']);
-              timeAgo = _getTimeAgo(createdAt);
-            }
-            
-            return NotificationItem(
-              id: data['id'] ?? doc.id,
-              title: data['title'] ?? 'Notification',
-              message: data['message'] ?? '',
-              timeAgo: timeAgo,
-              isRead: data['isRead'] ?? false,
-              supplierId: data['supplierId'],
-              supplierName: data['supplierName'],
-            );
-          }).toList();
-        });
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+
+        // Calculate time ago
+        String timeAgo = 'Just now';
+        if (data['createdAt'] != null) {
+          final createdAt = DateTime.parse(data['createdAt']);
+          timeAgo = _getTimeAgo(createdAt);
+        }
+
+        return NotificationItem(
+          id: data['id'] ?? doc.id,
+          title: data['title'] ?? 'Notification',
+          message: data['message'] ?? '',
+          timeAgo: timeAgo,
+          isRead: data['isRead'] ?? false,
+          supplierId: data['supplierId'],
+          supplierName: data['supplierName'],
+        );
+      }).toList();
+    });
   }
 }

@@ -44,7 +44,7 @@ class _CategoriestableState extends State<Categoriestable> {
       // Get token
       final token = await AuthService.getToken();
       if (token == null) {
-        print('No token available for category status update');
+        debugPrint('No token available for category status update');
         _showError('Authentication required. Please log in again.');
         return;
       }
@@ -63,18 +63,18 @@ class _CategoriestableState extends State<Categoriestable> {
         body: json.encode({'status': newStatus}),
       );
 
-      print('API Response: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      debugPrint('API Response: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         // Success - update the parent state through callback
         if (widget.onCategoryUpdated != null) {
           widget.onCategoryUpdated!(categoryID, newStatus);
         }
-        print('Category status updated successfully');
+        debugPrint('Category status updated successfully');
       } else {
-        print('Failed to update category status: ${response.statusCode}');
-        print('Response: ${response.body}');
+        debugPrint('Failed to update category status: ${response.statusCode}');
+        debugPrint('Response: ${response.body}');
 
         // Try to parse error message
         try {
@@ -87,7 +87,7 @@ class _CategoriestableState extends State<Categoriestable> {
         }
       }
     } catch (e) {
-      print('Error updating category status: $e');
+      debugPrint('Error updating category status: $e');
       _showError('Network error: $e');
     } finally {
       // Remove from updating set

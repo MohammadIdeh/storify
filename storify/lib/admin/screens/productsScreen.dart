@@ -362,36 +362,36 @@ class _ProductsscreenState extends State<Productsscreen> {
                       color: const Color.fromARGB(255, 246, 246, 246),
                     ),
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      fixedSize: Size(138.w, 50.h),
-                      elevation: 1,
-                    ),
-                    onPressed: () {},
-                    child: Row(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/images/filter.svg',
-                          width: 18.w,
-                          height: 18.h,
-                        ),
-                        SizedBox(width: 12.w),
-                        Text(
-                          'Filter',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w700,
-                            color: const Color.fromARGB(255, 105, 123, 123),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // const Spacer(),
+                  // ElevatedButton(
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+                  //     shape: RoundedRectangleBorder(
+                  //       borderRadius: BorderRadius.circular(16),
+                  //     ),
+                  //     fixedSize: Size(138.w, 50.h),
+                  //     elevation: 1,
+                  //   ),
+                  //   onPressed: () {},
+                  //   child: Row(
+                  //     children: [
+                  //       SvgPicture.asset(
+                  //         'assets/images/filter.svg',
+                  //         width: 18.w,
+                  //         height: 18.h,
+                  //       ),
+                  //       SizedBox(width: 12.w),
+                  //       Text(
+                  //         'Filter',
+                  //         style: GoogleFonts.spaceGrotesk(
+                  //           fontSize: 17.sp,
+                  //           fontWeight: FontWeight.w700,
+                  //           color: const Color.fromARGB(255, 105, 123, 123),
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                 ],
               ),
               SizedBox(height: 40.h),
