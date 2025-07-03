@@ -405,19 +405,11 @@ class _OrdersState extends State<Orders_employee> {
     });
     switch (index) {
       case 0:
-        // Current screen - do nothing
+        // Stay on current screen
         break;
       case 1:
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const OrderHistoryScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 700),
-          ),
-        );
+        // Navigate to order history with URL change
+        Navigator.pushNamed(context, '/warehouse/history');
         break;
     }
   }

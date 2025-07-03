@@ -64,18 +64,11 @@ class _SupplierProductsState extends State<SupplierProducts> {
     });
     switch (index) {
       case 0:
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const SupplierOrders(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 700),
-          ),
-        );
+        // Navigate to supplier orders with URL change
+        Navigator.pushNamed(context, '/supplier/orders');
         break;
       case 1:
+        // Stay on current screen
         break;
     }
   }

@@ -115,18 +115,11 @@ class _SupplierOrdersState extends State<SupplierOrders> {
     });
     switch (index) {
       case 0:
+        // Stay on current screen
         break;
       case 1:
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const SupplierProducts(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 700),
-          ),
-        );
+        // Navigate to supplier products with URL change
+        Navigator.pushNamed(context, '/supplier/products');
         break;
     }
   }

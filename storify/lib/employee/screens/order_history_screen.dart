@@ -145,26 +145,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     });
   }
 
-  // Handle navigation
   void _onNavItemTap(int index) {
     setState(() {
       _currentIndex = index;
     });
     switch (index) {
       case 0:
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const Orders_employee(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 700),
-          ),
-        );
+        // Navigate to employee orders with URL change
+        Navigator.pushNamed(context, '/warehouse/orders');
         break;
       case 1:
-        // Current screen - do nothing
+        // Stay on current screen
         break;
     }
   }
