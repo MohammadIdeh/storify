@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart'; // Add this import
@@ -46,19 +45,12 @@ class _ChangepasswordState extends State<Changedthanks> {
     setState(() {
       _isLoading = false;
     });
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(
-            milliseconds: 600), // Set longer duration here  Color
-      ),
+
+    // ✅ UPDATED: Use named route for clean navigation back to login
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false, // Clear all navigation history
     );
   }
 

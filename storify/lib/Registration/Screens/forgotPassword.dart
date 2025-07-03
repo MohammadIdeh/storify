@@ -4,8 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/Registration/Screens/emailCode.dart';
-import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -69,21 +67,8 @@ class _ForgotpasswordState extends State<Forgotpassword> {
       );
 
       if (response.statusCode == 200) {
-        // If the request is successful, navigate to the Emailcode screen.
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const Emailcode(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
+        // ✅ UPDATED: Use named route for email code verification
+        Navigator.pushNamed(context, '/email-code');
       } else {
         // If the API call fails, show an error message.
         ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +153,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                             ),
                             SizedBox(height: 8.h),
                             Text(
-                              "No worries, we’ll send you reset Code.",
+                              "No worries, we'll send you reset Code.",
                               style: GoogleFonts.inter(
                                 color: Colors.grey,
                                 fontSize: 16.sp,
@@ -266,21 +251,11 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                               splashColor: const Color.fromARGB(0, 0, 0, 0),
                               highlightColor: const Color.fromARGB(0, 0, 0, 0),
                               onTap: () {
-                                Navigator.of(context).push(
-                                  PageRouteBuilder(
-                                    pageBuilder: (context, animation,
-                                            secondaryAnimation) =>
-                                        const LoginScreen(),
-                                    transitionsBuilder: (context, animation,
-                                        secondaryAnimation, child) {
-                                      return FadeTransition(
-                                        opacity: animation,
-                                        child: child,
-                                      );
-                                    },
-                                    transitionDuration:
-                                        const Duration(milliseconds: 600),
-                                  ),
+                                // ✅ UPDATED: Use named route for clean navigation back to login
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/login',
+                                  (route) => false,
                                 );
                               },
                               child: Row(

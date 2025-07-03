@@ -4,8 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storify/Registration/Screens/changedThanks.dart';
-import 'package:storify/Registration/Screens/forgotPassword.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -84,20 +82,11 @@ class _ChangepasswordState extends State<Changepassword> {
       );
 
       if (response.statusCode == 200) {
-        // On success, navigate to the Changedthanks screen.
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const Changedthanks(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
+        // ✅ UPDATED: Use named route for clean navigation to success screen
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/changed-thanks',
+          (route) => false, // Clear navigation stack
         );
       } else {
         // If the API call fails, show an error message.

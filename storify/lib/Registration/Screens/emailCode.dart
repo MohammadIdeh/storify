@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/snackBar.dart';
-import 'package:storify/Registration/Screens/changePassword.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -99,20 +98,14 @@ class _EmailcodeState extends State<Emailcode> {
       );
 
       if (response.statusCode == 200) {
-        // Navigate to change password screen if successful.
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                Changepassword(email: email, code: code),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
+        // ✅ UPDATED: Use named route with parameters for clean navigation
+        Navigator.pushNamed(
+          context,
+          '/change-password',
+          arguments: {
+            'email': email,
+            'code': code,
+          },
         );
       } else {
         // If the API call fails, show an error message.
@@ -305,7 +298,7 @@ class _EmailcodeState extends State<Emailcode> {
                                 ),
                                 children: [
                                   const TextSpan(
-                                      text: "Didn’t receive the Code? "),
+                                      text: "Didn't receive the Code? "),
                                   TextSpan(
                                     text: 'Resend',
                                     style: GoogleFonts.inter(
