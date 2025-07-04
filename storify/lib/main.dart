@@ -5,6 +5,7 @@
 // ✅ Added real-time authentication checks for all route changes
 // ✅ Added proper redirect logic for unauthorized access
 // ✅ PRESERVES CURRENT URL ON REFRESH
+// ✅ ADDED LOCALIZATION SUPPORT
 import 'dart:ui' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+
+// ✅ LOCALIZATION IMPORTS
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocaleProvider.dart';
+
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Screens/changePassword.dart';
 import 'package:storify/Registration/Screens/changedThanks.dart';
@@ -198,6 +206,13 @@ class _RouteGuardState extends State<RouteGuard> {
         }
 
         debugPrint('✅ Successfully switched to ${widget.requiredRole}');
+
+        // ✅ UPDATE LOCALE WHEN ROLE CHANGES
+        if (mounted) {
+          final localeProvider =
+              Provider.of<LocaleProvider>(context, listen: false);
+          await localeProvider.onRoleChanged(widget.requiredRole);
+        }
       }
 
       // ✅ CHECK 3: Verify token is still valid
@@ -331,6 +346,7 @@ class EnhancedLoginScreen extends StatelessWidget {
   }
 }
 
+// ✅ UPDATED MyApp WITH LOCALIZATION SUPPORT
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -354,194 +370,216 @@ class MyApp extends StatelessWidget {
 
     debugPrint('🔄 Initial route determined: $initialRoute');
 
-    return ScreenUtilInit(
-      designSize: const Size(1920, 1080),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Storify',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          pageTransitionsTheme: PageTransitionsTheme(
-            builders: {
-              TargetPlatform.windows: WebFadeTransition(),
-              TargetPlatform.macOS: WebFadeTransition(),
-              TargetPlatform.linux: WebFadeTransition(),
-            },
-          ),
-        ),
+    // ✅ WRAP WITH MULTIPROVIDER FOR LOCALIZATION
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+      ],
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, child) {
+          return ScreenUtilInit(
+            designSize: const Size(1920, 1080),
+            minTextAdapt: true,
+            splitScreenMode: true,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Storify',
 
-        // ✅ ROUTING: COMPLETE named routes with PROTECTION
-        routes: {
-          // ═══════════════════════════════════════════════════════════════
-          // PUBLIC ROUTES (No authentication required)
-          // ═══════════════════════════════════════════════════════════════
-          '/login': (context) => const EnhancedLoginScreen(),
-          '/forgot-password': (context) => const Forgotpassword(),
-          '/email-code': (context) => const Emailcode(),
-          '/change-password': (context) => _buildChangePasswordRoute(context),
-          '/changed-thanks': (context) => const Changedthanks(),
+              // ✅ LOCALIZATION CONFIGURATION
+              locale: localeProvider.locale,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: LocaleProvider.supportedLocales,
 
-          // ═══════════════════════════════════════════════════════════════
-          // PROTECTED ADMIN ROUTES
-          // ═══════════════════════════════════════════════════════════════
-          '/admin': (context) => RouteGuard(
-                child: const DashboardScreen(),
-                requiredRole: 'Admin',
-                routeName: '/admin',
-              ),
-          '/admin/dashboard': (context) => RouteGuard(
-                child: const DashboardScreen(),
-                requiredRole: 'Admin',
-                routeName: '/admin/dashboard',
-              ),
-          '/admin/categories': (context) => RouteGuard(
-                child: const CategoriesScreen(),
-                requiredRole: 'Admin',
-                routeName: '/admin/categories',
-              ),
-          '/admin/products': (context) => RouteGuard(
-                child: const Productsscreen(),
-                requiredRole: 'Admin',
-                routeName: '/admin/products',
-              ),
-          '/admin/orders': (context) => RouteGuard(
-                child: const Orders(),
-                requiredRole: 'Admin',
-                routeName: '/admin/orders',
-              ),
-          '/admin/roles': (context) => RouteGuard(
-                child: const Rolemanegment(),
-                requiredRole: 'Admin',
-                routeName: '/admin/roles',
-              ),
-          '/admin/tracking': (context) => RouteGuard(
-                child: const Track(),
-                requiredRole: 'Admin',
-                routeName: '/admin/tracking',
+              theme: ThemeData(
+                primarySwatch: Colors.blue,
+                visualDensity: VisualDensity.adaptivePlatformDensity,
+                pageTransitionsTheme: PageTransitionsTheme(
+                  builders: {
+                    TargetPlatform.windows: WebFadeTransition(),
+                    TargetPlatform.macOS: WebFadeTransition(),
+                    TargetPlatform.linux: WebFadeTransition(),
+                  },
+                ),
               ),
 
-          // ═══════════════════════════════════════════════════════════════
-          // PROTECTED CUSTOMER ROUTES
-          // ═══════════════════════════════════════════════════════════════
-          '/customer': (context) => RouteGuard(
-                child: const CustomerOrders(),
-                requiredRole: 'Customer',
-                routeName: '/customer',
-              ),
-          '/customer/orders': (context) => RouteGuard(
-                child: const CustomerOrders(),
-                requiredRole: 'Customer',
-                routeName: '/customer/orders',
-              ),
-          '/customer/history': (context) => RouteGuard(
-                child: const HistoryScreenCustomer(),
-                requiredRole: 'Customer',
-                routeName: '/customer/history',
-              ),
+              // ✅ ROUTING: COMPLETE named routes with PROTECTION
+              routes: {
+                // ═══════════════════════════════════════════════════════════════
+                // PUBLIC ROUTES (No authentication required)
+                // ═══════════════════════════════════════════════════════════════
+                '/login': (context) => const EnhancedLoginScreen(),
+                '/forgot-password': (context) => const Forgotpassword(),
+                '/email-code': (context) => const Emailcode(),
+                '/change-password': (context) =>
+                    _buildChangePasswordRoute(context),
+                '/changed-thanks': (context) => const Changedthanks(),
 
-          // ═══════════════════════════════════════════════════════════════
-          // PROTECTED SUPPLIER ROUTES
-          // ═══════════════════════════════════════════════════════════════
-          '/supplier': (context) => RouteGuard(
-                child: const SupplierOrders(),
-                requiredRole: 'Supplier',
-                routeName: '/supplier',
-              ),
-          '/supplier/orders': (context) => RouteGuard(
-                child: const SupplierOrders(),
-                requiredRole: 'Supplier',
-                routeName: '/supplier/orders',
-              ),
-          '/supplier/products': (context) => RouteGuard(
-                child: const SupplierProducts(),
-                requiredRole: 'Supplier',
-                routeName: '/supplier/products',
-              ),
+                // ═══════════════════════════════════════════════════════════════
+                // PROTECTED ADMIN ROUTES
+                // ═══════════════════════════════════════════════════════════════
+                '/admin': (context) => RouteGuard(
+                      child: const DashboardScreen(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin',
+                    ),
+                '/admin/dashboard': (context) => RouteGuard(
+                      child: const DashboardScreen(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin/dashboard',
+                    ),
+                '/admin/categories': (context) => RouteGuard(
+                      child: const CategoriesScreen(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin/categories',
+                    ),
+                '/admin/products': (context) => RouteGuard(
+                      child: const Productsscreen(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin/products',
+                    ),
+                '/admin/orders': (context) => RouteGuard(
+                      child: const Orders(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin/orders',
+                    ),
+                '/admin/roles': (context) => RouteGuard(
+                      child: const Rolemanegment(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin/roles',
+                    ),
+                '/admin/tracking': (context) => RouteGuard(
+                      child: const Track(),
+                      requiredRole: 'Admin',
+                      routeName: '/admin/tracking',
+                    ),
 
-          // ═══════════════════════════════════════════════════════════════
-          // PROTECTED WAREHOUSE EMPLOYEE ROUTES
-          // ═══════════════════════════════════════════════════════════════
-          '/warehouse': (context) => RouteGuard(
-                child: const Orders_employee(),
-                requiredRole: 'WareHouseEmployee',
-                routeName: '/warehouse',
-              ),
-          '/warehouse/orders': (context) => RouteGuard(
-                child: const Orders_employee(),
-                requiredRole: 'WareHouseEmployee',
-                routeName: '/warehouse/orders',
-              ),
-          '/warehouse/history': (context) => RouteGuard(
-                requiredRole: 'WareHouseEmployee',
-                routeName: '/warehouse/history',
-                child: const OrderHistoryScreen(),
-              ),
-        },
+                // ═══════════════════════════════════════════════════════════════
+                // PROTECTED CUSTOMER ROUTES
+                // ═══════════════════════════════════════════════════════════════
+                '/customer': (context) => RouteGuard(
+                      child: const CustomerOrders(),
+                      requiredRole: 'Customer',
+                      routeName: '/customer',
+                    ),
+                '/customer/orders': (context) => RouteGuard(
+                      child: const CustomerOrders(),
+                      requiredRole: 'Customer',
+                      routeName: '/customer/orders',
+                    ),
+                '/customer/history': (context) => RouteGuard(
+                      child: const HistoryScreenCustomer(),
+                      requiredRole: 'Customer',
+                      routeName: '/customer/history',
+                    ),
 
-        // ✅ ROUTING: Use current URL as initial route
-        initialRoute: initialRoute,
+                // ═══════════════════════════════════════════════════════════════
+                // PROTECTED SUPPLIER ROUTES
+                // ═══════════════════════════════════════════════════════════════
+                '/supplier': (context) => RouteGuard(
+                      child: const SupplierOrders(),
+                      requiredRole: 'Supplier',
+                      routeName: '/supplier',
+                    ),
+                '/supplier/orders': (context) => RouteGuard(
+                      child: const SupplierOrders(),
+                      requiredRole: 'Supplier',
+                      routeName: '/supplier/orders',
+                    ),
+                '/supplier/products': (context) => RouteGuard(
+                      child: const SupplierProducts(),
+                      requiredRole: 'Supplier',
+                      routeName: '/supplier/products',
+                    ),
 
-        // ✅ ROUTING: Enhanced route generation with protection
-        onGenerateRoute: (RouteSettings settings) {
-          debugPrint('🔄 Generating route: ${settings.name}');
+                // ═══════════════════════════════════════════════════════════════
+                // PROTECTED WAREHOUSE EMPLOYEE ROUTES
+                // ═══════════════════════════════════════════════════════════════
+                '/warehouse': (context) => RouteGuard(
+                      child: const Orders_employee(),
+                      requiredRole: 'WareHouseEmployee',
+                      routeName: '/warehouse',
+                    ),
+                '/warehouse/orders': (context) => RouteGuard(
+                      child: const Orders_employee(),
+                      requiredRole: 'WareHouseEmployee',
+                      routeName: '/warehouse/orders',
+                    ),
+                '/warehouse/history': (context) => RouteGuard(
+                      requiredRole: 'WareHouseEmployee',
+                      routeName: '/warehouse/history',
+                      child: const OrderHistoryScreen(),
+                    ),
+              },
 
-          // ═══════════════════════════════════════════════════════════════
-          // PARAMETERIZED ROUTES WITH PROTECTION
-          // ═══════════════════════════════════════════════════════════════
+              // ✅ ROUTING: Use current URL as initial route
+              initialRoute: initialRoute,
 
-          if (settings.name?.startsWith('/admin/product/') == true) {
-            return MaterialPageRoute(
-              builder: (_) => RouteGuard(
-                child: const Productsscreen(),
-                requiredRole: 'Admin',
-                routeName: settings.name!,
-              ),
-              settings: settings,
-            );
-          }
+              // ✅ ROUTING: Enhanced route generation with protection
+              onGenerateRoute: (RouteSettings settings) {
+                debugPrint('🔄 Generating route: ${settings.name}');
 
-          if (settings.name?.startsWith('/admin/order/') == true) {
-            return MaterialPageRoute(
-              builder: (_) => RouteGuard(
-                child: const Orders(),
-                requiredRole: 'Admin',
-                routeName: settings.name!,
-              ),
-              settings: settings,
-            );
-          }
+                // ═══════════════════════════════════════════════════════════════
+                // PARAMETERIZED ROUTES WITH PROTECTION
+                // ═══════════════════════════════════════════════════════════════
 
-          if (settings.name?.startsWith('/warehouse/order/') == true) {
-            return MaterialPageRoute(
-              builder: (_) => RouteGuard(
-                child: const Orders_employee(),
-                requiredRole: 'WareHouseEmployee',
-                routeName: settings.name!,
-              ),
-              settings: settings,
-            );
-          }
+                if (settings.name?.startsWith('/admin/product/') == true) {
+                  return MaterialPageRoute(
+                    builder: (_) => RouteGuard(
+                      child: const Productsscreen(),
+                      requiredRole: 'Admin',
+                      routeName: settings.name!,
+                    ),
+                    settings: settings,
+                  );
+                }
 
-          // ✅ HANDLE ROOT ROUTE WITH SMART REDIRECT
-          if (settings.name == '/') {
-            return MaterialPageRoute(
-              builder: (_) => SmartRootRedirect(),
-              settings: settings,
-            );
-          }
+                if (settings.name?.startsWith('/admin/order/') == true) {
+                  return MaterialPageRoute(
+                    builder: (_) => RouteGuard(
+                      child: const Orders(),
+                      requiredRole: 'Admin',
+                      routeName: settings.name!,
+                    ),
+                    settings: settings,
+                  );
+                }
 
-          return null;
-        },
+                if (settings.name?.startsWith('/warehouse/order/') == true) {
+                  return MaterialPageRoute(
+                    builder: (_) => RouteGuard(
+                      child: const Orders_employee(),
+                      requiredRole: 'WareHouseEmployee',
+                      routeName: settings.name!,
+                    ),
+                    settings: settings,
+                  );
+                }
 
-        // ✅ ROUTING: Better error handling
-        onUnknownRoute: (RouteSettings settings) {
-          debugPrint('❌ Unknown route: ${settings.name}');
-          return MaterialPageRoute(
-            builder: (_) => const EnhancedLoginScreen(),
-            settings: const RouteSettings(name: '/login'),
+                // ✅ HANDLE ROOT ROUTE WITH SMART REDIRECT
+                if (settings.name == '/') {
+                  return MaterialPageRoute(
+                    builder: (_) => SmartRootRedirect(),
+                    settings: settings,
+                  );
+                }
+
+                return null;
+              },
+
+              // ✅ ROUTING: Better error handling
+              onUnknownRoute: (RouteSettings settings) {
+                debugPrint('❌ Unknown route: ${settings.name}');
+                return MaterialPageRoute(
+                  builder: (_) => const EnhancedLoginScreen(),
+                  settings: const RouteSettings(name: '/login'),
+                );
+              },
+            ),
           );
         },
       ),
@@ -636,6 +674,13 @@ class _SmartRootRedirectState extends State<SmartRootRedirect> {
         await AuthService.switchToRole(targetRole);
         debugPrint('🔄 Switched to role: $targetRole');
 
+        // ✅ UPDATE LOCALE FOR NEW ROLE
+        if (mounted) {
+          final localeProvider =
+              Provider.of<LocaleProvider>(context, listen: false);
+          await localeProvider.onRoleChanged(targetRole);
+        }
+
         // ✅ PRESERVE CURRENT PATH IF VALID, OTHERWISE GO TO DASHBOARD
         if (_isValidPathForRole(currentPath, targetRole) &&
             currentPath != '/') {
@@ -713,7 +758,7 @@ class _SmartRootRedirectState extends State<SmartRootRedirect> {
   }
 }
 
-// ✅ OPTIONAL: Role Switcher Widget for users with multiple roles
+// ✅ ENHANCED ROLE SWITCHER WITH LOCALIZATION SUPPORT
 class RoleSwitcher extends StatefulWidget {
   @override
   State<RoleSwitcher> createState() => _RoleSwitcherState();
@@ -752,6 +797,11 @@ class _RoleSwitcherState extends State<RoleSwitcher> {
         if (role != currentRole) {
           final success = await AuthService.switchToRole(role);
           if (success) {
+            // ✅ UPDATE LOCALE WHEN SWITCHING ROLES
+            final localeProvider =
+                Provider.of<LocaleProvider>(context, listen: false);
+            await localeProvider.onRoleChanged(role);
+
             // Redirect to new role's dashboard
             switch (role) {
               case 'Admin':
