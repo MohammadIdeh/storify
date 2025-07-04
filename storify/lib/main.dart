@@ -1,10 +1,10 @@
 // lib/main.dart
-// COMPLETE ROUTING IMPLEMENTATION WITH YOUR EXISTING AUTH SERVICE
+// COMPLETE ROUTING IMPLEMENTATION WITH URL PRESERVATION ON REFRESH
 // ✅ Works with your token-based authentication system
 // ✅ Supports role switching capabilities
 // ✅ Added real-time authentication checks for all route changes
 // ✅ Added proper redirect logic for unauthorized access
-// ✅ Simple and clean implementation without unnecessary complexity
+// ✅ PRESERVES CURRENT URL ON REFRESH
 import 'dart:ui' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +36,19 @@ import 'package:storify/employee/screens/viewOrderScreenEmp.dart';
 import 'package:storify/utilis/firebase_options.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notification_service.dart';
+
+class WebFadeTransition extends PageTransitionsBuilder {
+  @override
+  Widget buildTransitions<T extends Object?>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(opacity: animation, child: child);
+  }
+}
 
 // This must be a top-level function
 @pragma('vm:entry-point')
@@ -321,9 +334,25 @@ class EnhancedLoginScreen extends StatelessWidget {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // ✅ HELPER: Get current URL path from browser
+  String _getCurrentPath() {
+    if (kIsWeb) {
+      return Uri.base.path;
+    }
+    return '/';
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint('🎨 Building MyApp widget');
+
+    // ✅ DETERMINE INITIAL ROUTE BASED ON CURRENT URL
+    String initialRoute = _getCurrentPath();
+    if (initialRoute == '/' || initialRoute.isEmpty) {
+      initialRoute = '/';
+    }
+
+    debugPrint('🔄 Initial route determined: $initialRoute');
 
     return ScreenUtilInit(
       designSize: const Size(1920, 1080),
@@ -335,6 +364,13 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.windows: WebFadeTransition(),
+              TargetPlatform.macOS: WebFadeTransition(),
+              TargetPlatform.linux: WebFadeTransition(),
+            },
+          ),
         ),
 
         // ✅ ROUTING: COMPLETE named routes with PROTECTION
@@ -445,9 +481,8 @@ class MyApp extends StatelessWidget {
               ),
         },
 
-        // ✅ ROUTING: Smart initial route determination
-        initialRoute:
-            '/login', // Always start with login, then redirect properly
+        // ✅ ROUTING: Use current URL as initial route
+        initialRoute: initialRoute,
 
         // ✅ ROUTING: Enhanced route generation with protection
         onGenerateRoute: (RouteSettings settings) {
@@ -528,7 +563,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ✅ SMART ROOT REDIRECT - Works with your AuthService
+// ✅ UPDATED SMART ROOT REDIRECT - PRESERVES URL ON REFRESH
 class SmartRootRedirect extends StatefulWidget {
   @override
   State<SmartRootRedirect> createState() => _SmartRootRedirectState();
@@ -541,8 +576,37 @@ class _SmartRootRedirectState extends State<SmartRootRedirect> {
     _performSmartRedirect();
   }
 
+  // ✅ HELPER: Get current browser URL path
+  String _getCurrentBrowserPath() {
+    if (kIsWeb) {
+      final uri = Uri.base;
+      return uri.path;
+    }
+    return '/';
+  }
+
+  // ✅ HELPER: Check if current path is valid for the given role
+  bool _isValidPathForRole(String path, String role) {
+    switch (role) {
+      case 'Admin':
+        return path.startsWith('/admin');
+      case 'Customer':
+        return path.startsWith('/customer');
+      case 'Supplier':
+        return path.startsWith('/supplier');
+      case 'WareHouseEmployee':
+        return path.startsWith('/warehouse');
+      default:
+        return false;
+    }
+  }
+
   Future<void> _performSmartRedirect() async {
     try {
+      // ✅ GET CURRENT BROWSER PATH
+      final currentPath = _getCurrentBrowserPath();
+      debugPrint('🌐 Current browser path: $currentPath');
+
       // ✅ GET CURRENT ROLE AND CHECK IF LOGGED IN
       final currentRole = await AuthService.getCurrentRole();
 
@@ -558,11 +622,28 @@ class _SmartRootRedirectState extends State<SmartRootRedirect> {
           return;
         }
 
-        // Switch to the first available role
-        final firstRole = loggedInRoles.first;
-        await AuthService.switchToRole(firstRole);
-        debugPrint('🔄 Switched to available role: $firstRole');
-        _redirectToRoleDashboard(firstRole);
+        // ✅ SMART ROLE SELECTION BASED ON CURRENT PATH
+        String targetRole = loggedInRoles.first;
+
+        // Try to find a role that matches the current path
+        for (final role in loggedInRoles) {
+          if (_isValidPathForRole(currentPath, role)) {
+            targetRole = role;
+            break;
+          }
+        }
+
+        await AuthService.switchToRole(targetRole);
+        debugPrint('🔄 Switched to role: $targetRole');
+
+        // ✅ PRESERVE CURRENT PATH IF VALID, OTHERWISE GO TO DASHBOARD
+        if (_isValidPathForRole(currentPath, targetRole) &&
+            currentPath != '/') {
+          debugPrint('✅ Preserving current path: $currentPath');
+          Navigator.pushReplacementNamed(context, currentPath);
+        } else {
+          _redirectToRoleDashboard(targetRole);
+        }
         return;
       }
 
@@ -575,9 +656,18 @@ class _SmartRootRedirectState extends State<SmartRootRedirect> {
         return;
       }
 
-      // ✅ VALID SESSION - Redirect to appropriate dashboard
+      // ✅ VALID SESSION - PRESERVE CURRENT PATH IF APPROPRIATE
       debugPrint('✅ Valid session for role: $currentRole');
-      _redirectToRoleDashboard(currentRole);
+
+      if (_isValidPathForRole(currentPath, currentRole) && currentPath != '/') {
+        debugPrint(
+            '✅ Preserving current path: $currentPath for role: $currentRole');
+        Navigator.pushReplacementNamed(context, currentPath);
+      } else {
+        debugPrint(
+            '🔄 Current path not valid for role, redirecting to dashboard');
+        _redirectToRoleDashboard(currentRole);
+      }
     } catch (e) {
       debugPrint('❌ Error in smart redirect: $e');
       Navigator.pushReplacementNamed(context, '/login');
