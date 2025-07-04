@@ -129,12 +129,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     }
   }
 
-  // FIXED: Simple backend proxy approach for getting directions
-// REPLACE your _getDirectionsFromGoogle method with this direct approach:
-
-  // ALTERNATIVE SOLUTION: Get the route points directly from Google's response
-// This bypasses polyline decoding entirely!
-
   Future<GoogleDirectionsResponse?> _getDirectionsFromGoogle(
     LatLng origin,
     LatLng destination,
@@ -301,7 +295,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     }
   }
 
-// SIMPLE POLYLINE DECODER (as backup)
+  // SIMPLE POLYLINE DECODER (as backup)
   List<LatLng> _decodePolylineSimple(String encoded) {
     List<LatLng> points = [];
 
@@ -353,27 +347,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     debugPrint('🔄 Simple decoder: ${points.length} points');
     return points;
   }
-// ADD this import at the top of your file:
 
-/* 
-EXPLANATION:
-
-1. This calls Google Directions API DIRECTLY from Flutter
-2. NO backend API needed!
-3. For web: Uses CORS proxy (allorigins.win) to avoid CORS issues
-4. For mobile: Direct call to Google API (no CORS restrictions)
-5. Same _decodePolyline method you already have
-
-The magic line:
-final String finalUrl = kIsWeb 
-    ? 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}'
-    : url;
-
-- On WEB: Uses CORS proxy to bypass browser restrictions
-- On MOBILE: Direct call to Google (no restrictions)
-
-RESULT: Real curved routes, no backend changes needed! 🚀
-*/
   // Polyline decoding function
   List<LatLng> _decodePolyline(String encoded) {
     try {
@@ -442,6 +416,8 @@ RESULT: Real curved routes, no backend changes needed! 🚀
 
     _markers.clear();
     _polylines.clear();
+
+    debugPrint('🔄 Processing ${_orders.length} orders for routes');
 
     // Process routes individually
     for (int i = 0; i < _orders.length; i++) {
@@ -539,27 +515,8 @@ RESULT: Real curved routes, no backend changes needed! 🚀
             ),
           );
 
-          // Add route status indicator
-          if (routePoints.length > 2) {
-            final midPoint = routePoints[routePoints.length ~/ 2];
-            _markers.add(
-              Marker(
-                markerId: MarkerId('route_indicator_$orderId'),
-                position: midPoint,
-                icon: await _getRouteIndicatorIcon(routeColor, isRealRoute),
-                anchor: const Offset(0.5, 0.5),
-                infoWindow: InfoWindow(
-                  title: isRealRoute
-                      ? '🛣️ Real Route #$orderId'
-                      : '📍 Route #$orderId (Estimated)',
-                  snippet: isRealRoute
-                      ? 'Following actual roads'
-                      : 'Straight line estimate',
-                  onTap: () => _selectSpecificOrder(orderId),
-                ),
-              ),
-            );
-          }
+          // REMOVED: Route indicator markers that were causing confusion
+          // No longer adding route indicator markers to avoid double counting
 
           // Add delay to avoid rate limiting
           await Future.delayed(const Duration(milliseconds: 200));
@@ -567,7 +524,7 @@ RESULT: Real curved routes, no backend changes needed! 🚀
       }
     }
 
-    // Add admin current location marker
+    // Add admin current location marker (NOT counted as a route)
     if (_currentLatLng != null) {
       _markers.add(
         Marker(
@@ -588,6 +545,9 @@ RESULT: Real curved routes, no backend changes needed! 🚀
         _isLoadingRoutes = false;
       });
     }
+
+    debugPrint(
+        '✅ Map updated with ${_orders.length} routes, ${_markers.length} markers, ${_polylines.length} polylines');
   }
 
   void _selectSpecificOrder(int orderId) {
@@ -629,14 +589,6 @@ RESULT: Real curved routes, no backend changes needed! 🚀
 
   Future<BitmapDescriptor> _getAdminIcon() async {
     return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
-  }
-
-  Future<BitmapDescriptor> _getRouteIndicatorIcon(
-      Color color, bool isRealRoute) async {
-    // Different icons for real vs estimated routes
-    return isRealRoute
-        ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet)
-        : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
   }
 
   List<PatternItem> _getRoutePattern(String urgency) {
@@ -710,7 +662,6 @@ RESULT: Real curved routes, no backend changes needed! 🚀
                         ),
                       ),
                     ),
-                  // Updated indicator for backend proxy
                   Container(
                     padding:
                         EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
@@ -728,7 +679,7 @@ RESULT: Real curved routes, no backend changes needed! 🚀
                         ),
                         SizedBox(width: 4.w),
                         Text(
-                          'BACKEND PROXY',
+                          'REAL ROUTES',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             color: const Color(0xFF10B981),
@@ -756,7 +707,8 @@ RESULT: Real curved routes, no backend changes needed! 🚀
                 Expanded(
                   child: _buildSummaryItem(
                     'Active Routes',
-                    (summary['totalOrders'] ?? 0).toString(),
+                    _orders.length
+                        .toString(), // Use actual orders count instead of backend count
                     Icons.route,
                     const Color(0xFF6366F1),
                   ),
@@ -1870,7 +1822,7 @@ RESULT: Real curved routes, no backend changes needed! 🚀
                     mapType: MapType.normal,
                   ),
                 ),
-                // Updated indicator for backend proxy
+                // Updated indicator for real routes
                 Positioned(
                   top: 16.h,
                   left: 16.w,
@@ -1894,7 +1846,7 @@ RESULT: Real curved routes, no backend changes needed! 🚀
                         ),
                         SizedBox(width: 6.w),
                         Text(
-                          'REAL ROADS - BACKEND PROXY',
+                          'REAL ROADS - ${_orders.length} ROUTES',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
