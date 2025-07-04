@@ -11,8 +11,8 @@ class RolesTable extends StatefulWidget {
   final Function(RoleItem role)? onDeleteRole;
   final Future<bool> Function(String id) onDeleteUser;
   final Function(RoleItem updatedRole)? onEditRole;
-  final Function(RoleItem role)?
-      onToggleActiveStatus; // New callback for switch
+  final Function(RoleItem role)? onToggleActiveStatus;
+  final bool isLoading; // New parameter for loading state
 
   const RolesTable({
     super.key,
@@ -22,7 +22,8 @@ class RolesTable extends StatefulWidget {
     this.onDeleteRole,
     required this.onDeleteUser,
     this.onEditRole,
-    this.onToggleActiveStatus, // Add this parameter
+    this.onToggleActiveStatus,
+    this.isLoading = false, // Default to false
   });
 
   @override
@@ -31,8 +32,8 @@ class RolesTable extends StatefulWidget {
 
 class _RolesTableState extends State<RolesTable> {
   int _currentPage = 1;
-  final int _itemsPerPage = 8; // Reduced for better UX
-  Set<String> _processingUsers = {}; // Track users being processed
+  final int _itemsPerPage = 8;
+  Set<String> _processingUsers = {};
 
   /// Filters roles based on the filter string and search query
   List<RoleItem> get _filteredRoles {
@@ -174,6 +175,87 @@ class _RolesTableState extends State<RolesTable> {
     );
   }
 
+  // New method for loading state
+  Widget _buildLoadingState() {
+    return Container(
+      padding: EdgeInsets.all(40.w),
+      child: Center(
+        child: Column(
+          children: [
+            SizedBox(
+              width: 48.w,
+              height: 48.w,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: const Color.fromARGB(255, 105, 65, 198),
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              "Loading users...",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 16.sp,
+                color: Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              "Please wait while we fetch the user data",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                color: Colors.white54,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Updated empty state method
+  Widget _buildEmptyState() {
+    return Container(
+      padding: EdgeInsets.all(40.w),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 48.sp,
+              color: Colors.white38,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              "No users found",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 16.sp,
+                color: Colors.white54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (widget.searchQuery.isNotEmpty)
+              Text(
+                "Try adjusting your search criteria",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12.sp,
+                  color: Colors.white38,
+                ),
+              )
+            else
+              Text(
+                "No users have been added yet",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12.sp,
+                  color: Colors.white38,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredList = _filteredRoles;
@@ -227,7 +309,7 @@ class _RolesTableState extends State<RolesTable> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    "$totalItems Total",
+                    widget.isLoading ? "Loading..." : "$totalItems Total",
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w500,
@@ -239,38 +321,11 @@ class _RolesTableState extends State<RolesTable> {
             ),
           ),
 
-          // Table Content
-          if (_visibleRoles.isEmpty)
-            Container(
-              padding: EdgeInsets.all(40.w),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.search_off,
-                      size: 48.sp,
-                      color: Colors.white38,
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      "No users found",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        color: Colors.white54,
-                      ),
-                    ),
-                    if (widget.searchQuery.isNotEmpty)
-                      Text(
-                        "Try adjusting your search criteria",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12.sp,
-                          color: Colors.white38,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            )
+          // Table Content with improved state handling
+          if (widget.isLoading)
+            _buildLoadingState()
+          else if (_visibleRoles.isEmpty)
+            _buildEmptyState()
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -639,8 +694,8 @@ class _RolesTableState extends State<RolesTable> {
               ),
             ),
 
-          // Pagination
-          if (totalPages > 1)
+          // Pagination (only show when not loading and has data)
+          if (!widget.isLoading && totalPages > 1)
             Container(
               padding: EdgeInsets.all(20.w),
               decoration: BoxDecoration(

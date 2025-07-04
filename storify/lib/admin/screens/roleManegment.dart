@@ -855,7 +855,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                   style: GoogleFonts.spaceGrotesk(
                                       color: Colors.white),
                                   decoration: InputDecoration(
-                                    hintText: 'Search by User ID...',
+                                    hintText:
+                                        'Search by User ID or User Name...',
                                     hintStyle: GoogleFonts.spaceGrotesk(
                                         color: Colors.white54),
                                     border: InputBorder.none,
@@ -924,6 +925,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                   RolesTable(
                     roles: _roleList,
                     filter: _filters[_selectedFilterIndex],
+                    isLoading: _isLoading, // Pass the loading state
                     searchQuery: _searchQuery,
                     onDeleteRole: (role) {
                       setState(() {
