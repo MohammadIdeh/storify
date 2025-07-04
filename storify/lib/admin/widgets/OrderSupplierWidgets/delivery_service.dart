@@ -89,7 +89,6 @@ class DeliveryService {
             'Failed to assign orders. Status code: ${response.statusCode}, Body: ${response.body}');
       }
     } catch (e) {
-      
       return null;
     }
   }
@@ -172,7 +171,6 @@ class OrderAssignmentQueue {
   bool get isProcessing => _isProcessing;
 }
 
-/// Result of order assignment queue processing
 class OrderAssignmentResult {
   final List<AssignOrdersResponse> successfulAssignments;
   final List<String> errors;
@@ -186,6 +184,14 @@ class OrderAssignmentResult {
 
   bool get hasErrors => errors.isNotEmpty;
   bool get hasSuccessfulAssignments => successfulAssignments.isNotEmpty;
-  int get successCount => successfulAssignments.length;
+
+  int get successCount {
+    int totalOrdersAssigned = 0;
+    for (var assignment in successfulAssignments) {
+      totalOrdersAssigned += assignment.assignedOrders.length;
+    }
+    return totalOrdersAssigned;
+  }
+
   int get errorCount => errors.length;
 }

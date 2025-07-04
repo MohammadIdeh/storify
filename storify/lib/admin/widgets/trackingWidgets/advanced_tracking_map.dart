@@ -1,5 +1,7 @@
 // lib/admin/widgets/trackingWidgets/advanced_tracking_map.dart
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -569,26 +571,121 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     debugPrint('Selected order: $orderId');
   }
 
+  Future<BitmapDescriptor> _createMarkerFromIcon({
+    required IconData iconData,
+    required Color backgroundColor,
+    required Color iconColor,
+    double size = 48,
+  }) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    // Draw circle background
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1, paint);
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1, borderPaint);
+
+    // Draw icon
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(iconData.codePoint),
+      style: TextStyle(
+        fontSize: size * 0.5,
+        fontFamily: iconData.fontFamily,
+        color: iconColor,
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size - textPainter.width) / 2,
+        (size - textPainter.height) / 2,
+      ),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+  }
+
+// Updated delivery man icon with truck
   Future<BitmapDescriptor> _getDeliveryManIcon(String urgency) async {
+    Color backgroundColor;
+
     switch (urgency.toLowerCase()) {
       case 'high':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+        backgroundColor = Colors.red;
+        break;
       case 'medium':
-        return BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueOrange);
+        backgroundColor = Colors.orange;
+        break;
       case 'low':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        backgroundColor = Colors.green;
+        break;
       default:
-        return BitmapDescriptor.defaultMarker;
+        backgroundColor = Colors.grey;
+    }
+
+    try {
+      return await _createMarkerFromIcon(
+        iconData: Icons.local_shipping,
+        backgroundColor: backgroundColor,
+        iconColor: Colors.white,
+      );
+    } catch (e) {
+      debugPrint('Failed to create custom delivery icon: $e');
+      // Fallback to default colored marker
+      switch (urgency.toLowerCase()) {
+        case 'high':
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+        case 'medium':
+          return BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueOrange);
+        case 'low':
+          return BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen);
+        default:
+          return BitmapDescriptor.defaultMarker;
+      }
     }
   }
 
+// Updated customer icon with person
   Future<BitmapDescriptor> _getCustomerIcon() async {
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+    try {
+      return await _createMarkerFromIcon(
+        iconData: Icons.person,
+        backgroundColor: Colors.blue,
+        iconColor: Colors.white,
+      );
+    } catch (e) {
+      debugPrint('Failed to create custom customer icon: $e');
+      return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+    }
   }
 
+// Updated admin icon with house
   Future<BitmapDescriptor> _getAdminIcon() async {
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+    try {
+      return await _createMarkerFromIcon(
+        iconData: Icons.home,
+        backgroundColor: const Color(0xFFFFD700), // Gold color
+        iconColor: Colors.white,
+      );
+    } catch (e) {
+      debugPrint('Failed to create custom admin icon: $e');
+      return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+    }
   }
 
   List<PatternItem> _getRoutePattern(String urgency) {
