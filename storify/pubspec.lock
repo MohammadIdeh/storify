@@ -318,6 +318,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  flutter_localizations:
+    dependency: "direct main"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -497,21 +502,21 @@ packages:
     source: hosted
     version: "4.3.0"
   intl:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: intl
-      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
       url: "https://pub.dev"
     source: hosted
-    version: "0.20.2"
+    version: "0.19.0"
   jiffy:
     dependency: transitive
     description:
       name: jiffy
-      sha256: "9bafbfe6d97587048bf449165e050029e716a12438f54a3d39e7e3a256decdac"
+      sha256: "1c1b86459969ff9f32dc5b0ffe392f1e08181e66396cf9dd8fa7c90552a691af"
       url: "https://pub.dev"
     source: hosted
-    version: "6.4.3"
+    version: "6.3.2"
   leak_tracker:
     dependency: transitive
     description:
@@ -568,6 +573,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  nested:
+    dependency: transitive
+    description:
+      name: nested
+      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   octo_image:
     dependency: transitive
     description:
@@ -680,14 +693,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  quiver:
-    dependency: transitive
+  provider:
+    dependency: "direct main"
     description:
-      name: quiver
-      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
+      name: provider
+      sha256: "4abbd070a04e9ddc287673bf5a030c7ca8b685ff70218720abab8b092f53dd84"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.2"
+    version: "6.1.5"
   rxdart:
     dependency: transitive
     description:

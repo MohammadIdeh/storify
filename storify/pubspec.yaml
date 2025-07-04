@@ -10,6 +10,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # ✅ LOCALIZATION DEPENDENCIES
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+  provider: ^6.1.2
+  
+  # Your existing dependencies
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.17
@@ -36,6 +44,9 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
+  # ✅ ENABLE LOCALIZATION GENERATION
+  generate: true
+  
   uses-material-design: true
 
   assets:
@@ -78,3 +89,10 @@ flutter:
     - assets/images/truck.svg
     - assets/images/history.svg
 
+  # ✅ OPTIONAL: Add Arabic font support for better text rendering
+  # fonts:
+  #   - family: Cairo
+  #     fonts:
+  #       - asset: assets/fonts/Cairo-Regular.ttf
+  #       - asset: assets/fonts/Cairo-Bold.ttf
+  #         weight: 700
