@@ -20,8 +20,9 @@
   <title>Storify - Inventory Management</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Google Maps Script -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI"></script>
+  <!-- FIXED: Google Maps Script with geometry library for polyline decoding -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI&libraries=geometry"></script>
 
   <style>
     /* Loading screen styles */
@@ -199,6 +200,16 @@
     updateStatus('Initializing Firebase...');
     firebase.initializeApp(firebaseConfig);
 
+    // Verify Google Maps is loaded
+    if (typeof google !== 'undefined' && google.maps) {
+      updateStatus('Google Maps loaded');
+      console.log('✅ Google Maps JavaScript API loaded successfully');
+      console.log('✅ Geometry library available:', typeof google.maps.geometry !== 'undefined');
+    } else {
+      updateStatus('Google Maps loading...');
+      console.log('⚠️ Google Maps not yet loaded');
+    }
+
     // DO NOT REQUEST PERMISSIONS HERE - let Flutter handle it later
     if (firebase.messaging.isSupported()) {
       updateStatus('Firebase ready');
@@ -210,8 +221,10 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then(function (registration) {
+          console.log('Service Worker registered');
         })
         .catch(function (error) {
+          console.log('Service Worker registration failed:', error);
         });
     }
 
@@ -241,6 +254,7 @@
 
     // Error handling
     window.addEventListener('error', function (event) {
+      console.error('JavaScript error:', event.error);
       updateStatus('Error occurred - loading anyway...');
       setTimeout(hideLoadingScreen, 1000);
     });
@@ -248,6 +262,20 @@
     // Debug: Log when DOM is ready
     document.addEventListener('DOMContentLoaded', function () {
       updateStatus('DOM ready, loading Flutter...');
+    });
+
+    // Test Google Maps availability
+    window.addEventListener('load', function () {
+      if (typeof google !== 'undefined' && google.maps) {
+        console.log('🗺️ Google Maps fully loaded after window load');
+        if (google.maps.geometry && google.maps.geometry.encoding) {
+          console.log('✅ Geometry encoding library available');
+        } else {
+          console.error('❌ Geometry encoding library not available');
+        }
+      } else {
+        console.error('❌ Google Maps not available after window load');
+      }
     });
 
   </script>

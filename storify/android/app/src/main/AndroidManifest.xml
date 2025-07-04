@@ -12,10 +12,10 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Google Maps API Key -->
+        <!-- FIXED: Google Maps API Key - corrected the name attribute -->
         <meta-data
-            android:name="com.google.android.geo.AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI"
-            android:value="YOUR_API_KEY_HERE"/>
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI"/>
 
         <activity
             android:name=".MainActivity"
