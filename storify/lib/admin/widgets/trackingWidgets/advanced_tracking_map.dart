@@ -36,8 +36,8 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   String _selectedFilter = 'all';
   bool _showSummary = true;
 
-  // Auto-refresh timer
-  Timer? _refreshTimer;
+  // REMOVED: Auto-refresh timer
+  // Timer? _refreshTimer;
 
   // Route colors for different orders
   final List<Color> _routeColors = [
@@ -57,6 +57,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   static const String _backendBaseUrl =
       'https://finalproject-a5ls.onrender.com';
 
+  // Google Maps API Key (same as mobile app)
+  static const String _googleMapsApiKey =
+      'AIzaSyCJMZfn5L4HMpbF7oKfqJjbuB9DysEbXdI';
+
   @override
   void initState() {
     super.initState();
@@ -71,21 +75,16 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       });
     });
     _fetchTrackingData();
-    _startAutoRefresh();
+    // REMOVED: _startAutoRefresh();
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    // REMOVED: _refreshTimer?.cancel();
     super.dispose();
   }
 
-  void _startAutoRefresh() {
-    // Refresh data every 15 seconds to get updated delivery locations
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      _fetchTrackingData();
-    });
-  }
+  // REMOVED: _startAutoRefresh() method
 
   Future<Position> _determinePosition() async {
     LocationPermission permission = await Geolocator.checkPermission();
@@ -143,163 +142,175 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     }
   }
 
-  // Enhanced directions API call using backend proxy
-  Future<List<LatLng>> _getDirectionsFromBackend(
-      LatLng origin, LatLng destination) async {
+  // FIXED: Direct Google Directions API call (same as mobile app)
+  Future<GoogleDirectionsResponse?> _getDirectionsFromGoogle(
+    LatLng origin,
+    LatLng destination,
+  ) async {
     try {
-      debugPrint('🗺️ Requesting directions from backend proxy...');
+      // Ensure we have valid coordinates
+      if (origin.latitude.abs() > 90 ||
+          origin.longitude.abs() > 180 ||
+          destination.latitude.abs() > 90 ||
+          destination.longitude.abs() > 180) {
+        debugPrint('❌ Invalid coordinates provided');
+        return null;
+      }
+
+      // Build the URL with all necessary parameters (same as mobile app)
+      final url = 'https://maps.googleapis.com/maps/api/directions/json'
+          '?origin=${origin.latitude},${origin.longitude}'
+          '&destination=${destination.latitude},${destination.longitude}'
+          '&key=$_googleMapsApiKey'
+          '&mode=driving'
+          '&alternatives=false'
+          '&traffic_model=best_guess'
+          '&departure_time=now'
+          '&units=metric';
+
+      debugPrint('🗺️ Requesting Google Directions directly...');
       debugPrint(
           '📍 From: ${origin.latitude.toStringAsFixed(6)}, ${origin.longitude.toStringAsFixed(6)}');
       debugPrint(
           '📍 To: ${destination.latitude.toStringAsFixed(6)}, ${destination.longitude.toStringAsFixed(6)}');
 
-      // Get admin auth headers
-      final headers = await AuthService.getAuthHeaders(role: 'Admin');
-
-      final response = await http
-          .get(
-        Uri.parse('$_backendBaseUrl/api/directions').replace(queryParameters: {
-          'origin': '${origin.latitude},${origin.longitude}',
-          'destination': '${destination.latitude},${destination.longitude}',
-          'mode': 'driving',
-        }),
-        headers: headers,
-      )
-          .timeout(
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'StorifyAdmin/1.0',
+        },
+      ).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
-          throw Exception('Backend directions API timeout after 15 seconds');
+          throw TimeoutException(
+              'Google Directions API timeout after 15 seconds');
         },
       );
 
-      debugPrint('📥 Backend response status: ${response.statusCode}');
+      debugPrint(
+          '📥 Google Directions response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('📊 Backend response status: ${data['status']}');
 
-        if (data['status'] == 'success' && data['route'] != null) {
-          final routeData = data['route'];
+        debugPrint('📊 Google Directions API status: ${data['status']}');
 
-          // Decode the polyline from backend
-          if (routeData['polyline'] != null) {
-            final polylinePoints =
-                _decodePolylineEnhanced(routeData['polyline']);
+        if (data['status'] == 'OK' &&
+            data['routes'] != null &&
+            data['routes'].isNotEmpty) {
+          final route = data['routes'][0];
+          final leg = route['legs'][0];
 
-            if (polylinePoints.isNotEmpty) {
-              final distance = routeData['distance']?['text'] ?? 'Unknown';
-              final duration = routeData['duration']?['text'] ?? 'Unknown';
-
-              debugPrint('✅ Backend directions success:');
-              debugPrint('   📏 Distance: $distance');
-              debugPrint('   ⏱️ Duration: $duration');
-              debugPrint('   🛣️ Route points: ${polylinePoints.length}');
-
-              return polylinePoints;
-            }
+          // Validate route data
+          if (route['overview_polyline'] == null ||
+              route['overview_polyline']['points'] == null) {
+            debugPrint('❌ No polyline data in response');
+            return null;
           }
+
+          // Extract polyline points
+          final encodedPolyline =
+              route['overview_polyline']['points'] as String;
+          final polylinePoints = _decodePolyline(encodedPolyline);
+
+          if (polylinePoints.isEmpty) {
+            debugPrint('❌ Failed to decode polyline');
+            return null;
+          }
+
+          // Extract distance and duration
+          final distanceKm = (leg['distance']['value'] as int) / 1000.0;
+
+          // Prefer duration_in_traffic if available, otherwise use duration
+          int durationSeconds;
+          if (leg['duration_in_traffic'] != null) {
+            durationSeconds = leg['duration_in_traffic']['value'] as int;
+          } else {
+            durationSeconds = leg['duration']['value'] as int;
+          }
+          final durationMinutes = (durationSeconds / 60).round();
+
+          debugPrint('✅ Google Directions success:');
+          debugPrint('   📏 Distance: ${distanceKm.toStringAsFixed(2)}km');
+          debugPrint('   ⏱️ Duration: ${durationMinutes}min');
+          debugPrint('   🛣️ Route points: ${polylinePoints.length}');
+
+          return GoogleDirectionsResponse(
+            points: polylinePoints,
+            distanceKm: distanceKm,
+            durationMinutes: durationMinutes,
+            encodedPolyline: encodedPolyline,
+          );
         } else {
-          debugPrint(
-              '❌ Backend directions error: ${data['error'] ?? 'Unknown error'}');
-        }
-      } else if (response.statusCode == 400) {
-        final data = json.decode(response.body);
-        debugPrint('❌ Backend directions bad request: ${data['error']}');
-      } else if (response.statusCode == 401) {
-        debugPrint('❌ Backend directions: Authentication failed');
-      } else if (response.statusCode == 503) {
-        debugPrint('❌ Backend directions: Service unavailable');
-      } else {
-        debugPrint('❌ Backend directions HTTP error: ${response.statusCode}');
-        debugPrint('❌ Response body: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('❌ Error calling backend directions API: $e');
-    }
-
-    // Fallback to straight line if backend fails
-    debugPrint('⚠️ Falling back to straight line between points');
-    return [origin, destination];
-  }
-
-  // Enhanced batch directions using backend
-  Future<Map<int, List<LatLng>>> _getBatchDirectionsFromBackend(
-      List<Map<String, dynamic>> routeRequests) async {
-    try {
-      debugPrint('🗺️ Requesting batch directions from backend...');
-
-      final headers = await AuthService.getAuthHeaders(role: 'Admin');
-
-      final requestBody = {
-        'routes': routeRequests
-            .map((req) => {
-                  'orderId': req['orderId'],
-                  'origin':
-                      '${req['origin'].latitude},${req['origin'].longitude}',
-                  'destination':
-                      '${req['destination'].latitude},${req['destination'].longitude}',
-                })
-            .toList(),
-      };
-
-      final response = await http
-          .post(
-        Uri.parse('$_backendBaseUrl/api/directions/batch'),
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(requestBody),
-      )
-          .timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Backend batch directions timeout');
-        },
-      );
-
-      debugPrint('📥 Backend batch response status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == 'complete' && data['results'] != null) {
-          final results = data['results'] as List;
-          final routeMap = <int, List<LatLng>>{};
-
-          for (final result in results) {
-            final orderId = result['orderId'] as int;
-
-            if (result['status'] == 'success' && result['polyline'] != null) {
-              final polylinePoints =
-                  _decodePolylineEnhanced(result['polyline']);
-              if (polylinePoints.isNotEmpty) {
-                routeMap[orderId] = polylinePoints;
-              }
+          String errorMsg = 'Unknown error';
+          if (data['status'] != null) {
+            switch (data['status']) {
+              case 'NOT_FOUND':
+                errorMsg =
+                    'Route not found - one of the locations may be invalid';
+                break;
+              case 'ZERO_RESULTS':
+                errorMsg = 'No route found between these locations';
+                break;
+              case 'MAX_WAYPOINTS_EXCEEDED':
+                errorMsg = 'Too many waypoints in request';
+                break;
+              case 'INVALID_REQUEST':
+                errorMsg = 'Invalid request - check coordinates';
+                break;
+              case 'OVER_DAILY_LIMIT':
+              case 'OVER_QUERY_LIMIT':
+                errorMsg = 'Google Maps API quota exceeded';
+                break;
+              case 'REQUEST_DENIED':
+                errorMsg = 'API key invalid or request denied';
+                break;
+              default:
+                errorMsg = 'API returned status: ${data['status']}';
             }
           }
 
-          debugPrint(
-              '✅ Batch directions success: ${routeMap.length} routes received');
-          return routeMap;
+          debugPrint('❌ Google Directions API error: $errorMsg');
+
+          if (data['error_message'] != null) {
+            debugPrint('❌ Additional error info: ${data['error_message']}');
+          }
+
+          return null;
         }
+      } else if (response.statusCode == 403) {
+        debugPrint(
+            '❌ Google Directions API: Forbidden (403) - Check API key and billing');
+        return null;
+      } else if (response.statusCode == 429) {
+        debugPrint('❌ Google Directions API: Rate limited (429)');
+        return null;
+      } else {
+        debugPrint(
+            '❌ Google Directions API HTTP error: ${response.statusCode}');
+        debugPrint('❌ Response body: ${response.body}');
+        return null;
       }
     } catch (e) {
-      debugPrint('❌ Error calling backend batch directions: $e');
+      if (e is TimeoutException) {
+        debugPrint('❌ Google Directions API timeout: ${e.message}');
+      } else {
+        debugPrint('❌ Error calling Google Directions API: $e');
+      }
+      return null;
     }
-
-    return {};
   }
 
-  // Enhanced polyline decoding with better error handling
-  List<LatLng> _decodePolylineEnhanced(String encoded) {
+  // FIXED: Polyline decoding (same as mobile app)
+  List<LatLng> _decodePolyline(String encoded) {
     try {
       if (encoded.isEmpty) {
         debugPrint('❌ Empty polyline string');
         return [];
       }
 
-      List<LatLng> polylineCoordinates = [];
+      List<LatLng> points = [];
       int index = 0;
       int len = encoded.length;
       int lat = 0;
@@ -339,16 +350,12 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
 
         // Validate decoded coordinates
         if (latLng.latitude.abs() <= 90 && latLng.longitude.abs() <= 180) {
-          polylineCoordinates.add(latLng);
-        } else {
-          debugPrint(
-              '⚠️ Invalid decoded coordinate: ${latLng.latitude}, ${latLng.longitude}');
+          points.add(latLng);
         }
       }
 
-      debugPrint(
-          '🔄 Decoded ${polylineCoordinates.length} points from polyline');
-      return polylineCoordinates;
+      debugPrint('🔄 Decoded ${points.length} points from polyline');
+      return points;
     } catch (e) {
       debugPrint('❌ Error decoding polyline: $e');
       return [];
@@ -365,40 +372,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     _markers.clear();
     _polylines.clear();
 
-    // Prepare batch request for all routes
-    List<Map<String, dynamic>> routeRequests = [];
-
-    for (int i = 0; i < _orders.length; i++) {
-      var order = _orders[i];
-      final orderLocation = order['locationData']?['deliveryLocation'];
-      final customerLocation = order['locationData']?['customerLocation'];
-
-      if (orderLocation != null && customerLocation != null) {
-        final deliveryLat = orderLocation['latitude']?.toDouble();
-        final deliveryLng = orderLocation['longitude']?.toDouble();
-        final customerLat = customerLocation['latitude']?.toDouble();
-        final customerLng = customerLocation['longitude']?.toDouble();
-
-        if (deliveryLat != null &&
-            deliveryLng != null &&
-            customerLat != null &&
-            customerLng != null) {
-          routeRequests.add({
-            'orderId': order['orderId'],
-            'origin': LatLng(deliveryLat, deliveryLng),
-            'destination': LatLng(customerLat, customerLng),
-          });
-        }
-      }
-    }
-
-    // Get batch directions from backend
-    Map<int, List<LatLng>> routeResults = {};
-    if (routeRequests.isNotEmpty) {
-      routeResults = await _getBatchDirectionsFromBackend(routeRequests);
-    }
-
-    // Create markers and polylines
+    // Process routes individually (similar to mobile app approach)
     for (int i = 0; i < _orders.length; i++) {
       var order = _orders[i];
       final orderLocation = order['locationData']?['deliveryLocation'];
@@ -454,11 +428,31 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             ),
           );
 
-          // Use route from batch request or fallback to straight line
-          List<LatLng> routePoints = routeResults[orderId] ??
-              [deliveryLocation, customerLocationLatLng];
-          final isRealRoute =
-              routeResults.containsKey(orderId) && routePoints.length > 2;
+          // FIXED: Get real route from Google Directions API directly
+          debugPrint('🗺️ Loading real route for Order #$orderId');
+
+          final directionsResponse = await _getDirectionsFromGoogle(
+            deliveryLocation,
+            customerLocationLatLng,
+          );
+
+          List<LatLng> routePoints;
+          bool isRealRoute = false;
+
+          if (directionsResponse != null &&
+              directionsResponse.points.isNotEmpty) {
+            // Use real route from Google Directions
+            routePoints = directionsResponse.points;
+            isRealRoute = true;
+            debugPrint(
+                '✅ Real route loaded for Order #$orderId: ${directionsResponse.points.length} points, ${directionsResponse.distanceKm.toStringAsFixed(1)}km');
+          } else {
+            // Fallback to straight line only if Google Directions fails
+            debugPrint(
+                '⚠️ Google Directions failed for Order #$orderId, using straight line');
+            routePoints = [deliveryLocation, customerLocationLatLng];
+            isRealRoute = false;
+          }
 
           // Add route polyline with enhanced styling
           _polylines.add(
@@ -498,9 +492,8 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
             );
           }
 
-          debugPrint(isRealRoute
-              ? '✅ Real route added for Order #$orderId with ${routePoints.length} points'
-              : '⚠️ Fallback route used for Order #$orderId');
+          // Add small delay to avoid rate limiting
+          await Future.delayed(const Duration(milliseconds: 200));
         }
       }
     }
@@ -648,7 +641,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                       ),
                     ),
-                  // Backend proxy indicator
+                  // FIXED: Direct API indicator instead of backend proxy
                   Container(
                     padding:
                         EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
@@ -660,13 +653,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.cloud_done,
+                          Icons.verified,
                           size: 12.sp,
                           color: const Color(0xFF10B981),
                         ),
                         SizedBox(width: 4.w),
                         Text(
-                          'BACKEND PROXY',
+                          'DIRECT GOOGLE API',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             color: const Color(0xFF10B981),
@@ -989,7 +982,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     );
   }
 
-  // ... (remaining methods stay the same as previous implementation)
+  // ... (Rest of the methods remain the same as in the original implementation)
   // Including: _buildLiveOrdersCards, _buildOrderDetails, _buildOrdersList,
   // _buildOrderCard, _buildDetailSection, _buildDetailRow, _getStatusColor,
   // _getUrgencyColor, _focusOnRoute, _calculateDistance
@@ -1176,13 +1169,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   ),
                   SizedBox(width: 8.w),
                   Icon(
-                    Icons.route,
+                    Icons.verified,
                     size: 12.sp,
                     color: routeColor,
                   ),
                   SizedBox(width: 2.w),
                   Text(
-                    'LIVE',
+                    'REAL',
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 10.sp,
                       color: routeColor,
@@ -1813,7 +1806,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     mapType: MapType.normal,
                   ),
                 ),
-                // Enhanced live routes indicator
+                // FIXED: Real routes indicator
                 Positioned(
                   top: 16.h,
                   left: 16.w,
@@ -1837,7 +1830,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                         SizedBox(width: 6.w),
                         Text(
-                          'REAL ROADS VIA BACKEND',
+                          'REAL ROADS - DIRECT API',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
@@ -1861,7 +1854,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     ),
                   ),
                 ),
-                // Enhanced routes legend
+                // Routes legend
                 Positioned(
                   top: 16.h,
                   right: 16.w,
@@ -1951,7 +1944,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          'Backend Proxy Routes',
+                          'Google Directions Routes',
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 8.sp,
                             color: Colors.white,
@@ -1987,4 +1980,27 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       ],
     );
   }
+}
+
+// Helper class for Google Directions response
+class GoogleDirectionsResponse {
+  final List<LatLng> points;
+  final double distanceKm;
+  final int durationMinutes;
+  final String encodedPolyline;
+
+  GoogleDirectionsResponse({
+    required this.points,
+    required this.distanceKm,
+    required this.durationMinutes,
+    required this.encodedPolyline,
+  });
+}
+
+class TimeoutException implements Exception {
+  final String message;
+  TimeoutException(this.message);
+
+  @override
+  String toString() => message;
 }
