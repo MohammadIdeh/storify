@@ -15,8 +15,13 @@ import 'dart:async';
 
 class AdvancedTrackingMap extends StatefulWidget {
   final bool showAsCards;
+  final Function(int)? onOrderCancel;
 
-  const AdvancedTrackingMap({super.key, this.showAsCards = false});
+  const AdvancedTrackingMap({
+    super.key,
+    this.showAsCards = false,
+    this.onOrderCancel,
+  });
 
   @override
   State<AdvancedTrackingMap> createState() => _AdvancedTrackingMapState();
@@ -516,9 +521,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               jointType: JointType.round,
             ),
           );
-
-          // REMOVED: Route indicator markers that were causing confusion
-          // No longer adding route indicator markers to avoid double counting
 
           // Add delay to avoid rate limiting
           await Future.delayed(const Duration(milliseconds: 200));
@@ -1158,15 +1160,18 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildLiveOrderCard(Map<String, dynamic> order, Color routeColor) {
+    final orderId = order['orderId'];
+    final canCancel = order['orderStatus']?['current'] == 'on_theway';
+
     return Container(
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: _selectedOrderId == order['orderId']
+          color: _selectedOrderId == orderId
               ? routeColor
               : const Color.fromARGB(255, 46, 57, 84),
-          width: _selectedOrderId == order['orderId'] ? 2 : 1,
+          width: _selectedOrderId == orderId ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -1178,7 +1183,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         ],
       ),
       child: InkWell(
-        onTap: () => _selectOrder(order['orderId']),
+        onTap: () => _selectOrder(orderId),
         borderRadius: BorderRadius.circular(16.r),
         child: Padding(
           padding: EdgeInsets.all(12.w),
@@ -1198,7 +1203,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
-                      'Route #${order['orderId'] ?? 'N/A'}',
+                      'Route #$orderId',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
@@ -1316,6 +1321,31 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                       ),
                     ),
                   ),
+                  if (canCancel) ...[
+                    SizedBox(width: 4.w),
+                    GestureDetector(
+                      onTap: () {
+                        print(
+                            '🔧 DEBUG: Cancel icon clicked on route card for order $orderId');
+                        // Call parent's cancel function
+                        widget.onOrderCancel?.call(orderId);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(4.w),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6.r),
+                          border: Border.all(color: Colors.red, width: 1),
+                        ),
+                        child: Icon(
+                          Icons.cancel_outlined,
+                          size: 14.sp,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
+                  SizedBox(width: 4.w),
                   Container(
                     width: 8.w,
                     height: 8.h,
@@ -1344,6 +1374,8 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         );
 
     if (order.isEmpty) return const SizedBox.shrink();
+
+    final canCancel = order['orderStatus']?['current'] == 'on_theway';
 
     return Container(
       padding: EdgeInsets.all(16.w),
@@ -1466,6 +1498,24 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   ),
                 ),
               ),
+              if (canCancel) ...[
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      print(
+                          '🔧 DEBUG: Cancel Order button clicked in details panel for order ${order['orderId']}');
+                      widget.onOrderCancel?.call(order['orderId']);
+                    },
+                    icon: const Icon(Icons.cancel),
+                    label: const Text('Cancel Order'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -1548,6 +1598,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
+    final orderId = order['orderId'];
+    final canCancel = order['orderStatus']?['current'] == 'on_theway';
+
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.w),
@@ -1555,13 +1608,13 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         color: const Color(0xFF1F2937),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _selectedOrderId == order['orderId']
+          color: _selectedOrderId == orderId
               ? const Color(0xFF6366F1)
               : const Color.fromARGB(255, 46, 57, 84),
         ),
       ),
       child: InkWell(
-        onTap: () => _selectOrder(order['orderId']),
+        onTap: () => _selectOrder(orderId),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1574,7 +1627,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                 ),
                 SizedBox(width: 6.w),
                 Text(
-                  'Route #${order['orderId'] ?? 'N/A'}',
+                  'Route #$orderId',
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
@@ -1599,6 +1652,29 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     ),
                   ),
                 ),
+                if (canCancel) ...[
+                  SizedBox(width: 8.w),
+                  GestureDetector(
+                    onTap: () {
+                      print(
+                          '🔧 DEBUG: Cancel button clicked in order card for order $orderId');
+                      widget.onOrderCancel?.call(orderId);
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(6.w),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: Colors.red, width: 1),
+                      ),
+                      child: Icon(
+                        Icons.cancel_outlined,
+                        size: 16.sp,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
             SizedBox(height: 8.h),
