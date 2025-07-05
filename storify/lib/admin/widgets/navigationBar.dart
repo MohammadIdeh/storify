@@ -1,5 +1,5 @@
 // lib/admin/widgets/navigationBar.dart
-// FIXED VERSION - Simplified admin logout to prevent widget tree errors
+// FIXED VERSION - Simplified admin logout to prevent widget tree errors with localization
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,6 +12,8 @@ import 'package:storify/utilis/notificationPopUpAdmin.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/services/user_profile_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class MyNavigationBar extends StatefulWidget {
   final int currentIndex;
@@ -270,6 +272,9 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     // Clean loading state if logging out
     if (_isDisposed || _isLoggingOut) {
       return Container(
@@ -277,11 +282,16 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         color: const Color.fromARGB(255, 29, 41, 57),
         child: Center(
           child: Text(
-            'Logging out...',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16.sp,
-            ),
+            l10n!.loggingOut,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -292,12 +302,17 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
       width: double.infinity,
       height: 90.h,
       color: const Color.fromARGB(255, 29, 41, 57),
-      padding: const EdgeInsets.only(left: 45, right: 30),
+      padding: EdgeInsets.only(
+        left: isRtl ? 30 : 45,
+        right: isRtl ? 45 : 30,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
         children: [
           // Left side: Logo + Title
           Row(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
             children: [
               SvgPicture.asset(
                 'assets/images/logo.svg',
@@ -306,23 +321,31 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               ),
               SizedBox(width: 12.w),
               Text(
-                'Storify',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
+                l10n!.appTitle,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
               ),
             ],
           ),
 
           // Middle: Navigation Items
           Row(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
             children: _buildNavItems(),
           ),
 
           // Right side: Notifications and Profile
           Row(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
             children: [
               SizedBox(width: 14.w),
 
@@ -372,6 +395,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                 onTap:
                     (_isDisposed || _isLoggingOut) ? null : _toggleProfileMenu,
                 child: Row(
+                  textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
                   children: [
                     Container(
                       width: 50,
@@ -426,15 +450,18 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   List<Widget> _buildNavItems() {
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isDisposed || _isLoggingOut) return [];
 
     final List<String> navItems = [
-      'Dashboard',
-      'Products',
-      'Category',
-      'Orders',
-      "Role Management",
-      'Tracking',
+      l10n!.dashboard,
+      l10n.products,
+      l10n.category,
+      l10n.orders,
+      l10n.roleManagement,
+      l10n.tracking,
     ];
 
     final List<String?> navIcons = [
@@ -457,7 +484,10 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
           onTap:
               (_isDisposed || _isLoggingOut) ? null : () => widget.onTap(index),
           child: Container(
-            margin: EdgeInsets.only(left: 24.w),
+            margin: EdgeInsets.only(
+              left: isRtl ? 0 : 24.w,
+              right: isRtl ? 24.w : 0,
+            ),
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: isSelected
@@ -472,6 +502,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               borderRadius: BorderRadius.circular(30.r),
             ),
             child: Row(
+              textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
               children: [
                 if (navIcons[index] != null && navIcons[index]!.isNotEmpty)
                   SvgPicture.asset(
@@ -487,13 +518,23 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                   SizedBox(width: 9.w),
                 Text(
                   text,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 15.sp,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w700,
-                    color: isSelected
-                        ? Colors.white
-                        : const Color.fromARGB(255, 105, 123, 123),
-                  ),
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          fontSize: 15.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 15.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        ),
                 ),
               ],
             ),
