@@ -1,14 +1,18 @@
 // lib/GeneralWidgets/settingsWidget.dart
-// Fixed version with role-specific data handling and improved stability
+// Updated version with comprehensive language support and modern UI
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import 'package:storify/customer/widgets/mapPopUp.dart';
 import 'package:storify/GeneralWidgets/snackBar.dart';
 import 'package:storify/services/user_profile_service.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocaleProvider.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'dart:typed_data';
 import 'dart:html' as html;
 
@@ -16,9 +20,9 @@ class SettingsWidget extends StatefulWidget {
   final VoidCallback onClose;
 
   const SettingsWidget({
-    Key? key,
+    super.key,
     required this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsWidget> createState() => _SettingsWidgetState();
@@ -28,10 +32,6 @@ class _SettingsWidgetState extends State<SettingsWidget>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? userRole;
-  bool _darkMode = true;
-  bool _notificationsEnabled = true;
-  String _selectedLanguage = 'English';
-  final List<String> _languages = ['English', 'Arabic', 'Spanish', 'French'];
 
   // Profile form controllers
   final TextEditingController _nameController = TextEditingController();
@@ -62,6 +62,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
   bool _isLoadingProfile = false;
   bool _isChangingPassword = false;
   bool _isSavingProfile = false;
+  bool _isChangingLanguage = false;
 
   // Password visibility
   bool _showCurrentPassword = false;
@@ -504,8 +505,45 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
+  // ✅ NEW: Handle language change with role-specific persistence
+  Future<void> _handleLanguageChange(Locale newLocale) async {
+    if (_isDisposed) return;
+
+    _safeSetState(() {
+      _isChangingLanguage = true;
+    });
+
+    try {
+      final localeProvider =
+          Provider.of<LocaleProvider>(context, listen: false);
+      await localeProvider.setLocale(newLocale);
+
+      if (!_isDisposed && mounted) {
+        final l10n = AppLocalizations.of(context);
+        showCustomSnackBar(
+            context, l10n.languageChangedSuccess, 'assets/images/success.svg');
+      }
+    } catch (e) {
+      debugPrint('❌ Error changing language: $e');
+      if (!_isDisposed && mounted) {
+        showCustomSnackBar(
+            context, 'Failed to change language', 'assets/images/error.svg');
+      }
+    } finally {
+      if (!_isDisposed) {
+        _safeSetState(() {
+          _isChangingLanguage = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Get localization
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     // Return minimal widget if disposed
     if (_isDisposed) {
       return Container(
@@ -520,147 +558,535 @@ class _SettingsWidgetState extends State<SettingsWidget>
       );
     }
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
-      child: Container(
-        width: 800.w,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1D2939),
-          borderRadius: BorderRadius.circular(24.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Header with title and close button
-            Padding(
-              padding: EdgeInsets.all(20.r),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        "Settings${userRole != null ? ' ($userRole)' : ''}",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 28.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (_isLoadingProfile) ...[
-                        SizedBox(width: 12.w),
-                        SizedBox(
-                          width: 20.w,
-                          height: 20.h,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: const Color(0xFF7B5CFA),
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+        child: Container(
+          width: 800.w,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1D2939),
+            borderRadius: BorderRadius.circular(24.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Header with title and close button
+              Padding(
+                padding: EdgeInsets.all(20.r),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "${l10n.settings}${userRole != null ? ' (${LocalizationHelper.getRoleDisplayName(context, userRole)})' : ''}",
+                          style: GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 28.sp,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        if (_isLoadingProfile) ...[
+                          SizedBox(width: 12.w),
+                          SizedBox(
+                            width: 20.w,
+                            height: 20.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: const Color(0xFF7B5CFA),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                  IconButton(
-                    onPressed: widget.onClose,
-                    icon: Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 28.sp,
+                    ),
+                    IconButton(
+                      onPressed: widget.onClose,
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 28.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Tabs for different settings categories
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey[800]!,
+                      width: 1,
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // Tabs for different settings categories
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey[800]!,
-                    width: 1,
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: const Color(0xFF7B5CFA),
+                  indicatorWeight: 3,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey[400],
+                  labelStyle: GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
                   ),
+                  unselectedLabelStyle: GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                  ),
+                  tabs: [
+                    Tab(
+                      icon: Icon(Icons.person, size: 24.sp),
+                      text: l10n.profile,
+                    ),
+                    Tab(
+                      icon: Icon(Icons.palette, size: 24.sp),
+                      text: l10n.appearance,
+                    ),
+                    Tab(
+                      icon: Icon(Icons.notifications, size: 24.sp),
+                      text: l10n.notifications,
+                    ),
+                    Tab(
+                      icon: Icon(Icons.help_outline, size: 24.sp),
+                      text: l10n.about,
+                    ),
+                  ],
                 ),
               ),
-              child: TabBar(
-                controller: _tabController,
-                indicatorColor: const Color(0xFF7B5CFA),
-                indicatorWeight: 3,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey[400],
-                labelStyle: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
+
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Profile Settings
+                    SingleChildScrollView(
+                      child: _buildProfileSettings(),
+                    ),
+
+                    // Appearance Settings - ✅ NOW IMPLEMENTED
+                    SingleChildScrollView(
+                      child: _buildAppearanceSettings(),
+                    ),
+
+                    // Notification Settings
+                    SingleChildScrollView(
+                      child: _buildNotificationSettings(),
+                    ),
+
+                    // About/Help
+                    SingleChildScrollView(
+                      child: _buildAboutSection(),
+                    ),
+                  ],
                 ),
-                unselectedLabelStyle: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                ),
-                tabs: [
-                  Tab(
-                    icon: Icon(Icons.person, size: 24.sp),
-                    text: "Profile",
-                  ),
-                  Tab(
-                    icon: Icon(Icons.palette, size: 24.sp),
-                    text: "Appearance",
-                  ),
-                  Tab(
-                    icon: Icon(Icons.notifications, size: 24.sp),
-                    text: "Notifications",
-                  ),
-                  Tab(
-                    icon: Icon(Icons.help_outline, size: 24.sp),
-                    text: "About",
-                  ),
-                ],
               ),
-            ),
-
-            // Tab content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Profile Settings
-                  SingleChildScrollView(
-                    child: _buildProfileSettings(),
-                  ),
-
-                  // Appearance Settings
-                  SingleChildScrollView(
-                    child: _buildAppearanceSettings(),
-                  ),
-
-                  // Notification Settings
-                  SingleChildScrollView(
-                    child: _buildNotificationSettings(),
-                  ),
-
-                  // About/Help
-                  SingleChildScrollView(
-                    child: _buildAboutSection(),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Profile settings section with role-specific data
+  // ✅ UPDATED: Comprehensive appearance settings with language selection
+  Widget _buildAppearanceSettings() {
+    final l10n = AppLocalizations.of(context);
+    LocalizationHelper.isRTL(context);
+
+    return Padding(
+      padding: EdgeInsets.all(24.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Language Settings Section
+          Container(
+            padding: EdgeInsets.all(24.r),
+            decoration: BoxDecoration(
+              color: const Color(0xFF283548),
+              borderRadius: BorderRadius.circular(16.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7B5CFA).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Icon(
+                        Icons.language,
+                        color: const Color(0xFF7B5CFA),
+                        size: 24.sp,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.languageSettings,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            l10n.choosePreferredLanguage,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.grey[400],
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isChangingLanguage)
+                      SizedBox(
+                        width: 20.w,
+                        height: 20.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: const Color(0xFF7B5CFA),
+                        ),
+                      ),
+                  ],
+                ),
+
+                SizedBox(height: 24.h),
+
+                // Role-specific language info
+                if (userRole != null) ...[
+                  Container(
+                    padding: EdgeInsets.all(16.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7B5CFA).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: const Color(0xFF7B5CFA).withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: const Color(0xFF7B5CFA),
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Text(
+                            l10n.languageDescription,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: const Color(0xFF7B5CFA),
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                ],
+
+                // Language Options
+                Consumer<LocaleProvider>(
+                  builder: (context, localeProvider, child) {
+                    return Column(
+                      children: [
+                        // English Option
+                        _buildLanguageOption(
+                          locale: const Locale('en'),
+                          title: l10n.english,
+                          subtitle: "Switch to English",
+                          flagAsset:
+                              'assets/images/Flag_of_the_United_States.svg',
+                          isSelected:
+                              localeProvider.currentLanguageCode == 'en',
+                          onTap: () =>
+                              _handleLanguageChange(const Locale('en')),
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // Arabic Option
+                        _buildLanguageOption(
+                          locale: const Locale('ar'),
+                          title: l10n.arabic,
+                          subtitle: "التبديل إلى العربية",
+                          flagAsset: 'assets/images/palestineFlag.svg',
+                          isSelected:
+                              localeProvider.currentLanguageCode == 'ar',
+                          onTap: () =>
+                              _handleLanguageChange(const Locale('ar')),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 32.h),
+
+          // Theme Settings Section (Placeholder for future implementation)
+          Container(
+            padding: EdgeInsets.all(24.r),
+            decoration: BoxDecoration(
+              color: const Color(0xFF283548),
+              borderRadius: BorderRadius.circular(16.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Icon(
+                        Icons.palette,
+                        color: Colors.grey[400],
+                        size: 24.sp,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.theme,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            l10n.comingSoon,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: Colors.grey[400],
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ NEW: Modern language option widget
+  Widget _buildLanguageOption({
+    required Locale locale,
+    required String title,
+    required String subtitle,
+    required String flagAsset,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF7B5CFA).withOpacity(0.15)
+            : const Color(0xFF1D2939),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isSelected ? const Color(0xFF7B5CFA) : Colors.grey[700]!,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isChangingLanguage ? null : onTap,
+          borderRadius: BorderRadius.circular(16.r),
+          child: Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Row(
+              children: [
+                // Flag Container
+                Container(
+                  width: 48.w,
+                  height: 48.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF7B5CFA)
+                          : Colors.grey[600]!,
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: Container(
+                      padding: EdgeInsets.all(8.r),
+                      child: _buildFlagIcon(flagAsset, isSelected),
+                    ),
+                  ),
+                ),
+
+                SizedBox(width: 16.w),
+
+                // Language Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.spaceGrotesk(
+                          color: isSelected ? Colors.white : Colors.grey[300],
+                          fontSize: 18.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.spaceGrotesk(
+                          color: Colors.grey[400],
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Selection Indicator
+                Container(
+                  width: 24.w,
+                  height: 24.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected
+                        ? const Color(0xFF7B5CFA)
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF7B5CFA)
+                          : Colors.grey[600]!,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 16.sp,
+                        )
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ NEW: Flag icon builder (fallback for SVG)
+// ✅ FIXED: Properly render SVG flags
+  Widget _buildFlagIcon(String flagAsset, bool isSelected) {
+    // Import flutter_svg at the top of your file if not already done:
+    // import 'package:flutter_svg/flutter_svg.dart';
+
+    try {
+      return SvgPicture.asset(
+        flagAsset,
+        width: 24.w,
+        height: 24.w,
+        fit: BoxFit.contain,
+        colorFilter: isSelected
+            ? null // Keep original colors when selected
+            : ColorFilter.mode(
+                Colors.grey.withOpacity(0.7),
+                BlendMode.srcATop,
+              ), // Dim when not selected
+      );
+    } catch (e) {
+      debugPrint('❌ Error loading SVG flag: $flagAsset - $e');
+
+      // Fallback based on the actual asset path
+      if (flagAsset.contains('Flag_of_the_United_States')) {
+        return Center(
+          child: Text(
+            '🇺🇸',
+            style: TextStyle(fontSize: 24.sp),
+          ),
+        );
+      } else if (flagAsset.contains('palestineFlag')) {
+        return Center(
+          child: Text(
+            '🇵🇸',
+            style: TextStyle(fontSize: 24.sp),
+          ),
+        );
+      }
+
+      // Final fallback icon
+      return Icon(
+        Icons.language,
+        color: isSelected ? const Color(0xFF7B5CFA) : Colors.grey[400],
+        size: 24.sp,
+      );
+    }
+  }
+
+  // Rest of your existing methods remain the same...
+  // (I'll include the most important ones for completeness)
+
   Widget _buildProfileSettings() {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.all(24.r),
       child: Form(
@@ -687,9 +1113,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   Row(
                     children: [
                       Container(
-                        width: 80.w, // Use same unit for both width and height
-                        height: 80
-                            .w, // Changed from 80.h to 80.w to ensure perfect square
+                        width: 80.w,
+                        height: 80.w,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -698,24 +1123,23 @@ class _SettingsWidgetState extends State<SettingsWidget>
                           ),
                         ),
                         child: ClipOval(
-                          // Changed from ClipRRect to ClipOval for perfect circle
                           child: _selectedImageBytes != null
                               ? Image.memory(
                                   _selectedImageBytes!,
-                                  width: 80.w, // Use same unit
-                                  height: 80.w, // Use same unit
+                                  width: 80.w,
+                                  height: 80.w,
                                   fit: BoxFit.cover,
                                 )
                               : _currentProfilePicture != null &&
                                       _currentProfilePicture!.isNotEmpty
                                   ? CachedNetworkImage(
                                       imageUrl: _currentProfilePicture!,
-                                      width: 80.w, // Use same unit
-                                      height: 80.w, // Use same unit
+                                      width: 80.w,
+                                      height: 80.w,
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) => Container(
                                         width: 80.w,
-                                        height: 80.w, // Use same unit
+                                        height: 80.w,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: const Color(0xFF7B5CFA)
@@ -733,7 +1157,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                             'Error loading profile image: $error');
                                         return Container(
                                           width: 80.w,
-                                          height: 80.w, // Use same unit
+                                          height: 80.w,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: const Color(0xFF7B5CFA)
@@ -751,7 +1175,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                     )
                                   : Container(
                                       width: 80.w,
-                                      height: 80.w, // Use same unit
+                                      height: 80.w,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: const Color(0xFF7B5CFA)
@@ -773,7 +1197,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Profile Picture",
+                              l10n.profilePicture,
                               style: GoogleFonts.spaceGrotesk(
                                 color: Colors.white,
                                 fontSize: 18.sp,
@@ -783,10 +1207,10 @@ class _SettingsWidgetState extends State<SettingsWidget>
                             SizedBox(height: 8.h),
                             Text(
                               _selectedImageBytes != null
-                                  ? "New image selected: $_selectedImageName"
+                                  ? "${l10n.imageSelected}: $_selectedImageName"
                                   : _nameController.text.isNotEmpty
-                                      ? "Picture for ${_nameController.text} ($userRole)"
-                                      : "Upload a new profile picture for $userRole",
+                                      ? "Picture for ${_nameController.text} (${LocalizationHelper.getRoleDisplayName(context, userRole)})"
+                                      : "Upload a new profile picture for ${LocalizationHelper.getRoleDisplayName(context, userRole)}",
                               style: GoogleFonts.spaceGrotesk(
                                 color: _selectedImageBytes != null
                                     ? const Color(0xFF7B5CFA)
@@ -832,8 +1256,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                         )
                                       : Text(
                                           _selectedImageBytes != null
-                                              ? "Upload Photo"
-                                              : "Select Photo",
+                                              ? l10n.uploadPhoto
+                                              : l10n.selectPhoto,
                                           style: GoogleFonts.spaceGrotesk(
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -851,7 +1275,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                             });
                                           },
                                     child: Text(
-                                      "Cancel",
+                                      l10n.cancel,
                                       style: GoogleFonts.spaceGrotesk(
                                         color: Colors.grey[400],
                                       ),
@@ -864,7 +1288,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                                         ? null
                                         : _handleImageRemoval,
                                     child: Text(
-                                      "Remove",
+                                      l10n.remove,
                                       style: GoogleFonts.spaceGrotesk(
                                         color: Colors.red[400],
                                       ),
@@ -889,7 +1313,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Account Information",
+                  l10n.accountInformation,
                   style: GoogleFonts.spaceGrotesk(
                     color: Colors.white,
                     fontSize: 20.sp,
@@ -912,33 +1336,33 @@ class _SettingsWidgetState extends State<SettingsWidget>
             SizedBox(height: 16.h),
 
             // Form fields
-            _buildSettingsTextField("Full Name", _nameController,
+            _buildSettingsTextField(l10n.fullName, _nameController,
                 validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Name is required';
+                return l10n.nameRequired;
               }
               return null;
             }),
             SizedBox(height: 16.h),
-            _buildSettingsTextField("Email", _emailController,
+            _buildSettingsTextField(l10n.email, _emailController,
                 validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Email is required';
+                return l10n.emailRequired;
               }
               if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                   .hasMatch(value)) {
-                return 'Enter a valid email';
+                return l10n.emailInvalid;
               }
               return null;
             }),
             SizedBox(height: 16.h),
-            _buildSettingsTextField("Phone Number", _phoneController,
+            _buildSettingsTextField(l10n.phoneNumber, _phoneController,
                 keyboardType: TextInputType.number, validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Phone number is required';
+                return l10n.phoneRequired;
               }
               if (!RegExp(r'^[0-9\s\-\(\)]+$').hasMatch(value)) {
-                return 'Phone number must contain only numbers';
+                return l10n.phoneInvalid;
               }
               return null;
             }),
@@ -949,12 +1373,15 @@ class _SettingsWidgetState extends State<SettingsWidget>
               children: [
                 Expanded(
                   child:
-                      _buildReadOnlyField("User ID", _currentUserId ?? 'N/A'),
+                      _buildReadOnlyField(l10n.userId, _currentUserId ?? 'N/A'),
                 ),
                 SizedBox(width: 16.w),
                 Expanded(
                   child: _buildReadOnlyField(
-                      "Role", _formatRoleName(userRole) ?? 'N/A'),
+                      l10n.role,
+                      LocalizationHelper.getRoleDisplayName(
+                              context, userRole) ??
+                          'N/A'),
                 ),
               ],
             ),
@@ -968,7 +1395,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Change Password",
+                    l10n.changePassword,
                     style: GoogleFonts.spaceGrotesk(
                       color: Colors.white,
                       fontSize: 20.sp,
@@ -978,47 +1405,47 @@ class _SettingsWidgetState extends State<SettingsWidget>
                   SizedBox(height: 16.h),
 
                   _buildPasswordTextField(
-                    "Current Password",
+                    l10n.currentPassword,
                     _currentPasswordController,
                     _showCurrentPassword,
                     (value) =>
                         _safeSetState(() => _showCurrentPassword = value),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Current password is required';
+                        return l10n.currentPasswordRequired;
                       }
                       return null;
                     },
                   ),
                   SizedBox(height: 16.h),
                   _buildPasswordTextField(
-                    "New Password",
+                    l10n.newPassword,
                     _newPasswordController,
                     _showNewPassword,
                     (value) => _safeSetState(() => _showNewPassword = value),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'New password is required';
+                        return l10n.newPasswordRequired;
                       }
                       if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                        return l10n.passwordTooShort;
                       }
                       return null;
                     },
                   ),
                   SizedBox(height: 16.h),
                   _buildPasswordTextField(
-                    "Confirm New Password",
+                    l10n.confirmPassword,
                     _confirmPasswordController,
                     _showConfirmPassword,
                     (value) =>
                         _safeSetState(() => _showConfirmPassword = value),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
+                        return l10n.confirmPasswordRequired;
                       }
                       if (value != _newPasswordController.text) {
-                        return 'Passwords do not match';
+                        return l10n.passwordsDontMatch;
                       }
                       return null;
                     },
@@ -1052,7 +1479,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                               ),
                             )
                           : Text(
-                              "Change Password",
+                              l10n.changePassword,
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.bold,
@@ -1069,7 +1496,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
             // Location section (only for customers)
             if (userRole == 'Customer') ...[
               Text(
-                "Delivery Location",
+                l10n.deliveryLocation,
                 style: GoogleFonts.spaceGrotesk(
                   color: Colors.white,
                   fontSize: 20.sp,
@@ -1103,7 +1530,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Your Delivery Address",
+                            l10n.yourDeliveryAddress,
                             style: GoogleFonts.spaceGrotesk(
                               color: Colors.white,
                               fontSize: 18.sp,
@@ -1112,7 +1539,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                           ),
                           SizedBox(height: 8.h),
                           Text(
-                            "Your current location is set for deliveries",
+                            l10n.currentLocationSet,
                             style: GoogleFonts.spaceGrotesk(
                               color: Colors.grey[400],
                               fontSize: 14.sp,
@@ -1136,7 +1563,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                         ),
                       ),
                       child: Text(
-                        "Change Location",
+                        l10n.changeLocation,
                         style: GoogleFonts.spaceGrotesk(
                           fontWeight: FontWeight.bold,
                         ),
@@ -1173,7 +1600,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
                         ),
                       )
                     : Text(
-                        "Save Profile Changes",
+                        l10n.saveProfileChanges,
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
@@ -1187,7 +1614,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  // Helper methods (same as before but with _safeSetState)
+  // Helper methods (same as before but with localization)
   Widget _buildSettingsTextField(String label, TextEditingController controller,
       {String? Function(String?)? validator, TextInputType? keyboardType}) {
     return Column(
@@ -1384,62 +1811,16 @@ class _SettingsWidgetState extends State<SettingsWidget>
     );
   }
 
-  String? _formatRoleName(String? role) {
-    if (role == null) return null;
-
-    switch (role) {
-      case 'DeliveryEmployee':
-        return 'Delivery Employee';
-      case 'WareHouseEmployee':
-        return 'Warehouse Employee';
-      case 'Customer':
-        return 'Customer';
-      case 'Supplier':
-        return 'Supplier';
-      case 'Admin':
-        return 'Admin';
-      default:
-        return role;
-    }
-  }
-
-  Widget _buildAppearanceSettings() {
-    return Padding(
-      padding: EdgeInsets.all(24.r),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Theme",
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Center(
-            child: Text(
-              "Appearance settings coming soon...",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.grey[400],
-                fontSize: 16.sp,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildNotificationSettings() {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.all(24.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Notification Settings",
+            l10n.notificationSettings,
             style: GoogleFonts.spaceGrotesk(
               color: Colors.white,
               fontSize: 20.sp,
@@ -1449,7 +1830,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
           SizedBox(height: 16.h),
           Center(
             child: Text(
-              "Notification settings coming soon...",
+              l10n.notificationSettingsDesc,
               style: GoogleFonts.spaceGrotesk(
                 color: Colors.grey[400],
                 fontSize: 16.sp,
@@ -1462,13 +1843,15 @@ class _SettingsWidgetState extends State<SettingsWidget>
   }
 
   Widget _buildAboutSection() {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.all(24.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "About Storify",
+            l10n.aboutStorify,
             style: GoogleFonts.spaceGrotesk(
               color: Colors.white,
               fontSize: 20.sp,
@@ -1478,7 +1861,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
           SizedBox(height: 16.h),
           Center(
             child: Text(
-              "About section coming soon...",
+              l10n.aboutSection,
               style: GoogleFonts.spaceGrotesk(
                 color: Colors.grey[400],
                 fontSize: 16.sp,

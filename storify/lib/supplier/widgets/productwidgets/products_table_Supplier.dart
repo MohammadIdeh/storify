@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 
-// Product model for the table
 class ProductModel {
   final int productId;
   final String name;
@@ -14,7 +13,7 @@ class ProductModel {
   final double costPrice;
   final double sellPrice;
   final String categoryName;
-  String status; // Changed to non-final to allow direct updates
+  String status;
   final int? quantity;
   final String? description;
   final double? priceSupplier;
@@ -32,12 +31,9 @@ class ProductModel {
     this.priceSupplier,
   });
 
-  // Factory constructor to create a ProductModel from JSON
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    // Normalize status when creating model
     String normalizedStatus = json['status'] ?? 'notActive';
 
-    // Ensure consistent status format
     if (normalizedStatus == "notActive") {
       normalizedStatus = "notActive";
     } else if (normalizedStatus == "active") {
@@ -65,17 +61,16 @@ class ProductModel {
 }
 
 class ProductsTableSupplier extends StatefulWidget {
-  final int selectedFilterIndex; // 0: All, 1: Active, 2: Not Active
+  final int selectedFilterIndex;
   final String searchQuery;
 
   const ProductsTableSupplier({
-    super.key, // Make sure key is passed to super
+    super.key,
     required this.selectedFilterIndex,
     required this.searchQuery,
   });
 
   @override
-  // ignore: library_private_types_in_public_api
   ProductsTableSupplierState createState() => ProductsTableSupplierState();
 }
 
@@ -89,7 +84,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   bool _sortAscending = true;
   final int _itemsPerPage = 5;
 
-  // Controllers for the edit dialog
   TextEditingController _priceController = TextEditingController();
   bool _statusSwitch = false;
 
@@ -118,7 +112,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     super.dispose();
   }
 
-  // Load supplierId from SharedPreferences
   Future<void> _loadSupplierId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -127,7 +120,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     debugPrint('📦 Loaded supplierId for table: $_supplierId');
   }
 
-  // Fetch products from the API with cache-busting
   Future<void> _fetchProducts() async {
     if (_supplierId == null) {
       debugPrint('⚠️ No supplierId found, cannot fetch products');
@@ -195,14 +187,10 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
-  // Show combined edit dialog for price and status
   Future<void> _showEditDialog(ProductModel product) async {
-    // Initialize price controller with current value or cost price
     _priceController.text =
         product.priceSupplier?.toString() ?? product.costPrice.toString();
 
-    // Initialize status switch
-    // _statusSwitch = product.status == "Active";
     debugPrint('🔍 Current product status before dialog: ${product.status}');
     bool isProductActive = (product.status == "Active");
     _statusSwitch = isProductActive;
@@ -227,7 +215,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
             content: SingleChildScrollView(
               child: ListBody(
                 children: <Widget>[
-                  // Product Details
                   Text(
                     'Product: ${product.name}',
                     style: GoogleFonts.spaceGrotesk(
@@ -243,8 +230,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                     ),
                   ),
                   SizedBox(height: 24.h),
-
-                  // Supplier Price Section
                   Text(
                     'Supplier Price',
                     style: GoogleFonts.spaceGrotesk(
@@ -287,8 +272,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                     ),
                   ),
                   SizedBox(height: 24.h),
-
-                  // Status Section
                   Text(
                     'Product Status',
                     style: GoogleFonts.spaceGrotesk(
@@ -305,8 +288,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                     ),
                   ),
                   SizedBox(height: 16.h),
-
-                  // Status Switch with custom appearance
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -330,8 +311,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                       ),
                     ],
                   ),
-
-                  // Status explanation
                   Text(
                     _statusSwitch
                         ? 'Product will be visible to customers'
@@ -372,26 +351,21 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                   ),
                 ),
                 onPressed: () {
-                  // Get new values from dialog
                   final priceText = _priceController.text.trim();
                   final newPrice = double.tryParse(priceText);
                   final newStatus = _statusSwitch ? "Active" : "NotActive";
 
-                  // Status has changed?
                   final statusChanged = (newStatus != product.status);
 
                   debugPrint(
                       '🔄 Status changed: $statusChanged (Original: ${product.status}, New: $newStatus)');
 
-                  // Price has changed?
                   final priceChanged = newPrice != null &&
                       (product.priceSupplier == null ||
                           newPrice != product.priceSupplier);
 
-                  // Close dialog
                   Navigator.of(context).pop();
 
-                  // Process updates
                   if (priceChanged && statusChanged) {
                     _updateBoth(product.productId, newPrice!, newStatus);
                   } else if (priceChanged) {
@@ -399,7 +373,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                   } else if (statusChanged) {
                     _updateStatus(product.productId, newStatus);
                   } else {
-                    // No changes
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('No changes were made')),
                     );
@@ -413,23 +386,18 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     );
   }
 
-  // Update both price and status in sequence
   Future<void> _updateBoth(int productId, double price, String status) async {
     setState(() {
-      _isLoading = true; // Show loading indicator
+      _isLoading = true;
     });
 
     try {
-      // First update price
       await _updatePriceApi(productId, price);
 
-      // Then update status
       await _updateStatusApi(productId, status);
 
-      // Refresh the products list
       await _fetchProducts();
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Product updated successfully'),
@@ -449,7 +417,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
-  // Update just the price
   Future<void> _updatePrice(int productId, double price) async {
     setState(() {
       _isLoading = true;
@@ -474,10 +441,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
-  // Update just the status
-// 1. First, modify the Update Status function to directly update the model:
   Future<void> _updateStatus(int productId, String status) async {
-    // Find the product in our local list
     ProductModel? productToUpdate;
     for (var product in _allProducts) {
       if (product.productId == productId) {
@@ -496,52 +460,40 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       return;
     }
 
-    // Save old status for comparison
     final oldStatus = productToUpdate.status;
 
-    // Update the status locally BEFORE API call
     setState(() {
       productToUpdate?.status = status;
       _isLoading = true;
     });
 
     try {
-      // API call to update status - whether it works or not, we keep our local update
       await _updateStatusApi(productId, status);
 
-      // Set loading to false but preserve our local update
       setState(() {
         _isLoading = false;
       });
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Status updated from $oldStatus to $status'),
           backgroundColor: status == "Active" ? Colors.green : Colors.red,
         ),
       );
-
-      // Optional: You can still trigger a background refresh
-      // But don't wait for it or let it affect the UI
     } catch (e) {
-      // On API error, we STILL keep our local change
-      // (this is the key difference from before)
       setState(() {
         _isLoading = false;
-        // DON'T revert the status change - keep what user requested
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Warning: Status may not be saved on server: $e'),
-          backgroundColor: Colors.orange, // warning color
+          backgroundColor: Colors.orange,
         ),
       );
     }
   }
 
-  // API call to update price
   Future<void> _updatePriceApi(int productId, double price) async {
     if (_supplierId == null) {
       throw Exception('Supplier ID not found');
@@ -571,7 +523,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
-  // API call to update status
   Future<void> _updateStatusApi(int productId, String status) async {
     if (_supplierId == null) {
       throw Exception('Supplier ID not found');
@@ -601,22 +552,17 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
-  /// Returns filtered, searched, and sorted products.
   List<ProductModel> get filteredProducts {
     List<ProductModel> temp = List.from(_allProducts);
 
-    // Filter by status
     if (widget.selectedFilterIndex == 1) {
-      // Active
       temp = temp.where((p) => p.status == "Active").toList();
     } else if (widget.selectedFilterIndex == 2) {
-      // Not Active - handle both formats
       temp = temp
           .where((p) => p.status == "Not Active" || p.status == "NotActive")
           .toList();
     }
 
-    // Search by name or product ID
     if (widget.searchQuery.isNotEmpty) {
       temp = temp
           .where((p) =>
@@ -625,12 +571,9 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
           .toList();
     }
 
-    // Apply sorting if set
     if (_sortColumnIndex != null) {
       if (_sortColumnIndex == 1) {
-        // Modified to sort by supplier price instead of cost price
         temp.sort((a, b) {
-          // Handle null supplier prices (sort them to the end)
           if (a.priceSupplier == null && b.priceSupplier == null) return 0;
           if (a.priceSupplier == null) return 1;
           if (b.priceSupplier == null) return -1;
@@ -645,7 +588,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     return temp;
   }
 
-  /// Helper: builds a header label with a sort arrow.
   Widget _buildSortableColumnLabel(String label, int colIndex) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
@@ -667,7 +609,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     );
   }
 
-  /// Called when a sortable header is tapped.
   void _onSort(int colIndex) {
     setState(() {
       if (_sortColumnIndex == colIndex) {
@@ -703,9 +644,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
         ? []
         : filteredProducts.sublist(startIndex, endIndex);
 
-    // Heading row color
     final Color headingColor = const Color.fromARGB(255, 36, 50, 69);
-    // Divider and border color/thickness
     final BorderSide dividerSide =
         BorderSide(color: const Color.fromARGB(255, 34, 53, 62), width: 1);
     final BorderSide dividerSide2 =
@@ -725,7 +664,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Wrap DataTable in horizontal SingleChildScrollView.
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: ConstrainedBox(
@@ -757,30 +695,22 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                       fontSize: 13.sp,
                     ),
                     columns: [
-                      // ID Column
                       const DataColumn(label: Text("ID")),
-                      // Image & Name Column
                       const DataColumn(label: Text("Image & Name")),
-                      // Supplier Price Column (sortable) - replacing Cost Price
                       DataColumn(
                         label: _buildSortableColumnLabel("Supplier Price", 1),
                         onSort: (columnIndex, _) {
                           _onSort(1);
                         },
                       ),
-                      // Category Column
                       const DataColumn(label: Text("Category")),
-                      // Status Column
                       const DataColumn(label: Text("Status")),
-                      // Actions Column (single Edit icon)
                       const DataColumn(label: Text("Actions")),
                     ],
                     rows: visibleProducts.map((product) {
                       return DataRow(
                         cells: [
-                          // ID cell
                           DataCell(Text("${product.productId}")),
-                          // Image & Name cell
                           DataCell(
                             Row(
                               children: [
@@ -816,7 +746,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                               ],
                             ),
                           ),
-                          // Supplier Price cell
                           DataCell(
                             product.priceSupplier != null
                                 ? Text(
@@ -826,11 +755,8 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                                         fontStyle: FontStyle.italic,
                                         color: Colors.grey)),
                           ),
-                          // Category cell
                           DataCell(Text(product.categoryName)),
-                          // Status cell
                           DataCell(_buildStatusPill(product.status)),
-                          // Actions cell with single Edit button
                           DataCell(
                             IconButton(
                               icon: Icon(
@@ -850,7 +776,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                   ),
                 ),
               ),
-              // Pagination row
               if (filteredProducts.isNotEmpty)
                 Padding(
                   padding:
@@ -867,7 +792,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                         ),
                       ),
                       SizedBox(width: 10.w),
-                      // Left arrow
                       IconButton(
                         icon: Icon(Icons.arrow_back,
                             size: 20.sp, color: Colors.white70),
@@ -884,7 +808,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
                           return _buildPageButton(index + 1);
                         }),
                       ),
-                      // Right arrow
                       IconButton(
                         icon: Icon(Icons.arrow_forward,
                             size: 20.sp, color: Colors.white70),
@@ -906,20 +829,18 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     );
   }
 
-  /// Status pill with different colors based on status.
   Widget _buildStatusPill(String status) {
     late Color bgColor;
     String displayStatus;
 
-    // Handle both status formats and normalize display
     if (status == "Active") {
-      bgColor = const Color.fromARGB(178, 0, 224, 116); // green
+      bgColor = const Color.fromARGB(178, 0, 224, 116);
       displayStatus = "Active";
     } else if (status == "Not Active" || status == "NotActive") {
-      bgColor = const Color.fromARGB(255, 229, 62, 62); // red
+      bgColor = const Color.fromARGB(255, 229, 62, 62);
       displayStatus = "Not Active";
     } else {
-      bgColor = Colors.grey; // default
+      bgColor = Colors.grey;
       displayStatus = status;
     }
 
@@ -941,7 +862,6 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     );
   }
 
-  /// Pagination button builder.
   Widget _buildPageButton(int pageIndex) {
     final bool isSelected = (pageIndex == _currentPage);
 

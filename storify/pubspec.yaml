@@ -37,6 +37,7 @@ dependencies:
   flutter_local_notifications: ^19.2.0
   cloud_firestore: ^5.6.7
   firebase_auth: ^5.5.3
+  animated_toggle_switch: ^0.8.5
 
 dev_dependencies:
   flutter_test:
@@ -44,7 +45,6 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
-  # ✅ ENABLE LOCALIZATION GENERATION
   generate: true
   
   uses-material-design: true
@@ -88,11 +88,8 @@ flutter:
     - assets/images/cancorders.svg
     - assets/images/truck.svg
     - assets/images/history.svg
+    - assets/images/palestineFlag.svg
+    - assets/images/Flag_of_the_United_States.svg
+    - assets/images/success.svg
+    - assets/images/error.svg
 
-  # ✅ OPTIONAL: Add Arabic font support for better text rendering
-  # fonts:
-  #   - family: Cairo
-  #     fonts:
-  #       - asset: assets/fonts/Cairo-Regular.ttf
-  #       - asset: assets/fonts/Cairo-Bold.ttf
-  #         weight: 700

@@ -3,12 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
 
 Widget buildCodeInputField({
   required TextEditingController controller,
   required FocusNode focusNode,
   required VoidCallback onChanged,
+  required BuildContext context,
 }) {
+  // Helper function to get appropriate text style based on language
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName == 'ar';
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
+  }
+
   return Container(
     width: 60.w, // Scaled width
     height: 60.h, // Scaled height
@@ -26,7 +52,10 @@ Widget buildCodeInputField({
       focusNode: focusNode,
       textAlign: TextAlign.center,
       keyboardType: TextInputType.number,
-      style: GoogleFonts.inter(color: Colors.white),
+      style: _getTextStyle(
+        fontSize: 16.sp,
+        color: Colors.white,
+      ),
       maxLength: 1,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,

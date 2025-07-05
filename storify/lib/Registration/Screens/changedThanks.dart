@@ -4,7 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // Add this import
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
 
 class Changedthanks extends StatefulWidget {
   const Changedthanks({super.key});
@@ -18,8 +19,7 @@ class _ChangepasswordState extends State<Changedthanks> {
   final FocusNode _passwordFocusNode = FocusNode();
   Color forgotPasswordTextColor = const Color.fromARGB(255, 105, 65, 198);
   bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscurePassword2 = true;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +32,30 @@ class _ChangepasswordState extends State<Changedthanks> {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  // Helper function to get appropriate text style based on language
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName == 'ar';
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
   }
 
   /// Simulate your API call. Notice that the button remains active,
@@ -56,6 +80,8 @@ class _ChangepasswordState extends State<Changedthanks> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       body: Stack(
@@ -76,11 +102,11 @@ class _ChangepasswordState extends State<Changedthanks> {
                   ),
                   SizedBox(width: 10.w), // Scaled spacing
                   Text(
-                    "Storify",
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 25.sp, // Scaled font size
+                    l10n.appTitle,
+                    style: _getTextStyle(
+                      fontSize: 25.sp,
                       fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -114,18 +140,18 @@ class _ChangepasswordState extends State<Changedthanks> {
                               height: 20.h,
                             ),
                             Text(
-                              "Password reset",
-                              style: GoogleFonts.inter(
-                                fontSize: 30.sp, // Scaled font size
+                              l10n.passwordReset,
+                              style: _getTextStyle(
+                                fontSize: 30.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
                             ),
                             Text(
                               textAlign: TextAlign.center,
-                              "Your password has been successfully reset.\nClick below to log in magically.",
-                              style: GoogleFonts.inter(
-                                fontSize: 16.sp, // Scaled font size
+                              l10n.passwordResetSuccess,
+                              style: _getTextStyle(
+                                fontSize: 16.sp,
                                 fontWeight: FontWeight.w400,
                                 color: const Color.fromARGB(255, 212, 212, 212),
                               ),
@@ -156,11 +182,11 @@ class _ChangepasswordState extends State<Changedthanks> {
                                           size: 20.0,
                                         )
                                       : Text(
-                                          "Return to Login page",
-                                          style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontSize:
-                                                  16.sp), // Scaled font size
+                                          l10n.returnToLogin,
+                                          style: _getTextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                 ),
                               ),

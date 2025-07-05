@@ -10,6 +10,8 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/Widgets/buildCodeInputField.dart';
 import 'package:http/http.dart' as http; // For HTTP requests
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Emailcode extends StatefulWidget {
   const Emailcode({super.key});
@@ -63,12 +65,38 @@ class _EmailcodeState extends State<Emailcode> {
     super.dispose();
   }
 
+  // Helper function to get appropriate text style based on language
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName == 'ar';
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
+  }
+
   void moveFocus(FocusNode nextFocusNode) {
     FocusScope.of(context).requestFocus(nextFocusNode);
   }
 
   /// API call: POST email and code to the API.
   Future<void> _performLogin() async {
+    final l10n = AppLocalizations.of(context);
+
     // Combine all individual code fields into a single code string.
     final String code = _controller1.text +
         _controller2.text +
@@ -127,6 +155,8 @@ class _EmailcodeState extends State<Emailcode> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       body: Stack(
@@ -147,11 +177,11 @@ class _EmailcodeState extends State<Emailcode> {
                   ),
                   SizedBox(width: 10.w),
                   Text(
-                    "Storify",
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
+                    l10n.appTitle,
+                    style: _getTextStyle(
                       fontSize: 25.sp,
                       fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -181,8 +211,8 @@ class _EmailcodeState extends State<Emailcode> {
                             ),
                             SizedBox(height: 20.h),
                             Text(
-                              "Check your email",
-                              style: GoogleFonts.inter(
+                              l10n.checkEmail,
+                              style: _getTextStyle(
                                 fontSize: 30.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -190,18 +220,18 @@ class _EmailcodeState extends State<Emailcode> {
                             ),
                             SizedBox(height: 8.h),
                             RichText(
+                              textAlign: TextAlign.center,
                               text: TextSpan(
-                                style: GoogleFonts.inter(
-                                  color: Colors.grey,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
+                                  color: Colors.grey,
                                 ),
                                 children: [
-                                  const TextSpan(
-                                      text:
-                                          'We have sent a password reset code to '),
+                                  TextSpan(text: l10n.resetCodeSent),
                                   TextSpan(
                                     text: '  ',
-                                    style: GoogleFonts.inter(
+                                    style: _getTextStyle(
+                                      fontSize: 16.sp,
                                       color: const Color.fromARGB(
                                           255, 105, 65, 198),
                                     ),
@@ -218,6 +248,7 @@ class _EmailcodeState extends State<Emailcode> {
                                 buildCodeInputField(
                                   controller: _controller1,
                                   focusNode: _focusNode1,
+                                  context: context,
                                   onChanged: () {
                                     moveFocus(_focusNode2);
                                   },
@@ -226,6 +257,7 @@ class _EmailcodeState extends State<Emailcode> {
                                 buildCodeInputField(
                                   controller: _controller2,
                                   focusNode: _focusNode2,
+                                  context: context,
                                   onChanged: () {
                                     moveFocus(_focusNode3);
                                   },
@@ -234,6 +266,7 @@ class _EmailcodeState extends State<Emailcode> {
                                 buildCodeInputField(
                                   controller: _controller3,
                                   focusNode: _focusNode3,
+                                  context: context,
                                   onChanged: () {
                                     moveFocus(_focusNode4);
                                   },
@@ -242,6 +275,7 @@ class _EmailcodeState extends State<Emailcode> {
                                 buildCodeInputField(
                                   controller: _controller4,
                                   focusNode: _focusNode4,
+                                  context: context,
                                   onChanged: () {
                                     moveFocus(_focusNode5);
                                   },
@@ -250,6 +284,7 @@ class _EmailcodeState extends State<Emailcode> {
                                 buildCodeInputField(
                                   controller: _controller5,
                                   focusNode: _focusNode5,
+                                  context: context,
                                   onChanged: () {
                                     // Last field; no focus shift.
                                   },
@@ -281,27 +316,30 @@ class _EmailcodeState extends State<Emailcode> {
                                           size: 20.0,
                                         )
                                       : Text(
-                                          "Check",
-                                          style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontSize: 16.sp),
+                                          l10n.check,
+                                          style: _getTextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                 ),
                               ),
                             ),
                             SizedBox(height: 35.h),
                             RichText(
+                              textAlign: TextAlign.center,
                               text: TextSpan(
-                                style: GoogleFonts.inter(
-                                  color: Colors.grey,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
+                                  color: Colors.grey,
                                 ),
                                 children: [
-                                  const TextSpan(
-                                      text: "Didn't receive the Code? "),
+                                  TextSpan(text: l10n.didntReceiveCode),
+                                  const TextSpan(text: " "),
                                   TextSpan(
-                                    text: 'Resend',
-                                    style: GoogleFonts.inter(
+                                    text: l10n.resend,
+                                    style: _getTextStyle(
+                                      fontSize: 16.sp,
                                       color: resendCodeColor,
                                     ),
                                     recognizer: TapGestureRecognizer()

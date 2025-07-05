@@ -8,6 +8,8 @@ import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http; // For making http requests
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Forgotpassword extends StatefulWidget {
   const Forgotpassword({super.key});
@@ -43,12 +45,38 @@ class _ForgotpasswordState extends State<Forgotpassword> {
     super.dispose();
   }
 
+  // Helper function to get appropriate text style based on language
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName == 'ar';
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
+  }
+
   /// Connect the API to send a reset code.
   Future<void> _performLogin() async {
+    final l10n = AppLocalizations.of(context);
+
     // Validate that the email field is not empty.
     if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter your email")),
+        SnackBar(content: Text("Please enter your email")),
       );
       return;
     }
@@ -90,6 +118,9 @@ class _ForgotpasswordState extends State<Forgotpassword> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       body: Stack(
@@ -110,11 +141,11 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                   ),
                   SizedBox(width: 10.w),
                   Text(
-                    "Storify",
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
+                    l10n.appTitle,
+                    style: _getTextStyle(
                       fontSize: 25.sp,
                       fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -144,8 +175,8 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                             ),
                             SizedBox(height: 20),
                             Text(
-                              "Forgot password?",
-                              style: GoogleFonts.inter(
+                              l10n.forgotPassword,
+                              style: _getTextStyle(
                                 fontSize: 30.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -153,32 +184,36 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                             ),
                             SizedBox(height: 8.h),
                             Text(
-                              "No worries, we'll send you reset Code.",
-                              style: GoogleFonts.inter(
-                                color: Colors.grey,
+                              l10n.noWorries,
+                              style: _getTextStyle(
                                 fontSize: 16.sp,
+                                color: Colors.grey,
                               ),
                             ),
                             SizedBox(height: 70.h),
                             Padding(
-                              padding: EdgeInsets.only(right: 330.w),
+                              padding: EdgeInsets.only(
+                                  right: isRtl ? 0 : 330.w,
+                                  left: isRtl ? 265.w : 0),
                               child: Text(
-                                "Email",
-                                style: GoogleFonts.inter(
+                                l10n.email,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white60,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 5.h),
+                            SizedBox(height: isRtl ? 15.h : 5.h),
                             SizedBox(
                               width: 370.w,
                               height: 65.h,
                               child: TextField(
-                                controller:
-                                    _emailController, // Added controller here
+                                controller: _emailController,
                                 focusNode: _emailFocusNode,
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
                                 cursorWidth: 1.2,
@@ -186,10 +221,12 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                   filled: true,
                                   fillColor:
                                       const Color.fromARGB(255, 48, 60, 80),
-                                  hintText: "Enter your email",
-                                  hintStyle: GoogleFonts.inter(
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w400),
+                                  hintText: l10n.enterEmail,
+                                  hintStyle: _getTextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.grey,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.r),
                                     borderSide: BorderSide(
@@ -211,7 +248,10 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                style: GoogleFonts.inter(color: Colors.white),
+                                style: _getTextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(height: 10.h),
@@ -237,10 +277,11 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                           size: 20.0,
                                         )
                                       : Text(
-                                          "Send",
-                                          style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontSize: 16.sp),
+                                          l10n.send,
+                                          style: _getTextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                 ),
                               ),
@@ -263,15 +304,19 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.arrow_back,
+                                    isRtl
+                                        ? Icons.arrow_forward
+                                        : Icons.arrow_back,
                                     color: Colors.white,
                                     size: 22.w,
                                   ),
                                   SizedBox(width: 10.w),
                                   Text(
-                                    "Back to login",
-                                    style: GoogleFonts.inter(
-                                        color: Colors.white, fontSize: 16.sp),
+                                    l10n.backToLogin,
+                                    style: _getTextStyle(
+                                      fontSize: 16.sp,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ],
                               ),

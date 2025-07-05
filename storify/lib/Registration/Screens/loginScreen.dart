@@ -1,10 +1,11 @@
 // lib/Registration/Screens/loginScreen.dart
-// ✅ UPDATED WITH CLEAN URL ROUTING AND NAVIGATION HISTORY FIX
+// ✅ UPDATED WITH ANIMATED LANGUAGE SWITCHER WITH FLAGS AND RTL POSITIONING
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -15,6 +16,11 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/customer/widgets/mapPopUp.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
+import 'package:provider/provider.dart';
+import 'package:storify/providers/LocaleProvider.dart';
+import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,6 +47,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // ✅ CHECK IF USER IS ALREADY AUTHENTICATED
     _checkAuthenticationStatus();
+  }
+
+  // Helper function to get appropriate text style based on language
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName == 'ar';
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
   }
 
   // ✅ NEW: Auto-redirect if user is already authenticated
@@ -89,9 +119,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+
+    final l10n = AppLocalizations.of(context);
+
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
+        SnackBar(content: Text('Please enter email and password')),
       );
       setState(() {
         _isLoading = false;
@@ -250,6 +283,185 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ✅ UPDATED: Language switcher widget with flags
+  // ✅ ALTERNATIVE: Custom language switcher if package doesn't support icons
+// ✅ ULTRA-MODERN LANGUAGE SWITCHER WITH PARTICLE EFFECTS AND ADVANCED ANIMATIONS
+  // ✅ SIMPLE LANGUAGE SWITCHER - WHITE SHADOW ONLY FOR SELECTED FLAG
+  Widget _buildLanguageSwitcher() {
+    return Consumer<LocaleProvider>(
+      builder: (context, localeProvider, child) {
+        final isArabic = localeProvider.isArabic;
+        final actualIsArabic = localeProvider.locale?.languageCode == 'ar';
+        final useArabic = isArabic || actualIsArabic;
+
+        debugPrint('🌐 Switcher rebuild - using: $useArabic');
+
+        return Container(
+          key: ValueKey('lang_switcher_$useArabic'),
+          width: 140.w,
+          height: 60.h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30.r),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color.fromARGB(255, 48, 60, 80).withOpacity(0.9),
+                const Color.fromARGB(255, 41, 52, 68).withOpacity(0.8),
+              ],
+            ),
+            border: Border.all(
+              color: const Color.fromARGB(255, 105, 65, 198).withOpacity(0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // ENGLISH BUTTON (LEFT SIDE)
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30.r),
+                      bottomLeft: Radius.circular(30.r),
+                    ),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    onTap: () async {
+                      debugPrint('🇺🇸 ENGLISH TAPPED!');
+                      if (!localeProvider.isLoading && useArabic) {
+                        HapticFeedback.lightImpact();
+                        await localeProvider.setLocale(const Locale('en'));
+                        debugPrint('✅ Switched to English');
+                      }
+                    },
+                    child: Container(
+                      height: 60.h,
+                      child: Center(
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 300),
+                          scale: !useArabic ? 1.15 : 0.9,
+                          child: Container(
+                            width: 35.w,
+                            height: 35.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20.r),
+                              // ✅ ONLY WHITE SHADOW FOR SELECTED FLAG
+                              boxShadow: !useArabic
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.white.withOpacity(0.4),
+                                        blurRadius: 15,
+                                        spreadRadius: 3,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20.r),
+                              child: SvgPicture.asset(
+                                'assets/images/Flag_of_the_United_States.svg',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // ARABIC BUTTON (RIGHT SIDE)
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(30.r),
+                      bottomRight: Radius.circular(30.r),
+                    ),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    onTap: () async {
+                      debugPrint('🇵🇸 ARABIC TAPPED!');
+                      if (!localeProvider.isLoading && !useArabic) {
+                        HapticFeedback.lightImpact();
+                        await localeProvider.setLocale(const Locale('ar'));
+                        debugPrint('✅ Switched to Arabic');
+                      }
+                    },
+                    child: Container(
+                      height: 60.h,
+                      child: Center(
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 300),
+                          scale: useArabic ? 1.15 : 0.9,
+                          child: Container(
+                            width: 35.w,
+                            height: 35.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20.r),
+                              // ✅ ONLY WHITE SHADOW FOR SELECTED FLAG
+                              boxShadow: useArabic
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.white.withOpacity(0.4),
+                                        blurRadius: 15,
+                                        spreadRadius: 3,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20.r),
+                              child: SvgPicture.asset(
+                                'assets/images/palestineFlag.svg',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ✅ NEW: Dynamic positioning based on language direction
+  Widget _buildPositionedLanguageSwitcher() {
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      top: 100.h,
+      // Dynamic positioning based on RTL
+      left: isRtl ? null : 30.w, // Left side for LTR (English)
+      right: isRtl ? 30.w : null, // Right side for RTL (Arabic)
+      child: _buildLanguageSwitcher(),
+    );
+  }
+
   @override
   void dispose() {
     _emailFocusNode.dispose();
@@ -261,6 +473,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       body: Stack(
@@ -268,6 +483,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Positioned.fill(
             child: WaveBackground(child: const SizedBox.shrink()),
           ),
+
+          // ✅ UPDATED: Dynamic Language Switcher positioning
+          _buildPositionedLanguageSwitcher(),
+
           Align(
             alignment: Alignment.topLeft,
             child: Padding(
@@ -281,11 +500,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   SizedBox(width: 10.w),
                   Text(
-                    "Storify",
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
+                    l10n.appTitle,
+                    style: _getTextStyle(
                       fontSize: 25.sp,
                       fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -312,8 +531,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              "Log in to your account",
-                              style: GoogleFonts.inter(
+                              l10n.loginToAccount,
+                              style: _getTextStyle(
                                 fontSize: 30.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -321,31 +540,36 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             SizedBox(height: 8.h),
                             Text(
-                              "Welcome back! Please enter your details.",
-                              style: GoogleFonts.inter(
-                                color: Colors.grey,
+                              l10n.welcomeBack,
+                              style: _getTextStyle(
                                 fontSize: 16.sp,
+                                color: Colors.grey,
                               ),
                             ),
                             SizedBox(height: 70.h),
                             Padding(
-                              padding: EdgeInsets.only(right: 330.w),
+                              padding: EdgeInsets.only(
+                                  right: isRtl ? 0 : 330.w,
+                                  left: isRtl ? 272.w : 0),
                               child: Text(
-                                "Email",
-                                style: GoogleFonts.inter(
+                                l10n.email,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 5.h),
+                            SizedBox(height: isRtl ? 15.h : 5.h),
                             SizedBox(
                               width: 370.w,
                               height: 65.h,
                               child: TextField(
                                 controller: _emailController,
                                 focusNode: _emailFocusNode,
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
                                 cursorWidth: 1.2,
@@ -353,10 +577,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   filled: true,
                                   fillColor:
                                       const Color.fromARGB(255, 48, 60, 80),
-                                  hintText: "Enter your email",
-                                  hintStyle: GoogleFonts.inter(
-                                    color: Colors.grey,
+                                  hintText: l10n.enterEmail,
+                                  hintStyle: _getTextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
+                                    color: Colors.grey,
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.r),
@@ -379,22 +604,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
-                                style: GoogleFonts.inter(color: Colors.white),
+                                style: _getTextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(height: 15.h),
                             Padding(
-                              padding: EdgeInsets.only(right: 300.w),
+                              padding: EdgeInsets.only(
+                                  right: isRtl ? 0 : 300.w,
+                                  left: isRtl ? 300.w : 0),
                               child: Text(
-                                "Password",
-                                style: GoogleFonts.inter(
+                                l10n.password,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 5.h),
+                            SizedBox(height: isRtl ? 15.h : 5.h),
                             SizedBox(
                               width: 370.w,
                               height: 65.h,
@@ -402,6 +632,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 focusNode: _passwordFocusNode,
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
                                 cursorWidth: 1.2,
@@ -409,10 +642,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   filled: true,
                                   fillColor:
                                       const Color.fromARGB(255, 48, 60, 80),
-                                  hintText: "Password",
-                                  hintStyle: GoogleFonts.inter(
-                                    color: Colors.grey,
+                                  hintText: l10n.enterPassword,
+                                  hintStyle: _getTextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
+                                    color: Colors.grey,
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.r),
@@ -448,7 +682,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                   ),
                                 ),
-                                style: GoogleFonts.inter(color: Colors.white),
+                                style: _getTextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(height: 10.h),
@@ -467,11 +704,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                   ),
                                   Text(
-                                    "Remember for 30 days",
-                                    style: GoogleFonts.inter(
+                                    l10n.rememberMe,
+                                    style: _getTextStyle(
+                                      fontSize: 14.sp,
                                       color: const Color.fromARGB(
                                           178, 255, 255, 255),
-                                      fontSize: 14.sp,
                                     ),
                                   ),
                                   const Spacer(),
@@ -480,8 +717,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       text: TextSpan(
                                         children: [
                                           TextSpan(
-                                            text: "Forgot Password?",
-                                            style: GoogleFonts.inter(
+                                            text: l10n.forgotPassword,
+                                            style: _getTextStyle(
                                               fontSize: 14.sp,
                                               fontWeight: FontWeight.w500,
                                               color: forgotPasswordTextColor,
@@ -543,10 +780,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                           size: 20.0,
                                         )
                                       : Text(
-                                          "Log In",
-                                          style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontSize: 16.sp),
+                                          l10n.login,
+                                          style: _getTextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                 ),
                               ),
@@ -578,9 +816,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     SizedBox(width: 10.w),
                                     Text(
-                                      "Sign in with Google",
-                                      style: GoogleFonts.inter(
-                                          color: Colors.white, fontSize: 16.sp),
+                                      l10n.signInGoogle,
+                                      style: _getTextStyle(
+                                        fontSize: 16.sp,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -613,9 +853,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     SizedBox(width: 10.w),
                                     Text(
-                                      "Sign in with Apple",
-                                      style: GoogleFonts.inter(
-                                          color: Colors.white, fontSize: 16.sp),
+                                      l10n.signInApple,
+                                      style: _getTextStyle(
+                                        fontSize: 16.sp,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ],
                                 ),

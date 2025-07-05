@@ -8,6 +8,8 @@ import 'package:storify/Registration/Widgets/animation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http; // For HTTP requests
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Changepassword extends StatefulWidget {
   final String email;
@@ -49,7 +51,32 @@ class _ChangepasswordState extends State<Changepassword> {
     super.dispose();
   }
 
+  // Helper function to get appropriate text style based on language
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.localeName == 'ar';
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
+  }
+
   Future<void> _performLogin() async {
+    final l10n = AppLocalizations.of(context);
     final String newPassword = _newPasswordController.text.trim();
     final String confirmPassword = _confirmPasswordController.text.trim();
 
@@ -109,6 +136,9 @@ class _ChangepasswordState extends State<Changepassword> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       body: Stack(
@@ -129,11 +159,11 @@ class _ChangepasswordState extends State<Changepassword> {
                   ),
                   SizedBox(width: 10.w),
                   Text(
-                    "Storify",
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
+                    l10n.appTitle,
+                    style: _getTextStyle(
                       fontSize: 25.sp,
                       fontWeight: FontWeight.w500,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -163,8 +193,8 @@ class _ChangepasswordState extends State<Changepassword> {
                             ),
                             SizedBox(height: 20.h),
                             Text(
-                              "Set new password",
-                              style: GoogleFonts.inter(
+                              l10n.setNewPassword,
+                              style: _getTextStyle(
                                 fontSize: 30.sp,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -172,8 +202,8 @@ class _ChangepasswordState extends State<Changepassword> {
                             ),
                             Text(
                               textAlign: TextAlign.center,
-                              "Your new password must be different to\npreviously used passwords.",
-                              style: GoogleFonts.inter(
+                              l10n.newPasswordDifferent,
+                              style: _getTextStyle(
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.w400,
                                 color: const Color.fromARGB(255, 212, 212, 212),
@@ -181,10 +211,12 @@ class _ChangepasswordState extends State<Changepassword> {
                             ),
                             SizedBox(height: 70.h),
                             Padding(
-                              padding: EdgeInsets.only(right: 255.w),
+                              padding: EdgeInsets.only(
+                                  right: isRtl ? 0 : 255.w,
+                                  left: isRtl ? 230.w : 0),
                               child: Text(
-                                "New Password",
-                                style: GoogleFonts.inter(
+                                l10n.newPassword,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color:
@@ -200,6 +232,9 @@ class _ChangepasswordState extends State<Changepassword> {
                                 controller: _newPasswordController,
                                 obscureText: _obscurePassword,
                                 focusNode: _emailFocusNode,
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
                                 cursorWidth: 1.2,
@@ -207,10 +242,12 @@ class _ChangepasswordState extends State<Changepassword> {
                                   filled: true,
                                   fillColor:
                                       const Color.fromARGB(255, 48, 60, 80),
-                                  hintText: "Enter your New Password",
-                                  hintStyle: GoogleFonts.inter(
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w400),
+                                  hintText: l10n.enterNewPassword,
+                                  hintStyle: _getTextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.grey,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.r),
                                     borderSide: BorderSide(
@@ -245,15 +282,20 @@ class _ChangepasswordState extends State<Changepassword> {
                                     },
                                   ),
                                 ),
-                                style: GoogleFonts.inter(color: Colors.white),
+                                style: _getTextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(height: 15.h),
                             Padding(
-                              padding: EdgeInsets.only(right: 230.w),
+                              padding: EdgeInsets.only(
+                                  right: isRtl ? 0 : 230.w,
+                                  left: isRtl ? 230.w : 0),
                               child: Text(
-                                "Confirm Password",
-                                style: GoogleFonts.inter(
+                                l10n.confirmPassword,
+                                style: _getTextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color:
@@ -269,6 +311,9 @@ class _ChangepasswordState extends State<Changepassword> {
                                 controller: _confirmPasswordController,
                                 obscureText: _obscurePassword2,
                                 focusNode: _passwordFocusNode,
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                                 cursorColor:
                                     const Color.fromARGB(255, 173, 170, 170),
                                 cursorWidth: 1.2,
@@ -276,10 +321,11 @@ class _ChangepasswordState extends State<Changepassword> {
                                   filled: true,
                                   fillColor:
                                       const Color.fromARGB(255, 48, 60, 80),
-                                  hintText: "Confirm your New Password",
-                                  hintStyle: GoogleFonts.inter(
-                                    color: Colors.grey,
+                                  hintText: l10n.confirmNewPassword,
+                                  hintStyle: _getTextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
+                                    color: Colors.grey,
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8.r),
@@ -315,7 +361,10 @@ class _ChangepasswordState extends State<Changepassword> {
                                     },
                                   ),
                                 ),
-                                style: GoogleFonts.inter(color: Colors.white),
+                                style: _getTextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             SizedBox(height: 35.h),
@@ -341,10 +390,11 @@ class _ChangepasswordState extends State<Changepassword> {
                                           size: 20.0,
                                         )
                                       : Text(
-                                          "Change",
-                                          style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontSize: 16.sp),
+                                          l10n.change,
+                                          style: _getTextStyle(
+                                            fontSize: 16.sp,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                 ),
                               ),
