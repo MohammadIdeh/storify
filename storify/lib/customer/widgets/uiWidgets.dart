@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:storify/customer/widgets/modelCustomer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -338,7 +339,7 @@ class ProductGrid extends StatelessWidget {
   }
 }
 
-class CartWidget extends StatelessWidget {
+class CartWidget extends StatefulWidget {
   final List<CartItem> cartItems;
   final Function(int, int) updateQuantity;
   final Function() placeOrder;
@@ -352,8 +353,143 @@ class CartWidget extends StatelessWidget {
     this.isPlacingOrder = false,
   }) : super(key: key);
 
+  @override
+  State<CartWidget> createState() => _CartWidgetState();
+}
+
+class _CartWidgetState extends State<CartWidget> {
+  List<TextEditingController> _quantityControllers = [];
+  List<FocusNode> _focusNodes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+  }
+
+  @override
+  void didUpdateWidget(CartWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Always update controllers when cart items change
+    _updateControllersForCurrentItems();
+  }
+
+  void _initializeControllers() {
+    _disposeControllers();
+    _quantityControllers = [];
+    _focusNodes = [];
+
+    for (int i = 0; i < widget.cartItems.length; i++) {
+      _quantityControllers.add(
+          TextEditingController(text: widget.cartItems[i].quantity.toString()));
+      _focusNodes.add(FocusNode());
+    }
+  }
+
+  void _updateControllersForCurrentItems() {
+    // Handle case where items were removed
+    if (widget.cartItems.length < _quantityControllers.length) {
+      // Remove excess controllers
+      for (int i = widget.cartItems.length;
+          i < _quantityControllers.length;
+          i++) {
+        _quantityControllers[i].dispose();
+        _focusNodes[i].dispose();
+      }
+      _quantityControllers =
+          _quantityControllers.take(widget.cartItems.length).toList();
+      _focusNodes = _focusNodes.take(widget.cartItems.length).toList();
+    }
+
+    // Handle case where items were added
+    while (_quantityControllers.length < widget.cartItems.length) {
+      int index = _quantityControllers.length;
+      _quantityControllers.add(TextEditingController(
+          text: widget.cartItems[index].quantity.toString()));
+      _focusNodes.add(FocusNode());
+    }
+
+    // Update existing controllers with current quantities
+    for (int i = 0;
+        i < widget.cartItems.length && i < _quantityControllers.length;
+        i++) {
+      String currentText = _quantityControllers[i].text;
+      String expectedText = widget.cartItems[i].quantity.toString();
+
+      // Only update if the text doesn't match and the field is not focused
+      // This prevents overwriting while user is typing
+      if (currentText != expectedText && !_focusNodes[i].hasFocus) {
+        _quantityControllers[i].text = expectedText;
+      }
+    }
+  }
+
+  void _disposeControllers() {
+    for (var controller in _quantityControllers) {
+      controller.dispose();
+    }
+    for (var focusNode in _focusNodes) {
+      focusNode.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeControllers();
+    super.dispose();
+  }
+
+  void _onQuantityChanged(int index, String value) {
+    if (value.isEmpty) return;
+
+    final quantity = int.tryParse(value);
+    if (quantity != null && quantity > 0 && quantity <= 999) {
+      // Update the cart item quantity
+      widget.updateQuantity(index, quantity);
+    }
+  }
+
+  void _onQuantitySubmitted(int index, String value) {
+    if (value.isEmpty || value == '0') {
+      // Reset to current quantity if invalid
+      if (index < widget.cartItems.length &&
+          index < _quantityControllers.length) {
+        _quantityControllers[index].text =
+            widget.cartItems[index].quantity.toString();
+      }
+    } else {
+      final quantity = int.tryParse(value);
+      if (quantity != null && quantity > 0 && quantity <= 999) {
+        widget.updateQuantity(index, quantity);
+      } else {
+        // Reset to current quantity if invalid
+        _quantityControllers[index].text =
+            widget.cartItems[index].quantity.toString();
+      }
+    }
+
+    // Remove focus
+    if (index < _focusNodes.length) {
+      _focusNodes[index].unfocus();
+    }
+  }
+
+  void _increaseQuantity(int index) {
+    if (index < widget.cartItems.length) {
+      int newQuantity = widget.cartItems[index].quantity + 1;
+      widget.updateQuantity(index, newQuantity);
+    }
+  }
+
+  void _decreaseQuantity(int index) {
+    if (index < widget.cartItems.length) {
+      int newQuantity = widget.cartItems[index].quantity - 1;
+      widget.updateQuantity(index, newQuantity);
+    }
+  }
+
   double getSubtotal() {
-    return cartItems.fold(0, (sum, item) => sum + item.total);
+    return widget.cartItems.fold(0, (sum, item) => sum + item.total);
   }
 
   @override
@@ -387,7 +523,7 @@ class CartWidget extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (cartItems.isNotEmpty)
+                if (widget.cartItems.isNotEmpty)
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -395,7 +531,7 @@ class CartWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Text(
-                      "${cartItems.length} items",
+                      "${widget.cartItems.length} items",
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -407,7 +543,7 @@ class CartWidget extends StatelessWidget {
           ),
 
           // Empty Cart Message
-          if (cartItems.isEmpty)
+          if (widget.cartItems.isEmpty)
             Expanded(
               child: Center(
                 child: Column(
@@ -440,18 +576,24 @@ class CartWidget extends StatelessWidget {
             ),
 
           // Cart Items
-          if (cartItems.isNotEmpty)
+          if (widget.cartItems.isNotEmpty)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: ListView.separated(
-                  itemCount: cartItems.length,
+                  itemCount: widget.cartItems.length,
                   separatorBuilder: (context, index) => Divider(
                     color: Colors.grey[800],
                     height: 1,
                   ),
                   itemBuilder: (context, index) {
-                    final item = cartItems[index];
+                    final item = widget.cartItems[index];
+
+                    // Ensure controllers exist for this index
+                    if (index >= _quantityControllers.length) {
+                      return Container(); // Safety check
+                    }
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
                       child: Row(
@@ -498,9 +640,10 @@ class CartWidget extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  "\$${item.product.sellPrice.toStringAsFixed(2)}",
+                                  "\$${item.product.sellPrice.toStringAsFixed(2)} each",
                                   style: TextStyle(
                                     color: Colors.grey[400],
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],
@@ -510,15 +653,15 @@ class CartWidget extends StatelessWidget {
                           // Quantity Selector
                           Row(
                             children: [
+                              // Decrease button
                               InkWell(
-                                onTap: () =>
-                                    updateQuantity(index, item.quantity - 1),
+                                onTap: () => _decreaseQuantity(index),
                                 child: Container(
-                                  width: 28,
-                                  height: 28,
+                                  width: 32,
+                                  height: 32,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1D2939),
-                                    borderRadius: BorderRadius.circular(5),
+                                    borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: Colors.grey[700]!,
                                       width: 1,
@@ -527,36 +670,73 @@ class CartWidget extends StatelessWidget {
                                   child: Icon(
                                     Icons.remove,
                                     color: Colors.white,
-                                    size: 16,
+                                    size: 18,
                                   ),
                                 ),
                               ),
+
+                              // Editable Quantity Field
                               Container(
                                 margin:
                                     const EdgeInsets.symmetric(horizontal: 8),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
+                                width: 55,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1D2939),
-                                  borderRadius: BorderRadius.circular(5),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: _focusNodes[index].hasFocus
+                                        ? const Color(0xFF7B5CFA)
+                                        : Colors.grey[700]!,
+                                    width: _focusNodes[index].hasFocus ? 2 : 1,
+                                  ),
                                 ),
-                                child: Text(
-                                  "${item.quantity}",
+                                child: TextField(
+                                  controller: _quantityControllers[index],
+                                  focusNode: _focusNodes[index],
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 14,
                                   ),
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(3),
+                                  ],
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    contentPadding:
+                                        EdgeInsets.symmetric(vertical: 8),
+                                    isDense: true,
+                                  ),
+                                  onChanged: (value) =>
+                                      _onQuantityChanged(index, value),
+                                  onSubmitted: (value) =>
+                                      _onQuantitySubmitted(index, value),
+                                  onTap: () {
+                                    // Select all text when tapped
+                                    _quantityControllers[index].selection =
+                                        TextSelection(
+                                      baseOffset: 0,
+                                      extentOffset: _quantityControllers[index]
+                                          .text
+                                          .length,
+                                    );
+                                  },
                                 ),
                               ),
+
+                              // Increase button
                               InkWell(
-                                onTap: () =>
-                                    updateQuantity(index, item.quantity + 1),
+                                onTap: () => _increaseQuantity(index),
                                 child: Container(
-                                  width: 28,
-                                  height: 28,
+                                  width: 32,
+                                  height: 32,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF1D2939),
-                                    borderRadius: BorderRadius.circular(5),
+                                    borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: Colors.grey[700]!,
                                       width: 1,
@@ -565,7 +745,7 @@ class CartWidget extends StatelessWidget {
                                   child: Icon(
                                     Icons.add,
                                     color: Colors.white,
-                                    size: 16,
+                                    size: 18,
                                   ),
                                 ),
                               ),
@@ -574,14 +754,28 @@ class CartWidget extends StatelessWidget {
 
                           // Item Total
                           SizedBox(
-                            width: 60,
-                            child: Text(
-                              "\$${item.total.toStringAsFixed(2)}",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.right,
+                            width: 70,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "\$${item.total.toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                                Text(
+                                  "× ${item.quantity}",
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -593,7 +787,7 @@ class CartWidget extends StatelessWidget {
             ),
 
           // Cart Summary
-          if (cartItems.isNotEmpty)
+          if (widget.cartItems.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
@@ -604,6 +798,28 @@ class CartWidget extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  // Subtotal info
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Subtotal (${widget.cartItems.fold(0, (sum, item) => sum + item.quantity)} items)",
+                        style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        "\$${getSubtotal().toStringAsFixed(2)}",
+                        style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
                   // Total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -633,7 +849,8 @@ class CartWidget extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: isPlacingOrder ? null : placeOrder,
+                      onPressed:
+                          widget.isPlacingOrder ? null : widget.placeOrder,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7B5CFA),
                         foregroundColor: Colors.white,
@@ -644,7 +861,7 @@ class CartWidget extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: isPlacingOrder
+                      child: widget.isPlacingOrder
                           ? SizedBox(
                               width: 24,
                               height: 24,
