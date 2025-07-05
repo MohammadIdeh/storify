@@ -1,4 +1,4 @@
-// lib/employee/screens/view_order_screen.dart
+// lib/employee/screens/viewOrderScreenEmp.dart - Updated with batch management
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,85 +7,28 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/employee/widgets/orderServiceEmp.dart';
 
-// Batch Alert model
-class BatchAlert {
-  final int productId;
-  final String productName;
-  final String alertType;
-  final String alertMessage;
-  final List<ExistingBatch> existingBatches;
-  final SupplierDates supplierDates;
-
-  BatchAlert({
-    required this.productId,
-    required this.productName,
-    required this.alertType,
-    required this.alertMessage,
-    required this.existingBatches,
-    required this.supplierDates,
-  });
-
-  factory BatchAlert.fromJson(Map<String, dynamic> json) {
-    return BatchAlert(
-      productId: json['productId'] ?? 0,
-      productName: json['productName'] ?? '',
-      alertType: json['alertType'] ?? '',
-      alertMessage: json['alertMessage'] ?? '',
-      existingBatches: (json['existingBatches'] as List? ?? [])
-          .map((batch) => ExistingBatch.fromJson(batch))
-          .toList(),
-      supplierDates: SupplierDates.fromJson(json['supplierDates'] ?? {}),
-    );
-  }
-}
-
-class ExistingBatch {
-  final int quantity;
-  final String? prodDate;
-  final String? expDate;
-  final String receivedDate;
-
-  ExistingBatch({
-    required this.quantity,
-    this.prodDate,
-    this.expDate,
-    required this.receivedDate,
-  });
-
-  factory ExistingBatch.fromJson(Map<String, dynamic> json) {
-    return ExistingBatch(
-      quantity: json['quantity'] ?? 0,
-      prodDate: json['prodDate'],
-      expDate: json['expDate'],
-      receivedDate: json['receivedDate'] ?? '',
-    );
-  }
-}
-
-class SupplierDates {
+// Batch Selection model for UI
+class BatchSelection {
+  final int batchId;
+  final int availableQuantity;
+  int selectedQuantity;
   final String? prodDate;
   final String? expDate;
   final String? batchNumber;
-  final String? notes;
+  final bool isRecommended;
 
-  SupplierDates({
+  BatchSelection({
+    required this.batchId,
+    required this.availableQuantity,
+    this.selectedQuantity = 0,
     this.prodDate,
     this.expDate,
     this.batchNumber,
-    this.notes,
+    this.isRecommended = false,
   });
-
-  factory SupplierDates.fromJson(Map<String, dynamic> json) {
-    return SupplierDates(
-      prodDate: json['prodDate'],
-      expDate: json['expDate'],
-      batchNumber: json['batchNumber'],
-      notes: json['notes'],
-    );
-  }
 }
 
-// Line item model for order details
+// Line item model for order details (keeping existing structure)
 class OrderLineItem {
   final int id;
   final String name;
@@ -101,7 +44,6 @@ class OrderLineItem {
   final String? expDate;
   final double? originalCostPrice;
   final String? status;
-  final BatchAlert? itemBatchAlert; // Add batch alert for individual items
 
   OrderLineItem({
     required this.id,
@@ -116,7 +58,6 @@ class OrderLineItem {
     this.expDate,
     this.originalCostPrice,
     this.status,
-    this.itemBatchAlert,
   });
 
   // Factory method to create from customer order item
@@ -140,20 +81,6 @@ class OrderLineItem {
   factory OrderLineItem.fromSupplierJson(Map<String, dynamic> json) {
     final product = json['product'] ?? {};
 
-    // Parse batch alert if present
-    BatchAlert? batchAlert;
-    if (json['batchAlert'] != null && json['batchAlert'] is Map) {
-      final batchAlertData = json['batchAlert'] as Map<String, dynamic>;
-      if (batchAlertData['hasAlert'] == true ||
-          batchAlertData.containsKey('productId')) {
-        try {
-          batchAlert = BatchAlert.fromJson(batchAlertData);
-        } catch (e) {
-          debugPrint('Error parsing batch alert: $e');
-        }
-      }
-    }
-
     return OrderLineItem(
       id: json['id'] ?? 0,
       name: product['name'] ?? 'Unknown Product',
@@ -174,7 +101,6 @@ class OrderLineItem {
       status: json['status'],
       prodDate: json['prodDate'],
       expDate: json['expDate'],
-      itemBatchAlert: batchAlert,
     );
   }
 
@@ -193,7 +119,6 @@ class OrderLineItem {
       expDate: expDate,
       originalCostPrice: originalCostPrice,
       status: status,
-      itemBatchAlert: itemBatchAlert,
     );
   }
 
@@ -226,9 +151,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   Map<String, dynamic>? _orderDetails;
   List<OrderLineItem> _lineItems = [];
 
-  // Batch alerts for supplier orders
-  List<BatchAlert> _batchAlerts = [];
-  Map<String, dynamic>? _alertSummary;
+  // Batch management for customer orders
+  BatchInfoResponse? _batchInfoResponse;
+  Map<int, List<BatchSelection>> _batchSelections =
+      {}; // productId -> batch selections
+  bool _showBatchDetails = false;
 
   // For supplier orders, track edited quantities
   Map<int, int> _editedQuantities = {};
@@ -261,11 +188,14 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           throw Exception("Received null response from API");
         }
 
-        // Debug the response structure
         debugPrint(
             'Customer Order Response Structure: ${json.encode(response)}');
-
         _processCustomerOrderDetails(response);
+
+        // If order is in "Preparing" status, fetch batch information
+        if (_localOrder.status == "Preparing") {
+          await _fetchBatchInfo();
+        }
       } else {
         final response =
             await OrderService.getSupplierOrderDetails(_localOrder.orderId);
@@ -273,10 +203,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           throw Exception("Received null response from API");
         }
 
-        // Debug the response structure
         debugPrint(
             'Supplier Order Response Structure: ${json.encode(response)}');
-
         _processSupplierOrderDetails(response);
       }
 
@@ -289,6 +217,60 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         _errorMessage = 'Error loading order details: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  // Fetch batch information for customer orders
+  Future<void> _fetchBatchInfo() async {
+    try {
+      _batchInfoResponse =
+          await OrderService.getCustomerOrderBatchInfo(_localOrder.orderId);
+
+      // Initialize batch selections
+      _batchSelections.clear();
+      for (final batchInfo in _batchInfoResponse!.batchInfo) {
+        final selections = <BatchSelection>[];
+
+        // Add all available batches
+        for (final batch in batchInfo.batches) {
+          selections.add(BatchSelection(
+            batchId: batch.id,
+            availableQuantity: batch.quantity,
+            selectedQuantity: 0,
+            prodDate: batch.prodDate,
+            expDate: batch.expDate,
+            batchNumber: batch.batchNumber ?? 'Batch #${batch.id}',
+            isRecommended: false,
+          ));
+        }
+
+        // Mark recommended batches and pre-fill quantities
+        for (final recommendation in batchInfo.fifoRecommendation) {
+          final selection = selections.firstWhere(
+            (s) => s.batchId == recommendation.batchId,
+            orElse: () => BatchSelection(batchId: -1, availableQuantity: 0),
+          );
+          if (selection.batchId != -1) {
+            selection.selectedQuantity = recommendation.quantity;
+            selections[selections.indexOf(selection)] = BatchSelection(
+              batchId: selection.batchId,
+              availableQuantity: selection.availableQuantity,
+              selectedQuantity: recommendation.quantity,
+              prodDate: selection.prodDate,
+              expDate: selection.expDate,
+              batchNumber: selection.batchNumber,
+              isRecommended: true,
+            );
+          }
+        }
+
+        _batchSelections[batchInfo.productId] = selections;
+      }
+
+      setState(() {});
+    } catch (e) {
+      debugPrint('Error fetching batch info: $e');
+      // Don't show error for batch info, just continue without it
     }
   }
 
@@ -360,19 +342,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     });
   }
 
-  // Process supplier order details with new structure
+  // Process supplier order details (unchanged)
   void _processSupplierOrderDetails(Map<String, dynamic> response) {
     setState(() {
       _orderDetails = response;
 
-      // The new structure has order data directly in the response
-      final orderData =
-          response['order'] ?? response; // Fallback to response root
+      // The structure has order data directly in the response
+      final orderData = response['order'] ?? response;
 
       if (orderData == null) {
         debugPrint('Error: No order data found in supplier response');
         _lineItems = [];
-        _localOrder = widget.order; // Keep existing data
+        _localOrder = widget.order;
         return;
       }
 
@@ -386,17 +367,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             .map((item) => OrderLineItem.fromSupplierJson(item))
             .toList();
       }
-
-      // Extract batch alerts
-      _batchAlerts = [];
-      if (response['batchAlerts'] != null) {
-        _batchAlerts = (response['batchAlerts'] as List)
-            .map((alert) => BatchAlert.fromJson(alert))
-            .toList();
-      }
-
-      // Extract alert summary
-      _alertSummary = response['alertSummary'];
 
       // Extract supplier and user data
       final supplier = orderData['supplier'];
@@ -455,13 +425,13 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
-  // Update customer order status
-  Future<void> _updateCustomerOrderStatus(String newStatus) async {
-    // Check if order is already in this status
-    if (_localOrder.status == newStatus) {
+  // NEW: Start customer order preparation
+  Future<void> _startCustomerOrderPreparation() async {
+    if (_localOrder.status != "Accepted") {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order is already in $newStatus status'),
+          content:
+              Text('Order must be in Accepted status to start preparation'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -476,37 +446,141 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     try {
       final note = _noteController.text.trim();
 
-      // Update order status
-      await OrderService.updateCustomerOrderStatus(
-          _localOrder.orderId, newStatus, note.isNotEmpty ? note : null);
+      // Start preparation
+      await OrderService.startCustomerOrderPreparation(
+          _localOrder.orderId, note.isNotEmpty ? note : null);
 
-      // Refresh order data
+      // Refresh order data and fetch batch info
       await _fetchOrderDetails();
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order updated to $newStatus successfully'),
-          backgroundColor: const Color.fromARGB(178, 0, 224, 116),
+          content: Text('Order preparation started successfully'),
+          backgroundColor: const Color.fromARGB(255, 255, 150, 30),
         ),
       );
-
-      // If transitioning to Prepared, return to previous screen after delay
-      if (newStatus == "Prepared") {
-        await Future.delayed(const Duration(seconds: 1));
-        Navigator.pop(context, _localOrder);
-      }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error updating order: $e';
+        _errorMessage = 'Error starting preparation: $e';
         _isLoading = false;
       });
     }
   }
 
-  // Update supplier order status
+  // NEW: Complete customer order preparation (auto-detects manual vs auto)
+  Future<void> _completeCustomerOrderPreparation() async {
+    if (_localOrder.status != "Preparing") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Order must be in Preparing status to complete'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final note = _noteController.text.trim();
+      List<ManualBatchAllocation>? manualAllocations;
+
+      // Check if any batch quantities were manually changed
+      bool hasManualChanges = false;
+      if (_batchSelections.isNotEmpty && _batchInfoResponse != null) {
+        for (final batchInfo in _batchInfoResponse!.batchInfo) {
+          final selections = _batchSelections[batchInfo.productId] ?? [];
+
+          // Compare current selections with FIFO recommendations
+          for (final selection in selections) {
+            final fifoRecommendation = batchInfo.fifoRecommendation
+                    .where((rec) => rec.batchId == selection.batchId)
+                    .isEmpty
+                ? null
+                : batchInfo.fifoRecommendation
+                    .where((rec) => rec.batchId == selection.batchId)
+                    .first;
+
+            final recommendedQuantity = fifoRecommendation?.quantity ?? 0;
+
+            // If current selection differs from FIFO recommendation, it's a manual change
+            if (selection.selectedQuantity != recommendedQuantity) {
+              hasManualChanges = true;
+              break;
+            }
+          }
+
+          if (hasManualChanges) break;
+        }
+      }
+
+      // If manual changes detected, prepare manual allocations
+      if (hasManualChanges && _batchSelections.isNotEmpty) {
+        manualAllocations = [];
+
+        for (final entry in _batchSelections.entries) {
+          final productId = entry.key;
+          final selections = entry.value;
+
+          final allocations = <BatchAllocation>[];
+          for (final selection in selections) {
+            if (selection.selectedQuantity > 0) {
+              allocations.add(BatchAllocation(
+                batchId: selection.batchId,
+                quantity: selection.selectedQuantity,
+              ));
+            }
+          }
+
+          if (allocations.isNotEmpty) {
+            manualAllocations.add(ManualBatchAllocation(
+              productId: productId,
+              batchAllocations: allocations,
+            ));
+          }
+        }
+
+        if (manualAllocations.isEmpty) {
+          manualAllocations = null; // Let system use FIFO
+        }
+      }
+
+      // Complete preparation
+      await OrderService.completeCustomerOrderPreparation(
+        _localOrder.orderId,
+        notes: note.isNotEmpty ? note : null,
+        manualBatchAllocations: manualAllocations,
+      );
+
+      // Show success message with mode indication
+      final modeText =
+          hasManualChanges ? "with manual batch selection" : "using auto FIFO";
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Order completed successfully $modeText'),
+          backgroundColor: const Color.fromARGB(178, 0, 224, 116),
+        ),
+      );
+
+      // Refresh order data
+      await _fetchOrderDetails();
+
+      // Return to previous screen after delay
+      await Future.delayed(const Duration(seconds: 1));
+      Navigator.pop(context, _localOrder);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error completing preparation: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Update supplier order status (unchanged)
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
-    // Check if order is already in this status
     if (_localOrder.status == newStatus) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -549,7 +623,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         _hasQuantityChanges = false;
       });
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Order updated to $newStatus successfully'),
@@ -588,7 +661,47 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     });
   }
 
-  // Calculate visible line items for pagination
+  // Update batch selection quantity
+  void _updateBatchSelection(int productId, int batchId, int newQuantity) {
+    if (!_batchSelections.containsKey(productId)) return;
+
+    setState(() {
+      final selections = _batchSelections[productId]!;
+      final index = selections.indexWhere((s) => s.batchId == batchId);
+      if (index != -1) {
+        selections[index].selectedQuantity =
+            newQuantity.clamp(0, selections[index].availableQuantity);
+      }
+    });
+  }
+
+  // Check if any batch quantities were manually changed from FIFO recommendations
+  bool get _hasManualBatchChanges {
+    if (_batchSelections.isEmpty || _batchInfoResponse == null) return false;
+
+    for (final batchInfo in _batchInfoResponse!.batchInfo) {
+      final selections = _batchSelections[batchInfo.productId] ?? [];
+
+      for (final selection in selections) {
+        final fifoRecommendation = batchInfo.fifoRecommendation
+                .where((rec) => rec.batchId == selection.batchId)
+                .isEmpty
+            ? null
+            : batchInfo.fifoRecommendation
+                .where((rec) => rec.batchId == selection.batchId)
+                .first;
+
+        final recommendedQuantity = fifoRecommendation?.quantity ?? 0;
+
+        if (selection.selectedQuantity != recommendedQuantity) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   List<OrderLineItem> get _visibleLineItems {
     final totalItems = _lineItems.length;
     if (totalItems == 0) return [];
@@ -603,15 +716,16 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return _lineItems.sublist(startIndex, endIndex);
   }
 
-  // Calculate total amount based on current line items (including edited quantities)
+  // Calculate total amount based on current line items
   double get _calculatedTotal {
     return _lineItems.fold(0, (sum, item) => sum + item.total);
   }
 
-  // Build batch alert widget
-  Widget _buildBatchAlertSection() {
-    if (_localOrder.type != "Supplier" ||
-        (_batchAlerts.isEmpty && _alertSummary == null)) {
+  // Build batch management section for customer orders
+  Widget _buildBatchManagementSection() {
+    if (_localOrder.type != "Customer" ||
+        _localOrder.status != "Preparing" ||
+        _batchInfoResponse == null) {
       return SizedBox.shrink();
     }
 
@@ -622,9 +736,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         color: const Color.fromARGB(255, 36, 50, 69),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: _alertSummary?['hasAlerts'] == true
-              ? Colors.amber
-              : const Color.fromARGB(255, 47, 71, 82),
+          color: _batchInfoResponse!.hasCriticalAlerts
+              ? Colors.red
+              : _batchInfoResponse!.hasMultipleBatches
+                  ? Colors.amber
+                  : const Color.fromARGB(255, 47, 71, 82),
           width: 1.5,
         ),
       ),
@@ -634,70 +750,122 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           Row(
             children: [
               Icon(
-                _alertSummary?['hasAlerts'] == true
-                    ? Icons.warning_amber_rounded
-                    : Icons.info_outline,
-                color: _alertSummary?['hasAlerts'] == true
-                    ? Colors.amber
-                    : Colors.blue,
+                _batchInfoResponse!.hasCriticalAlerts
+                    ? Icons.error_outline
+                    : _batchInfoResponse!.hasMultipleBatches
+                        ? Icons.warning_amber_rounded
+                        : Icons.info_outline,
+                color: _batchInfoResponse!.hasCriticalAlerts
+                    ? Colors.red
+                    : _batchInfoResponse!.hasMultipleBatches
+                        ? Colors.amber
+                        : Colors.blue,
                 size: 20.sp,
               ),
               SizedBox(width: 8.w),
               Text(
-                "Batch Information",
+                "Batch Management",
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
               ),
+              Spacer(),
+              // Toggle batch details
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _showBatchDetails = !_showBatchDetails;
+                  });
+                },
+                child: Text(
+                  _showBatchDetails ? "Hide Details" : "Show Details",
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    color: const Color.fromARGB(255, 105, 65, 198),
+                  ),
+                ),
+              ),
             ],
           ),
           SizedBox(height: 12.h),
 
-          // Alert summary
-          if (_alertSummary != null) ...[
+          // Summary alerts
+          if (_batchInfoResponse!.batchInfo.isNotEmpty) ...[
+            for (final batchInfo in _batchInfoResponse!.batchInfo) ...[
+              for (final alert in batchInfo.alerts) ...[
+                Container(
+                  margin: EdgeInsets.only(bottom: 8.h),
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: alert.severity == 'critical'
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    alert.message,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 12.sp,
+                      color: alert.severity == 'critical'
+                          ? Colors.red
+                          : Colors.amber,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
+
+          // Detailed batch information
+          if (_showBatchDetails) ...[
+            SizedBox(height: 16.h),
+
+            // Mode indicator
             Container(
               padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
-                color: _alertSummary!['hasAlerts'] == true
-                    ? Colors.amber.withOpacity(0.1)
-                    : Colors.blue.withOpacity(0.1),
+                color: _hasManualBatchChanges
+                    ? const Color.fromARGB(255, 105, 65, 198).withOpacity(0.1)
+                    : Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color: _hasManualBatchChanges
+                      ? const Color.fromARGB(255, 105, 65, 198)
+                      : Colors.green,
+                  width: 1,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
+                  Icon(
+                    _hasManualBatchChanges ? Icons.edit : Icons.auto_awesome,
+                    color: _hasManualBatchChanges
+                        ? const Color.fromARGB(255, 105, 65, 198)
+                        : Colors.green,
+                    size: 16.sp,
+                  ),
+                  SizedBox(width: 8.w),
                   Text(
-                    _alertSummary!['message'] ?? 'No alerts',
+                    _hasManualBatchChanges
+                        ? "Manual batch selection mode"
+                        : "Auto FIFO mode (recommended)",
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      color: _alertSummary!['hasAlerts'] == true
-                          ? Colors.amber
-                          : Colors.blue,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: _hasManualBatchChanges
+                          ? const Color.fromARGB(255, 105, 65, 198)
+                          : Colors.green,
                     ),
                   ),
-                  if (_alertSummary!['recommendation'] != null) ...[
-                    SizedBox(height: 8.h),
-                    Text(
-                      _alertSummary!['recommendation'],
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12.sp,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
             SizedBox(height: 12.h),
-          ],
 
-          // Individual batch alerts
-          if (_batchAlerts.isNotEmpty) ...[
             Text(
-              "Product Alerts:",
+              "Batch Selection:",
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
@@ -705,65 +873,176 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
               ),
             ),
             SizedBox(height: 8.h),
-            ...(_batchAlerts.map((alert) => _buildIndividualBatchAlert(alert))),
+
+            for (final batchInfo in _batchInfoResponse!.batchInfo) ...[
+              _buildProductBatchSelection(batchInfo),
+              SizedBox(height: 16.h),
+            ],
           ],
         ],
       ),
     );
   }
 
-  Widget _buildIndividualBatchAlert(BatchAlert alert) {
+  Widget _buildProductBatchSelection(BatchInfo batchInfo) {
+    final selections = _batchSelections[batchInfo.productId] ?? [];
+
     return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.all(10.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6.r),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        color: const Color.fromARGB(255, 29, 41, 57).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: const Color.fromARGB(255, 47, 71, 82).withOpacity(0.5),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            alert.productName,
+            batchInfo.productName,
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 13.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: Colors.orange,
+              color: Colors.white,
             ),
           ),
           SizedBox(height: 4.h),
           Text(
-            alert.alertMessage,
+            "Required: ${batchInfo.requiredQuantity} | Available: ${batchInfo.availableQuantity}",
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 11.sp,
-              color: Colors.orange.withOpacity(0.9),
+              fontSize: 12.sp,
+              color: Colors.white70,
             ),
           ),
-          if (alert.existingBatches.isNotEmpty) ...[
-            SizedBox(height: 6.h),
-            Text(
-              "Existing batches:",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white60,
+          SizedBox(height: 8.h),
+
+          // Batch selection list
+          for (final selection in selections) ...[
+            Container(
+              margin: EdgeInsets.only(bottom: 6.h),
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: selection.isRecommended
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color: selection.isRecommended
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.white.withOpacity(0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              selection.batchNumber ??
+                                  'Batch #${selection.batchId}',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w600,
+                                color: selection.isRecommended
+                                    ? Colors.green
+                                    : Colors.white,
+                              ),
+                            ),
+                            if (selection.isRecommended) ...[
+                              SizedBox(width: 8.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 6.w, vertical: 2.h),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: Text(
+                                  "FIFO",
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 10.sp,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          "Prod: ${selection.prodDate ?? 'N/A'} | Exp: ${selection.expDate ?? 'N/A'} | Available: ${selection.availableQuantity}",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10.sp,
+                            color: Colors.white60,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  // Quantity selection
+                  Container(
+                    width: 100.w,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.remove,
+                              size: 16.sp, color: Colors.red),
+                          onPressed: selection.selectedQuantity > 0
+                              ? () => _updateBatchSelection(
+                                    batchInfo.productId,
+                                    selection.batchId,
+                                    selection.selectedQuantity - 1,
+                                  )
+                              : null,
+                          padding: EdgeInsets.all(4.w),
+                          constraints:
+                              BoxConstraints(minWidth: 24.w, minHeight: 24.h),
+                        ),
+                        Expanded(
+                          child: Text(
+                            "${selection.selectedQuantity}",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon:
+                              Icon(Icons.add, size: 16.sp, color: Colors.green),
+                          onPressed: selection.selectedQuantity <
+                                  selection.availableQuantity
+                              ? () => _updateBatchSelection(
+                                    batchInfo.productId,
+                                    selection.batchId,
+                                    selection.selectedQuantity + 1,
+                                  )
+                              : null,
+                          padding: EdgeInsets.all(4.w),
+                          constraints:
+                              BoxConstraints(minWidth: 24.w, minHeight: 24.h),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            ...alert.existingBatches.take(2).map((batch) => Text(
-                  "• Qty: ${batch.quantity}, Prod: ${batch.prodDate ?? 'N/A'}, Exp: ${batch.expDate ?? 'N/A'}",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 9.sp,
-                    color: Colors.white70,
-                  ),
-                )),
           ],
         ],
       ),
     );
   }
 
-  // Modern helper methods for the new design
+  // Build empty state (keeping existing implementation)
   Widget _buildEmptyState() {
     return Container(
       height: 200.h,
@@ -808,6 +1087,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
+  // Build modern item card (keeping existing implementation)
   Widget _buildModernItemCard(OrderLineItem item, int index) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
@@ -820,239 +1100,142 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           width: 1,
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Main item row
-          Row(
-            children: [
-              // Product image
-              Container(
-                width: 60.w,
-                height: 60.h,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: const Color.fromARGB(255, 47, 71, 82),
-                    width: 1,
-                  ),
-                ),
-                child: item.imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12.r),
-                        child: Image.network(
-                          item.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.image_not_supported_outlined,
-                              color: Colors.white54,
-                              size: 24.sp,
-                            );
-                          },
-                        ),
-                      )
-                    : Icon(
-                        Icons.inventory_2_outlined,
-                        color: Colors.white54,
-                        size: 24.sp,
-                      ),
+          // Product image
+          Container(
+            width: 60.w,
+            height: 60.h,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: const Color.fromARGB(255, 47, 71, 82),
+                width: 1,
               ),
-              SizedBox(width: 16.w),
-
-              // Item details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name,
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+            ),
+            child: item.imageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12.r),
+                    child: Image.network(
+                      item.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.white54,
+                          size: 24.sp,
+                        );
+                      },
                     ),
-                    SizedBox(height: 6.h),
-                    Row(
-                      children: [
-                        _buildInfoChip(
-                          "Unit Price",
-                          "\$${item.unitPrice.toStringAsFixed(2)}",
-                          const Color.fromARGB(255, 0, 196, 255),
-                        ),
-                        SizedBox(width: 8.w),
-                        _buildInfoChip(
-                          "Qty",
-                          item.quantity.toString(),
-                          const Color.fromARGB(255, 255, 150, 30),
-                        ),
-                      ],
+                  )
+                : Icon(
+                    Icons.inventory_2_outlined,
+                    color: Colors.white54,
+                    size: 24.sp,
+                  ),
+          ),
+          SizedBox(width: 16.w),
+
+          // Item details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 6.h),
+                Row(
+                  children: [
+                    _buildInfoChip(
+                      "Unit Price",
+                      "\$${item.unitPrice.toStringAsFixed(2)}",
+                      const Color.fromARGB(255, 0, 196, 255),
+                    ),
+                    SizedBox(width: 8.w),
+                    _buildInfoChip(
+                      "Qty",
+                      item.quantity.toString(),
+                      const Color.fromARGB(255, 255, 150, 30),
                     ),
                   ],
                 ),
-              ),
-
-              // Edit quantity controls for supplier orders
-              if (_localOrder.type == "Supplier" &&
-                  _localOrder.status == "Accepted") ...[
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildQuantityButton(
-                        icon: Icons.remove,
-                        color: Colors.red,
-                        onTap: () {
-                          if (item.quantity > 1) {
-                            _updateItemQuantity(item.id, item.quantity - 1);
-                          }
-                        },
-                      ),
-                      SizedBox(width: 12.w),
-                      Text(
-                        item.quantity.toString(),
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      _buildQuantityButton(
-                        icon: Icons.add,
-                        color: Colors.green,
-                        onTap: () {
-                          _updateItemQuantity(item.id, item.quantity + 1);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 16.w),
               ],
-
-              // Total price
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color:
-                      const Color.fromARGB(178, 0, 224, 116).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: const Color.fromARGB(178, 0, 224, 116),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  "\$${item.total.toStringAsFixed(2)}",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color.fromARGB(178, 0, 224, 116),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
 
-          // Batch info for supplier orders
+          // Edit quantity controls for supplier orders
           if (_localOrder.type == "Supplier" &&
-              (item.prodDate != null ||
-                  item.expDate != null ||
-                  item.itemBatchAlert != null)) ...[
-            SizedBox(height: 12.h),
+              _localOrder.status == "Accepted") ...[
             Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(12.w),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 36, 50, 69).withOpacity(0.5),
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(
-                  color: item.itemBatchAlert != null
-                      ? Colors.amber.withOpacity(0.5)
-                      : const Color.fromARGB(255, 47, 71, 82).withOpacity(0.5),
-                  width: 1,
-                ),
+                color: const Color.fromARGB(255, 36, 50, 69),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        item.itemBatchAlert != null
-                            ? Icons.warning_amber_outlined
-                            : Icons.info_outline,
-                        color: item.itemBatchAlert != null
-                            ? Colors.amber
-                            : Colors.blue,
-                        size: 16.sp,
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        "Batch Information",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
+                  _buildQuantityButton(
+                    icon: Icons.remove,
+                    color: Colors.red,
+                    onTap: () {
+                      if (item.quantity > 1) {
+                        _updateItemQuantity(item.id, item.quantity - 1);
+                      }
+                    },
                   ),
-                  SizedBox(height: 8.h),
-                  Row(
-                    children: [
-                      if (item.prodDate != null) ...[
-                        _buildBatchInfoChip("Prod Date", item.prodDate!),
-                        SizedBox(width: 8.w),
-                      ],
-                      if (item.expDate != null) ...[
-                        _buildBatchInfoChip("Exp Date", item.expDate!),
-                      ],
-                    ],
-                  ),
-                  if (item.itemBatchAlert != null) ...[
-                    SizedBox(height: 8.h),
-                    Container(
-                      padding: EdgeInsets.all(8.w),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.amber,
-                            size: 14.sp,
-                          ),
-                          SizedBox(width: 6.w),
-                          Expanded(
-                            child: Text(
-                              "Batch Alert: ${item.itemBatchAlert!.alertType}",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 11.sp,
-                                color: Colors.amber,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  SizedBox(width: 12.w),
+                  Text(
+                    item.quantity.toString(),
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-                  ],
+                  ),
+                  SizedBox(width: 12.w),
+                  _buildQuantityButton(
+                    icon: Icons.add,
+                    color: Colors.green,
+                    onTap: () {
+                      _updateItemQuantity(item.id, item.quantity + 1);
+                    },
+                  ),
                 ],
               ),
             ),
+            SizedBox(width: 16.w),
           ],
+
+          // Total price
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(178, 0, 224, 116).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: const Color.fromARGB(178, 0, 224, 116),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              "\$${item.total.toStringAsFixed(2)}",
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color.fromARGB(178, 0, 224, 116),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1086,24 +1269,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBatchInfoChip(String label, String value) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(6.r),
-      ),
-      child: Text(
-        "$label: $value",
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 10.sp,
-          color: Colors.blue,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -1303,7 +1468,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the entire build method in a try-catch to prevent app crashes
     try {
       return Scaffold(
         backgroundColor: const Color.fromARGB(255, 29, 41, 57),
@@ -1438,7 +1602,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                     elevation: 1,
                                   ),
                                   onPressed: () {
-                                    // Print Invoice action placeholder
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text('Printing invoice...'),
@@ -1459,8 +1622,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                             ),
                             SizedBox(height: 30.h),
 
-                            // Batch Alert Section (only for supplier orders)
-                            _buildBatchAlertSection(),
+                            // Batch Management Section (for customer orders in preparing status)
+                            _buildBatchManagementSection(),
 
                             // Modern Full-width Items Section
                             Container(
@@ -1560,7 +1723,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
                             SizedBox(height: 24.h),
 
-                            // Order Info Section (now below the table)
+                            // Order Info Section
                             Container(
                               width: double.infinity,
                               padding: EdgeInsets.all(20.w),
@@ -1680,9 +1843,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                               minimumSize:
                                                   Size(double.infinity, 45.h),
                                             ),
-                                            onPressed: () =>
-                                                _updateCustomerOrderStatus(
-                                                    "Preparing"),
+                                            onPressed:
+                                                _startCustomerOrderPreparation,
                                             child: Text(
                                               "Start Preparing",
                                               style: GoogleFonts.spaceGrotesk(
@@ -1693,7 +1855,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                           ),
                                         ],
 
-                                        // For Customer Preparing status, show Mark as Prepared button
+                                        // For Customer Preparing status, show completion buttons
                                         if (_localOrder.type == "Customer" &&
                                             _localOrder.status ==
                                                 "Preparing") ...[
@@ -1732,7 +1894,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                             ),
                                           ),
                                           SizedBox(height: 16.h),
-                                          // Mark as Prepared button
+
+                                          // Complete preparation button
                                           ElevatedButton(
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
@@ -1747,11 +1910,10 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                               minimumSize:
                                                   Size(double.infinity, 45.h),
                                             ),
-                                            onPressed: () =>
-                                                _updateCustomerOrderStatus(
-                                                    "Prepared"),
+                                            onPressed:
+                                                _completeCustomerOrderPreparation,
                                             child: Text(
-                                              "Mark as Prepared",
+                                              "Complete Preparation",
                                               style: GoogleFonts.spaceGrotesk(
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.white,
@@ -1865,7 +2027,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         ),
       );
     } catch (e) {
-      // If any error occurs during build, show a fallback error screen
       debugPrint('Error in view order screen build: $e');
       return Scaffold(
         backgroundColor: const Color.fromARGB(255, 29, 41, 57),
