@@ -1,4 +1,5 @@
 // lib/customer/screens/historyScreenCustomer.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
@@ -108,6 +109,10 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
 
   String _formatDate(DateTime date) {
     return DateFormat('dd MMM, yyyy').format(date);
+  }
+
+  String _formatDateTime(DateTime date) {
+    return DateFormat('dd MMM, yyyy HH:mm').format(date);
   }
 
   // Apply date filter
@@ -221,6 +226,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
         break;
       case "pending":
         badgeColor = Colors.orange;
+        break;
+      case "prepared":
+        badgeColor = Colors.blue;
         break;
       case "cancelled":
         badgeColor = Colors.red;
@@ -705,9 +713,47 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 30),
+                                    const SizedBox(height: 20),
 
-                                    // Order items table
+                                    // Preparation timing (if available)
+                                    if (_selectedOrder![
+                                                'preparationStartedAt'] !=
+                                            null ||
+                                        _selectedOrder![
+                                                'preparationCompletedAt'] !=
+                                            null) ...[
+                                      Row(
+                                        children: [
+                                          if (_selectedOrder![
+                                                  'preparationStartedAt'] !=
+                                              null)
+                                            Expanded(
+                                              child: _detailItem(
+                                                "Preparation Started",
+                                                _formatDateTime(DateTime.parse(
+                                                    _selectedOrder![
+                                                        'preparationStartedAt'])),
+                                                icon: Icons.play_circle,
+                                              ),
+                                            ),
+                                          if (_selectedOrder![
+                                                  'preparationCompletedAt'] !=
+                                              null)
+                                            Expanded(
+                                              child: _detailItem(
+                                                "Preparation Completed",
+                                                _formatDateTime(DateTime.parse(
+                                                    _selectedOrder![
+                                                        'preparationCompletedAt'])),
+                                                icon: Icons.check_circle,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 20),
+                                    ],
+
+                                    // Order items table with batch details
                                     Container(
                                       padding: const EdgeInsets.all(24),
                                       decoration: BoxDecoration(
@@ -727,76 +773,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                             ),
                                           ),
                                           const SizedBox(height: 20),
-                                          // Table header
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                                vertical: 8),
-                                            decoration: BoxDecoration(
-                                              border: Border(
-                                                bottom: BorderSide(
-                                                  color: Colors.grey[800]!,
-                                                  width: 1,
-                                                ),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Text(
-                                                    "Product",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      color: Colors.grey[400],
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: Text(
-                                                    "Price",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      color: Colors.grey[400],
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: Text(
-                                                    "Quantity",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      color: Colors.grey[400],
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: Text(
-                                                    "Total",
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      color: Colors.grey[400],
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                    textAlign: TextAlign.right,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
 
-                                          // Table rows
+                                          // Items with batch details
                                           ListView.builder(
                                             shrinkWrap: true,
                                             physics:
@@ -814,80 +792,181 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                               final subtotal =
                                                   item['subtotal'].toDouble();
 
+                                              // Parse batch details with comprehensive debugging
+                                              List<dynamic> batchDetails = [];
+
+                                              debugPrint(
+                                                  '🔍 RAW ITEM DATA: ${item.toString()}');
+                                              debugPrint(
+                                                  '🔍 Item ${product['name']} - Raw batchDetails: ${item['batchDetails']}');
+                                              debugPrint(
+                                                  '🔍 batchDetails type: ${item['batchDetails'].runtimeType}');
+
+                                              // Handle batch details parsing
+                                              if (item['batchDetails'] !=
+                                                  null) {
+                                                var rawBatchDetails =
+                                                    item['batchDetails'];
+
+                                                if (rawBatchDetails is List) {
+                                                  batchDetails =
+                                                      rawBatchDetails;
+                                                  debugPrint(
+                                                      '✅ Found List batchDetails: $batchDetails');
+                                                } else if (rawBatchDetails
+                                                    is String) {
+                                                  // Try to parse if it's a JSON string
+                                                  try {
+                                                    var parsedData = jsonDecode(
+                                                        rawBatchDetails);
+                                                    if (parsedData is List) {
+                                                      batchDetails = parsedData;
+                                                      debugPrint(
+                                                          '✅ Parsed String to List batchDetails: $batchDetails');
+                                                    }
+                                                  } catch (e) {
+                                                    debugPrint(
+                                                        '❌ Failed to parse batchDetails string: $e');
+                                                  }
+                                                } else {
+                                                  debugPrint(
+                                                      '❌ Unexpected batchDetails type: ${rawBatchDetails.runtimeType}');
+                                                }
+                                              } else {
+                                                debugPrint(
+                                                    '❌ batchDetails is null');
+                                              }
+
+                                              debugPrint(
+                                                  '🎯 Final batchDetails: $batchDetails (length: ${batchDetails.length})');
+
                                               return Container(
+                                                margin: const EdgeInsets.only(
+                                                    bottom: 16),
                                                 padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 12),
+                                                    const EdgeInsets.all(16),
                                                 decoration: BoxDecoration(
-                                                  border: Border(
-                                                    bottom: BorderSide(
-                                                      color: Colors.grey[800]!,
-                                                      width: 1,
-                                                    ),
+                                                  color:
+                                                      const Color(0xFF1D2939),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color:
+                                                        const Color(0xFF283548),
+                                                    width: 1,
                                                   ),
                                                 ),
-                                                child: Row(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
-                                                    // Product with image
-                                                    Expanded(
-                                                      flex: 5,
-                                                      child: Row(
-                                                        children: [
-                                                          // Product image
-                                                          Container(
-                                                            width: 50,
-                                                            height: 50,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                            ),
-                                                            child: ClipRRect(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                              child:
-                                                                  CachedNetworkImage(
-                                                                imageUrl:
-                                                                    product[
-                                                                        'image'],
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                                placeholder:
-                                                                    (context,
-                                                                            url) =>
-                                                                        Center(
-                                                                  child:
-                                                                      CircularProgressIndicator(
-                                                                    color: const Color(
-                                                                        0xFF7B5CFA),
-                                                                    strokeWidth:
-                                                                        2,
-                                                                  ),
+                                                    // Product info row
+                                                    Row(
+                                                      children: [
+                                                        // Product image
+                                                        Container(
+                                                          width: 60,
+                                                          height: 60,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                          ),
+                                                          child: ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                            child:
+                                                                CachedNetworkImage(
+                                                              imageUrl: product[
+                                                                  'image'],
+                                                              fit: BoxFit.cover,
+                                                              placeholder:
+                                                                  (context,
+                                                                          url) =>
+                                                                      Center(
+                                                                child:
+                                                                    CircularProgressIndicator(
+                                                                  color: const Color(
+                                                                      0xFF7B5CFA),
+                                                                  strokeWidth:
+                                                                      2,
                                                                 ),
-                                                                errorWidget:
-                                                                    (context,
-                                                                            url,
-                                                                            error) =>
-                                                                        Icon(
-                                                                  Icons
-                                                                      .image_not_supported,
-                                                                  color: Colors
-                                                                      .grey,
-                                                                ),
+                                                              ),
+                                                              errorWidget:
+                                                                  (context, url,
+                                                                          error) =>
+                                                                      Icon(
+                                                                Icons
+                                                                    .image_not_supported,
+                                                                color:
+                                                                    Colors.grey,
                                                               ),
                                                             ),
                                                           ),
-                                                          const SizedBox(
-                                                              width: 12),
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 16),
 
-                                                          // Product details
-                                                          Expanded(
-                                                            child: Text(
-                                                              product['name'],
+                                                        // Product details
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                product['name'],
+                                                                style: GoogleFonts
+                                                                    .spaceGrotesk(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 16,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  height: 4),
+                                                              Text(
+                                                                "Unit Price: ${price.toStringAsFixed(2)}",
+                                                                style: GoogleFonts
+                                                                    .spaceGrotesk(
+                                                                  color: Colors
+                                                                          .grey[
+                                                                      400],
+                                                                  fontSize: 14,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        // Quantity and total
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .end,
+                                                          children: [
+                                                            Text(
+                                                              "Total Qty: $quantity",
+                                                              style: GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                                height: 4),
+                                                            Text(
+                                                              "${subtotal.toStringAsFixed(2)}",
                                                               style: GoogleFonts
                                                                   .spaceGrotesk(
                                                                 color: Colors
@@ -895,57 +974,342 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold,
+                                                                fontSize: 16,
                                                               ),
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
                                                             ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+
+                                                    // Always show batch section for better visibility
+                                                    const SizedBox(height: 16),
+                                                    Container(
+                                                      width: double.infinity,
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              16),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(
+                                                            0xFF283548),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        border: Border.all(
+                                                          color: const Color(
+                                                                  0xFF7B5CFA)
+                                                              .withOpacity(0.3),
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .inventory_2,
+                                                                color: const Color(
+                                                                    0xFF7B5CFA),
+                                                                size: 18,
+                                                              ),
+                                                              const SizedBox(
+                                                                  width: 8),
+                                                              Text(
+                                                                "Product Batch Information",
+                                                                style: GoogleFonts
+                                                                    .spaceGrotesk(
+                                                                  color: const Color(
+                                                                      0xFF7B5CFA),
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 16,
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
+                                                          const SizedBox(
+                                                              height: 12),
+                                                          if (batchDetails
+                                                              .isNotEmpty) ...[
+                                                            Text(
+                                                              "This order contains products from ${batchDetails.length} different batch${batchDetails.length > 1 ? 'es' : ''}:",
+                                                              style: GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                color: Colors
+                                                                    .grey[300],
+                                                                fontSize: 14,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                                height: 12),
+
+                                                            // Display each batch as a card
+                                                            ...batchDetails
+                                                                .asMap()
+                                                                .entries
+                                                                .map((entry) {
+                                                              final batchIndex =
+                                                                  entry.key;
+                                                              final batch =
+                                                                  entry.value;
+
+                                                              debugPrint(
+                                                                  '🎨 Rendering batch $batchIndex: $batch');
+
+                                                              return Container(
+                                                                margin: EdgeInsets.only(
+                                                                    bottom: batchIndex ==
+                                                                            batchDetails.length -
+                                                                                1
+                                                                        ? 0
+                                                                        : 12),
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  color: const Color(
+                                                                      0xFF1D2939),
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  border: Border
+                                                                      .all(
+                                                                    color: const Color(
+                                                                            0xFF7B5CFA)
+                                                                        .withOpacity(
+                                                                            0.2),
+                                                                    width: 1,
+                                                                  ),
+                                                                ),
+                                                                child: Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .start,
+                                                                  children: [
+                                                                    Row(
+                                                                      mainAxisAlignment:
+                                                                          MainAxisAlignment
+                                                                              .spaceBetween,
+                                                                      children: [
+                                                                        Container(
+                                                                          padding: const EdgeInsets
+                                                                              .symmetric(
+                                                                              horizontal: 10,
+                                                                              vertical: 6),
+                                                                          decoration:
+                                                                              BoxDecoration(
+                                                                            color:
+                                                                                const Color(0xFF7B5CFA),
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(6),
+                                                                          ),
+                                                                          child:
+                                                                              Text(
+                                                                            "Batch #${batch['batchId'] ?? 'Unknown'}",
+                                                                            style:
+                                                                                GoogleFonts.spaceGrotesk(
+                                                                              color: Colors.white,
+                                                                              fontSize: 14,
+                                                                              fontWeight: FontWeight.bold,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                        Container(
+                                                                          padding: const EdgeInsets
+                                                                              .symmetric(
+                                                                              horizontal: 10,
+                                                                              vertical: 6),
+                                                                          decoration:
+                                                                              BoxDecoration(
+                                                                            color:
+                                                                                Colors.orange.withOpacity(0.2),
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(6),
+                                                                            border:
+                                                                                Border.all(color: Colors.orange, width: 1),
+                                                                          ),
+                                                                          child:
+                                                                              Text(
+                                                                            "Qty: ${batch['quantity'] ?? 'Unknown'}",
+                                                                            style:
+                                                                                GoogleFonts.spaceGrotesk(
+                                                                              color: Colors.orange,
+                                                                              fontSize: 14,
+                                                                              fontWeight: FontWeight.bold,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                    const SizedBox(
+                                                                        height:
+                                                                            12),
+                                                                    Row(
+                                                                      children: [
+                                                                        Expanded(
+                                                                          child:
+                                                                              Column(
+                                                                            crossAxisAlignment:
+                                                                                CrossAxisAlignment.start,
+                                                                            children: [
+                                                                              Row(
+                                                                                children: [
+                                                                                  Icon(
+                                                                                    Icons.calendar_today,
+                                                                                    color: Colors.green,
+                                                                                    size: 16,
+                                                                                  ),
+                                                                                  const SizedBox(width: 6),
+                                                                                  Text(
+                                                                                    "Production Date",
+                                                                                    style: GoogleFonts.spaceGrotesk(
+                                                                                      color: Colors.grey[400],
+                                                                                      fontSize: 12,
+                                                                                    ),
+                                                                                  ),
+                                                                                ],
+                                                                              ),
+                                                                              const SizedBox(height: 4),
+                                                                              Text(
+                                                                                batch['prodDate'] != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(batch['prodDate'])) : "Unknown",
+                                                                                style: GoogleFonts.spaceGrotesk(
+                                                                                  color: Colors.green,
+                                                                                  fontSize: 14,
+                                                                                  fontWeight: FontWeight.bold,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                16),
+                                                                        Expanded(
+                                                                          child:
+                                                                              Column(
+                                                                            crossAxisAlignment:
+                                                                                CrossAxisAlignment.start,
+                                                                            children: [
+                                                                              Row(
+                                                                                children: [
+                                                                                  Icon(
+                                                                                    Icons.schedule,
+                                                                                    color: Colors.red,
+                                                                                    size: 16,
+                                                                                  ),
+                                                                                  const SizedBox(width: 6),
+                                                                                  Text(
+                                                                                    "Expiration Date",
+                                                                                    style: GoogleFonts.spaceGrotesk(
+                                                                                      color: Colors.grey[400],
+                                                                                      fontSize: 12,
+                                                                                    ),
+                                                                                  ),
+                                                                                ],
+                                                                              ),
+                                                                              const SizedBox(height: 4),
+                                                                              Text(
+                                                                                batch['expDate'] != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(batch['expDate'])) : "Unknown",
+                                                                                style: GoogleFonts.spaceGrotesk(
+                                                                                  color: Colors.red,
+                                                                                  fontSize: 14,
+                                                                                  fontWeight: FontWeight.bold,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              );
+                                                            }).toList(),
+                                                          ] else ...[
+                                                            // Show debugging info when no batch details are available
+                                                            Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              children: [
+                                                                Row(
+                                                                  children: [
+                                                                    Icon(
+                                                                      Icons
+                                                                          .warning_amber,
+                                                                      color: Colors
+                                                                          .orange,
+                                                                      size: 18,
+                                                                    ),
+                                                                    const SizedBox(
+                                                                        width:
+                                                                            8),
+                                                                    Text(
+                                                                      "Batch information not found",
+                                                                      style: GoogleFonts
+                                                                          .spaceGrotesk(
+                                                                        color: Colors
+                                                                            .orange,
+                                                                        fontSize:
+                                                                            14,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                Text(
+                                                                  "Check console logs for debugging information.",
+                                                                  style: GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                    color: Colors
+                                                                            .grey[
+                                                                        400],
+                                                                    fontSize:
+                                                                        12,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                    height: 8),
+                                                                Container(
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .all(
+                                                                          8),
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    color: const Color(
+                                                                        0xFF1D2939),
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(4),
+                                                                  ),
+                                                                  child: Text(
+                                                                    "Raw data: ${item['batchDetails']}",
+                                                                    style: GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                      color: Colors
+                                                                              .grey[
+                                                                          500],
+                                                                      fontSize:
+                                                                          10,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ],
                                                         ],
-                                                      ),
-                                                    ),
-
-                                                    // Price
-                                                    Expanded(
-                                                      flex: 2,
-                                                      child: Text(
-                                                        "\$${price.toStringAsFixed(2)}",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-
-                                                    // Quantity
-                                                    Expanded(
-                                                      flex: 2,
-                                                      child: Text(
-                                                        quantity.toString(),
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-
-                                                    // Total
-                                                    Expanded(
-                                                      flex: 2,
-                                                      child: Text(
-                                                        "\$${subtotal.toStringAsFixed(2)}",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.right,
                                                       ),
                                                     ),
                                                   ],
