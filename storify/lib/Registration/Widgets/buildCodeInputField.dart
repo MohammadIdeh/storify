@@ -17,7 +17,7 @@ Widget buildCodeInputField({
     FontWeight? fontWeight,
     Color? color,
   }) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = l10n.localeName == 'ar';
 
     if (isArabic) {

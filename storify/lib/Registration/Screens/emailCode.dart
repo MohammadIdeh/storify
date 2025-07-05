@@ -71,7 +71,7 @@ class _EmailcodeState extends State<Emailcode> {
     FontWeight? fontWeight,
     Color? color,
   }) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = l10n.localeName == 'ar';
 
     if (isArabic) {
@@ -95,7 +95,7 @@ class _EmailcodeState extends State<Emailcode> {
 
   /// API call: POST email and code to the API.
   Future<void> _performLogin() async {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     // Combine all individual code fields into a single code string.
     final String code = _controller1.text +
@@ -155,7 +155,7 @@ class _EmailcodeState extends State<Emailcode> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),

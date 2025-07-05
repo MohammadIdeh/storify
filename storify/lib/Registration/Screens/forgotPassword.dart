@@ -51,7 +51,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
     FontWeight? fontWeight,
     Color? color,
   }) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = l10n.localeName == 'ar';
 
     if (isArabic) {
@@ -71,7 +71,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
 
   /// Connect the API to send a reset code.
   Future<void> _performLogin() async {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     // Validate that the email field is not empty.
     if (_emailController.text.trim().isEmpty) {
@@ -118,7 +118,7 @@ class _ForgotpasswordState extends State<Forgotpassword> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isRtl = LocalizationHelper.isRTL(context);
 
     return Scaffold(

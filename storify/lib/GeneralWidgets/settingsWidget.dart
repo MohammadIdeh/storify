@@ -519,7 +519,8 @@ class _SettingsWidgetState extends State<SettingsWidget>
       await localeProvider.setLocale(newLocale);
 
       if (!_isDisposed && mounted) {
-        final l10n = AppLocalizations.of(context);
+        final l10n =
+            Localizations.of<AppLocalizations>(context, AppLocalizations)!;
         showCustomSnackBar(
             context, l10n.languageChangedSuccess, 'assets/images/success.svg');
       }
@@ -541,7 +542,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
   @override
   Widget build(BuildContext context) {
     // Get localization
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isRtl = LocalizationHelper.isRTL(context);
 
     // Return minimal widget if disposed
@@ -702,7 +703,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
 
   // ✅ UPDATED: Comprehensive appearance settings with language selection
   Widget _buildAppearanceSettings() {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     LocalizationHelper.isRTL(context);
 
     return Padding(
@@ -1085,7 +1086,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
   // (I'll include the most important ones for completeness)
 
   Widget _buildProfileSettings() {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     return Padding(
       padding: EdgeInsets.all(24.r),
@@ -1812,7 +1813,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
   }
 
   Widget _buildNotificationSettings() {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     return Padding(
       padding: EdgeInsets.all(24.r),
@@ -1843,7 +1844,7 @@ class _SettingsWidgetState extends State<SettingsWidget>
   }
 
   Widget _buildAboutSection() {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     return Padding(
       padding: EdgeInsets.all(24.r),

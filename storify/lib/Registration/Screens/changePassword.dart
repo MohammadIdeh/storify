@@ -57,7 +57,7 @@ class _ChangepasswordState extends State<Changepassword> {
     FontWeight? fontWeight,
     Color? color,
   }) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = l10n.localeName == 'ar';
 
     if (isArabic) {
@@ -76,7 +76,7 @@ class _ChangepasswordState extends State<Changepassword> {
   }
 
   Future<void> _performLogin() async {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final String newPassword = _newPasswordController.text.trim();
     final String confirmPassword = _confirmPasswordController.text.trim();
 
@@ -136,7 +136,7 @@ class _ChangepasswordState extends State<Changepassword> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isRtl = LocalizationHelper.isRTL(context);
 
     return Scaffold(

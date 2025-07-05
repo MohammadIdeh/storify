@@ -40,7 +40,7 @@ class _ChangepasswordState extends State<Changedthanks> {
     FontWeight? fontWeight,
     Color? color,
   }) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = l10n.localeName == 'ar';
 
     if (isArabic) {
@@ -80,7 +80,7 @@ class _ChangepasswordState extends State<Changedthanks> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),

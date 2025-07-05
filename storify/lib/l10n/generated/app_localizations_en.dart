@@ -319,4 +319,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutSection => 'About section coming soon...';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get orderCount => 'Order Count';
+
+  @override
+  String get total => 'Total';
+
+  @override
+  String get customers => 'Customers';
+
+  @override
+  String get ordersByCustomers => 'Orders By Customers';
+
+  @override
+  String get ordersOverview => 'Orders Overview';
+
+  @override
+  String get selectDates => 'Select Dates';
+
+  @override
+  String get customRange => 'Custom Range';
+
+  @override
+  String get clearFilter => 'Clear Filter';
+
+  @override
+  String get profit => 'Profit';
+
+  @override
+  String get custom => 'Custom';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get noProductsFound => 'No products found';
+
+  @override
+  String get errorLoadingProducts => 'Error loading products';
+
+  @override
+  String get productId => 'Product ID';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get vendor => 'Vendor';
+
+  @override
+  String get totalSold => 'Total Sold';
+
+  @override
+  String get stock => 'Stock';
+
+  @override
+  String get page => 'Page';
+
+  @override
+  String get totalItems => 'total items';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get errorLoadingData => 'Error loading data';
+
+  @override
+  String get errorLoadingOrderCounts => 'Error loading order counts';
+
+  @override
+  String get errorLoadingOrdersChart => 'Error loading orders chart';
+
+  @override
+  String get errorLoadingProfitData => 'Error loading profit data';
+
+  @override
+  String get loadingOrdersChart => 'Loading orders chart...';
+
+  @override
+  String get loadingProfitData => 'Loading profit data...';
+
+  @override
+  String get noDataAvailable => 'No data available';
+
+  @override
+  String get noOrderCountDataAvailable => 'No order count data available';
+
+  @override
+  String get noProfitDataAvailable => 'No profit data available';
+
+  @override
+  String get items => 'items';
+
+  @override
+  String get of => 'of';
+
+  @override
+  String get quickSelect => 'Quick Select';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get last7Days => 'Last 7 days';
+
+  @override
+  String get last30Days => 'Last 30 days';
+
+  @override
+  String get thisMonth => 'This month';
+
+  @override
+  String get lastMonth => 'Last month';
+
+  @override
+  String get startDate => 'Start Date';
+
+  @override
+  String get endDate => 'End Date';
+
+  @override
+  String get selectStart => 'Select start';
+
+  @override
+  String get selectEnd => 'Select end';
+
+  @override
+  String get selectDateRange => 'Select Date Range';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get topProducts => 'Top products';
 }

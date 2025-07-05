@@ -1,4 +1,4 @@
-// lib/utils/localization_helper.dart
+// lib/providers/LocalizationHelper.dart
 // Helper utilities for localization throughout the app
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,9 +6,26 @@ import 'package:storify/l10n/generated/app_localizations.dart';
 import 'package:storify/providers/LocaleProvider.dart';
 
 class LocalizationHelper {
-  /// Get AppLocalizations instance from context
-  static AppLocalizations of(BuildContext context) {
-    return AppLocalizations.of(context)!;
+  /// Get AppLocalizations instance from context - Safe method that avoids conflicts
+  static AppLocalizations getLocalizations(BuildContext context) {
+    // Use the direct Localizations.of method to avoid any conflicts with generated code
+    final localizations =
+        Localizations.of<AppLocalizations>(context, AppLocalizations);
+    if (localizations == null) {
+      throw FlutterError('AppLocalizations not found in context. '
+          'Make sure AppLocalizations.delegate is included in your MaterialApp localizationsDelegates.');
+    }
+    return localizations;
+  }
+
+  /// Alternative safe method for getting localizations
+  static AppLocalizations safeOf(BuildContext context) {
+    try {
+      return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    } catch (e) {
+      throw FlutterError('Failed to get AppLocalizations: $e. '
+          'Make sure your app is properly configured with localization delegates.');
+    }
   }
 
   /// Get current locale from context
@@ -34,7 +51,7 @@ class LocalizationHelper {
 
   /// Get role name with proper formatting and localization
   static String getRoleDisplayName(BuildContext context, String? role) {
-    final l10n = of(context);
+    final l10n = getLocalizations(context);
     if (role == null) return '';
 
     switch (role) {
@@ -146,8 +163,11 @@ class LocalizationHelper {
 
 /// Extension methods for easier localization access
 extension LocalizationContext on BuildContext {
-  /// Quick access to AppLocalizations
-  AppLocalizations get l10n => LocalizationHelper.of(this);
+  /// Quick access to AppLocalizations using safe method
+  AppLocalizations get l10n => LocalizationHelper.getLocalizations(this);
+
+  /// Alternative safe access to AppLocalizations
+  AppLocalizations get localizations => LocalizationHelper.safeOf(this);
 
   /// Quick access to current locale
   Locale get currentLocale => LocalizationHelper.getCurrentLocale(this);
