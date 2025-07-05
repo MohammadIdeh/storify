@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class OrdersOverviewWidget extends StatefulWidget {
   final OrdersOverviewResponse? ordersData; // Keep for backward compatibility
@@ -102,6 +104,7 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
 
     if (_isLoading) {
@@ -122,11 +125,16 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Loading orders chart...',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 14.sp,
-                ),
+                l10n.loadingOrdersChart,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
               ),
             ],
           ),
@@ -154,12 +162,18 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading orders chart',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.errorLoadingOrdersChart,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
               SizedBox(height: 8.h),
               Container(
@@ -173,19 +187,30 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                   children: [
                     Text(
                       'Error Details:',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.red,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.red,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.red,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
                       _error!,
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
-                        fontSize: 10.sp,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white70,
+                              fontSize: 10.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white70,
+                              fontSize: 10.sp,
+                            ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -206,8 +231,16 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                       ),
                     ),
                     child: Text(
-                      'Retry',
-                      style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                      l10n.retry,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                            ),
                     ),
                   ),
                   SizedBox(width: 8.w),
@@ -230,7 +263,15 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                     ),
                     child: Text(
                       'Debug',
-                      style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                            ),
                     ),
                   ),
                 ],
@@ -251,11 +292,16 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
         ),
         child: Center(
           child: Text(
-            'No data available',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16.sp,
-            ),
+            l10n.noDataAvailable,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -284,29 +330,47 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Orders Overview",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 25.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    l10n.ordersOverview,
+                    style: LocalizationHelper.isArabic(context)
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w500,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
                     "\$${_chartData!.totalRevenue.toStringAsFixed(0)}",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: LocalizationHelper.isArabic(context)
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w700,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
                   ),
                   Text(
                     "${_chartData!.dateRange.start} - ${_chartData!.dateRange.end}",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: LocalizationHelper.isArabic(context)
+                        ? GoogleFonts.cairo(
+                            color: Colors.white70,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white70,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
                   ),
                 ],
               ),
@@ -322,13 +386,19 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                     ),
                     label: Text(
                       _startDate != null && _endDate != null
-                          ? "Custom Range"
-                          : "Select Dates",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          ? l10n.customRange
+                          : l10n.selectDates,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00A6FF),
@@ -352,12 +422,18 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                         minimumSize: Size(0, 24.h),
                       ),
                       child: Text(
-                        "Clear Filter",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
+                        l10n.clearFilter,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w400,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w400,
+                              ),
                       ),
                     ),
                   ],
@@ -390,11 +466,17 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
                               final dataPoint = _chartData!.data[index];
                               return LineTooltipItem(
                                 "${dataPoint.day}\n\$${dataPoint.value.toStringAsFixed(0)}",
-                                GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.sp,
-                                ),
+                                LocalizationHelper.isArabic(context)
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      ),
                               );
                             }
                             return null;
@@ -512,10 +594,15 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
       padding: EdgeInsets.only(top: 8.h),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 11.sp,
-        ),
+        style: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 11.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 11.sp,
+              ),
       ),
     );
   }
@@ -525,10 +612,15 @@ class _OrdersOverviewWidgetState extends State<OrdersOverviewWidget> {
       padding: EdgeInsets.only(right: 8.w),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 10.sp,
-        ),
+        style: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 10.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 10.sp,
+              ),
         textAlign: TextAlign.left,
       ),
     );
@@ -668,6 +760,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final bool canApply = _startDate != null && _endDate != null;
 
     return Dialog(
@@ -692,12 +785,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Select Date Range',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  l10n.selectDateRange,
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -716,24 +815,30 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
 
             // Quick presets
             Text(
-              'Quick Select',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-              ),
+              l10n.quickSelect,
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
             ),
             SizedBox(height: 8.h),
             Wrap(
               spacing: 8.w,
               runSpacing: 8.h,
               children: [
-                'Today',
-                'Yesterday',
-                'Last 7 days',
-                'Last 30 days',
-                'This month',
-                'Last month',
+                l10n.today,
+                l10n.yesterday,
+                l10n.last7Days,
+                l10n.last30Days,
+                l10n.thisMonth,
+                l10n.lastMonth,
               ].map((preset) {
                 return GestureDetector(
                   onTap: () => _selectPresetRange(preset),
@@ -749,11 +854,17 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                     ),
                     child: Text(
                       preset,
-                      style: GoogleFonts.spaceGrotesk(
-                        color: const Color(0xFF00A6FF),
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: const Color(0xFF00A6FF),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: const Color(0xFF00A6FF),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                 );
@@ -771,12 +882,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Start Date',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        l10n.startDate,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                       ),
                       SizedBox(height: 6.h),
                       GestureDetector(
@@ -803,13 +920,20 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                                 child: Text(
                                   _startDate != null
                                       ? _displayFormatter.format(_startDate!)
-                                      : 'Select start',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: _startDate != null
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 13.sp,
-                                  ),
+                                      : l10n.selectStart,
+                                  style: LocalizationHelper.isArabic(context)
+                                      ? GoogleFonts.cairo(
+                                          color: _startDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: _startDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        ),
                                 ),
                               ),
                             ],
@@ -828,12 +952,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'End Date',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        l10n.endDate,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                       ),
                       SizedBox(height: 6.h),
                       GestureDetector(
@@ -860,13 +990,20 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                                 child: Text(
                                   _endDate != null
                                       ? _displayFormatter.format(_endDate!)
-                                      : 'Select end',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: _endDate != null
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 13.sp,
-                                  ),
+                                      : l10n.selectEnd,
+                                  style: LocalizationHelper.isArabic(context)
+                                      ? GoogleFonts.cairo(
+                                          color: _endDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: _endDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        ),
                                 ),
                               ),
                             ],
@@ -897,12 +1034,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                       ),
                     ),
                     child: Text(
-                      'Cancel',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      l10n.cancel,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                 ),
@@ -927,12 +1070,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                       ),
                     ),
                     child: Text(
-                      'Apply',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      l10n.apply,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                   ),
                 ),

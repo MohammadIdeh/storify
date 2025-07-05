@@ -3,7 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
-// Import your models and service
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class ProductsTable extends StatefulWidget {
   const ProductsTable({Key? key}) : super(key: key);
@@ -113,6 +114,8 @@ class _ProductsTableState extends State<ProductsTable> {
   }
 
   Widget _buildTable() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_isLoading) {
       return Container(
         height: 400.h,
@@ -147,20 +150,31 @@ class _ProductsTableState extends State<ProductsTable> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading products',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.errorLoadingProducts,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
               SizedBox(height: 8.h),
               Text(
                 _error!,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontSize: 12.sp,
-                ),
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
@@ -175,8 +189,16 @@ class _ProductsTableState extends State<ProductsTable> {
                   ),
                 ),
                 child: Text(
-                  'Retry',
-                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                  l10n.retry,
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                        ),
                 ),
               ),
             ],
@@ -194,11 +216,16 @@ class _ProductsTableState extends State<ProductsTable> {
         ),
         child: Center(
           child: Text(
-            'No products found',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16.sp,
-            ),
+            l10n.noProductsFound,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -238,35 +265,46 @@ class _ProductsTableState extends State<ProductsTable> {
         dividerThickness: 0,
         sortColumnIndex: _sortColumnIndex,
         sortAscending: _sortAscending,
-        headingTextStyle: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.9),
-          fontSize: 14.sp,
-          fontWeight: FontWeight.bold,
-        ),
-        dataTextStyle: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.8),
-          fontSize: 13.sp,
-        ),
+        headingTextStyle: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+              ),
+        dataTextStyle: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 13.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 13.sp,
+              ),
         columns: [
           DataColumn(
             onSort: (colIndex, asc) => _onSort(colIndex, asc),
-            label: Text("Product ID"),
+            label: Text(l10n.productId),
           ),
           DataColumn(
             onSort: (colIndex, asc) => _onSort(colIndex, asc),
-            label: Text("Name"),
+            label: Text(l10n.name),
           ),
           DataColumn(
             onSort: (colIndex, asc) => _onSort(colIndex, asc),
-            label: Text("Vendor"),
+            label: Text(l10n.vendor),
           ),
           DataColumn(
             onSort: (colIndex, asc) => _onSort(colIndex, asc),
-            label: Text("Total Sold"),
+            label: Text(l10n.totalSold),
           ),
           DataColumn(
             onSort: (colIndex, asc) => _onSort(colIndex, asc),
-            label: Text("Stock"),
+            label: Text(l10n.stock),
           ),
         ],
         rows: _products.map((product) {
@@ -317,7 +355,7 @@ class _ProductsTableState extends State<ProductsTable> {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
-                    "${product.stock} items",
+                    "${product.stock} ${l10n.items}",
                     style: TextStyle(
                       color: _getStockColor(product.stock),
                       fontWeight: FontWeight.w600,
@@ -333,6 +371,8 @@ class _ProductsTableState extends State<ProductsTable> {
   }
 
   Widget _buildPaginationControls() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     return Container(
       margin: EdgeInsets.only(top: 16.h),
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -345,11 +385,16 @@ class _ProductsTableState extends State<ProductsTable> {
         children: [
           // Page info
           Text(
-            "Page $_currentPage of ${_pagination!.totalPages} • ${_pagination!.totalItems} total items",
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white70,
-              fontSize: 12.sp,
-            ),
+            "${l10n.page} $_currentPage ${l10n.offf} ${_pagination!.totalPages} • ${_pagination!.totalItems} ${l10n.totalItems}",
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                  ),
           ),
 
           // Navigation buttons
@@ -436,11 +481,17 @@ class _ProductsTableState extends State<ProductsTable> {
             ),
             child: Text(
               "$i",
-              style: GoogleFonts.spaceGrotesk(
-                color: i == _currentPage ? Colors.white : Colors.white70,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      color: i == _currentPage ? Colors.white : Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: i == _currentPage ? Colors.white : Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
           ),
         ),

@@ -75,7 +75,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setNewPassword => 'Set new password';
 
   @override
-  String get newPasswordDifferent => 'Your new password must be different to previously used passwords.';
+  String get newPasswordDifferent =>
+      'Your new password must be different to previously used passwords.';
 
   @override
   String get newPassword => 'New Password';
@@ -96,7 +97,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordReset => 'Password reset';
 
   @override
-  String get passwordResetSuccess => 'Your password has been successfully reset. Click below to log in magically.';
+  String get passwordResetSuccess =>
+      'Your password has been successfully reset. Click below to log in magically.';
 
   @override
   String get returnToLogin => 'Return to Login page';
@@ -156,7 +158,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourDeliveryAddress => 'Your Delivery Address';
 
   @override
-  String get currentLocationSet => 'Your current location is set for deliveries';
+  String get currentLocationSet =>
+      'Your current location is set for deliveries';
 
   @override
   String get changeLocation => 'Change Location';
@@ -177,7 +180,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeProfilePicture => 'Remove Profile Picture';
 
   @override
-  String get removeProfilePictureConfirm => 'Are you sure you want to remove your profile picture?';
+  String get removeProfilePictureConfirm =>
+      'Are you sure you want to remove your profile picture?';
 
   @override
   String get dashboard => 'Dashboard';
@@ -258,7 +262,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordsDontMatch => 'Passwords do not match';
 
   @override
-  String get selectValidImage => 'Please select a valid image file (JPG, PNG, GIF, WebP)';
+  String get selectValidImage =>
+      'Please select a valid image file (JPG, PNG, GIF, WebP)';
 
   @override
   String get imageTooLarge => 'Image size must be less than 5MB';
@@ -273,10 +278,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordChangedSuccess => 'Password changed successfully';
 
   @override
-  String get profilePictureUpdatedSuccess => 'Profile picture updated successfully';
+  String get profilePictureUpdatedSuccess =>
+      'Profile picture updated successfully';
 
   @override
-  String get profilePictureRemovedSuccess => 'Profile picture removed successfully';
+  String get profilePictureRemovedSuccess =>
+      'Profile picture removed successfully';
 
   @override
   String get languageChangedSuccess => 'Language changed successfully';
@@ -297,7 +304,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choosePreferredLanguage => 'Choose your preferred language';
 
   @override
-  String get languageDescription => 'This will change the language for your current role';
+  String get languageDescription =>
+      'This will change the language for your current role';
 
   @override
   String get notificationSettings => 'Notification Settings';
@@ -463,4 +471,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get topProducts => 'Top products';
+
+  @override
+  String get totalProducts => 'Total Products';
+
+  @override
+  String get totalPaidOrders => 'Total Paid Orders';
+
+  @override
+  String get totalUsers => 'Total Users';
+
+  @override
+  String get totalCustomers => 'Total Customers';
 }

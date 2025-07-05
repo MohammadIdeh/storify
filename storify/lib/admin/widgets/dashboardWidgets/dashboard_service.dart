@@ -210,7 +210,6 @@ class DashboardService {
         headers: headers,
       );
 
-     
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         return ProfitChartResponse.fromJson(jsonData);
@@ -222,7 +221,6 @@ class DashboardService {
             'Failed to load profit chart: ${response.statusCode}\nResponse: ${response.body}');
       }
     } catch (e) {
-     
       throw Exception('Error fetching profit chart: $e');
     }
   }

@@ -200,7 +200,7 @@ class _ProfilepopupState extends State<Profilepopup> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isRtl = LocalizationHelper.isRTL(context);
 
     // Return empty container if disposed or in bad state
@@ -227,7 +227,7 @@ class _ProfilepopupState extends State<Profilepopup> {
               ),
               SizedBox(height: 12.h),
               Text(
-                l10n!.loggingOut,
+                l10n.loggingOut,
                 style: LocalizationHelper.isArabic(context)
                     ? GoogleFonts.cairo(
                         color: Colors.white,
@@ -317,9 +317,8 @@ class _ProfilepopupState extends State<Profilepopup> {
           ),
           SizedBox(height: 12.h),
 
-          // User Info - FIXED: Show actual data instead of loading/guest
           Text(
-            userName ?? l10n!.loading,
+            userName ?? l10n.loading,
             style: LocalizationHelper.isArabic(context)
                 ? GoogleFonts.cairo(
                     color: Colors.white,
@@ -333,7 +332,7 @@ class _ProfilepopupState extends State<Profilepopup> {
                   ),
           ),
           Text(
-            _formatRoleName(userRole, context) ?? l10n!.loading,
+            _formatRoleName(userRole, context) ?? l10n.loading,
             style: LocalizationHelper.isArabic(context)
                 ? GoogleFonts.cairo(
                     color: Colors.white70,
@@ -367,7 +366,7 @@ class _ProfilepopupState extends State<Profilepopup> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      l10n!.settings,
+                      l10n.settings,
                       style: LocalizationHelper.isArabic(context)
                           ? GoogleFonts.cairo(
                               color: Colors.white,

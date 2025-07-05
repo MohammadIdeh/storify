@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Profit extends StatefulWidget {
   const Profit({super.key});
@@ -96,6 +98,7 @@ class _ProfitState extends State<Profit> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     // Bright blue background
     final Color backgroundColor = const Color(0xFF008CFF);
     // White line color
@@ -121,11 +124,16 @@ class _ProfitState extends State<Profit> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Loading profit data...',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 14.sp,
-                ),
+                l10n.loadingProfitData,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
               ),
             ],
           ),
@@ -153,12 +161,18 @@ class _ProfitState extends State<Profit> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading profit data',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.errorLoadingProfitData,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
               SizedBox(height: 8.h),
               Container(
@@ -170,10 +184,15 @@ class _ProfitState extends State<Profit> {
                 ),
                 child: Text(
                   _error!,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white70,
-                    fontSize: 10.sp,
-                  ),
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          color: Colors.white70,
+                          fontSize: 10.sp,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontSize: 10.sp,
+                        ),
                   textAlign: TextAlign.center,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
@@ -192,9 +211,16 @@ class _ProfitState extends State<Profit> {
                   ),
                 ),
                 child: Text(
-                  'Retry',
-                  style:
-                      TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+                  l10n.retry,
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
               ),
             ],
@@ -213,11 +239,16 @@ class _ProfitState extends State<Profit> {
         ),
         child: Center(
           child: Text(
-            'No profit data available',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16.sp,
-            ),
+            l10n.noProfitDataAvailable,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -249,30 +280,48 @@ class _ProfitState extends State<Profit> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Profit",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 25.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      l10n.profit,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 25.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 25.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
                       "\$${_profitData!.profit.toStringAsFixed(2)}",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 28.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              fontSize: 28.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 28.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
                       "${_profitData!.dateRange.start} - ${_profitData!.dateRange.end}",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w400,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
                     ),
                   ],
                 ),
@@ -292,13 +341,19 @@ class _ProfitState extends State<Profit> {
                     ),
                     label: Text(
                       _startDate != null && _endDate != null
-                          ? "Custom"
-                          : "Select",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: backgroundColor,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          ? l10n.custom
+                          : l10n.select,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: backgroundColor,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: backgroundColor,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -334,11 +389,17 @@ class _ProfitState extends State<Profit> {
                         SizedBox(width: 4.w),
                         Text(
                           "${_profitData!.growth.abs()}%",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: LocalizationHelper.isArabic(context)
+                              ? GoogleFonts.cairo(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                         ),
                       ],
                     ),
@@ -355,12 +416,18 @@ class _ProfitState extends State<Profit> {
                         minimumSize: Size(0, 20.h),
                       ),
                       child: Text(
-                        "Clear",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
+                        l10n.clear,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w400,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w400,
+                              ),
                       ),
                     ),
                   ],
@@ -455,11 +522,17 @@ class _ProfitState extends State<Profit> {
                         final val = spot.y.toStringAsFixed(1);
                         return LineTooltipItem(
                           "$dayName\n\$$val",
-                          GoogleFonts.spaceGrotesk(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
+                          LocalizationHelper.isArabic(context)
+                              ? GoogleFonts.cairo(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                         );
                       }).toList();
                     },
@@ -524,10 +597,15 @@ class _ProfitState extends State<Profit> {
       padding: EdgeInsets.only(top: 6.h),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.8),
-          fontSize: 12.sp,
-        ),
+        style: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 12.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 12.sp,
+              ),
       ),
     );
   }
@@ -658,6 +736,7 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final bool canApply = _startDate != null && _endDate != null;
 
     return Dialog(
@@ -682,12 +761,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Select Date Range',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  l10n.selectDateRange,
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -706,24 +791,30 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
 
             // Quick presets
             Text(
-              'Quick Select',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-              ),
+              l10n.quickSelect,
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
             ),
             SizedBox(height: 8.h),
             Wrap(
               spacing: 8.w,
               runSpacing: 8.h,
               children: [
-                'Today',
-                'Yesterday',
-                'Last 7 days',
-                'Last 30 days',
-                'This month',
-                'Last month',
+                l10n.today,
+                l10n.yesterday,
+                l10n.last7Days,
+                l10n.last30Days,
+                l10n.thisMonth,
+                l10n.lastMonth,
               ].map((preset) {
                 return GestureDetector(
                   onTap: () => _selectPresetRange(preset),
@@ -739,11 +830,17 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                     ),
                     child: Text(
                       preset,
-                      style: GoogleFonts.spaceGrotesk(
-                        color: const Color(0xFF008CFF),
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: const Color(0xFF008CFF),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: const Color(0xFF008CFF),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                 );
@@ -761,12 +858,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Start Date',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        l10n.startDate,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                       ),
                       SizedBox(height: 6.h),
                       GestureDetector(
@@ -793,13 +896,20 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                                 child: Text(
                                   _startDate != null
                                       ? _displayFormatter.format(_startDate!)
-                                      : 'Select start',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: _startDate != null
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 13.sp,
-                                  ),
+                                      : l10n.selectStart,
+                                  style: LocalizationHelper.isArabic(context)
+                                      ? GoogleFonts.cairo(
+                                          color: _startDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: _startDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        ),
                                 ),
                               ),
                             ],
@@ -818,12 +928,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'End Date',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        l10n.endDate,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                       ),
                       SizedBox(height: 6.h),
                       GestureDetector(
@@ -850,13 +966,20 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                                 child: Text(
                                   _endDate != null
                                       ? _displayFormatter.format(_endDate!)
-                                      : 'Select end',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: _endDate != null
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 13.sp,
-                                  ),
+                                      : l10n.selectEnd,
+                                  style: LocalizationHelper.isArabic(context)
+                                      ? GoogleFonts.cairo(
+                                          color: _endDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: _endDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        ),
                                 ),
                               ),
                             ],
@@ -887,12 +1010,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                       ),
                     ),
                     child: Text(
-                      'Cancel',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      l10n.cancel,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                 ),
@@ -917,12 +1046,18 @@ class _DateRangePickerDialogState extends State<_DateRangePickerDialog> {
                       ),
                     ),
                     child: Text(
-                      'Apply',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      l10n.apply,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                   ),
                 ),

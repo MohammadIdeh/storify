@@ -151,5 +151,9 @@
     "selectEnd": "Select end",
     "selectDateRange": "Select Date Range",
     "apply": "Apply",
-    "topProducts": "Top products"
+    "topProducts": "Top products",
+    "totalProducts": "Total Products",
+    "totalPaidOrders": "Total Paid Orders",
+    "totalUsers": "Total Users",
+    "totalCustomers": "Total Customers"
 }

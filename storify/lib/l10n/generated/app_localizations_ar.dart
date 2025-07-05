@@ -75,7 +75,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get setNewPassword => 'تعيين كلمة مرور جديدة';
 
   @override
-  String get newPasswordDifferent => 'يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمات المرور المستخدمة سابقاً.';
+  String get newPasswordDifferent =>
+      'يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمات المرور المستخدمة سابقاً.';
 
   @override
   String get newPassword => 'كلمة المرور الجديدة';
@@ -96,7 +97,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordReset => 'إعادة تعيين كلمة المرور';
 
   @override
-  String get passwordResetSuccess => 'تم إعادة تعيين كلمة المرور بنجاح. انقر أدناه لتسجيل الدخول.';
+  String get passwordResetSuccess =>
+      'تم إعادة تعيين كلمة المرور بنجاح. انقر أدناه لتسجيل الدخول.';
 
   @override
   String get returnToLogin => 'العودة لصفحة تسجيل الدخول';
@@ -177,7 +179,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get removeProfilePicture => 'إزالة صورة الملف الشخصي';
 
   @override
-  String get removeProfilePictureConfirm => 'هل أنت متأكد من أنك تريد إزالة صورة ملفك الشخصي؟';
+  String get removeProfilePictureConfirm =>
+      'هل أنت متأكد من أنك تريد إزالة صورة ملفك الشخصي؟';
 
   @override
   String get dashboard => 'لوحة التحكم';
@@ -258,7 +261,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordsDontMatch => 'كلمات المرور غير متطابقة';
 
   @override
-  String get selectValidImage => 'يرجى اختيار ملف صورة صالح (JPG, PNG, GIF, WebP)';
+  String get selectValidImage =>
+      'يرجى اختيار ملف صورة صالح (JPG, PNG, GIF, WebP)';
 
   @override
   String get imageTooLarge => 'يجب أن يكون حجم الصورة أقل من 5 ميجابايت';
@@ -463,4 +467,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get topProducts => 'أفضل المنتجات';
+
+  @override
+  String get totalProducts => 'إجمالي المنتجات';
+
+  @override
+  String get totalPaidOrders => 'إجمالي الطلبات المدفوعة';
+
+  @override
+  String get totalUsers => 'إجمالي المستخدمين';
+
+  @override
+  String get totalCustomers => 'إجمالي العملاء';
 }

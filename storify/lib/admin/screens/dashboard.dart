@@ -18,8 +18,9 @@ import 'package:storify/admin/widgets/dashboardWidgets/profit.dart';
 import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/cards.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/topProductsList.dart';
-
 import 'package:storify/utilis/notification_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,6 +30,36 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  String _getLocalizedTitle(String backendTitle, int index) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
+    // Map backend titles to localized static titles
+    switch (backendTitle.toLowerCase()) {
+      case 'total products':
+        return l10n.totalProducts;
+      case 'total paid orders':
+        return l10n.totalPaidOrders;
+      case 'total users':
+        return l10n.totalUsers;
+      case 'total customers':
+        return l10n.totalCustomers;
+      default:
+        // Fallback: use index-based mapping if backend title doesn't match
+        switch (index) {
+          case 0:
+            return l10n.totalProducts;
+          case 1:
+            return l10n.totalPaidOrders;
+          case 2:
+            return l10n.totalUsers;
+          case 3:
+            return l10n.totalCustomers;
+          default:
+            return backendTitle; // Last resort fallback
+        }
+    }
+  }
+
   int _currentIndex = 0;
   String? profilePictureUrl;
 
@@ -301,18 +332,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Only rebuild if data has changed or cache is empty
     if (_cachedBaseStatsCards == null || _dashboardCards.isEmpty) {
-      _cachedBaseStatsCards = _dashboardCards.map((card) {
+      _cachedBaseStatsCards = _dashboardCards.asMap().entries.map((entry) {
+        final index = entry.key;
+        final card = entry.value;
+
+        // Use static localized title instead of backend title
+        final localizedTitle = _getLocalizedTitle(card.title, index);
+        final svgIconPath = _getSvgIconPath(card.title, index);
+
         return StatsCard(
           percentage: card.growth,
-          svgIconPath: _getSvgIconPath(card.title),
-          title: card.title,
+          svgIconPath: svgIconPath,
+          title: localizedTitle, // Use localized title here
           value: card.value,
           isPositive: card.isPositive,
-          key: Key('stats_${card.title.replaceAll(' ', '_').toLowerCase()}'),
+          key:
+              Key('stats_${localizedTitle.replaceAll(' ', '_').toLowerCase()}'),
         );
       }).toList();
     }
-
     // Return cards in the current order
     if (_statsCardsOrder.isEmpty ||
         _statsCardsOrder.length != _cachedBaseStatsCards!.length) {
@@ -327,8 +365,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).toList();
   }
 
-  String _getSvgIconPath(String title) {
-    switch (title.toLowerCase()) {
+  String _getSvgIconPath(String title, int index) {
+    // Check both the original title and convert it to match our cases
+    final titleLower = title.toLowerCase();
+
+    // Map by backend title first
+    switch (titleLower) {
       case 'total products':
         return "assets/images/totalProducts.svg";
       case 'total paid orders':
@@ -336,9 +378,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'total users':
         return "assets/images/totalUsers.svg";
       case 'total customers':
+      case 'total stores': // Keep the old mapping as fallback
         return "assets/images/totalStores.svg";
       default:
-        return "assets/images/totalProducts.svg";
+        // Fallback: use index-based mapping
+        switch (index) {
+          case 0:
+            return "assets/images/totalProducts.svg";
+          case 1:
+            return "assets/images/totalPaidOrders.svg";
+          case 2:
+            return "assets/images/totalUsers.svg";
+          case 3:
+            return "assets/images/totalStores.svg";
+          default:
+            return "assets/images/totalProducts.svg";
+        }
     }
   }
 
@@ -375,6 +430,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildErrorWidget(String error, VoidCallback onRetry, {Key? key}) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     return Container(
       key: key,
       height: 400.h,
@@ -393,22 +450,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             SizedBox(height: 16.h),
             Text(
-              'Error loading data',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              l10n.errorLoadingData,
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
             SizedBox(height: 8.h),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Text(
                 error,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontSize: 12.sp,
-                ),
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -425,8 +493,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               child: Text(
-                'Retry',
-                style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                l10n.retry,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
               ),
             ),
           ],
@@ -436,6 +512,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildErrorCard({Key? key}) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     return Container(
       key: key,
       height: 150.h,
@@ -454,11 +532,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             SizedBox(height: 8.h),
             Text(
-              'Error loading cards',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontSize: 12.sp,
-              ),
+              l10n.errorLoadingData,
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontSize: 12.sp,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 12.sp,
+                    ),
             ),
             SizedBox(height: 8.h),
             ElevatedButton(
@@ -471,8 +554,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               child: Text(
-                'Retry',
-                style: TextStyle(color: Colors.white, fontSize: 10.sp),
+                l10n.retry,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 10.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 10.sp,
+                      ),
               ),
             ),
           ],
@@ -514,6 +605,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: PreferredSize(
@@ -539,12 +633,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     children: [
                       Text(
-                        "Dashboard",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 35.sp,
-                          fontWeight: FontWeight.w700,
-                          color: const Color.fromARGB(255, 246, 246, 246),
-                        ),
+                        l10n.dashboard,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                fontSize: 35.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color.fromARGB(255, 246, 246, 246),
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 35.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color.fromARGB(255, 246, 246, 246),
+                              ),
                       ),
                       const Spacer(),
                       SizedBox(width: 8.w),
@@ -570,12 +670,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             SizedBox(width: 8.w),
                             Text(
-                              'Refresh',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w700,
-                                color: const Color.fromARGB(255, 105, 123, 123),
-                              ),
+                              l10n.refresh,
+                              style: LocalizationHelper.isArabic(context)
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color.fromARGB(
+                                          255, 105, 123, 123),
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color.fromARGB(
+                                          255, 105, 123, 123),
+                                    ),
                             ),
                           ],
                         ),
@@ -628,12 +736,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     children: [
                       Text(
-                        'Top products',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 19.sp,
-                          fontWeight: FontWeight.w700,
-                          color: const Color.fromARGB(255, 246, 246, 246),
-                        ),
+                        l10n.topProducts,
+                        style: LocalizationHelper.isArabic(context)
+                            ? GoogleFonts.cairo(
+                                fontSize: 19.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color.fromARGB(255, 246, 246, 246),
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 19.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color.fromARGB(255, 246, 246, 246),
+                              ),
                       ),
                     ],
                   ),

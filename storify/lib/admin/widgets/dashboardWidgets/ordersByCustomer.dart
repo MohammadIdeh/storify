@@ -3,7 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
-// Import your models
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class OrdersByCustomers extends StatelessWidget {
   final TopCustomersResponse customersData;
@@ -15,6 +16,8 @@ class OrdersByCustomers extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isRtl = LocalizationHelper.isRTL(context);
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
 
     // Generate colors for the pie chart
@@ -31,6 +34,7 @@ class OrdersByCustomers extends StatelessWidget {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
         children: [
           Expanded(
             child: Column(
@@ -38,12 +42,18 @@ class OrdersByCustomers extends StatelessWidget {
               children: [
                 // Title
                 Text(
-                  "Orders By Customers",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 25.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  l10n.ordersByCustomers,
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          fontSize: 25.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 25.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                 ),
                 SizedBox(height: 16.h),
 
@@ -69,6 +79,7 @@ class OrdersByCustomers extends StatelessWidget {
                                 customer.orderPercentage,
                                 color,
                                 customer,
+                                context,
                               ),
                             );
                           },
@@ -86,14 +97,16 @@ class OrdersByCustomers extends StatelessWidget {
             customersData.customers,
             customersData.summary.totalCustomers,
             pieColors,
+            context,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCustomerSection(
-      String customerName, double percentage, Color color, Customer customer) {
+  Widget _buildCustomerSection(String customerName, double percentage,
+      Color color, Customer customer, BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final clampedPercent = percentage.clamp(0, 100);
 
     return Column(
@@ -120,20 +133,32 @@ class OrdersByCustomers extends StatelessWidget {
                       children: [
                         Text(
                           customerName,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 16.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: LocalizationHelper.isArabic(context)
+                              ? GoogleFonts.cairo(
+                                  fontSize: 16.sp,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          "${customer.orderCount} orders • \$${customer.totalSpent.toStringAsFixed(0)}",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 12.sp,
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w400,
-                          ),
+                          "${customer.orderCount} ${l10n.orders.toLowerCase()} • \$${customer.totalSpent.toStringAsFixed(0)}",
+                          style: LocalizationHelper.isArabic(context)
+                              ? GoogleFonts.cairo(
+                                  fontSize: 12.sp,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w400,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 12.sp,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w400,
+                                ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -150,11 +175,17 @@ class OrdersByCustomers extends StatelessWidget {
               ),
               child: Text(
                 "${percentage.toStringAsFixed(1)}%",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12.sp,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
             ),
           ],
@@ -193,7 +224,10 @@ class OrdersByCustomers extends StatelessWidget {
     List<Customer> customers,
     int totalCustomers,
     List<Color> colorList,
+    BuildContext context,
   ) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     // Prepare data for pie chart (top 6 customers to avoid overcrowding)
     final topCustomers = customers.take(6).toList();
     final dataMap = <String, double>{};
@@ -228,34 +262,58 @@ class OrdersByCustomers extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "Total",
-              style: GoogleFonts.spaceGrotesk(
-                textStyle: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              l10n.total,
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      textStyle: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      textStyle: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
             ),
             Text(
               "$totalCustomers",
-              style: GoogleFonts.spaceGrotesk(
-                textStyle: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      textStyle: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      textStyle: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
             Text(
-              "Customers",
-              style: GoogleFonts.spaceGrotesk(
-                textStyle: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              l10n.customers,
+              style: LocalizationHelper.isArabic(context)
+                  ? GoogleFonts.cairo(
+                      textStyle: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      textStyle: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
             ),
           ],
         ),

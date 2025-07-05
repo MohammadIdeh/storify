@@ -4,7 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_models.dart';
 import 'package:storify/admin/widgets/dashboardWidgets/dashboard_service.dart';
-// Import your models and service
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class OrderCountWidget extends StatefulWidget {
   const OrderCountWidget({super.key});
@@ -49,6 +50,7 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
     final Color lineColor = const Color(0xFF9D67FF);
 
@@ -89,20 +91,31 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading order counts',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.errorLoadingOrderCounts,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
               SizedBox(height: 8.h),
               Text(
                 _error!,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontSize: 12.sp,
-                ),
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
@@ -117,8 +130,16 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                   ),
                 ),
                 child: Text(
-                  'Retry',
-                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                  l10n.retry,
+                  style: LocalizationHelper.isArabic(context)
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                        ),
                 ),
               ),
             ],
@@ -137,11 +158,16 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
         ),
         child: Center(
           child: Text(
-            'No order count data available',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16.sp,
-            ),
+            l10n.noOrderCountDataAvailable,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -170,21 +196,33 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Order Count",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 25.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    l10n.orderCount,
+                    style: LocalizationHelper.isArabic(context)
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w500,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
-                    "Total: ${_orderCountData!.total}",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    "${l10n.total}: ${_orderCountData!.total}",
+                    style: LocalizationHelper.isArabic(context)
+                        ? GoogleFonts.cairo(
+                            color: Colors.white70,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white70,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
                   ),
                 ],
               ),
@@ -213,11 +251,19 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                     SizedBox(width: 4.w),
                     Text(
                       "${_orderCountData!.growth.abs()}%",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: isGrowthPositive ? Colors.green : Colors.red,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color:
+                                  isGrowthPositive ? Colors.green : Colors.red,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color:
+                                  isGrowthPositive ? Colors.green : Colors.red,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                   ],
                 ),
@@ -248,12 +294,18 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
                             if (index < _orderCountData!.data.length) {
                               final dayData = _orderCountData!.data[index];
                               return LineTooltipItem(
-                                "${dayData.day}\n${dayData.count} orders",
-                                GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.sp,
-                                ),
+                                "${dayData.day}\n${dayData.count} ${l10n.orders.toLowerCase()}",
+                                LocalizationHelper.isArabic(context)
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      ),
                               );
                             }
                             return null;
@@ -383,10 +435,15 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
       padding: EdgeInsets.only(top: 8.h),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 12.sp,
-        ),
+        style: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12.sp,
+              ),
       ),
     );
   }
@@ -397,10 +454,15 @@ class _OrderCountWidgetState extends State<OrderCountWidget> {
       padding: EdgeInsets.only(right: 8.w),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 12.sp,
-        ),
+        style: LocalizationHelper.isArabic(context)
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12.sp,
+              ),
         textAlign: TextAlign.left,
       ),
     );

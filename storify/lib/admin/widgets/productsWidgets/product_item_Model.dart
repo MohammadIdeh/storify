@@ -76,8 +76,7 @@ class ProductItemInformation {
       } else if (category is String) {
         return category;
       }
-    } catch (e) {
-    }
+    } catch (e) {}
     return 'Uncategorized';
   }
 

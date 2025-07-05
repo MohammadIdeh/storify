@@ -1,17 +1,14 @@
-// lib/customer/widgets/location_popup.dart - Fixed version
+// lib/customer/widgets/location_popup.dart - Alternative version using standard GoogleMap widget
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:html' as html;
-import 'dart:js_util' as js_util;
-import 'dart:ui' as ui;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:geolocator/geolocator.dart';
 
 class LocationSelectionPopup extends StatefulWidget {
   final Function? onLocationSaved;
@@ -34,127 +31,33 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
   late LatLng _center;
   LatLng? _selectedLocation;
 
-  // String for the iframe ID
-  late String _mapElementId;
+  GoogleMapController? _mapController;
+  Set<Marker> _markers = {};
 
   @override
   void initState() {
     super.initState();
     _center = _defaultCenter;
     _selectedLocation = _defaultCenter; // Set a default selection
-    _mapElementId = 'map-${DateTime.now().millisecondsSinceEpoch}';
-    _registerMapWidget();
+    _updateMarker(_defaultCenter);
   }
 
-  // Register the HTML element in the web page
-  void _registerMapWidget() {
-    // Register a factory for the HTML element
-    // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
-        _mapElementId, (int viewId) => _createMapElement());
-  }
-
-  // Create the map element
-  html.Element _createMapElement() {
-    final mapDiv = html.DivElement()
-      ..style.width = '100%'
-      ..style.height = '100%'
-      ..style.border = 'none';
-
-    // We'll initialize the map after this element is connected to the DOM
-    Future.delayed(Duration(milliseconds: 500), () {
-      _initializeMap(mapDiv);
+  void _updateMarker(LatLng position) {
+    setState(() {
+      _markers = {
+        Marker(
+          markerId: const MarkerId('selected_location'),
+          position: position,
+          draggable: true,
+          onDragEnd: (LatLng newPosition) {
+            setState(() {
+              _selectedLocation = newPosition;
+              _useCurrentLocation = false;
+            });
+          },
+        ),
+      };
     });
-
-    return mapDiv;
-  }
-
-  // Initialize the Google Map with the element
-// Replace the event listener part in _initializeMap method
-
-// Initialize the Google Map with the element
-  void _initializeMap(html.Element mapDiv) {
-    try {
-      // Create map options with dark style
-      final mapOptions = js_util.jsify({
-        'center': {'lat': _center.latitude, 'lng': _center.longitude},
-        'zoom': 12,
-        'fullscreenControl': false,
-        'mapTypeControl': false,
-        'streetViewControl': false,
-        'zoomControl': true,
-        'styles': _mapDarkStyle,
-      });
-
-      // Create the map
-      final map = js_util.callConstructor(
-          js_util.getProperty(html.window, 'google').maps.Map,
-          [mapDiv, mapOptions]);
-
-      // Create a marker
-      final markerOptions = js_util.jsify({
-        'position': {'lat': _center.latitude, 'lng': _center.longitude},
-        'map': map,
-        'draggable': true,
-        'title': 'Selected Location',
-      });
-
-      final marker = js_util.callConstructor(
-          js_util.getProperty(html.window, 'google').maps.Marker,
-          [markerOptions]);
-
-      // Get the maps event object for proper event handling
-      final mapsEvent = js_util.getProperty(
-          js_util.getProperty(html.window, 'google').maps, 'event');
-
-      // Add click listener to map (using the correct method)
-      js_util.callMethod(mapsEvent, 'addListener', [
-        map,
-        'click',
-        js_util.allowInterop((event) {
-          // Get the latLng object from the event
-          final latLng = js_util.getProperty(event, 'latLng');
-          // Get lat and lng values
-          final lat = js_util.callMethod(latLng, 'lat', []);
-          final lng = js_util.callMethod(latLng, 'lng', []);
-
-          setState(() {
-            _selectedLocation = LatLng(lat, lng);
-            _useCurrentLocation = false;
-          });
-
-          // Update marker position
-          js_util.callMethod(marker, 'setPosition', [
-            js_util.jsify({'lat': lat, 'lng': lng})
-          ]);
-        })
-      ]);
-
-      // Add drag end listener to marker (using the correct method)
-      js_util.callMethod(mapsEvent, 'addListener', [
-        marker,
-        'dragend',
-        js_util.allowInterop((_) {
-          final position = js_util.callMethod(marker, 'getPosition', []);
-          final lat = js_util.callMethod(position, 'lat', []);
-          final lng = js_util.callMethod(position, 'lng', []);
-
-          setState(() {
-            _selectedLocation = LatLng(lat, lng);
-            _useCurrentLocation = false;
-          });
-        })
-      ]);
-
-      setState(() {
-        _isMapLoading = false;
-      });
-    } catch (e) {
-      debugPrint('Error initializing map: $e');
-      setState(() {
-        _isMapLoading = false;
-      });
-    }
   }
 
   // Get the current location
@@ -164,36 +67,68 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
     });
 
     try {
-      // Use browser geolocation API
-      final geolocation = html.window.navigator.geolocation;
-
-      geolocation.getCurrentPosition().then((position) {
-        final latitude = position.coords!.latitude;
-        final longitude = position.coords!.longitude;
-
-        setState(() {
-          _center = LatLng(latitude!.toDouble(), longitude!.toDouble());
-          _selectedLocation = _center;
-          _isLoading = false;
-
-          // Need to re-register the map with new coordinates
-          _mapElementId = 'map-${DateTime.now().millisecondsSinceEpoch}';
-          _registerMapWidget();
-        });
-      }).catchError((error) {
-        debugPrint("Browser geolocation error: $error");
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Please enable location services in your browser and try again')),
+          const SnackBar(content: Text('Location services are disabled')),
         );
         setState(() {
           _isLoading = false;
           _useCurrentLocation = false;
         });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permissions are denied')),
+          );
+          setState(() {
+            _isLoading = false;
+            _useCurrentLocation = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Location permissions are permanently denied')),
+        );
+        setState(() {
+          _isLoading = false;
+          _useCurrentLocation = false;
+        });
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      setState(() {
+        _center = LatLng(position.latitude, position.longitude);
+        _selectedLocation = _center;
+        _isLoading = false;
       });
+
+      // Update map camera and marker
+      _updateMarker(_center);
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLng(_center),
+        );
+      }
     } catch (e) {
       debugPrint("Error getting location: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting location: $e')),
+      );
       setState(() {
         _isLoading = false;
         _useCurrentLocation = false;
@@ -244,14 +179,8 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
         },
         body: json.encode(locationData),
       );
-// At the bottom of _saveLocation() method in LocationSelectionPopup
-      if (response.statusCode == 200) {
-        // Save location to shared preferences for future use
-        // final prefs = await SharedPreferences.getInstance();
-        // await prefs.setDouble('latitude', _selectedLocation!.latitude);
-        // await prefs.setDouble('longitude', _selectedLocation!.longitude);
-        // await prefs.setBool('locationSet', true); // Key flag!
 
+      if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Location saved successfully')),
         );
@@ -339,7 +268,7 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
             Expanded(
               child: Stack(
                 children: [
-                  // Map container - Using ClipRRect to ensure it stays within bounds
+                  // Map container
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: Container(
@@ -350,8 +279,31 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
                           width: 1,
                         ),
                       ),
-                      // Use HtmlElementView with the registered factory
-                      child: HtmlElementView(viewType: _mapElementId),
+                      child: GoogleMap(
+                        onMapCreated: (GoogleMapController controller) {
+                          _mapController = controller;
+                          setState(() {
+                            _isMapLoading = false;
+                          });
+                        },
+                        initialCameraPosition: CameraPosition(
+                          target: _center,
+                          zoom: 12,
+                        ),
+                        markers: _markers,
+                        onTap: (LatLng position) {
+                          setState(() {
+                            _selectedLocation = position;
+                            _useCurrentLocation = false;
+                          });
+                          _updateMarker(position);
+                        },
+                        style: _mapDarkStyle,
+                        zoomControlsEnabled: true,
+                        mapToolbarEnabled: false,
+                        myLocationButtonEnabled: false,
+                        myLocationEnabled: false,
+                      ),
                     ),
                   ),
 
@@ -471,66 +423,50 @@ class _LocationSelectionPopupState extends State<LocationSelectionPopup> {
   }
 
   // Dark mode style for Google Maps
-  final _mapDarkStyle = [
-    {
-      "elementType": "geometry",
-      "stylers": [
-        {"color": "#242f3e"}
-      ]
-    },
-    {
-      "elementType": "labels.text.fill",
-      "stylers": [
-        {"color": "#746855"}
-      ]
-    },
-    {
-      "elementType": "labels.text.stroke",
-      "stylers": [
-        {"color": "#242f3e"}
-      ]
-    },
-    {
-      "featureType": "administrative.locality",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        {"color": "#d59563"}
-      ]
-    },
-    {
-      "featureType": "road",
-      "elementType": "geometry",
-      "stylers": [
-        {"color": "#38414e"}
-      ]
-    },
-    {
-      "featureType": "road",
-      "elementType": "geometry.stroke",
-      "stylers": [
-        {"color": "#212a37"}
-      ]
-    },
-    {
-      "featureType": "road",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        {"color": "#9ca5b3"}
-      ]
-    },
-    {
-      "featureType": "water",
-      "elementType": "geometry",
-      "stylers": [
-        {"color": "#17263c"}
-      ]
-    },
-    {
-      "featureType": "water",
-      "elementType": "labels.text.fill",
-      "stylers": [
-        {"color": "#515c6d"}
-      ]
-    }
-  ];
+  final String _mapDarkStyle = '''
+[
+  {
+    "elementType": "geometry",
+    "stylers": [{"color": "#242f3e"}]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [{"color": "#746855"}]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [{"color": "#242f3e"}]
+  },
+  {
+    "featureType": "administrative.locality",
+    "elementType": "labels.text.fill",
+    "stylers": [{"color": "#d59563"}]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [{"color": "#38414e"}]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry.stroke",
+    "stylers": [{"color": "#212a37"}]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [{"color": "#9ca5b3"}]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [{"color": "#17263c"}]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [{"color": "#515c6d"}]
+  }
+]
+''';
 }

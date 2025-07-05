@@ -74,6 +74,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
   void _openMenu() {
     if (_isDisposed || _isLoggingOut) return;
+    final isRtl = LocalizationHelper.isRTL(context);
 
     // Close notification menu if open
     if (_isNotificationMenuOpen) {
@@ -95,7 +96,8 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                 ),
               ),
               Positioned(
-                right: 40,
+                right: isRtl ? null : 40,
+                left: isRtl ? 40 : null,
                 top: 100,
                 child: Material(
                   color: Colors.transparent,
@@ -272,7 +274,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isRtl = LocalizationHelper.isRTL(context);
 
     // Clean loading state if logging out
@@ -282,7 +284,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
         color: const Color.fromARGB(255, 29, 41, 57),
         child: Center(
           child: Text(
-            l10n!.loggingOut,
+            l10n.loggingOut,
             style: LocalizationHelper.isArabic(context)
                 ? GoogleFonts.cairo(
                     color: Colors.white,
@@ -321,7 +323,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
               ),
               SizedBox(width: 12.w),
               Text(
-                l10n!.appTitle,
+                l10n.appTitle,
                 style: LocalizationHelper.isArabic(context)
                     ? GoogleFonts.cairo(
                         fontSize: 24.sp,
@@ -450,13 +452,13 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   }
 
   List<Widget> _buildNavItems() {
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isRtl = LocalizationHelper.isRTL(context);
 
     if (_isDisposed || _isLoggingOut) return [];
 
     final List<String> navItems = [
-      l10n!.dashboard,
+      l10n.dashboard,
       l10n.products,
       l10n.category,
       l10n.orders,

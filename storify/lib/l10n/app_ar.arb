@@ -151,5 +151,9 @@
     "selectEnd": "اختيار النهاية",
     "selectDateRange": "اختيار نطاق التاريخ",
     "apply": "تطبيق",
-    "topProducts": "أفضل المنتجات"
+    "topProducts": "أفضل المنتجات",
+    "totalProducts": "إجمالي المنتجات",
+    "totalPaidOrders": "إجمالي الطلبات المدفوعة",
+    "totalUsers": "إجمالي المستخدمين",
+    "totalCustomers": "إجمالي العملاء"
 }
