@@ -420,7 +420,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get items => 'items';
 
   @override
-  String get of => 'of';
+  String get offf => 'of';
 
   @override
   String get quickSelect => 'Quick Select';

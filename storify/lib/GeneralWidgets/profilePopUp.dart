@@ -1,5 +1,5 @@
 // lib/GeneralWidgets/profilePopUp.dart
-// FIXED VERSION - Proper user data display and clean logout
+// FIXED VERSION - Proper user data display and clean logout with localization
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,6 +10,8 @@ import 'package:storify/GeneralWidgets/settingsWidget.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/services/user_profile_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Profilepopup extends StatefulWidget {
   final VoidCallback onCloseMenu;
@@ -198,6 +200,9 @@ class _ProfilepopupState extends State<Profilepopup> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     // Return empty container if disposed or in bad state
     if (_isDisposed) {
       return const SizedBox.shrink();
@@ -222,11 +227,16 @@ class _ProfilepopupState extends State<Profilepopup> {
               ),
               SizedBox(height: 12.h),
               Text(
-                'Logging out...',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                ),
+                l10n!.loggingOut,
+                style: LocalizationHelper.isArabic(context)
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                      ),
               ),
             ],
           ),
@@ -309,26 +319,39 @@ class _ProfilepopupState extends State<Profilepopup> {
 
           // User Info - FIXED: Show actual data instead of loading/guest
           Text(
-            userName ?? 'Loading...',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 17.sp,
-              fontWeight: FontWeight.bold,
-            ),
+            userName ?? l10n!.loading,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.bold,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
           ),
           Text(
-            _formatRoleName(userRole) ?? 'Loading...',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white70,
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w500,
-            ),
+            _formatRoleName(userRole, context) ?? l10n!.loading,
+            style: LocalizationHelper.isArabic(context)
+                ? GoogleFonts.cairo(
+                    color: Colors.white70,
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w500,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white70,
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
           ),
           SizedBox(height: 30.h),
 
           // Settings button
           Padding(
-            padding: EdgeInsets.only(left: 40.0.w),
+            padding: EdgeInsets.only(
+                left: isRtl ? 0 : 40.0.w, right: isRtl ? 40.0.w : 0),
             child: InkWell(
               onTap:
                   (!_isLoggingOut && !_logoutInProgress) ? _openSettings : null,
@@ -344,12 +367,18 @@ class _ProfilepopupState extends State<Profilepopup> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      'Settings',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      l10n!.settings,
+                      style: LocalizationHelper.isArabic(context)
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w400,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
                     ),
                   ],
                 ),
@@ -360,7 +389,8 @@ class _ProfilepopupState extends State<Profilepopup> {
 
           // Logout button
           Padding(
-            padding: EdgeInsets.only(left: 40.0.w),
+            padding: EdgeInsets.only(
+                left: isRtl ? 0 : 40.0.w, right: isRtl ? 40.0.w : 0),
             child: InkWell(
               onTap: (!_isLoggingOut && !_logoutInProgress) ? _logout : null,
               child: Row(
@@ -373,14 +403,22 @@ class _ProfilepopupState extends State<Profilepopup> {
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    'Log Out',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: (!_isLoggingOut && !_logoutInProgress)
-                          ? Colors.white
-                          : Colors.white70,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    l10n.logout,
+                    style: LocalizationHelper.isArabic(context)
+                        ? GoogleFonts.cairo(
+                            color: (!_isLoggingOut && !_logoutInProgress)
+                                ? Colors.white
+                                : Colors.white70,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w400,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: (!_isLoggingOut && !_logoutInProgress)
+                                ? Colors.white
+                                : Colors.white70,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
                   ),
                 ],
               ),
@@ -391,22 +429,8 @@ class _ProfilepopupState extends State<Profilepopup> {
     );
   }
 
-  String? _formatRoleName(String? role) {
+  String? _formatRoleName(String? role, BuildContext context) {
     if (role == null) return null;
-
-    switch (role) {
-      case 'DeliveryEmployee':
-        return 'Delivery Employee';
-      case 'WareHouseEmployee':
-        return 'Warehouse Employee';
-      case 'Customer':
-        return 'Customer';
-      case 'Supplier':
-        return 'Supplier';
-      case 'Admin':
-        return 'Admin';
-      default:
-        return role;
-    }
+    return LocalizationHelper.getRoleDisplayName(context, role);
   }
 }

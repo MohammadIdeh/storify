@@ -420,7 +420,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get items => 'عناصر';
 
   @override
-  String get of => 'من';
+  String get offf => 'من';
 
   @override
   String get quickSelect => 'اختيار سريع';

@@ -917,11 +917,11 @@ abstract class AppLocalizations {
   /// **'items'**
   String get items;
 
-  /// No description provided for @of.
+  /// No description provided for @offf.
   ///
   /// In en, this message translates to:
   /// **'of'**
-  String get of;
+  String get offf;
 
   /// No description provided for @quickSelect.
   ///
