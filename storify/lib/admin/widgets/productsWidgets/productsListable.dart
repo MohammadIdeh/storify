@@ -645,41 +645,79 @@ class ProductslistTableState extends State<ProductslistTable> {
                             ),
                     ),
                     SizedBox(width: 10.w),
-                    // Previous page arrow (in RTL, this points right)
-                    IconButton(
-                      icon: Icon(
-                        isRtl ? Icons.arrow_forward : Icons.arrow_back,
-                        size: 20.sp,
-                        color: Colors.white70,
+
+                    // Apply the same RTL fix as before
+                    if (isRtl) ...[
+                      // RTL: Next button first, then pages, then Previous
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back, // Next in RTL (goes left)
+                          size: 20.sp,
+                          color: Colors.white70,
+                        ),
+                        onPressed: _currentPage < totalPages
+                            ? () {
+                                setState(() {
+                                  _currentPage++;
+                                });
+                              }
+                            : null,
                       ),
-                      onPressed: _currentPage > 1
-                          ? () {
-                              setState(() {
-                                _currentPage--;
-                              });
-                            }
-                          : null,
-                    ),
-                    Row(
-                      children: List.generate(totalPages, (index) {
-                        return _buildPageButton(index + 1, isArabic);
-                      }),
-                    ),
-                    // Next page arrow (in RTL, this points left)
-                    IconButton(
-                      icon: Icon(
-                        isRtl ? Icons.arrow_back : Icons.arrow_forward,
-                        size: 20.sp,
-                        color: Colors.white70,
+                      Row(
+                        children: List.generate(totalPages, (index) {
+                          return _buildPageButton(index + 1, isArabic);
+                        }),
                       ),
-                      onPressed: _currentPage < totalPages
-                          ? () {
-                              setState(() {
-                                _currentPage++;
-                              });
-                            }
-                          : null,
-                    ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_forward, // Previous in RTL (goes right)
+                          size: 20.sp,
+                          color: Colors.white70,
+                        ),
+                        onPressed: _currentPage > 1
+                            ? () {
+                                setState(() {
+                                  _currentPage--;
+                                });
+                              }
+                            : null,
+                      ),
+                    ] else ...[
+                      // LTR: Previous button first, then pages, then Next
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back, // Previous in LTR (goes left)
+                          size: 20.sp,
+                          color: Colors.white70,
+                        ),
+                        onPressed: _currentPage > 1
+                            ? () {
+                                setState(() {
+                                  _currentPage--;
+                                });
+                              }
+                            : null,
+                      ),
+                      Row(
+                        children: List.generate(totalPages, (index) {
+                          return _buildPageButton(index + 1, isArabic);
+                        }),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_forward, // Next in LTR (goes right)
+                          size: 20.sp,
+                          color: Colors.white70,
+                        ),
+                        onPressed: _currentPage < totalPages
+                            ? () {
+                                setState(() {
+                                  _currentPage++;
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
                   ],
                 ),
               ),

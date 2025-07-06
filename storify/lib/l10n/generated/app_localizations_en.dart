@@ -996,4 +996,154 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dateRequested => 'Date Requested';
+
+  @override
+  String get addCategory => 'Add Category';
+
+  @override
+  String get failedToLoadCategories => 'Failed to load categories';
+
+  @override
+  String get errorFetchingCategories => 'Error fetching categories';
+
+  @override
+  String get invalidResponseFormat => 'Invalid response format';
+
+  @override
+  String get failedToLoadProducts => 'Failed to load products';
+
+  @override
+  String get errorFetchingProducts => 'Error fetching products';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get loadingProducts => 'Loading products...';
+
+  @override
+  String get tryAgain => 'Try Again';
+
+  @override
+  String get authenticationRequired =>
+      'Authentication required. Please log in again.';
+
+  @override
+  String get failedToUpdateCategoryStatus => 'Failed to update category status';
+
+  @override
+  String get imageSizeExceedsLimit =>
+      'Image size exceeds 5MB limit. Please choose a smaller image.';
+
+  @override
+  String get errorProcessingImage => 'Error processing image';
+
+  @override
+  String get requestTimedOut => 'Request timed out';
+
+  @override
+  String get failedToAddCategory => 'Failed to add category';
+
+  @override
+  String get networkIssueRetrying => 'Network issue. Retrying...';
+
+  @override
+  String get attempt => 'Attempt';
+
+  @override
+  String get checkInternetConnection =>
+      'Please check your internet connection and try again.';
+
+  @override
+  String get clickToUploadImage => 'Click to upload an image';
+
+  @override
+  String get retrying => 'Retrying...';
+
+  @override
+  String get categoryName => 'Category Name';
+
+  @override
+  String get enterCategoryName => 'Enter category name...';
+
+  @override
+  String get categoryNameRequired => 'Category name is required';
+
+  @override
+  String get enterDescriptionOptional => 'Enter Description (Optional)';
+
+  @override
+  String get pleaseUploadImage => '* Please upload an image for the category';
+
+  @override
+  String get publishCategory => 'Publish Category';
+
+  @override
+  String get categoryNameCannotBeEmpty => 'Category name cannot be empty';
+
+  @override
+  String get failedToUpdate => 'Failed to update';
+
+  @override
+  String get failedToUpdateCategory => 'Failed to update category';
+
+  @override
+  String get errorUpdatingCategory => 'Error updating category';
+
+  @override
+  String get noProductsInCategory => 'No products in this category';
+
+  @override
+  String get productsAddedWillAppearHere =>
+      'Products added to this category will appear here';
+
+  @override
+  String get productNameCannotBeEmpty => 'Product name cannot be empty';
+
+  @override
+  String get costPriceMustBeValid => 'Cost price must be a valid number';
+
+  @override
+  String get sellingPriceMustBeValid => 'Selling price must be a valid number';
+
+  @override
+  String get cannotUpdateProductWithoutId => 'Cannot update product without ID';
+
+  @override
+  String get sessionExpiredLoginAgain =>
+      'Session expired. Please log in again.';
+
+  @override
+  String get errorUpdatingProduct => 'Error updating product';
+
+  @override
+  String get cannotDeleteProductWithoutId => 'Cannot delete product without ID';
+
+  @override
+  String get failedToDeleteProduct => 'Failed to delete product';
+
+  @override
+  String get errorDeletingProduct => 'Error deleting product';
+
+  @override
+  String get confirmDeletion => 'Confirm Deletion';
+
+  @override
+  String get areYouSureDeleteProduct =>
+      'Are you sure you want to delete this product?';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get deletingProduct => 'Deleting product...';
+
+  @override
+  String get sellingPrice => 'Selling Price';
+
+  @override
+  String get cost => 'Cost';
+
+  @override
+  String get sell => 'Sell';
 }

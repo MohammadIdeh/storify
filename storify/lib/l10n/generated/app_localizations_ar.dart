@@ -986,4 +986,154 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dateRequested => 'تاريخ الطلب';
+
+  @override
+  String get addCategory => 'إضافة فئة';
+
+  @override
+  String get failedToLoadCategories => 'فشل في تحميل الفئات';
+
+  @override
+  String get errorFetchingCategories => 'خطأ في جلب الفئات';
+
+  @override
+  String get invalidResponseFormat => 'تنسيق الاستجابة غير صحيح';
+
+  @override
+  String get failedToLoadProducts => 'فشل في تحميل المنتجات';
+
+  @override
+  String get errorFetchingProducts => 'خطأ في جلب المنتجات';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String get loadingProducts => 'جاري تحميل المنتجات...';
+
+  @override
+  String get tryAgain => 'حاول مرة أخرى';
+
+  @override
+  String get authenticationRequired =>
+      'مطلوب التحقق من الهوية. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get failedToUpdateCategoryStatus => 'فشل في تحديث حالة الفئة';
+
+  @override
+  String get imageSizeExceedsLimit =>
+      'حجم الصورة يتجاوز الحد المسموح 5 ميجابايت. يرجى اختيار صورة أصغر.';
+
+  @override
+  String get errorProcessingImage => 'خطأ في معالجة الصورة';
+
+  @override
+  String get requestTimedOut => 'انتهت مهلة الطلب';
+
+  @override
+  String get failedToAddCategory => 'فشل في إضافة الفئة';
+
+  @override
+  String get networkIssueRetrying => 'مشكلة في الشبكة. جاري إعادة المحاولة...';
+
+  @override
+  String get attempt => 'المحاولة';
+
+  @override
+  String get checkInternetConnection =>
+      'يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+
+  @override
+  String get clickToUploadImage => 'انقر لرفع صورة';
+
+  @override
+  String get retrying => 'جاري إعادة المحاولة...';
+
+  @override
+  String get categoryName => 'اسم الفئة';
+
+  @override
+  String get enterCategoryName => 'أدخل اسم الفئة...';
+
+  @override
+  String get categoryNameRequired => 'اسم الفئة مطلوب';
+
+  @override
+  String get enterDescriptionOptional => 'أدخل الوصف (اختياري)';
+
+  @override
+  String get pleaseUploadImage => '* يرجى رفع صورة للفئة';
+
+  @override
+  String get publishCategory => 'نشر الفئة';
+
+  @override
+  String get categoryNameCannotBeEmpty => 'لا يمكن أن يكون اسم الفئة فارغاً';
+
+  @override
+  String get failedToUpdate => 'فشل في التحديث';
+
+  @override
+  String get failedToUpdateCategory => 'فشل في تحديث الفئة';
+
+  @override
+  String get errorUpdatingCategory => 'خطأ في تحديث الفئة';
+
+  @override
+  String get noProductsInCategory => 'لا توجد منتجات في هذه الفئة';
+
+  @override
+  String get productsAddedWillAppearHere =>
+      'المنتجات المضافة لهذه الفئة ستظهر هنا';
+
+  @override
+  String get productNameCannotBeEmpty => 'لا يمكن أن يكون اسم المنتج فارغاً';
+
+  @override
+  String get costPriceMustBeValid => 'يجب أن يكون سعر التكلفة رقماً صحيحاً';
+
+  @override
+  String get sellingPriceMustBeValid => 'يجب أن يكون سعر البيع رقماً صحيحاً';
+
+  @override
+  String get cannotUpdateProductWithoutId => 'لا يمكن تحديث المنتج بدون معرف';
+
+  @override
+  String get sessionExpiredLoginAgain =>
+      'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get errorUpdatingProduct => 'خطأ في تحديث المنتج';
+
+  @override
+  String get cannotDeleteProductWithoutId => 'لا يمكن حذف المنتج بدون معرف';
+
+  @override
+  String get failedToDeleteProduct => 'فشل في حذف المنتج';
+
+  @override
+  String get errorDeletingProduct => 'خطأ في حذف المنتج';
+
+  @override
+  String get confirmDeletion => 'تأكيد الحذف';
+
+  @override
+  String get areYouSureDeleteProduct =>
+      'هل أنت متأكد من أنك تريد حذف هذا المنتج؟';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get deletingProduct => 'جاري حذف المنتج...';
+
+  @override
+  String get sellingPrice => 'سعر البيع';
+
+  @override
+  String get cost => 'التكلفة';
+
+  @override
+  String get sell => 'البيع';
 }

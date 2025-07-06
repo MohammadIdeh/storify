@@ -17,10 +17,8 @@ class ProductDetail {
   // Factory constructor to create from API JSON response
   factory ProductDetail.fromJson(Map<String, dynamic> json) {
     // Verbose debugging to track the exact shape of JSON we're receiving
-  
-    json.forEach((key, value) {
 
-    });
+    json.forEach((key, value) {});
 
     // The crucial fix: Check for 'productId' (lowercase 'i') which is the field name in your API
     // Also check other common ID formats as fallbacks
@@ -44,8 +42,6 @@ class ProductDetail {
       id = json['product_id'];
       idSource = 'product_id';
     }
-
-
 
     return ProductDetail(
       productID: id,

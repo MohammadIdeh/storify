@@ -288,7 +288,7 @@ class _ProductsscreenState extends State<Productsscreen> {
     final isArabic = LocalizationHelper.isArabic(context);
 
     return Container(
-      width: 300.w,
+      width: isArabic ? 250.w : 300.w,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 36, 50, 69),
         borderRadius: BorderRadius.circular(16),

@@ -1987,6 +1987,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Date Requested'**
   String get dateRequested;
+
+  /// No description provided for @addCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Category'**
+  String get addCategory;
+
+  /// No description provided for @failedToLoadCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load categories'**
+  String get failedToLoadCategories;
+
+  /// No description provided for @errorFetchingCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching categories'**
+  String get errorFetchingCategories;
+
+  /// No description provided for @invalidResponseFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid response format'**
+  String get invalidResponseFormat;
+
+  /// No description provided for @failedToLoadProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load products'**
+  String get failedToLoadProducts;
+
+  /// No description provided for @errorFetchingProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching products'**
+  String get errorFetchingProducts;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @loadingProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading products...'**
+  String get loadingProducts;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get tryAgain;
+
+  /// No description provided for @authenticationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication required. Please log in again.'**
+  String get authenticationRequired;
+
+  /// No description provided for @failedToUpdateCategoryStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update category status'**
+  String get failedToUpdateCategoryStatus;
+
+  /// No description provided for @imageSizeExceedsLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Image size exceeds 5MB limit. Please choose a smaller image.'**
+  String get imageSizeExceedsLimit;
+
+  /// No description provided for @errorProcessingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error processing image'**
+  String get errorProcessingImage;
+
+  /// No description provided for @requestTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out'**
+  String get requestTimedOut;
+
+  /// No description provided for @failedToAddCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add category'**
+  String get failedToAddCategory;
+
+  /// No description provided for @networkIssueRetrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Network issue. Retrying...'**
+  String get networkIssueRetrying;
+
+  /// No description provided for @attempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt'**
+  String get attempt;
+
+  /// No description provided for @checkInternetConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check your internet connection and try again.'**
+  String get checkInternetConnection;
+
+  /// No description provided for @clickToUploadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to upload an image'**
+  String get clickToUploadImage;
+
+  /// No description provided for @retrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying...'**
+  String get retrying;
+
+  /// No description provided for @categoryName.
+  ///
+  /// In en, this message translates to:
+  /// **'Category Name'**
+  String get categoryName;
+
+  /// No description provided for @enterCategoryName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter category name...'**
+  String get enterCategoryName;
+
+  /// No description provided for @categoryNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name is required'**
+  String get categoryNameRequired;
+
+  /// No description provided for @enterDescriptionOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Description (Optional)'**
+  String get enterDescriptionOptional;
+
+  /// No description provided for @pleaseUploadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'* Please upload an image for the category'**
+  String get pleaseUploadImage;
+
+  /// No description provided for @publishCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish Category'**
+  String get publishCategory;
+
+  /// No description provided for @categoryNameCannotBeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name cannot be empty'**
+  String get categoryNameCannotBeEmpty;
+
+  /// No description provided for @failedToUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update'**
+  String get failedToUpdate;
+
+  /// No description provided for @failedToUpdateCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update category'**
+  String get failedToUpdateCategory;
+
+  /// No description provided for @errorUpdatingCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating category'**
+  String get errorUpdatingCategory;
+
+  /// No description provided for @noProductsInCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No products in this category'**
+  String get noProductsInCategory;
+
+  /// No description provided for @productsAddedWillAppearHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Products added to this category will appear here'**
+  String get productsAddedWillAppearHere;
+
+  /// No description provided for @productNameCannotBeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Product name cannot be empty'**
+  String get productNameCannotBeEmpty;
+
+  /// No description provided for @costPriceMustBeValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost price must be a valid number'**
+  String get costPriceMustBeValid;
+
+  /// No description provided for @sellingPriceMustBeValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling price must be a valid number'**
+  String get sellingPriceMustBeValid;
+
+  /// No description provided for @cannotUpdateProductWithoutId.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot update product without ID'**
+  String get cannotUpdateProductWithoutId;
+
+  /// No description provided for @sessionExpiredLoginAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired. Please log in again.'**
+  String get sessionExpiredLoginAgain;
+
+  /// No description provided for @errorUpdatingProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating product'**
+  String get errorUpdatingProduct;
+
+  /// No description provided for @cannotDeleteProductWithoutId.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot delete product without ID'**
+  String get cannotDeleteProductWithoutId;
+
+  /// No description provided for @failedToDeleteProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete product'**
+  String get failedToDeleteProduct;
+
+  /// No description provided for @errorDeletingProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting product'**
+  String get errorDeletingProduct;
+
+  /// No description provided for @confirmDeletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Deletion'**
+  String get confirmDeletion;
+
+  /// No description provided for @areYouSureDeleteProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this product?'**
+  String get areYouSureDeleteProduct;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @deletingProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting product...'**
+  String get deletingProduct;
+
+  /// No description provided for @sellingPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling Price'**
+  String get sellingPrice;
+
+  /// No description provided for @cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get cost;
+
+  /// No description provided for @sell.
+  ///
+  /// In en, this message translates to:
+  /// **'Sell'**
+  String get sell;
 }
 
 class _AppLocalizationsDelegate

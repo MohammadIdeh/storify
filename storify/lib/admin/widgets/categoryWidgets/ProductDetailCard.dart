@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/widgets/categoryWidgets/model.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class ProductDetailCard extends StatefulWidget {
   final ProductDetail product;
@@ -86,11 +88,13 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   Future<void> _saveChanges() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     // Validate inputs
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() {
-        _errorMessage = "Product name cannot be empty";
+        _errorMessage = l10n.productNameCannotBeEmpty;
       });
       return;
     }
@@ -98,7 +102,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     final costPrice = double.tryParse(_costController.text);
     if (costPrice == null || costPrice < 0) {
       setState(() {
-        _errorMessage = "Cost price must be a valid number";
+        _errorMessage = l10n.costPriceMustBeValid;
       });
       return;
     }
@@ -106,7 +110,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     final sellingPrice = double.tryParse(_sellingController.text);
     if (sellingPrice == null || sellingPrice < 0) {
       setState(() {
-        _errorMessage = "Selling price must be a valid number";
+        _errorMessage = l10n.sellingPriceMustBeValid;
       });
       return;
     }
@@ -155,7 +159,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = "Failed to update: $e";
+        _errorMessage = "${l10n.failedToUpdate}: $e";
         _isUpdating = false;
       });
     }
@@ -163,6 +167,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
 // Updated product update function with improved auth handling
   Future<bool> _updateProductInAPI(ProductDetail product) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       // Debug check for product ID before API call
       debugPrint(
@@ -170,7 +176,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
       if (_productID == null) {
         setState(() {
-          _errorMessage = "Cannot update product without ID";
+          _errorMessage = l10n.cannotUpdateProductWithoutId;
         });
         return false;
       }
@@ -240,7 +246,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
         // Unauthorized - token may be expired
         setState(() {
-          _errorMessage = "Session expired. Please log in again.";
+          _errorMessage = l10n.sessionExpiredLoginAgain;
         });
 
         // Optionally redirect to login
@@ -251,18 +257,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           final responseData = json.decode(response.body);
           setState(() {
             _errorMessage = responseData['message'] ??
-                'Failed to update product: ${response.statusCode}';
+                '${l10n.failedToUpdateProduct}: ${response.statusCode}';
           });
         } catch (e) {
           setState(() {
-            _errorMessage = 'Failed to update product: ${response.statusCode}';
+            _errorMessage =
+                '${l10n.failedToUpdateProduct}: ${response.statusCode}';
           });
         }
         return false;
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error updating product: $e';
+        _errorMessage = '${l10n.errorUpdatingProduct}: $e';
       });
       return false;
     }
@@ -290,9 +297,13 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   InputDecoration _buildInputDecoration(String label) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.spaceGrotesk(color: Colors.white70),
+      labelStyle: isArabic
+          ? GoogleFonts.cairo(color: Colors.white70)
+          : GoogleFonts.spaceGrotesk(color: Colors.white70),
       filled: true,
       fillColor: const Color.fromARGB(255, 54, 68, 88),
       border: const OutlineInputBorder(borderSide: BorderSide.none),
@@ -305,70 +316,102 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   Future<void> _confirmDeletion() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 28, 36, 46),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: AlertDialog(
+            backgroundColor: const Color.fromARGB(255, 28, 36, 46),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              l10n.confirmDeletion,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+            ),
+            content: Text(
+              l10n.areYouSureDeleteProduct,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    ),
+            ),
+            actions: [
+              // Cancel button (positioned based on RTL)
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  side: const BorderSide(color: Colors.white70, width: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  l10n.cancel,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                ),
+              ),
+              // Delete button
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  side: const BorderSide(color: Colors.red, width: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  l10n.delete,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                ),
+              ),
+            ],
           ),
-          title: Text(
-            "Confirm Deletion",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          content: Text(
-            "Are you sure you want to delete this product?",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                side: const BorderSide(color: Colors.white70, width: 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                "Cancel",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                side: const BorderSide(color: Colors.red, width: 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                "Delete",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -395,10 +438,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   // Updated delete product function with improved auth handling
   Future<bool> _deleteProductFromAPI() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       if (_productID == null) {
         setState(() {
-          _errorMessage = "Cannot delete product without ID";
+          _errorMessage = l10n.cannotDeleteProductWithoutId;
           _isDeleting = false;
         });
         return false;
@@ -408,7 +453,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       final token = await AuthService.getToken();
       if (token == null) {
         setState(() {
-          _errorMessage = "Authentication required";
+          _errorMessage = l10n.authenticationRequired;
           _isDeleting = false;
         });
 
@@ -462,7 +507,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
         // If still failing, token is likely expired or invalid
         setState(() {
-          _errorMessage = "Session expired. Please log in again.";
+          _errorMessage = l10n.sessionExpiredLoginAgain;
           _isDeleting = false;
         });
 
@@ -473,9 +518,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           try {
             final responseData = json.decode(response.body);
             _errorMessage = responseData['message'] ??
-                'Failed to delete product: ${response.statusCode}';
+                '${l10n.failedToDeleteProduct}: ${response.statusCode}';
           } catch (e) {
-            _errorMessage = 'Failed to delete product: ${response.statusCode}';
+            _errorMessage =
+                '${l10n.failedToDeleteProduct}: ${response.statusCode}';
           }
           _isDeleting = false;
         });
@@ -483,7 +529,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error deleting product: $e';
+        _errorMessage = '${l10n.errorDeletingProduct}: $e';
         _isDeleting = false;
       });
       return false;
@@ -492,223 +538,348 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: const Color.fromARGB(255, 54, 68, 88),
-      elevation: 4,
-      margin: const EdgeInsets.all(8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: _isDeleting
-          ? Container(
-              padding: const EdgeInsets.all(32),
-              child: Center(
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Card(
+        color: const Color.fromARGB(255, 54, 68, 88),
+        elevation: 4,
+        margin: const EdgeInsets.all(8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: _isDeleting
+            ? Container(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        l10n.deletingProduct,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: 14,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(12),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircularProgressIndicator(
-                      color: const Color.fromARGB(255, 105, 65, 198),
+                    // Error message if there is one
+                    if (_errorMessage != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(8.r),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.red,
+                                  fontSize: 12.sp,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.red,
+                                  fontSize: 12.sp,
+                                ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                    ],
+
+                    // Product Image with Edit overlay.
+                    Center(
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              _image,
+                              height: 90,
+                              width: 90,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 90,
+                                  width: 90,
+                                  color: Colors.grey.shade700,
+                                  child: Icon(Icons.broken_image,
+                                      color: Colors.white),
+                                );
+                              },
+                            ),
+                          ),
+                          if (_isEditing)
+                            Positioned.fill(
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        const Color.fromARGB(70, 36, 50, 69),
+                                    shape: const CircleBorder(),
+                                    fixedSize: Size(100.w, 50.h),
+                                    elevation: 1,
+                                  ),
+                                  onPressed: _pickImage,
+                                  child: Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 24.sp,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                    SizedBox(height: 16),
-                    Text(
-                      "Deleting product...",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14,
+                    const SizedBox(height: 12),
+                    // Product name.
+                    _isEditing
+                        ? TextField(
+                            controller: _nameController,
+                            decoration: _buildInputDecoration(l10n.productName),
+                            textDirection:
+                                isRtl ? TextDirection.rtl : TextDirection.ltr,
+                            style: isArabic
+                                ? GoogleFonts.cairo(color: Colors.white)
+                                : GoogleFonts.spaceGrotesk(color: Colors.white),
+                          )
+                        : Text(
+                            _name,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                    const SizedBox(height: 12),
+                    // Row with Cost Price and Selling Price.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _isEditing
+                              ? TextField(
+                                  controller: _costController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration:
+                                      _buildInputDecoration(l10n.costPrice),
+                                  textDirection: isRtl
+                                      ? TextDirection.rtl
+                                      : TextDirection.ltr,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(color: Colors.white)
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white),
+                                )
+                              : Text(
+                                  "${l10n.cost}: \$${_costPrice.toStringAsFixed(2)}",
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          fontSize: 16, color: Colors.white)
+                                      : GoogleFonts.spaceGrotesk(
+                                          fontSize: 16, color: Colors.white),
+                                ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _isEditing
+                              ? TextField(
+                                  controller: _sellingController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration:
+                                      _buildInputDecoration(l10n.sellingPrice),
+                                  textDirection: isRtl
+                                      ? TextDirection.rtl
+                                      : TextDirection.ltr,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(color: Colors.white)
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white),
+                                )
+                              : Text(
+                                  "${l10n.sell}: \$${_sellingPrice.toStringAsFixed(2)}",
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          fontSize: 16, color: Colors.white)
+                                      : GoogleFonts.spaceGrotesk(
+                                          fontSize: 16, color: Colors.white),
+                                ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Row with Delete and Edit/Save buttons - RTL aware
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: isRtl
+                            ? [
+                                // For RTL: Edit/Save button first, then Delete
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        const Color.fromARGB(70, 36, 50, 69),
+                                    side: const BorderSide(
+                                        color:
+                                            Color.fromARGB(255, 105, 65, 198),
+                                        width: 1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed:
+                                      _isUpdating ? null : _toggleEditing,
+                                  child: _isUpdating
+                                      ? SizedBox(
+                                          width: 20.w,
+                                          height: 20.h,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Text(
+                                          _isEditing ? l10n.save : l10n.edit,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  fontSize: 16,
+                                                  color: Colors.white)
+                                              : GoogleFonts.spaceGrotesk(
+                                                  fontSize: 16,
+                                                  color: Colors.white),
+                                        ),
+                                ),
+                                SizedBox(width: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    side: const BorderSide(
+                                        color: Colors.red, width: 1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed: _isEditing || _isUpdating
+                                      ? null
+                                      : _confirmDeletion,
+                                  child: Text(
+                                    l10n.delete,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            fontSize: 16,
+                                            color: _isEditing || _isUpdating
+                                                ? Colors.red.withOpacity(0.5)
+                                                : Colors.red)
+                                        : GoogleFonts.spaceGrotesk(
+                                            fontSize: 16,
+                                            color: _isEditing || _isUpdating
+                                                ? Colors.red.withOpacity(0.5)
+                                                : Colors.red),
+                                  ),
+                                ),
+                              ]
+                            : [
+                                // For LTR: Delete button first, then Edit/Save
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    side: const BorderSide(
+                                        color: Colors.red, width: 1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed: _isEditing || _isUpdating
+                                      ? null
+                                      : _confirmDeletion,
+                                  child: Text(
+                                    l10n.delete,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            fontSize: 16,
+                                            color: _isEditing || _isUpdating
+                                                ? Colors.red.withOpacity(0.5)
+                                                : Colors.red)
+                                        : GoogleFonts.spaceGrotesk(
+                                            fontSize: 16,
+                                            color: _isEditing || _isUpdating
+                                                ? Colors.red.withOpacity(0.5)
+                                                : Colors.red),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        const Color.fromARGB(70, 36, 50, 69),
+                                    side: const BorderSide(
+                                        color:
+                                            Color.fromARGB(255, 105, 65, 198),
+                                        width: 1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed:
+                                      _isUpdating ? null : _toggleEditing,
+                                  child: _isUpdating
+                                      ? SizedBox(
+                                          width: 20.w,
+                                          height: 20.h,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Text(
+                                          _isEditing ? l10n.save : l10n.edit,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  fontSize: 16,
+                                                  color: Colors.white)
+                                              : GoogleFonts.spaceGrotesk(
+                                                  fontSize: 16,
+                                                  color: Colors.white),
+                                        ),
+                                ),
+                              ],
                       ),
                     ),
                   ],
                 ),
               ),
-            )
-          : Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Error message if there is one
-                  if (_errorMessage != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(8.r),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Text(
-                        _errorMessage!,
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.red,
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                  ],
-
-                  // Product Image with Edit overlay.
-                  Center(
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            _image,
-                            height: 90,
-                            width: 90,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 90,
-                                width: 90,
-                                color: Colors.grey.shade700,
-                                child: Icon(Icons.broken_image,
-                                    color: Colors.white),
-                              );
-                            },
-                          ),
-                        ),
-                        if (_isEditing)
-                          Positioned.fill(
-                            child: Align(
-                              alignment: Alignment.center,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      const Color.fromARGB(70, 36, 50, 69),
-                                  shape: const CircleBorder(),
-                                  fixedSize: Size(100.w, 50.h),
-                                  elevation: 1,
-                                ),
-                                onPressed: _pickImage,
-                                child: Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 24.sp,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Product name.
-                  _isEditing
-                      ? TextField(
-                          controller: _nameController,
-                          decoration: _buildInputDecoration("Product Name"),
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                        )
-                      : Text(
-                          _name,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                  const SizedBox(height: 12),
-                  // Row with Cost Price and Selling Price.
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _isEditing
-                            ? TextField(
-                                controller: _costController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                decoration: _buildInputDecoration("Cost Price"),
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
-                              )
-                            : Text(
-                                "Cost: \$${_costPrice.toStringAsFixed(2)}",
-                                style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 16, color: Colors.white),
-                              ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _isEditing
-                            ? TextField(
-                                controller: _sellingController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                decoration:
-                                    _buildInputDecoration("Selling Price"),
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
-                              )
-                            : Text(
-                                "Sell: \$${_sellingPrice.toStringAsFixed(2)}",
-                                style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 16, color: Colors.white),
-                              ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Row with Delete and Edit/Save buttons.
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            side: const BorderSide(color: Colors.red, width: 1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: _isEditing || _isUpdating
-                              ? null
-                              : _confirmDeletion,
-                          child: Text(
-                            "Delete",
-                            style: GoogleFonts.spaceGrotesk(
-                                fontSize: 16,
-                                color: _isEditing || _isUpdating
-                                    ? Colors.red.withOpacity(0.5)
-                                    : Colors.red),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color.fromARGB(70, 36, 50, 69),
-                            side: const BorderSide(
-                                color: Color.fromARGB(255, 105, 65, 198),
-                                width: 1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: _isUpdating ? null : _toggleEditing,
-                          child: _isUpdating
-                              ? SizedBox(
-                                  width: 20.w,
-                                  height: 20.h,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  _isEditing ? "Save" : "Edit",
-                                  style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 16, color: Colors.white),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      ),
     );
   }
 }

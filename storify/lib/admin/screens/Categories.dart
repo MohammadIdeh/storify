@@ -16,6 +16,8 @@ import 'package:storify/admin/widgets/categoryWidgets/Categoriestable.dart';
 import 'package:storify/admin/widgets/categoryWidgets/CategoryProductsRow.dart';
 import 'package:storify/admin/widgets/categoryWidgets/addCatPanel.dart';
 import 'package:storify/admin/widgets/categoryWidgets/model.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 enum PanelType { addCat, products }
 
@@ -55,11 +57,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   // Filter state for chips.
   int _selectedFilterIndex = 0; // 0: All, 1: Active, 2: UnActive
-  final List<String> _filters = ["All", "Active", "NotActive"];
 
   // API data state
-  bool _isLoading = true;
+  bool _isLoading = false;
   String? _error;
+  bool _hasInitialized = false; // Track if we've made the initial fetch
 
   // List of categories from API
   List<CategoryItem> _allCategories = [];
@@ -78,8 +80,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
     _loadProfilePicture();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _fetchCategories();
+    }
   }
 
   Future<void> _fetchCategories() async {
@@ -287,7 +297,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Widget _buildFilterChip(String label, int index) {
+    final isArabic = LocalizationHelper.isArabic(context);
     final bool isSelected = _selectedFilterIndex == index;
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -305,13 +317,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : const Color.fromARGB(255, 230, 230, 230),
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                ),
         ),
       ),
     );
@@ -319,175 +339,233 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(200),
-        child: MyNavigationBar(
-          currentIndex: _currentIndex,
-          profilePictureUrl:
-              profilePictureUrl, // Pass the profile picture URL here
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            // Navigation logic:
-            switch (index) {
-              case 0:
-                Navigator.pushNamed(context, '/admin/dashboard');
-                break;
-              case 1:
-                Navigator.pushNamed(context, '/admin/products');
-                break;
-              case 2:
-                // Current Categories screen - no navigation needed
-                break;
-              case 3:
-                Navigator.pushNamed(context, '/admin/orders');
-                break;
-              case 4:
-                Navigator.pushNamed(context, '/admin/roles');
-                break;
-              case 5:
-                Navigator.pushNamed(context, '/admin/tracking');
-                break;
-            }
-          },
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    // Get filter labels based on language
+    final List<String> _filters = [l10n.all, l10n.active, l10n.notActive];
+
+    // Set localized error messages if needed
+    String? localizedError;
+    if (_error != null) {
+      if (_error!.contains('Failed to load categories')) {
+        localizedError =
+            l10n.failedToLoadCategories + ': ' + _error!.split(': ').last;
+      } else if (_error!.contains('Error fetching categories')) {
+        localizedError =
+            l10n.errorFetchingCategories + ': ' + _error!.split(': ').last;
+      } else {
+        localizedError = _error;
+      }
+    }
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(200),
+          child: MyNavigationBar(
+            currentIndex: _currentIndex,
+            profilePictureUrl:
+                profilePictureUrl, // Pass the profile picture URL here
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+              // Navigation logic:
+              switch (index) {
+                case 0:
+                  Navigator.pushNamed(context, '/admin/dashboard');
+                  break;
+                case 1:
+                  Navigator.pushNamed(context, '/admin/products');
+                  break;
+                case 2:
+                  // Current Categories screen - no navigation needed
+                  break;
+                case 3:
+                  Navigator.pushNamed(context, '/admin/orders');
+                  break;
+                case 4:
+                  Navigator.pushNamed(context, '/admin/roles');
+                  break;
+                case 5:
+                  Navigator.pushNamed(context, '/admin/tracking');
+                  break;
+              }
+            },
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(45.w, 20.h, 45.w, 20.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Row: "Category" title, Filter chips, "Add Category" button
-              Row(
-                children: [
-                  Text(
-                    "Category",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 35.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color.fromARGB(255, 246, 246, 246),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(45.w, 20.h, 45.w, 20.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row: "Category" title, Filter chips, "Add Category" button
+                Row(
+                  children: [
+                    Text(
+                      l10n.category,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 35.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromARGB(255, 246, 246, 246),
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 35.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromARGB(255, 246, 246, 246),
+                            ),
                     ),
-                  ),
-                  SizedBox(width: 20.h),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 36, 50, 69),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-                    child: Row(
-                      children: [
-                        _buildFilterChip(_filters[0], 0),
-                        SizedBox(width: 8.w),
-                        _buildFilterChip(_filters[1], 1),
-                        SizedBox(width: 8.w),
-                        _buildFilterChip(_filters[2], 2),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                      shape: RoundedRectangleBorder(
+                    SizedBox(width: 20.w),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 36, 50, 69),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      fixedSize: Size(190.w, 50.h),
-                      elevation: 1,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                      child: Row(
+                        children: [
+                          _buildFilterChip(_filters[0], 0),
+                          SizedBox(width: 8.w),
+                          _buildFilterChip(_filters[1], 1),
+                          SizedBox(width: 8.w),
+                          _buildFilterChip(_filters[2], 2),
+                        ],
+                      ),
                     ),
-                    onPressed: _handleAddCategoryClicked,
-                    child: Row(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/images/addCat.svg',
-                          width: 18.w,
-                          height: 18.h,
+                    const Spacer(),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            const Color.fromARGB(255, 105, 65, 198),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        SizedBox(width: 12.w),
+                        fixedSize: Size(190.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: _handleAddCategoryClicked,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (!isRtl) ...[
+                            SvgPicture.asset(
+                              'assets/images/addCat.svg',
+                              width: 18.w,
+                              height: 18.h,
+                            ),
+                            SizedBox(width: 12.w),
+                          ],
+                          Text(
+                            l10n.addCategory,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                          if (isRtl) ...[
+                            SizedBox(width: 12.w),
+                            SvgPicture.asset(
+                              'assets/images/addCat.svg',
+                              width: 18.w,
+                              height: 18.h,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 30.h),
+
+                // Show loading, error, or data
+                if (_isLoading)
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: const Color.fromARGB(255, 105, 65, 198),
+                    ),
+                  )
+                else if (localizedError != null)
+                  Center(
+                    child: Column(
+                      children: [
                         Text(
-                          'Add Category',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                          localizedError,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 16.sp,
+                                  color: Colors.red,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  color: Colors.red,
+                                ),
+                        ),
+                        SizedBox(height: 16.h),
+                        ElevatedButton(
+                          onPressed: _fetchCategories,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 105, 65, 198),
+                          ),
+                          child: Text(
+                            l10n.retry,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                  ),
                           ),
                         ),
                       ],
                     ),
+                  )
+                else
+                  // Table of categories
+                  Categoriestable(
+                    categories: _filteredCategories,
+                    onCategorySelected: _handleCategorySelected,
+                    onCategoryUpdated:
+                        _updateCategoryInList, // Add this callback
                   ),
+
+                SizedBox(height: 30.h),
+                // Build the panels in the order they were opened
+                for (final panel in _openedPanels) ...[
+                  if (panel.type == PanelType.addCat)
+                    AddCategoryPanel(
+                      onPublish: (catName, isActive, image, description) {
+                        _publishCategory(catName, isActive, image, description);
+                      },
+                      onCancel: () {
+                        setState(() {
+                          _openedPanels
+                              .removeWhere((p) => p.type == PanelType.addCat);
+                        });
+                      },
+                    ),
+                  if (panel.type == PanelType.products &&
+                      panel.categoryID != null)
+                    _buildCategoryProductsPanel(panel),
                 ],
-              ),
-              SizedBox(height: 30.h),
-
-              // Show loading, error, or data
-              if (_isLoading)
-                Center(
-                  child: CircularProgressIndicator(
-                    color: const Color.fromARGB(255, 105, 65, 198),
-                  ),
-                )
-              else if (_error != null)
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        _error!,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          color: Colors.red,
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      ElevatedButton(
-                        onPressed: _fetchCategories,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 105, 65, 198),
-                        ),
-                        child: Text(
-                          'Retry',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                // Table of categories
-                Categoriestable(
-                  categories: _filteredCategories,
-                  onCategorySelected: _handleCategorySelected,
-                  onCategoryUpdated: _updateCategoryInList, // Add this callback
-                ),
-
-              SizedBox(height: 30.h),
-              // Build the panels in the order they were opened
-              for (final panel in _openedPanels) ...[
-                if (panel.type == PanelType.addCat)
-                  AddCategoryPanel(
-                    onPublish: (catName, isActive, image, description) {
-                      _publishCategory(catName, isActive, image, description);
-                    },
-                    onCancel: () {
-                      setState(() {
-                        _openedPanels
-                            .removeWhere((p) => p.type == PanelType.addCat);
-                      });
-                    },
-                  ),
-                if (panel.type == PanelType.products &&
-                    panel.categoryID != null)
-                  _buildCategoryProductsPanel(panel),
+                SizedBox(height: 40.h),
               ],
-              SizedBox(height: 40.h),
-            ],
+            ),
           ),
         ),
       ),
@@ -495,8 +573,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Widget _buildCategoryProductsPanel(PanelDescriptor panel) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
     final categoryID = panel.categoryID!;
-    final categoryName = panel.categoryName ?? 'Category';
+    final categoryName = panel.categoryName ?? l10n.category;
     final description = panel.description; // Get the description
 
     // Check if products are still loading
@@ -515,11 +595,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 Expanded(
                   child: Text(
                     categoryName,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                   ),
                 ),
                 ElevatedButton(
@@ -536,11 +622,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     });
                   },
                   child: Text(
-                    "Close",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    l10n.close,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                   ),
                 ),
               ],
@@ -554,11 +645,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    "Loading products...",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 16.sp,
-                    ),
+                    l10n.loadingProducts,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontSize: 16.sp,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 16.sp,
+                          ),
                   ),
                 ],
               ),
@@ -571,6 +667,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
     // Check if there was an error loading products
     if (_productLoadErrors[categoryID] != null) {
+      // Get localized error message
+      String localizedProductError = _productLoadErrors[categoryID]!;
+      if (localizedProductError.contains('Invalid response format')) {
+        localizedProductError = l10n.invalidResponseFormat;
+      } else if (localizedProductError.contains('Failed to load products')) {
+        localizedProductError = l10n.failedToLoadProducts +
+            ': ' +
+            localizedProductError.split(': ').last;
+      } else if (localizedProductError.contains('Error fetching products')) {
+        localizedProductError = l10n.errorFetchingProducts +
+            ': ' +
+            localizedProductError.split(': ').last;
+      }
+
       return Container(
         margin: EdgeInsets.only(top: 20.h),
         padding: EdgeInsets.all(16.r),
@@ -585,11 +695,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 Expanded(
                   child: Text(
                     categoryName,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                   ),
                 ),
                 ElevatedButton(
@@ -606,11 +722,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     });
                   },
                   child: Text(
-                    "Close",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    l10n.close,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                   ),
                 ),
               ],
@@ -628,11 +749,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   SizedBox(width: 16.w),
                   Expanded(
                     child: Text(
-                      _productLoadErrors[categoryID]!,
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.red,
-                        fontSize: 14.sp,
-                      ),
+                      localizedProductError,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.red,
+                              fontSize: 14.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.red,
+                              fontSize: 14.sp,
+                            ),
                     ),
                   ),
                 ],
@@ -651,11 +777,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
               ),
               child: Text(
-                "Try Again",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.tryAgain,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
             ),
             SizedBox(height: 32.h),

@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class AddCategoryPanel extends StatefulWidget {
   final void Function(
@@ -40,6 +42,8 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
   final _formKey = GlobalKey<FormState>();
 
   Future<void> _pickImage() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     final html.FileUploadInputElement uploadInput =
         html.FileUploadInputElement();
     uploadInput.accept = 'image/*';
@@ -53,8 +57,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
         final fileSize = file.size;
         if (fileSize > 5 * 1024 * 1024) {
           setState(() {
-            _errorMessage =
-                "Image size exceeds 5MB limit. Please choose a smaller image.";
+            _errorMessage = l10n.imageSizeExceedsLimit;
           });
           debugPrint(
               "File too large: ${(fileSize / (1024 * 1024)).toStringAsFixed(2)}MB (max 5MB)");
@@ -85,7 +88,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
                 "Image loaded: ${(decodedImageBytes / (1024 * 1024)).toStringAsFixed(2)}MB of 5MB limit");
           } catch (e) {
             setState(() {
-              _errorMessage = "Error processing image: $e";
+              _errorMessage = "${l10n.errorProcessingImage}: $e";
             });
             debugPrint("Error processing image: $e");
           }
@@ -113,14 +116,15 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
   }
 
   Future<void> _attemptSubmit() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       // Check image size again before submission
       if (_base64Image != null) {
         final decodedImageBytes = base64Decode(_base64Image!).length;
         if (decodedImageBytes > 5 * 1024 * 1024) {
           setState(() {
-            _errorMessage =
-                "Image size exceeds 5MB limit. Please choose a smaller image.";
+            _errorMessage = l10n.imageSizeExceedsLimit;
             _isSubmitting = false;
           });
           return;
@@ -131,7 +135,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
       final token = await AuthService.getToken();
       if (token == null) {
         setState(() {
-          _errorMessage = "Authentication required. Please log in again.";
+          _errorMessage = l10n.authenticationRequired;
           _isSubmitting = false;
         });
         return;
@@ -181,7 +185,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          throw TimeoutException('Request timed out');
+          throw TimeoutException(l10n.requestTimedOut);
         },
       );
 
@@ -208,7 +212,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
       } else {
         // Handle error...
         String errorMsg =
-            'Failed to add category: Status ${response.statusCode}';
+            '${l10n.failedToAddCategory}: ${l10n.status} ${response.statusCode}';
 
         try {
           final responseData = json.decode(response.body);
@@ -232,7 +236,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
         _retryCount++;
         setState(() {
           _errorMessage =
-              'Network issue. Retrying... (Attempt $_retryCount of $_maxRetries)';
+              '${l10n.networkIssueRetrying} (${l10n.attempt} $_retryCount ${l10n.offf} $_maxRetries)';
         });
 
         // Wait before retrying
@@ -241,7 +245,7 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
       } else {
         setState(() {
           _errorMessage =
-              'Network error: $e\n\nPlease check your internet connection and try again.';
+              '${l10n.networkError}: $e\n\n${l10n.checkInternetConnection}';
           _isSubmitting = false;
         });
       }
@@ -250,345 +254,438 @@ class _AddCategoryPanelState extends State<AddCategoryPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left side: Fixed container for upload image.
-          Container(
-            margin: EdgeInsets.symmetric(vertical: 16.h),
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 36, 50, 69),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Stack(
-              children: [
-                Container(
-                  width: 700,
-                  height: 500.h,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 28, 36, 46),
-                    borderRadius: BorderRadius.circular(16.r),
-                  ),
-                  child: InkWell(
-                    onTap: _isSubmitting ? null : _pickImage,
-                    child: _image == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SvgPicture.asset(
-                                'assets/images/gallery.svg',
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                "Click to upload an image",
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white70,
-                                  fontSize: 14.sp,
-                                ),
-                              ),
-                            ],
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(16.r),
-                            child: Image.network(
-                              _image!,
-                              width: 700,
-                              height: 500.h,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                  ),
-                ),
-                if (_isSubmitting)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(16.r),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(
-                              color: const Color.fromARGB(255, 105, 65, 198),
-                            ),
-                            if (_retryCount > 0) ...[
-                              SizedBox(height: 16.h),
-                              Text(
-                                "Retrying... (Attempt $_retryCount of $_maxRetries)",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontSize: 14.sp,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: 100.w),
-          // Right side: Expanded container that takes remaining width.
-          Expanded(
-            child: Container(
-              height: 545.h,
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Form(
+        key: _formKey,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left side: Fixed container for upload image.
+            Container(
               margin: EdgeInsets.symmetric(vertical: 16.h),
               padding: EdgeInsets.all(16.w),
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 36, 50, 69),
                 borderRadius: BorderRadius.circular(16.r),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  // Show error message if there is one
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: EdgeInsets.all(12.r),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                  Container(
+                    width: 700,
+                    height: 500.h,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 28, 36, 46),
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    child: InkWell(
+                      onTap: _isSubmitting ? null : _pickImage,
+                      child: _image == null
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/images/gallery.svg',
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  l10n.clickToUploadImage,
+                                  textAlign: TextAlign.center,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white70,
+                                          fontSize: 14.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white70,
+                                          fontSize: 14.sp,
+                                        ),
+                                ),
+                              ],
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(16.r),
+                              child: Image.network(
+                                _image!,
+                                width: 700,
+                                height: 500.h,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (_isSubmitting)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.error_outline, color: Colors.red),
-                              SizedBox(width: 8.w),
-                              Expanded(
+                              CircularProgressIndicator(
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                              ),
+                              if (_retryCount > 0) ...[
+                                SizedBox(height: 16.h),
+                                Text(
+                                  "${l10n.retrying} (${l10n.attempt} $_retryCount ${l10n.offf} $_maxRetries)",
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontSize: 14.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 14.sp,
+                                        ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(width: 100.w),
+            // Right side: Expanded container that takes remaining width.
+            Expanded(
+              child: Container(
+                height: 545.h,
+                margin: EdgeInsets.symmetric(vertical: 16.h),
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 36, 50, 69),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Show error message if there is one
+                    if (_errorMessage != null) ...[
+                      Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.red),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            color: Colors.red,
+                                            fontSize: 14.sp,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.red,
+                                            fontSize: 14.sp,
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_errorMessage!.contains(l10n.networkError) &&
+                                !_isSubmitting) ...[
+                              SizedBox(height: 8.h),
+                              TextButton(
+                                onPressed: _submitCategory,
                                 child: Text(
-                                  _errorMessage!,
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.red,
-                                    fontSize: 14.sp,
+                                  l10n.tryAgain,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      const Color.fromARGB(255, 105, 65, 198),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w, vertical: 8.h),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                          if (_errorMessage!.contains("Network error") &&
-                              !_isSubmitting) ...[
-                            SizedBox(height: 8.h),
-                            TextButton(
-                              onPressed: _submitCategory,
-                              child: Text(
-                                "Try Again",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: TextButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 105, 65, 198),
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 16.w, vertical: 8.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                              ),
-                            ),
                           ],
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                  ],
-
-                  Text(
-                    "Category Name *",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextFormField(
-                    onChanged: (value) {
-                      setState(() {
-                        _categoryName = value;
-                      });
-                    },
-                    enabled: !_isSubmitting,
-                    style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color.fromARGB(255, 54, 68, 88),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide.none,
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      hintText: "Enter category name...",
-                      hintStyle: GoogleFonts.spaceGrotesk(
-                        color: Colors.white54,
-                        fontSize: 14.sp,
-                      ),
-                      errorStyle: GoogleFonts.spaceGrotesk(
-                        color: Colors.red,
-                        fontSize: 12.sp,
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Category name is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Description",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextFormField(
-                    onChanged: (value) {
-                      setState(() {
-                        _description = value;
-                      });
-                    },
-                    enabled: !_isSubmitting,
-                    maxLines: 3,
-                    style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color.fromARGB(255, 54, 68, 88),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide.none,
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      hintText: "Enter Description (Optional)",
-                      hintStyle: GoogleFonts.spaceGrotesk(
-                        color: Colors.white54,
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Availability",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Row(
-                    children: [
-                      Switch(
-                        value: _isActive,
-                        onChanged: _isSubmitting
-                            ? null
-                            : (val) {
-                                setState(() {
-                                  _isActive = val;
-                                });
-                              },
-                        activeColor: const Color.fromARGB(255, 105, 65, 198),
-                      ),
-                      Text(
-                        _isActive ? "Active" : "NotActive",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 14.sp,
                         ),
                       ),
+                      SizedBox(height: 16.h),
                     ],
-                  ),
-                  if (_image == null) ...[
+
+                    Text(
+                      "${l10n.categoryName} *",
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    TextFormField(
+                      onChanged: (value) {
+                        setState(() {
+                          _categoryName = value;
+                        });
+                      },
+                      enabled: !_isSubmitting,
+                      textDirection:
+                          isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      style: isArabic
+                          ? GoogleFonts.cairo(color: Colors.white)
+                          : GoogleFonts.spaceGrotesk(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color.fromARGB(255, 54, 68, 88),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        hintText: l10n.enterCategoryName,
+                        hintStyle: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white54,
+                                fontSize: 14.sp,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white54,
+                                fontSize: 14.sp,
+                              ),
+                        errorStyle: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.red,
+                                fontSize: 12.sp,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.red,
+                                fontSize: 12.sp,
+                              ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.categoryNameRequired;
+                        }
+                        return null;
+                      },
+                    ),
                     SizedBox(height: 16.h),
                     Text(
-                      "* Please upload an image for the category",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.red,
-                        fontSize: 12.sp,
+                      l10n.description,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    TextFormField(
+                      onChanged: (value) {
+                        setState(() {
+                          _description = value;
+                        });
+                      },
+                      enabled: !_isSubmitting,
+                      maxLines: 3,
+                      textDirection:
+                          isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      style: isArabic
+                          ? GoogleFonts.cairo(color: Colors.white)
+                          : GoogleFonts.spaceGrotesk(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color.fromARGB(255, 54, 68, 88),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        hintText: l10n.enterDescriptionOptional,
+                        hintStyle: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white54,
+                                fontSize: 14.sp,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white54,
+                                fontSize: 14.sp,
+                              ),
                       ),
                     ),
-                  ],
-                  SizedBox(height: 50.h),
-                  // Bottom Row: Cancel and Publish Category.
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 20.w, vertical: 20.h),
-                          side: const BorderSide(
-                              color: Color.fromARGB(255, 105, 123, 123),
-                              width: 0.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      l10n.availability,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Row(
+                      children: [
+                        Switch(
+                          value: _isActive,
+                          onChanged: _isSubmitting
+                              ? null
+                              : (val) {
+                                  setState(() {
+                                    _isActive = val;
+                                  });
+                                },
+                          activeColor: const Color.fromARGB(255, 105, 65, 198),
                         ),
-                        onPressed: _isSubmitting ? null : widget.onCancel,
-                        child: Text(
-                          "Cancel",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: _isSubmitting
-                                ? Colors.white.withOpacity(0.5)
-                                : Colors.white,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 16.w),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isFormValid && !_isSubmitting
-                              ? const Color.fromARGB(255, 105, 65, 198)
-                              : Colors.grey.shade700,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 20.w, vertical: 25.h),
-                        ),
-                        onPressed: (_isFormValid && !_isSubmitting)
-                            ? _submitCategory
-                            : null,
-                        child: _isSubmitting
-                            ? SizedBox(
-                                width: 20.w,
-                                height: 20.h,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                "Publish Category",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
+                        Text(
+                          _isActive ? l10n.active : l10n.notActive,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white70,
                                   fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white70,
+                                  fontSize: 14.sp,
                                 ),
+                        ),
+                      ],
+                    ),
+                    if (_image == null) ...[
+                      SizedBox(height: 16.h),
+                      Text(
+                        l10n.pleaseUploadImage,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.red,
+                                fontSize: 12.sp,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.red,
+                                fontSize: 12.sp,
                               ),
                       ),
                     ],
-                  )
-                ],
+                    SizedBox(height: 50.h),
+                    // Bottom Row: Cancel and Publish Category.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20.w, vertical: 20.h),
+                            side: const BorderSide(
+                                color: Color.fromARGB(255, 105, 123, 123),
+                                width: 0.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                          ),
+                          onPressed: _isSubmitting ? null : widget.onCancel,
+                          child: Text(
+                            l10n.cancel,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: _isSubmitting
+                                        ? Colors.white.withOpacity(0.5)
+                                        : Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: _isSubmitting
+                                        ? Colors.white.withOpacity(0.5)
+                                        : Colors.white,
+                                  ),
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isFormValid && !_isSubmitting
+                                ? const Color.fromARGB(255, 105, 65, 198)
+                                : Colors.grey.shade700,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20.w, vertical: 25.h),
+                          ),
+                          onPressed: (_isFormValid && !_isSubmitting)
+                              ? _submitCategory
+                              : null,
+                          child: _isSubmitting
+                              ? SizedBox(
+                                  width: 20.w,
+                                  height: 20.h,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  l10n.publishCategory,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

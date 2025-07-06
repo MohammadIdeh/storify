@@ -9,6 +9,8 @@ import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/widgets/categoryWidgets/ProductDetailCard.dart';
 import 'package:storify/admin/widgets/categoryWidgets/model.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class CategoryProductsRow extends StatefulWidget {
   final String categoryName;
@@ -100,6 +102,8 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
   }
 
   Future<void> _pickImage() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (!_isEditing) return;
 
     final html.FileUploadInputElement uploadInput =
@@ -115,8 +119,7 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
         final fileSize = file.size;
         if (fileSize > 5 * 1024 * 1024) {
           setState(() {
-            _errorMessage =
-                "Image size exceeds 5MB limit. Please choose a smaller image.";
+            _errorMessage = l10n.imageSizeExceedsLimit;
           });
           return;
         }
@@ -136,7 +139,7 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
             });
           } catch (e) {
             setState(() {
-              _errorMessage = "Error processing image: $e";
+              _errorMessage = "${l10n.errorProcessingImage}: $e";
             });
           }
         });
@@ -160,11 +163,13 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
   }
 
   Future<void> _saveChanges() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     // Validate inputs
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() {
-        _errorMessage = "Category name cannot be empty";
+        _errorMessage = l10n.categoryNameCannotBeEmpty;
       });
       return;
     }
@@ -203,18 +208,20 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = "Failed to update: $e";
+        _errorMessage = "${l10n.failedToUpdate}: $e";
         _isUpdating = false;
       });
     }
   }
 
   Future<bool> _updateCategoryInAPI() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       final token = await AuthService.getToken();
       if (token == null) {
         setState(() {
-          _errorMessage = "Authentication required. Please log in again.";
+          _errorMessage = l10n.authenticationRequired;
         });
         return false;
       }
@@ -264,28 +271,32 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
           final responseData = json.decode(response.body);
           setState(() {
             _errorMessage = responseData['message'] ??
-                'Failed to update category: ${response.statusCode}';
+                '${l10n.failedToUpdateCategory}: ${response.statusCode}';
           });
         } catch (e) {
           setState(() {
-            _errorMessage = 'Failed to update category: ${response.statusCode}';
+            _errorMessage =
+                '${l10n.failedToUpdateCategory}: ${response.statusCode}';
           });
         }
         return false;
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error updating category: $e';
+        _errorMessage = '${l10n.errorUpdatingCategory}: $e';
       });
       return false;
     }
   }
 
   InputDecoration _buildInputDecoration(String label) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return InputDecoration(
       labelText: label,
-      labelStyle:
-          GoogleFonts.spaceGrotesk(color: Colors.white70, fontSize: 12.sp),
+      labelStyle: isArabic
+          ? GoogleFonts.cairo(color: Colors.white70, fontSize: 12.sp)
+          : GoogleFonts.spaceGrotesk(color: Colors.white70, fontSize: 12.sp),
       filled: true,
       fillColor: const Color.fromARGB(255, 54, 68, 88),
       border: OutlineInputBorder(
@@ -310,447 +321,627 @@ class _CategoryProductsRowState extends State<CategoryProductsRow> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 20.0),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: _isEditing ? 350 : 450, // Smaller when editing
-        ),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 36, 50, 69),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Error message if there is one
-            if (_errorMessage != null) ...[
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(8.r),
-                margin: EdgeInsets.only(bottom: 16.h),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.red, size: 16.sp),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.red,
-                          fontSize: 12.sp,
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 20.0),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: _isEditing ? 350 : 450, // Smaller when editing
+          ),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 36, 50, 69),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Error message if there is one
+              if (_errorMessage != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(8.r),
+                  margin: EdgeInsets.only(bottom: 16.h),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: 16.sp),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.red,
+                                  fontSize: 12.sp,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.red,
+                                  fontSize: 12.sp,
+                                ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              if (_isEditing) ...[
+                // EDIT MODE - Clean, compact layout
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image area (square) - position based on RTL
+                    if (!isRtl) ...[
+                      InkWell(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 120.w,
+                          height: 120.w, // Square aspect ratio
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 54, 68, 88),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: _editingImage.isEmpty
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt,
+                                        color: Colors.white70, size: 24.sp),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      l10n.uploadImage,
+                                      textAlign: TextAlign.center,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white70,
+                                              fontSize: 10.sp,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white70,
+                                              fontSize: 10.sp,
+                                            ),
+                                    ),
+                                  ],
+                                )
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  child: Image.network(
+                                    _editingImage,
+                                    width: 120.w,
+                                    height: 120.w,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 120.w,
+                                        height: 120.w,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade600,
+                                          borderRadius:
+                                              BorderRadius.circular(12.r),
+                                        ),
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white70,
+                                          size: 24.sp,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                    ],
+
+                    // Form fields
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Category name input (compact)
+                          SizedBox(
+                            width: 300.w, // Fixed smaller width
+                            child: TextField(
+                              controller: _nameController,
+                              decoration:
+                                  _buildInputDecoration(l10n.categoryName),
+                              textDirection:
+                                  isRtl ? TextDirection.rtl : TextDirection.ltr,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                            ),
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          // Description input (compact)
+                          SizedBox(
+                            width: 400.w, // Fixed smaller width
+                            child: TextField(
+                              controller: _descriptionController,
+                              decoration:
+                                  _buildInputDecoration(l10n.description),
+                              maxLines: 2,
+                              textDirection:
+                                  isRtl ? TextDirection.rtl : TextDirection.ltr,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white,
+                                      fontSize: 14.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white,
+                                      fontSize: 14.sp,
+                                    ),
+                            ),
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          // Status toggle
+                          Row(
+                            children: [
+                              Text(
+                                "${l10n.status}: ",
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white70,
+                                        fontSize: 14.sp,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white70,
+                                        fontSize: 14.sp,
+                                      ),
+                              ),
+                              Switch(
+                                value: _editingIsActive,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _editingIsActive = value;
+                                  });
+                                },
+                                activeColor:
+                                    const Color.fromARGB(255, 105, 65, 198),
+                              ),
+                              Text(
+                                _editingIsActive ? l10n.active : l10n.notActive,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white70,
+                                        fontSize: 14.sp,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white70,
+                                        fontSize: 14.sp,
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Image area for RTL
+                    if (isRtl) ...[
+                      SizedBox(width: 16.w),
+                      InkWell(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 120.w,
+                          height: 120.w, // Square aspect ratio
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 54, 68, 88),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: _editingImage.isEmpty
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt,
+                                        color: Colors.white70, size: 24.sp),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      l10n.uploadImage,
+                                      textAlign: TextAlign.center,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white70,
+                                              fontSize: 10.sp,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white70,
+                                              fontSize: 10.sp,
+                                            ),
+                                    ),
+                                  ],
+                                )
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  child: Image.network(
+                                    _editingImage,
+                                    width: 120.w,
+                                    height: 120.w,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 120.w,
+                                        height: 120.w,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade600,
+                                          borderRadius:
+                                              BorderRadius.circular(12.r),
+                                        ),
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white70,
+                                          size: 24.sp,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+
+                SizedBox(height: 20.h),
+
+                // Action buttons for edit mode
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    // Cancel button
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 8.h),
+                        side: BorderSide(
+                            color: Colors.white.withOpacity(0.3), width: 1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                      onPressed: _isUpdating
+                          ? null
+                          : () {
+                              setState(() {
+                                _isEditing = false;
+                                _errorMessage = null;
+                                // Reset to original values
+                                _nameController.text = widget.categoryName;
+                                _descriptionController.text =
+                                    widget.description ?? '';
+                                _editingImage = widget.currentImage ?? '';
+                                _base64Image = null;
+                              });
+                            },
+                      child: Text(
+                        l10n.cancel,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                                color: _isUpdating
+                                    ? Colors.white.withOpacity(0.5)
+                                    : Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                                color: _isUpdating
+                                    ? Colors.white.withOpacity(0.5)
+                                    : Colors.white,
+                              ),
+                      ),
+                    ),
+
+                    SizedBox(width: 12.w),
+
+                    // Save button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 34, 139, 34),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.w, vertical: 8.h),
+                        elevation: 1,
+                      ),
+                      onPressed: _isUpdating ? null : _saveChanges,
+                      child: _isUpdating
+                          ? SizedBox(
+                              width: 16.w,
+                              height: 16.h,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!isRtl) ...[
+                                  Icon(Icons.save,
+                                      color: Colors.white, size: 16.sp),
+                                  SizedBox(width: 4.w),
+                                ],
+                                Text(
+                                  l10n.save,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                ),
+                                if (isRtl) ...[
+                                  SizedBox(width: 4.w),
+                                  Icon(Icons.save,
+                                      color: Colors.white, size: 16.sp),
+                                ],
+                              ],
+                            ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // VIEW MODE - Original layout with products
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.categoryName,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 24.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 24.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                          if (widget.description != null &&
+                              widget.description!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                widget.description!,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 12.sp,
+                                        color: Colors.grey[400],
+                                        fontStyle: FontStyle.italic,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 12.sp,
+                                        color: Colors.grey[400],
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // Search field
+                    SizedBox(
+                      width: 200.w,
+                      height: 40.h,
+                      child: TextField(
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                        textDirection:
+                            isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        style: isArabic
+                            ? GoogleFonts.cairo(color: Colors.white)
+                            : GoogleFonts.spaceGrotesk(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: l10n.search,
+                          hintStyle: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white70)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white70),
+                          filled: true,
+                          fillColor: const Color.fromARGB(255, 54, 68, 88),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide.none,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Edit button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            const Color.fromARGB(255, 105, 65, 198),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(110.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: _toggleEditing,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isRtl) ...[
+                            Icon(Icons.edit, color: Colors.white, size: 18.sp),
+                            SizedBox(width: 4.w),
+                          ],
+                          Text(
+                            l10n.edit,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                          if (isRtl) ...[
+                            SizedBox(width: 4.w),
+                            Icon(Icons.edit, color: Colors.white, size: 18.sp),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Close button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(100.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: widget.onClose,
+                      child: Text(
+                        l10n.close,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
 
-            if (_isEditing) ...[
-              // EDIT MODE - Clean, compact layout
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left side - Image area (square)
-                  InkWell(
-                    onTap: _pickImage,
-                    child: Container(
-                      width: 120.w,
-                      height: 120.w, // Square aspect ratio
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 54, 68, 88),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: _editingImage.isEmpty
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.camera_alt,
-                                    color: Colors.white70, size: 24.sp),
-                                SizedBox(height: 4.h),
-                                Text(
-                                  "Upload\nImage",
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white70,
-                                    fontSize: 10.sp,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : ClipRRect(
-                              borderRadius: BorderRadius.circular(12.r),
-                              child: Image.network(
-                                _editingImage,
-                                width: 120.w,
-                                height: 120.w,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 120.w,
-                                    height: 120.w,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade600,
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      color: Colors.white70,
-                                      size: 24.sp,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                    ),
-                  ),
+                const SizedBox(height: 16),
 
-                  SizedBox(width: 16.w),
-
-                  // Right side - Form fields
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Category name input (compact)
-                        SizedBox(
-                          width: 300.w, // Fixed smaller width
-                          child: TextField(
-                            controller: _nameController,
-                            decoration: _buildInputDecoration("Category Name"),
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 12.h),
-
-                        // Description input (compact)
-                        SizedBox(
-                          width: 400.w, // Fixed smaller width
-                          child: TextField(
-                            controller: _descriptionController,
-                            decoration: _buildInputDecoration("Description"),
-                            maxLines: 2,
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 12.h),
-
-                        // Status toggle
-                        Row(
-                          children: [
-                            Text(
-                              "Status: ",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white70,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                            Switch(
-                              value: _editingIsActive,
-                              onChanged: (value) {
-                                setState(() {
-                                  _editingIsActive = value;
-                                });
-                              },
-                              activeColor:
-                                  const Color.fromARGB(255, 105, 65, 198),
-                            ),
-                            Text(
-                              _editingIsActive ? "Active" : "NotActive",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white70,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 20.h),
-
-              // Action buttons for edit mode
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  // Cancel button
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                      side: BorderSide(
-                          color: Colors.white.withOpacity(0.3), width: 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    onPressed: _isUpdating
-                        ? null
-                        : () {
-                            setState(() {
-                              _isEditing = false;
-                              _errorMessage = null;
-                              // Reset to original values
-                              _nameController.text = widget.categoryName;
-                              _descriptionController.text =
-                                  widget.description ?? '';
-                              _editingImage = widget.currentImage ?? '';
-                              _base64Image = null;
-                            });
-                          },
-                    child: Text(
-                      "Cancel",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                        color: _isUpdating
-                            ? Colors.white.withOpacity(0.5)
-                            : Colors.white,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(width: 12.w),
-
-                  // Save button
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 34, 139, 34),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                      elevation: 1,
-                    ),
-                    onPressed: _isUpdating ? null : _saveChanges,
-                    child: _isUpdating
-                        ? SizedBox(
-                            width: 16.w,
-                            height: 16.h,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.save,
-                                  color: Colors.white, size: 16.sp),
-                              SizedBox(width: 4.w),
-                              Text(
-                                "Save",
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
-            ] else ...[
-              // VIEW MODE - Original layout with products
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.categoryName,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 24.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (widget.description != null &&
-                            widget.description!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              widget.description!,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12.sp,
-                                color: Colors.grey[400],
-                                fontStyle: FontStyle.italic,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // Search field
-                  SizedBox(
-                    width: 200.w,
-                    height: 40.h,
-                    child: TextField(
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: "Search",
-                        hintStyle:
-                            GoogleFonts.spaceGrotesk(color: Colors.white70),
-                        filled: true,
-                        fillColor: const Color.fromARGB(255, 54, 68, 88),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide.none,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Edit button
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      fixedSize: Size(100.w, 50.h),
-                      elevation: 1,
-                    ),
-                    onPressed: _toggleEditing,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit, color: Colors.white, size: 18.sp),
-                        SizedBox(width: 4.w),
-                        Text(
-                          "Edit",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Close button
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      fixedSize: Size(100.w, 50.h),
-                      elevation: 1,
-                    ),
-                    onPressed: widget.onClose,
-                    child: Text(
-                      "Close",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Products section (only show when NOT editing)
-              if (widget.products.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 48,
-                          color: Colors.white.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "No products in this category",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 18,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Products added to this category will appear here",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14,
+                // Products section (only show when NOT editing)
+                if (widget.products.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 48,
                             color: Colors.white.withOpacity(0.5),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.noProductsInCategory,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 18,
+                                    color: Colors.white.withOpacity(0.7),
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 18,
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.productsAddedWillAppearHere,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.5),
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.5),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: _filteredProducts
+                            .map((prod) => SizedBox(
+                                  width: 250,
+                                  key: ValueKey(prod.productID ?? prod.name),
+                                  child: ProductDetailCard(
+                                    product: prod,
+                                    categoryID: widget.categoryID,
+                                    onUpdate: (updatedProduct) {
+                                      debugPrint(
+                                          "Updated product: ${updatedProduct.name}");
+                                    },
+                                    onDelete: () {
+                                      widget.onProductDelete(prod);
+                                    },
+                                  ),
+                                ))
+                            .toList(),
+                      ),
                     ),
                   ),
-                )
-              else
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: _filteredProducts
-                          .map((prod) => SizedBox(
-                                width: 250,
-                                key: ValueKey(prod.productID ?? prod.name),
-                                child: ProductDetailCard(
-                                  product: prod,
-                                  categoryID: widget.categoryID,
-                                  onUpdate: (updatedProduct) {
-                                    debugPrint(
-                                        "Updated product: ${updatedProduct.name}");
-                                  },
-                                  onDelete: () {
-                                    widget.onProductDelete(prod);
-                                  },
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
