@@ -347,7 +347,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneNumber.
   ///
   /// In en, this message translates to:
-  /// **'Phone No'**
+  /// **'Phone Number'**
   String get phoneNumber;
 
   /// No description provided for @userId.
@@ -3493,6 +3493,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{quantity} × \${price}'**
   String quantityPrice(int quantity, String price);
+
+  /// No description provided for @allUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'All Users'**
+  String get allUsers;
+
+  /// No description provided for @userManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'User Management'**
+  String get userManagement;
+
+  /// No description provided for @management.
+  ///
+  /// In en, this message translates to:
+  /// **'Management'**
+  String get management;
+
+  /// No description provided for @manageAndMonitorAllUserAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage and monitor all user accounts'**
+  String get manageAndMonitorAllUserAccounts;
+
+  /// No description provided for @searchByUserIdOrUserName.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by User ID or User Name...'**
+  String get searchByUserIdOrUserName;
+
+  /// No description provided for @addUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add User'**
+  String get addUser;
+
+  /// No description provided for @editUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit User'**
+  String get editUser;
+
+  /// No description provided for @addNewUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New User'**
+  String get addNewUser;
+
+  /// No description provided for @emailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get emailAddress;
+
+  /// No description provided for @addressRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Address (Required)'**
+  String get addressRequired;
+
+  /// No description provided for @addressOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Address (Optional)'**
+  String get addressOptional;
+
+  /// No description provided for @roleCannotBeChangedDuringEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Role cannot be changed during edit'**
+  String get roleCannotBeChangedDuringEdit;
+
+  /// No description provided for @accountStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Status'**
+  String get accountStatus;
+
+  /// No description provided for @updateUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Update User'**
+  String get updateUser;
+
+  /// No description provided for @createUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Create User'**
+  String get createUser;
+
+  /// No description provided for @userInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'User Info'**
+  String get userInfo;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration'**
+  String get registration;
+
+  /// No description provided for @usersOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Users Overview'**
+  String get usersOverview;
+
+  /// No description provided for @loadingUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading users...'**
+  String get loadingUsers;
+
+  /// No description provided for @pleaseWaitWhileWeFetchUserData.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait while we fetch the user data'**
+  String get pleaseWaitWhileWeFetchUserData;
+
+  /// No description provided for @noUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get noUsersFound;
+
+  /// No description provided for @tryAdjustingYourSearchCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search criteria'**
+  String get tryAdjustingYourSearchCriteria;
+
+  /// No description provided for @noUsersHaveBeenAddedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No users have been added yet'**
+  String get noUsersHaveBeenAddedYet;
+
+  /// No description provided for @showing.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing'**
+  String get showing;
+
+  /// No description provided for @users.
+  ///
+  /// In en, this message translates to:
+  /// **'users'**
+  String get users;
+
+  /// No description provided for @pleaseFillAllRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill all required fields'**
+  String get pleaseFillAllRequiredFields;
+
+  /// No description provided for @addressIsRequiredForCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'Address is required for customers'**
+  String get addressIsRequiredForCustomers;
+
+  /// No description provided for @pleaseEnterValidEmailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address'**
+  String get pleaseEnterValidEmailAddress;
+
+  /// No description provided for @userAddedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'User added successfully'**
+  String get userAddedSuccessfully;
+
+  /// No description provided for @userUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'User updated successfully'**
+  String get userUpdatedSuccessfully;
+
+  /// No description provided for @userStatusUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'User status updated successfully'**
+  String get userStatusUpdatedSuccessfully;
+
+  /// No description provided for @userDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'User deleted successfully'**
+  String get userDeletedSuccessfully;
+
+  /// No description provided for @failedToUpdateUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update user'**
+  String get failedToUpdateUser;
+
+  /// No description provided for @failedToDeleteUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete user'**
+  String get failedToDeleteUser;
+
+  /// No description provided for @errorDeletingUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting user'**
+  String get errorDeletingUser;
+
+  /// No description provided for @failedToFetchUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to fetch users'**
+  String get failedToFetchUsers;
+
+  /// No description provided for @failedToLoadUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load users'**
+  String get failedToLoadUsers;
+
+  /// No description provided for @failedToAddUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add user'**
+  String get failedToAddUser;
+
+  /// No description provided for @apiDidNotReturnExpectedJsonStructure.
+  ///
+  /// In en, this message translates to:
+  /// **'The API did not return the expected JSON structure.'**
+  String get apiDidNotReturnExpectedJsonStructure;
 }
 
 class _AppLocalizationsDelegate

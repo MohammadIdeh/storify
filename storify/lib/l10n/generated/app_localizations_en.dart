@@ -134,7 +134,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullName => 'Full Name';
 
   @override
-  String get phoneNumber => 'Phone No';
+  String get phoneNumber => 'Phone Number';
 
   @override
   String get userId => 'User ID';
@@ -1814,4 +1814,132 @@ class AppLocalizationsEn extends AppLocalizations {
   String quantityPrice(int quantity, String price) {
     return '$quantity × \$$price';
   }
+
+  @override
+  String get allUsers => 'All Users';
+
+  @override
+  String get userManagement => 'User Management';
+
+  @override
+  String get management => 'Management';
+
+  @override
+  String get manageAndMonitorAllUserAccounts =>
+      'Manage and monitor all user accounts';
+
+  @override
+  String get searchByUserIdOrUserName => 'Search by User ID or User Name...';
+
+  @override
+  String get addUser => 'Add User';
+
+  @override
+  String get editUser => 'Edit User';
+
+  @override
+  String get addNewUser => 'Add New User';
+
+  @override
+  String get emailAddress => 'Email Address';
+
+  @override
+  String get addressRequired => 'Address (Required)';
+
+  @override
+  String get addressOptional => 'Address (Optional)';
+
+  @override
+  String get roleCannotBeChangedDuringEdit =>
+      'Note: Role cannot be changed during edit';
+
+  @override
+  String get accountStatus => 'Account Status';
+
+  @override
+  String get updateUser => 'Update User';
+
+  @override
+  String get createUser => 'Create User';
+
+  @override
+  String get userInfo => 'User Info';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get registration => 'Registration';
+
+  @override
+  String get usersOverview => 'Users Overview';
+
+  @override
+  String get loadingUsers => 'Loading users...';
+
+  @override
+  String get pleaseWaitWhileWeFetchUserData =>
+      'Please wait while we fetch the user data';
+
+  @override
+  String get noUsersFound => 'No users found';
+
+  @override
+  String get tryAdjustingYourSearchCriteria =>
+      'Try adjusting your search criteria';
+
+  @override
+  String get noUsersHaveBeenAddedYet => 'No users have been added yet';
+
+  @override
+  String get showing => 'Showing';
+
+  @override
+  String get users => 'users';
+
+  @override
+  String get pleaseFillAllRequiredFields => 'Please fill all required fields';
+
+  @override
+  String get addressIsRequiredForCustomers =>
+      'Address is required for customers';
+
+  @override
+  String get pleaseEnterValidEmailAddress =>
+      'Please enter a valid email address';
+
+  @override
+  String get userAddedSuccessfully => 'User added successfully';
+
+  @override
+  String get userUpdatedSuccessfully => 'User updated successfully';
+
+  @override
+  String get userStatusUpdatedSuccessfully =>
+      'User status updated successfully';
+
+  @override
+  String get userDeletedSuccessfully => 'User deleted successfully';
+
+  @override
+  String get failedToUpdateUser => 'Failed to update user';
+
+  @override
+  String get failedToDeleteUser => 'Failed to delete user';
+
+  @override
+  String get errorDeletingUser => 'Error deleting user';
+
+  @override
+  String get failedToFetchUsers => 'Failed to fetch users';
+
+  @override
+  String get failedToLoadUsers => 'Failed to load users';
+
+  @override
+  String get failedToAddUser => 'Failed to add user';
+
+  @override
+  String get apiDidNotReturnExpectedJsonStructure =>
+      'The API did not return the expected JSON structure.';
 }

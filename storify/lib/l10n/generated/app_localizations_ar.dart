@@ -210,7 +210,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customer => 'عميل';
 
   @override
-  String get supplier => 'المورد';
+  String get supplier => 'مورد';
 
   @override
   String get deliveryEmployee => 'موظف التوصيل';
@@ -219,7 +219,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get warehouseEmployee => 'موظف المستودع';
 
   @override
-  String get loading => 'جاري التحميل...';
+  String get loading => 'جارٍ التحميل...';
 
   @override
   String get loggingOut => 'جاري تسجيل الخروج...';
@@ -331,7 +331,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orderCount => 'عدد الطلبات';
 
   @override
-  String get total => 'المجموع';
+  String get total => 'الإجمالي';
 
   @override
   String get customers => 'العملاء';
@@ -1795,4 +1795,131 @@ class AppLocalizationsAr extends AppLocalizations {
   String quantityPrice(int quantity, String price) {
     return '$quantity × $price\$';
   }
+
+  @override
+  String get allUsers => 'جميع المستخدمين';
+
+  @override
+  String get userManagement => 'إدارة المستخدمين';
+
+  @override
+  String get management => 'إدارة';
+
+  @override
+  String get manageAndMonitorAllUserAccounts =>
+      'إدارة ومراقبة جميع حسابات المستخدمين';
+
+  @override
+  String get searchByUserIdOrUserName =>
+      'البحث بمعرف المستخدم أو اسم المستخدم...';
+
+  @override
+  String get addUser => 'إضافة مستخدم';
+
+  @override
+  String get editUser => 'تعديل المستخدم';
+
+  @override
+  String get addNewUser => 'إضافة مستخدم جديد';
+
+  @override
+  String get emailAddress => 'عنوان البريد الإلكتروني';
+
+  @override
+  String get addressRequired => 'العنوان (مطلوب)';
+
+  @override
+  String get addressOptional => 'العنوان (اختياري)';
+
+  @override
+  String get roleCannotBeChangedDuringEdit =>
+      'ملاحظة: لا يمكن تغيير الدور أثناء التعديل';
+
+  @override
+  String get accountStatus => 'حالة الحساب';
+
+  @override
+  String get updateUser => 'تحديث المستخدم';
+
+  @override
+  String get createUser => 'إنشاء مستخدم';
+
+  @override
+  String get userInfo => 'معلومات المستخدم';
+
+  @override
+  String get contact => 'التواصل';
+
+  @override
+  String get registration => 'التسجيل';
+
+  @override
+  String get usersOverview => 'نظرة عامة على المستخدمين';
+
+  @override
+  String get loadingUsers => 'جارٍ تحميل المستخدمين...';
+
+  @override
+  String get pleaseWaitWhileWeFetchUserData =>
+      'يرجى الانتظار بينما نجلب بيانات المستخدم';
+
+  @override
+  String get noUsersFound => 'لم يتم العثور على مستخدمين';
+
+  @override
+  String get tryAdjustingYourSearchCriteria =>
+      'جرب تعديل معايير البحث الخاصة بك';
+
+  @override
+  String get noUsersHaveBeenAddedYet => 'لم يتم إضافة مستخدمين بعد';
+
+  @override
+  String get showing => 'عرض';
+
+  @override
+  String get users => 'مستخدمين';
+
+  @override
+  String get pleaseFillAllRequiredFields => 'يرجى ملء جميع الحقول المطلوبة';
+
+  @override
+  String get addressIsRequiredForCustomers => 'العنوان مطلوب للعملاء';
+
+  @override
+  String get pleaseEnterValidEmailAddress =>
+      'يرجى إدخال عنوان بريد إلكتروني صالح';
+
+  @override
+  String get userAddedSuccessfully => 'تم إضافة المستخدم بنجاح';
+
+  @override
+  String get userUpdatedSuccessfully => 'تم تحديث المستخدم بنجاح';
+
+  @override
+  String get userStatusUpdatedSuccessfully => 'تم تحديث حالة المستخدم بنجاح';
+
+  @override
+  String get userDeletedSuccessfully => 'تم حذف المستخدم بنجاح';
+
+  @override
+  String get failedToUpdateUser => 'فشل في تحديث المستخدم';
+
+  @override
+  String get failedToDeleteUser => 'فشل في حذف المستخدم';
+
+  @override
+  String get errorDeletingUser => 'خطأ في حذف المستخدم';
+
+  @override
+  String get failedToFetchUsers => 'فشل في جلب المستخدمين';
+
+  @override
+  String get failedToLoadUsers => 'فشل في تحميل المستخدمين';
+
+  @override
+  String get failedToAddUser => 'فشل في إضافة المستخدم';
+
+  @override
+  String get apiDidNotReturnExpectedJsonStructure =>
+      'لم تُرجع واجهة برمجة التطبيقات هيكل JSON المتوقع.';
 }

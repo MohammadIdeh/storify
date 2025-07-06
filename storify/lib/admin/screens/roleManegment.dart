@@ -16,6 +16,8 @@ import 'package:storify/admin/widgets/rolesWidgets/role_item.dart';
 import 'package:storify/admin/widgets/rolesWidgets/rolesTable.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Rolemanegment extends StatefulWidget {
   const Rolemanegment({super.key});
@@ -31,15 +33,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
   String? profilePictureUrl;
   bool _isLoading = false;
 
-  final List<String> _filters = [
-    "All Users",
-    "Admin",
-    "WareHouseEmployee",
-    "Customer",
-    "Supplier",
-    "DeliveryEmployee"
-  ];
-
+  List<String> _filters = [];
   List<RoleItem> _roleList = [];
 
   final String getUsersApi =
@@ -50,8 +44,28 @@ class _RolemanegmentState extends State<Rolemanegment> {
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
     _loadProfilePicture();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _initializeFilters();
+    if (_roleList.isEmpty && !_isLoading) {
+      _fetchUsers();
+    }
+  }
+
+  void _initializeFilters() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    _filters = [
+      l10n.allUsers,
+      l10n.admin,
+      l10n.warehouseEmployee,
+      l10n.customer,
+      l10n.supplier,
+      l10n.deliveryEmployee
+    ];
   }
 
   Future<void> _loadProfilePicture() async {
@@ -63,6 +77,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   // Updated to handle Active/NotActive format
   Future<RoleItem?> _updateUser(RoleItem updatedUser) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       setState(() => _isLoading = true);
 
@@ -96,11 +112,11 @@ class _RolemanegmentState extends State<Rolemanegment> {
           dateAdded: DateFormat("MM-dd-yyyy HH:mm").format(DateTime.now()),
         );
       } else {
-        throw Exception("Failed to update user: ${response.body}");
+        throw Exception("${l10n.failedToUpdateUser}: ${response.body}");
       }
     } catch (e) {
       debugPrint("Error updating user: $e");
-      _showErrorSnackBar("Failed to update user: $e");
+      _showErrorSnackBar("${l10n.failedToUpdateUser}: $e");
       return null;
     } finally {
       setState(() => _isLoading = false);
@@ -109,6 +125,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   // New method to handle switch toggle
   Future<void> _toggleUserActiveStatus(RoleItem user) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     final updatedUser = user.copyWith(isActive: !user.isActive);
     final result = await _updateUser(updatedUser);
 
@@ -119,11 +137,13 @@ class _RolemanegmentState extends State<Rolemanegment> {
           _roleList[index] = result;
         }
       });
-      _showSuccessSnackBar("User status updated successfully");
+      _showSuccessSnackBar(l10n.userStatusUpdatedSuccessfully);
     }
   }
 
   Future<bool> _deleteUser(String userId) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       setState(() => _isLoading = true);
 
@@ -134,15 +154,15 @@ class _RolemanegmentState extends State<Rolemanegment> {
       });
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        _showSuccessSnackBar("User deleted successfully");
+        _showSuccessSnackBar(l10n.userDeletedSuccessfully);
         return true;
       } else {
-        _showErrorSnackBar("Failed to delete user");
+        _showErrorSnackBar(l10n.failedToDeleteUser);
         return false;
       }
     } catch (e) {
       debugPrint("Error deleting user: $e");
-      _showErrorSnackBar("Error deleting user: $e");
+      _showErrorSnackBar("${l10n.errorDeletingUser}: $e");
       return false;
     } finally {
       setState(() => _isLoading = false);
@@ -198,7 +218,9 @@ class _RolemanegmentState extends State<Rolemanegment> {
       }
     } catch (e) {
       debugPrint("Error fetching users: $e");
-      _showErrorSnackBar("Failed to load users: $e");
+      if (mounted) {
+        _showErrorSnackBar("Failed to load users: $e");
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -232,6 +254,10 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   // Updated dialog with non-editable role during edit
   Future<RoleItem?> _showUserDialog({RoleItem? roleToEdit}) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRTL = LocalizationHelper.isRTL(context);
+
     final nameController = TextEditingController(text: roleToEdit?.name ?? "");
     final emailController =
         TextEditingController(text: roleToEdit?.email ?? "");
@@ -258,8 +284,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
                 ),
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
+                    padding: EdgeInsetsDirectional.symmetric(
+                        horizontal: 24.w, vertical: 24.h),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,12 +306,18 @@ class _RolemanegmentState extends State<Rolemanegment> {
                             ),
                             SizedBox(width: 12.w),
                             Text(
-                              isEditMode ? "Edit User" : "Add New User",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 24.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
+                              isEditMode ? l10n.editUser : l10n.addNewUser,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 24.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 24.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
                             ),
                           ],
                         ),
@@ -294,25 +326,31 @@ class _RolemanegmentState extends State<Rolemanegment> {
                         // Name Field
                         _buildInputField(
                           controller: nameController,
-                          label: "Full Name",
+                          label: l10n.fullName,
                           icon: Icons.person_outline,
+                          isArabic: isArabic,
+                          isRTL: isRTL,
                         ),
                         SizedBox(height: 16.h),
 
                         // Email Field
                         _buildInputField(
                           controller: emailController,
-                          label: "Email Address",
+                          label: l10n.emailAddress,
                           icon: Icons.email_outlined,
                           enabled: !isEditMode, // Disable email editing
+                          isArabic: isArabic,
+                          isRTL: isRTL,
                         ),
                         SizedBox(height: 16.h),
 
                         // Phone Field
                         _buildInputField(
                           controller: phoneController,
-                          label: "Phone Number",
+                          label: l10n.phoneNumber,
                           icon: Icons.phone_outlined,
+                          isArabic: isArabic,
+                          isRTL: isRTL,
                         ),
                         SizedBox(height: 16.h),
 
@@ -320,9 +358,11 @@ class _RolemanegmentState extends State<Rolemanegment> {
                         _buildInputField(
                           controller: addressController,
                           label: selectedRole.toLowerCase() == "customer"
-                              ? "Address (Required)"
-                              : "Address (Optional)",
+                              ? l10n.addressRequired
+                              : l10n.addressOptional,
                           icon: Icons.location_on_outlined,
+                          isArabic: isArabic,
+                          isRTL: isRTL,
                         ),
                         SizedBox(height: 16.h),
 
@@ -343,14 +383,20 @@ class _RolemanegmentState extends State<Rolemanegment> {
                             value: selectedRole,
                             dropdownColor:
                                 const Color.fromARGB(255, 36, 50, 69),
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                            style: isArabic
+                                ? GoogleFonts.cairo(color: Colors.white)
+                                : GoogleFonts.spaceGrotesk(color: Colors.white),
                             decoration: InputDecoration(
-                              labelText: "Role",
-                              labelStyle: GoogleFonts.spaceGrotesk(
-                                  color: isEditMode
-                                      ? Colors.white38
-                                      : Colors.white70),
+                              labelText: l10n.role,
+                              labelStyle: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: isEditMode
+                                          ? Colors.white38
+                                          : Colors.white70)
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: isEditMode
+                                          ? Colors.white38
+                                          : Colors.white70),
                               prefixIcon: Icon(
                                 Icons.admin_panel_settings_outlined,
                                 color: isEditMode
@@ -359,11 +405,11 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                 size: 20.sp,
                               ),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
+                              contentPadding: EdgeInsetsDirectional.symmetric(
                                   horizontal: 16.w, vertical: 16.h),
                             ),
                             items: _filters
-                                .where((role) => role != "All Users")
+                                .where((role) => role != l10n.allUsers)
                                 .map((role) => DropdownMenuItem(
                                       value: role,
                                       child: Text(role),
@@ -384,12 +430,18 @@ class _RolemanegmentState extends State<Rolemanegment> {
                         if (isEditMode) ...[
                           SizedBox(height: 8.h),
                           Text(
-                            "Note: Role cannot be changed during edit",
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.orange.withOpacity(0.8),
-                              fontSize: 12.sp,
-                              fontStyle: FontStyle.italic,
-                            ),
+                            l10n.roleCannotBeChangedDuringEdit,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.orange.withOpacity(0.8),
+                                    fontSize: 12.sp,
+                                    fontStyle: FontStyle.italic,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.orange.withOpacity(0.8),
+                                    fontSize: 12.sp,
+                                    fontStyle: FontStyle.italic,
+                                  ),
                           ),
                         ],
 
@@ -419,21 +471,36 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "Account Status",
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white,
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      l10n.accountStatus,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                     ),
                                     Text(
-                                      localIsActive ? "Active" : "Inactive",
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: localIsActive
-                                            ? Colors.green
-                                            : Colors.red,
-                                        fontSize: 12.sp,
-                                      ),
+                                      localIsActive
+                                          ? l10n.active
+                                          : l10n.inactive,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: localIsActive
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              fontSize: 12.sp,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: localIsActive
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              fontSize: 12.sp,
+                                            ),
                                     ),
                                   ],
                                 ),
@@ -471,12 +538,18 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                 ),
                                 onPressed: () => Navigator.pop(ctx),
                                 child: Text(
-                                  "Cancel",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white70,
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  l10n.cancel,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white70,
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white70,
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                 ),
                               ),
                             ),
@@ -524,12 +597,20 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                   }
                                 },
                                 child: Text(
-                                  isEditMode ? "Update User" : "Create User",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  isEditMode
+                                      ? l10n.updateUser
+                                      : l10n.createUser,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                 ),
                               ),
                             ),
@@ -552,6 +633,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
     required String label,
     required IconData icon,
     bool enabled = true,
+    required bool isArabic,
+    required bool isRTL,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -566,12 +649,18 @@ class _RolemanegmentState extends State<Rolemanegment> {
       child: TextField(
         controller: controller,
         enabled: enabled,
-        style: GoogleFonts.spaceGrotesk(
-            color: enabled ? Colors.white : Colors.white54),
+        // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+        style: isArabic
+            ? GoogleFonts.cairo(color: enabled ? Colors.white : Colors.white54)
+            : GoogleFonts.spaceGrotesk(
+                color: enabled ? Colors.white : Colors.white54),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.spaceGrotesk(
-              color: enabled ? Colors.white70 : Colors.white38),
+          labelStyle: isArabic
+              ? GoogleFonts.cairo(
+                  color: enabled ? Colors.white70 : Colors.white38)
+              : GoogleFonts.spaceGrotesk(
+                  color: enabled ? Colors.white70 : Colors.white38),
           prefixIcon: Icon(
             icon,
             color: enabled
@@ -581,7 +670,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
           ),
           border: InputBorder.none,
           contentPadding:
-              EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+              EdgeInsetsDirectional.symmetric(horizontal: 16.w, vertical: 16.h),
         ),
       ),
     );
@@ -594,23 +683,25 @@ class _RolemanegmentState extends State<Rolemanegment> {
     TextEditingController addressController,
     String selectedRole,
   ) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         phoneController.text.trim().isEmpty) {
-      _showErrorSnackBar("Please fill all required fields");
+      _showErrorSnackBar(l10n.pleaseFillAllRequiredFields);
       return false;
     }
 
     if (selectedRole.toLowerCase() == "customer" &&
         addressController.text.trim().isEmpty) {
-      _showErrorSnackBar("Address is required for customers");
+      _showErrorSnackBar(l10n.addressIsRequiredForCustomers);
       return false;
     }
 
     // Basic email validation
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
         .hasMatch(emailController.text.trim())) {
-      _showErrorSnackBar("Please enter a valid email address");
+      _showErrorSnackBar(l10n.pleaseEnterValidEmailAddress);
       return false;
     }
 
@@ -618,6 +709,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _handleAddUser() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     final newUser = await _showUserDialog();
     if (newUser != null) {
       final addedUser = await _addUser(newUser);
@@ -625,12 +718,14 @@ class _RolemanegmentState extends State<Rolemanegment> {
         setState(() {
           _roleList.add(addedUser);
         });
-        _showSuccessSnackBar("User added successfully");
+        _showSuccessSnackBar(l10n.userAddedSuccessfully);
       }
     }
   }
 
   void _handleEditUser(RoleItem role) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     final updatedUser = await _showUserDialog(roleToEdit: role);
     if (updatedUser != null) {
       final resultUser = await _updateUser(updatedUser);
@@ -641,12 +736,14 @@ class _RolemanegmentState extends State<Rolemanegment> {
             _roleList[index] = resultUser;
           }
         });
-        _showSuccessSnackBar("User updated successfully");
+        _showSuccessSnackBar(l10n.userUpdatedSuccessfully);
       }
     }
   }
 
   Future<RoleItem?> _addUser(RoleItem newUser) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       setState(() => _isLoading = true);
 
@@ -679,18 +776,18 @@ class _RolemanegmentState extends State<Rolemanegment> {
           dateAdded: DateFormat("MM-dd-yyyy HH:mm").format(DateTime.now()),
         );
       } else {
-        throw Exception("Failed to add user: ${response.body}");
+        throw Exception("${l10n.failedToAddUser}: ${response.body}");
       }
     } catch (e) {
       debugPrint("Error adding user: $e");
-      _showErrorSnackBar("Failed to add user: $e");
+      _showErrorSnackBar("${l10n.failedToAddUser}: $e");
       return null;
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  Widget _buildFilterChip(String label, int index) {
+  Widget _buildFilterChip(String label, int index, bool isArabic) {
     final bool isSelected = (_selectedFilterIndex == index);
     return InkWell(
       onTap: () {
@@ -701,7 +798,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+        padding:
+            EdgeInsetsDirectional.symmetric(horizontal: 20.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: isSelected
               ? const Color.fromARGB(255, 105, 65, 198)
@@ -716,29 +814,44 @@ class _RolemanegmentState extends State<Rolemanegment> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : const Color.fromARGB(255, 230, 230, 230),
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                ),
         ),
       ),
     );
   }
 
   void _showErrorSnackBar(String message) {
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRTL = LocalizationHelper.isRTL(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
           children: [
             Icon(Icons.error_outline, color: Colors.white, size: 20.sp),
             SizedBox(width: 8.w),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                style: isArabic
+                    ? GoogleFonts.cairo(color: Colors.white)
+                    : GoogleFonts.spaceGrotesk(color: Colors.white),
+                // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
               ),
             ),
           ],
@@ -751,16 +864,23 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _showSuccessSnackBar(String message) {
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRTL = LocalizationHelper.isRTL(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
           children: [
             Icon(Icons.check_circle_outline, color: Colors.white, size: 20.sp),
             SizedBox(width: 8.w),
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                style: isArabic
+                    ? GoogleFonts.cairo(color: Colors.white)
+                    : GoogleFonts.spaceGrotesk(color: Colors.white),
+                // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
               ),
             ),
           ],
@@ -774,9 +894,13 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRTL = LocalizationHelper.isRTL(context);
+
     String headerText = _selectedFilterIndex == 0
-        ? "User Management"
-        : "${_filters[_selectedFilterIndex]} Management";
+        ? l10n.userManagement
+        : "${_filters.isNotEmpty && _selectedFilterIndex < _filters.length ? _filters[_selectedFilterIndex] : ''} ${l10n.management}";
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
@@ -792,7 +916,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
         children: [
           SingleChildScrollView(
             child: Padding(
-              padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+              padding:
+                  EdgeInsetsDirectional.only(start: 45.w, top: 20.h, end: 45.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -806,19 +931,30 @@ class _RolemanegmentState extends State<Rolemanegment> {
                           children: [
                             Text(
                               headerText,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 32.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 32.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 32.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
                             ),
                             SizedBox(height: 4.h),
                             Text(
-                              "Manage and monitor all user accounts",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14.sp,
-                                color: Colors.white70,
-                              ),
+                              l10n.manageAndMonitorAllUserAccounts,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 14.sp,
+                                      color: Colors.white70,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 14.sp,
+                                      color: Colors.white70,
+                                    ),
                             ),
                           ],
                         ),
@@ -836,7 +972,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                   .withOpacity(0.3),
                             ),
                           ),
-                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                          padding:
+                              EdgeInsetsDirectional.symmetric(horizontal: 16.w),
                           child: Row(
                             children: [
                               Icon(
@@ -852,13 +989,18 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                       _searchQuery = value;
                                     });
                                   },
-                                  style: GoogleFonts.spaceGrotesk(
-                                      color: Colors.white),
+                                  // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(color: Colors.white)
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white),
                                   decoration: InputDecoration(
-                                    hintText:
-                                        'Search by User ID or User Name...',
-                                    hintStyle: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white54),
+                                    hintText: l10n.searchByUserIdOrUserName,
+                                    hintStyle: isArabic
+                                        ? GoogleFonts.cairo(
+                                            color: Colors.white54)
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.white54),
                                     border: InputBorder.none,
                                     isDense: true,
                                   ),
@@ -879,18 +1021,23 @@ class _RolemanegmentState extends State<Rolemanegment> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: EdgeInsets.symmetric(
+                            padding: EdgeInsetsDirectional.symmetric(
                                 horizontal: 20.w, vertical: 20.h),
                             elevation: 2,
                           ),
                           onPressed: _handleAddUser,
                           icon: Icon(Icons.person_add, size: 18.sp),
                           label: Text(
-                            'Add User',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            l10n.addUser,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                           ),
                         ),
                       ],
@@ -914,7 +1061,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
                       spacing: 12.w,
                       runSpacing: 8.h,
                       children: List.generate(_filters.length, (index) {
-                        return _buildFilterChip(_filters[index], index);
+                        return _buildFilterChip(
+                            _filters[index], index, isArabic);
                       }),
                     ),
                   ),
@@ -924,7 +1072,10 @@ class _RolemanegmentState extends State<Rolemanegment> {
                   // Users Table
                   RolesTable(
                     roles: _roleList,
-                    filter: _filters[_selectedFilterIndex],
+                    filter: _filters.isNotEmpty &&
+                            _selectedFilterIndex < _filters.length
+                        ? _filters[_selectedFilterIndex]
+                        : "",
                     isLoading: _isLoading, // Pass the loading state
                     searchQuery: _searchQuery,
                     onDeleteRole: (role) {
