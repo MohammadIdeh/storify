@@ -206,6 +206,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
 
   void _openNotificationMenu() {
     if (_isDisposed || _isLoggingOut) return;
+    final isRtl = LocalizationHelper.isRTL(context); // Add this line
 
     if (_isMenuOpen) {
       _closeMenu();
@@ -226,7 +227,9 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                 ),
               ),
               Positioned(
-                right: 100,
+                // Apply the same RTL logic as the profile popup
+                right: isRtl ? null : 100, // For English: position on right
+                left: isRtl ? 100 : null, // For Arabic: position on left
                 top: 100,
                 child: Material(
                   color: Colors.transparent,
