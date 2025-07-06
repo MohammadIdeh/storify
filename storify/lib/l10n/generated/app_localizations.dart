@@ -1187,7 +1187,7 @@ abstract class AppLocalizations {
   /// No description provided for @inactive.
   ///
   /// In en, this message translates to:
-  /// **'UnActive'**
+  /// **'Inactive'**
   String get inactive;
 
   /// No description provided for @pending.
@@ -1333,12 +1333,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sell Price'**
   String get sellPrice;
-
-  /// No description provided for @quantity.
-  ///
-  /// In en, this message translates to:
-  /// **'Quantity'**
-  String get quantity;
 
   /// No description provided for @unit.
   ///
@@ -1609,12 +1603,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not specified'**
   String get notSpecified;
-
-  /// No description provided for @notAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Not available'**
-  String get notAvailable;
 
   /// No description provided for @enterThreshold.
   ///
@@ -2275,6 +2263,750 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sell'**
   String get sell;
+
+  /// No description provided for @supplierOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Orders'**
+  String get supplierOrders;
+
+  /// No description provided for @customerOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Orders'**
+  String get customerOrders;
+
+  /// No description provided for @orderFromSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Order From Supplier'**
+  String get orderFromSupplier;
+
+  /// No description provided for @customerHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer History'**
+  String get customerHistory;
+
+  /// No description provided for @totalOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Orders'**
+  String get totalOrders;
+
+  /// No description provided for @activeOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Orders'**
+  String get activeOrders;
+
+  /// No description provided for @completedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Orders'**
+  String get completedOrders;
+
+  /// No description provided for @cancelledOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled Orders'**
+  String get cancelledOrders;
+
+  /// No description provided for @allStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'All Status'**
+  String get allStatus;
+
+  /// No description provided for @statusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get statusAccepted;
+
+  /// No description provided for @statusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get statusAssigned;
+
+  /// No description provided for @statusPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get statusPreparing;
+
+  /// No description provided for @statusPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared'**
+  String get statusPrepared;
+
+  /// No description provided for @statusOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'On The Way'**
+  String get statusOnTheWay;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get statusDelivered;
+
+  /// No description provided for @statusShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get statusShipped;
+
+  /// No description provided for @statusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get statusDeclined;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @statusDeclinedByAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined by Admin'**
+  String get statusDeclinedByAdmin;
+
+  /// No description provided for @statusPartiallyAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Accepted'**
+  String get statusPartiallyAccepted;
+
+  /// No description provided for @allOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'All Orders'**
+  String get allOrders;
+
+  /// No description provided for @assign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get assign;
+
+  /// No description provided for @searchId.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ID'**
+  String get searchId;
+
+  /// No description provided for @checkingLowStockItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for low stock items...'**
+  String get checkingLowStockItems;
+
+  /// No description provided for @noLowStockItemsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No low stock items found at this time'**
+  String get noLowStockItemsFound;
+
+  /// No description provided for @errorFetchingLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching low stock items'**
+  String get errorFetchingLowStock;
+
+  /// No description provided for @unexpectedCustomerOrdersFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected customer orders response format'**
+  String get unexpectedCustomerOrdersFormat;
+
+  /// No description provided for @errorFetchingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching orders'**
+  String get errorFetchingOrders;
+
+  /// No description provided for @criticalStockAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical Stock Alert!'**
+  String get criticalStockAlert;
+
+  /// No description provided for @lowStockAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock Alert'**
+  String get lowStockAlert;
+
+  /// No description provided for @justNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// No description provided for @orderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetails;
+
+  /// No description provided for @printInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Invoice'**
+  String get printInvoice;
+
+  /// No description provided for @image.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get image;
+
+  /// No description provided for @item.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get item;
+
+  /// No description provided for @unitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get unitPrice;
+
+  /// No description provided for @quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get quantity;
+
+  /// No description provided for @prodDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Prod Date'**
+  String get prodDate;
+
+  /// No description provided for @expDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Exp Date'**
+  String get expDate;
+
+  /// No description provided for @product.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get product;
+
+  /// No description provided for @grandTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total'**
+  String get grandTotal;
+
+  /// No description provided for @orderInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Info'**
+  String get orderInfo;
+
+  /// No description provided for @deliveryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Date'**
+  String get deliveryDate;
+
+  /// No description provided for @orderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Time'**
+  String get orderTime;
+
+  /// No description provided for @paymentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Status'**
+  String get paymentStatus;
+
+  /// No description provided for @systemOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'System Order'**
+  String get systemOrder;
+
+  /// No description provided for @orderActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Actions'**
+  String get orderActions;
+
+  /// No description provided for @addNoteForDeclining.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (required for declining)...'**
+  String get addNoteForDeclining;
+
+  /// No description provided for @addNoteForOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note for this order (optional)...'**
+  String get addNoteForOrder;
+
+  /// No description provided for @acceptEntireOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Entire Order'**
+  String get acceptEntireOrder;
+
+  /// No description provided for @declineOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline Order'**
+  String get declineOrder;
+
+  /// No description provided for @acceptOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Order'**
+  String get acceptOrder;
+
+  /// No description provided for @rejectOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject Order'**
+  String get rejectOrder;
+
+  /// No description provided for @note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get note;
+
+  /// No description provided for @supplierInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier info'**
+  String get supplierInfo;
+
+  /// No description provided for @customerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer info'**
+  String get customerInfo;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'N/A'**
+  String get notAvailable;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get goBack;
+
+  /// No description provided for @errorFetchingOrderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching order details'**
+  String get errorFetchingOrderDetails;
+
+  /// No description provided for @failedToLoadOrderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load order details'**
+  String get failedToLoadOrderDetails;
+
+  /// No description provided for @statusCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Status code'**
+  String get statusCode;
+
+  /// No description provided for @failedToLoadCustomerOrderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load customer order details'**
+  String get failedToLoadCustomerOrderDetails;
+
+  /// No description provided for @errorFetchingCustomerOrderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching customer order details'**
+  String get errorFetchingCustomerOrderDetails;
+
+  /// No description provided for @orderDataNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Order data not found in response'**
+  String get orderDataNotFound;
+
+  /// No description provided for @orderAcceptedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Order accepted successfully'**
+  String get orderAcceptedSuccessfully;
+
+  /// No description provided for @failedToAcceptOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept order'**
+  String get failedToAcceptOrder;
+
+  /// No description provided for @errorAcceptingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Error accepting order'**
+  String get errorAcceptingOrder;
+
+  /// No description provided for @provideReasonForDeclining.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a reason for declining this order'**
+  String get provideReasonForDeclining;
+
+  /// No description provided for @orderDeclinedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Order declined successfully'**
+  String get orderDeclinedSuccessfully;
+
+  /// No description provided for @failedToDeclineOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to decline order'**
+  String get failedToDeclineOrder;
+
+  /// No description provided for @errorDecliningOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Error declining order'**
+  String get errorDecliningOrder;
+
+  /// No description provided for @provideReasonForRejecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a reason for rejecting this order'**
+  String get provideReasonForRejecting;
+
+  /// No description provided for @orderRejectedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Order rejected successfully'**
+  String get orderRejectedSuccessfully;
+
+  /// No description provided for @failedToRejectOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to reject order'**
+  String get failedToRejectOrder;
+
+  /// No description provided for @errorRejectingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Error rejecting order'**
+  String get errorRejectingOrder;
+
+  /// No description provided for @assignOrdersToDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Orders to Delivery'**
+  String get assignOrdersToDelivery;
+
+  /// No description provided for @loadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading data...'**
+  String get loadingData;
+
+  /// No description provided for @preparedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared Orders'**
+  String get preparedOrders;
+
+  /// No description provided for @deselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get deselectAll;
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get selectAll;
+
+  /// No description provided for @noPreparedOrdersAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No prepared orders available'**
+  String get noPreparedOrdersAvailable;
+
+  /// No description provided for @order.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get order;
+
+  /// No description provided for @assignmentDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment Details'**
+  String get assignmentDetails;
+
+  /// No description provided for @selectEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Employee'**
+  String get selectEmployee;
+
+  /// No description provided for @estimatedTimeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Time (minutes)'**
+  String get estimatedTimeMinutes;
+
+  /// No description provided for @enterMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter minutes'**
+  String get enterMinutes;
+
+  /// No description provided for @notesOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (Optional)'**
+  String get notesOptional;
+
+  /// No description provided for @addDeliveryNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Add delivery notes...'**
+  String get addDeliveryNotes;
+
+  /// No description provided for @selectedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Orders'**
+  String get selectedOrders;
+
+  /// No description provided for @ordersSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'orders selected'**
+  String get ordersSelected;
+
+  /// No description provided for @assignOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Orders'**
+  String get assignOrders;
+
+  /// No description provided for @assigning.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigning...'**
+  String get assigning;
+
+  /// No description provided for @selectAtLeastOneOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one order to assign'**
+  String get selectAtLeastOneOrder;
+
+  /// No description provided for @selectDeliveryEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a delivery employee'**
+  String get selectDeliveryEmployee;
+
+  /// No description provided for @enterValidEstimatedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid estimated time'**
+  String get enterValidEstimatedTime;
+
+  /// No description provided for @invalidOrderIds.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid order IDs'**
+  String get invalidOrderIds;
+
+  /// No description provided for @errorAssigningOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Error assigning orders'**
+  String get errorAssigningOrders;
+
+  /// No description provided for @assignmentResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment Result'**
+  String get assignmentResult;
+
+  /// No description provided for @successfullyAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully assigned'**
+  String get successfullyAssigned;
+
+  /// No description provided for @failedToAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to assign'**
+  String get failedToAssign;
+
+  /// No description provided for @customerOrdersHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Orders History'**
+  String get customerOrdersHistory;
+
+  /// No description provided for @viewDetailedCustomerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'View detailed customer information and order history'**
+  String get viewDetailedCustomerInfo;
+
+  /// No description provided for @searchCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers...'**
+  String get searchCustomers;
+
+  /// No description provided for @avgOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Orders'**
+  String get avgOrders;
+
+  /// No description provided for @balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get balance;
+
+  /// No description provided for @since.
+  ///
+  /// In en, this message translates to:
+  /// **'Since'**
+  String get since;
+
+  /// No description provided for @noCustomersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No customers found'**
+  String get noCustomersFound;
+
+  /// No description provided for @orderHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Order History'**
+  String get orderHistory;
+
+  /// No description provided for @customerOrderHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'\'s Order History'**
+  String get customerOrderHistory;
+
+  /// No description provided for @selectACustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a customer'**
+  String get selectACustomer;
+
+  /// No description provided for @chooseCustomerFromList.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a customer from the list to view their order history'**
+  String get chooseCustomerFromList;
+
+  /// No description provided for @noOrdersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders found'**
+  String get noOrdersFound;
+
+  /// No description provided for @customerHasntPlacedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'This customer hasn\'t placed any orders yet'**
+  String get customerHasntPlacedOrders;
+
+  /// No description provided for @date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// No description provided for @discount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get discount;
+
+  /// No description provided for @paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get paid;
+
+  /// No description provided for @viewItems.
+  ///
+  /// In en, this message translates to:
+  /// **'View Items'**
+  String get viewItems;
+
+  /// No description provided for @deliveryBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery by'**
+  String get deliveryBy;
+
+  /// No description provided for @failedToLoadCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load customers'**
+  String get failedToLoadCustomers;
+
+  /// No description provided for @failedToLoadCustomerHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load customer history'**
+  String get failedToLoadCustomerHistory;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
 }
 
 class _AppLocalizationsDelegate

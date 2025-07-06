@@ -568,7 +568,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get active => 'Active';
 
   @override
-  String get inactive => 'UnActive';
+  String get inactive => 'Inactive';
 
   @override
   String get pending => 'Pending';
@@ -649,9 +649,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sellPrice => 'Sell Price';
-
-  @override
-  String get quantity => 'Quantity';
 
   @override
   String get unit => 'Unit';
@@ -792,9 +789,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notSpecified => 'Not specified';
-
-  @override
-  String get notAvailable => 'Not available';
 
   @override
   String get enterThreshold => 'Enter threshold';
@@ -1146,4 +1140,385 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sell => 'Sell';
+
+  @override
+  String get supplierOrders => 'Supplier Orders';
+
+  @override
+  String get customerOrders => 'Customer Orders';
+
+  @override
+  String get orderFromSupplier => 'Order From Supplier';
+
+  @override
+  String get customerHistory => 'Customer History';
+
+  @override
+  String get totalOrders => 'Total Orders';
+
+  @override
+  String get activeOrders => 'Active Orders';
+
+  @override
+  String get completedOrders => 'Completed Orders';
+
+  @override
+  String get cancelledOrders => 'Cancelled Orders';
+
+  @override
+  String get allStatus => 'All Status';
+
+  @override
+  String get statusAccepted => 'Accepted';
+
+  @override
+  String get statusAssigned => 'Assigned';
+
+  @override
+  String get statusPreparing => 'Preparing';
+
+  @override
+  String get statusPrepared => 'Prepared';
+
+  @override
+  String get statusOnTheWay => 'On The Way';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusDelivered => 'Delivered';
+
+  @override
+  String get statusShipped => 'Shipped';
+
+  @override
+  String get statusDeclined => 'Declined';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusDeclinedByAdmin => 'Declined by Admin';
+
+  @override
+  String get statusPartiallyAccepted => 'Partially Accepted';
+
+  @override
+  String get allOrders => 'All Orders';
+
+  @override
+  String get assign => 'Assign';
+
+  @override
+  String get searchId => 'Search ID';
+
+  @override
+  String get checkingLowStockItems => 'Checking for low stock items...';
+
+  @override
+  String get noLowStockItemsFound => 'No low stock items found at this time';
+
+  @override
+  String get errorFetchingLowStock => 'Error fetching low stock items';
+
+  @override
+  String get unexpectedCustomerOrdersFormat =>
+      'Unexpected customer orders response format';
+
+  @override
+  String get errorFetchingOrders => 'Error fetching orders';
+
+  @override
+  String get criticalStockAlert => 'Critical Stock Alert!';
+
+  @override
+  String get lowStockAlert => 'Low Stock Alert';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String get orderDetails => 'Order Details';
+
+  @override
+  String get printInvoice => 'Print Invoice';
+
+  @override
+  String get image => 'Image';
+
+  @override
+  String get item => 'Item';
+
+  @override
+  String get unitPrice => 'Unit Price';
+
+  @override
+  String get quantity => 'Qty';
+
+  @override
+  String get prodDate => 'Prod Date';
+
+  @override
+  String get expDate => 'Exp Date';
+
+  @override
+  String get product => 'Product';
+
+  @override
+  String get grandTotal => 'Grand Total';
+
+  @override
+  String get orderInfo => 'Order Info';
+
+  @override
+  String get deliveryDate => 'Delivery Date';
+
+  @override
+  String get orderTime => 'Order Time';
+
+  @override
+  String get paymentStatus => 'Payment Status';
+
+  @override
+  String get systemOrder => 'System Order';
+
+  @override
+  String get orderActions => 'Order Actions';
+
+  @override
+  String get addNoteForDeclining => 'Add a note (required for declining)...';
+
+  @override
+  String get addNoteForOrder => 'Add a note for this order (optional)...';
+
+  @override
+  String get acceptEntireOrder => 'Accept Entire Order';
+
+  @override
+  String get declineOrder => 'Decline Order';
+
+  @override
+  String get acceptOrder => 'Accept Order';
+
+  @override
+  String get rejectOrder => 'Reject Order';
+
+  @override
+  String get note => 'Note';
+
+  @override
+  String get supplierInfo => 'Supplier info';
+
+  @override
+  String get customerInfo => 'Customer info';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get notAvailable => 'N/A';
+
+  @override
+  String get goBack => 'Go Back';
+
+  @override
+  String get errorFetchingOrderDetails => 'Error fetching order details';
+
+  @override
+  String get failedToLoadOrderDetails => 'Failed to load order details';
+
+  @override
+  String get statusCode => 'Status code';
+
+  @override
+  String get failedToLoadCustomerOrderDetails =>
+      'Failed to load customer order details';
+
+  @override
+  String get errorFetchingCustomerOrderDetails =>
+      'Error fetching customer order details';
+
+  @override
+  String get orderDataNotFound => 'Order data not found in response';
+
+  @override
+  String get orderAcceptedSuccessfully => 'Order accepted successfully';
+
+  @override
+  String get failedToAcceptOrder => 'Failed to accept order';
+
+  @override
+  String get errorAcceptingOrder => 'Error accepting order';
+
+  @override
+  String get provideReasonForDeclining =>
+      'Please provide a reason for declining this order';
+
+  @override
+  String get orderDeclinedSuccessfully => 'Order declined successfully';
+
+  @override
+  String get failedToDeclineOrder => 'Failed to decline order';
+
+  @override
+  String get errorDecliningOrder => 'Error declining order';
+
+  @override
+  String get provideReasonForRejecting =>
+      'Please provide a reason for rejecting this order';
+
+  @override
+  String get orderRejectedSuccessfully => 'Order rejected successfully';
+
+  @override
+  String get failedToRejectOrder => 'Failed to reject order';
+
+  @override
+  String get errorRejectingOrder => 'Error rejecting order';
+
+  @override
+  String get assignOrdersToDelivery => 'Assign Orders to Delivery';
+
+  @override
+  String get loadingData => 'Loading data...';
+
+  @override
+  String get preparedOrders => 'Prepared Orders';
+
+  @override
+  String get deselectAll => 'Deselect All';
+
+  @override
+  String get selectAll => 'Select All';
+
+  @override
+  String get noPreparedOrdersAvailable => 'No prepared orders available';
+
+  @override
+  String get order => 'Order';
+
+  @override
+  String get assignmentDetails => 'Assignment Details';
+
+  @override
+  String get selectEmployee => 'Select Employee';
+
+  @override
+  String get estimatedTimeMinutes => 'Estimated Time (minutes)';
+
+  @override
+  String get enterMinutes => 'Enter minutes';
+
+  @override
+  String get notesOptional => 'Notes (Optional)';
+
+  @override
+  String get addDeliveryNotes => 'Add delivery notes...';
+
+  @override
+  String get selectedOrders => 'Selected Orders';
+
+  @override
+  String get ordersSelected => 'orders selected';
+
+  @override
+  String get assignOrders => 'Assign Orders';
+
+  @override
+  String get assigning => 'Assigning...';
+
+  @override
+  String get selectAtLeastOneOrder =>
+      'Please select at least one order to assign';
+
+  @override
+  String get selectDeliveryEmployee => 'Please select a delivery employee';
+
+  @override
+  String get enterValidEstimatedTime => 'Please enter a valid estimated time';
+
+  @override
+  String get invalidOrderIds => 'Invalid order IDs';
+
+  @override
+  String get errorAssigningOrders => 'Error assigning orders';
+
+  @override
+  String get assignmentResult => 'Assignment Result';
+
+  @override
+  String get successfullyAssigned => 'Successfully assigned';
+
+  @override
+  String get failedToAssign => 'Failed to assign';
+
+  @override
+  String get customerOrdersHistory => 'Customer Orders History';
+
+  @override
+  String get viewDetailedCustomerInfo =>
+      'View detailed customer information and order history';
+
+  @override
+  String get searchCustomers => 'Search customers...';
+
+  @override
+  String get avgOrders => 'Avg Orders';
+
+  @override
+  String get balance => 'Balance';
+
+  @override
+  String get since => 'Since';
+
+  @override
+  String get noCustomersFound => 'No customers found';
+
+  @override
+  String get orderHistory => 'Order History';
+
+  @override
+  String get customerOrderHistory => '\'s Order History';
+
+  @override
+  String get selectACustomer => 'Select a customer';
+
+  @override
+  String get chooseCustomerFromList =>
+      'Choose a customer from the list to view their order history';
+
+  @override
+  String get noOrdersFound => 'No orders found';
+
+  @override
+  String get customerHasntPlacedOrders =>
+      'This customer hasn\'t placed any orders yet';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get discount => 'Discount';
+
+  @override
+  String get paid => 'Paid';
+
+  @override
+  String get viewItems => 'View Items';
+
+  @override
+  String get deliveryBy => 'Delivery by';
+
+  @override
+  String get failedToLoadCustomers => 'Failed to load customers';
+
+  @override
+  String get failedToLoadCustomerHistory => 'Failed to load customer history';
+
+  @override
+  String get statusCancelled => 'Cancelled';
 }

@@ -1,4 +1,4 @@
-// lib/admin/screens/orders.dart (Updated with Customer History)
+// lib/admin/screens/orders.dart (Updated with Localization)
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,6 +6,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+// Localization imports
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 // Ensure these imports point to your local files.
 import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
@@ -115,9 +118,11 @@ class _OrdersState extends State<Orders> {
       } else {
         debugPrint('❌ No current low stock items found');
         if (mounted) {
+          final l10n =
+              Localizations.of<AppLocalizations>(context, AppLocalizations)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('No low stock items found at this time'),
+              content: Text(l10n.noLowStockItemsFound),
               backgroundColor: Colors.orange,
             ),
           );
@@ -126,9 +131,11 @@ class _OrdersState extends State<Orders> {
     } catch (e) {
       debugPrint('💥 Error fetching current low stock items: $e');
       if (mounted) {
+        final l10n =
+            Localizations.of<AppLocalizations>(context, AppLocalizations)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error fetching low stock items: $e'),
+            content: Text('${l10n.errorFetchingLowStock}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -234,12 +241,14 @@ class _OrdersState extends State<Orders> {
     try {
       final message = LowStockService.getNotificationMessage(items);
       final hasCritical = LowStockService.hasCriticalItems(items);
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
       final notification = NotificationItem(
         id: 'low_stock_${DateTime.now().millisecondsSinceEpoch}',
-        title: hasCritical ? 'Critical Stock Alert!' : 'Low Stock Alert',
+        title: hasCritical ? l10n.criticalStockAlert : l10n.lowStockAlert,
         message: message,
-        timeAgo: 'Just now',
+        timeAgo: l10n.justNow,
         isRead: false,
         icon: hasCritical ? Icons.error : Icons.warning_amber_rounded,
         iconBackgroundColor: hasCritical ? Colors.red : Colors.orange,
@@ -342,8 +351,10 @@ class _OrdersState extends State<Orders> {
           });
         } else {
           // If it's neither a list nor a map with 'orders' key
+          final l10n =
+              Localizations.of<AppLocalizations>(context, AppLocalizations)!;
           setState(() {
-            _errorMessage = 'Unexpected customer orders response format';
+            _errorMessage = l10n.unexpectedCustomerOrdersFormat;
           });
         }
 
@@ -359,8 +370,10 @@ class _OrdersState extends State<Orders> {
       }
     } catch (e) {
       debugPrint('Error fetching orders: $e');
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations)!;
       setState(() {
-        _errorMessage = 'Error fetching orders: $e';
+        _errorMessage = '${l10n.errorFetchingOrders}: $e';
         _isLoading = false;
       });
     }
@@ -427,11 +440,11 @@ class _OrdersState extends State<Orders> {
       .length;
 
   // Build card data dynamically.
-  List<_OrderCardData> get _ordersData {
+  List<_OrderCardData> _buildOrdersData(AppLocalizations l10n) {
     return [
       _OrderCardData(
         svgIconPath: 'assets/images/totalorders.svg',
-        title: 'Total Orders',
+        title: l10n.totalOrders,
         count: totalOrdersCount.toString(),
         percentage: 1.0, // Always full for Total Orders.
         circleColor: const Color.fromARGB(255, 0, 196, 255), // cyan
@@ -439,7 +452,7 @@ class _OrdersState extends State<Orders> {
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/Activeorders.svg',
-        title: 'Active Orders',
+        title: l10n.activeOrders,
         count: activeCount.toString(),
         percentage: totalOrdersCount > 0 ? activeCount / totalOrdersCount : 0.0,
         circleColor: const Color.fromARGB(255, 255, 232, 29), // yellow
@@ -447,7 +460,7 @@ class _OrdersState extends State<Orders> {
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/completedOrders.svg',
-        title: 'Completed Orders',
+        title: l10n.completedOrders,
         count: completedCount.toString(),
         percentage:
             totalOrdersCount > 0 ? completedCount / totalOrdersCount : 0.0,
@@ -456,7 +469,7 @@ class _OrdersState extends State<Orders> {
       ),
       _OrderCardData(
         svgIconPath: 'assets/images/cancorders.svg',
-        title: 'Cancelled Orders',
+        title: l10n.cancelledOrders,
         count: cancelledCount.toString(),
         percentage:
             totalOrdersCount > 0 ? cancelledCount / totalOrdersCount : 0.0,
@@ -537,6 +550,11 @@ class _OrdersState extends State<Orders> {
 
   @override
   Widget build(BuildContext context) {
+    // Localization setup
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: PreferredSize(
@@ -549,7 +567,11 @@ class _OrdersState extends State<Orders> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+          padding: EdgeInsets.only(
+            left: isRtl ? 45.w : 45.w,
+            top: 20.h,
+            right: isRtl ? 45.w : 45.w,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -557,12 +579,18 @@ class _OrdersState extends State<Orders> {
               Row(
                 children: [
                   Text(
-                    _isSupplierMode ? "Supplier Orders" : "Customer Orders",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 35.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                    _isSupplierMode ? l10n.supplierOrders : l10n.customerOrders,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 35.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 35.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                   ),
                   SizedBox(width: 20.w),
                   // Add filter toggle
@@ -589,12 +617,18 @@ class _OrdersState extends State<Orders> {
                             ),
                             child: Center(
                               child: Text(
-                                "Suppliers",
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                                l10n.suppliers,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                               ),
                             ),
                           ),
@@ -613,12 +647,18 @@ class _OrdersState extends State<Orders> {
                             ),
                             child: Center(
                               child: Text(
-                                "Customers",
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                                l10n.customers,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                               ),
                             ),
                           ),
@@ -650,12 +690,18 @@ class _OrdersState extends State<Orders> {
                         }
                       },
                       child: Text(
-                        'Order From Supplier',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 17.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                        l10n.orderFromSupplier,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 17.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 17.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                       ),
                     ),
 
@@ -684,12 +730,18 @@ class _OrdersState extends State<Orders> {
                           ),
                           SizedBox(width: 8.w),
                           Text(
-                            'Customer History',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 17.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                            l10n.customerHistory,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
                           ),
                         ],
                       ),
@@ -732,12 +784,18 @@ class _OrdersState extends State<Orders> {
                               ),
                               SizedBox(width: 8.w),
                               Text(
-                                'Low Stock (${_lowStockItems.length})',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
+                                '${l10n.lowStock} (${_lowStockItems.length})',
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
                               ),
                             ],
                           ),
@@ -788,11 +846,16 @@ class _OrdersState extends State<Orders> {
                       ),
                       SizedBox(width: 12.w),
                       Text(
-                        'Checking for low stock items...',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14.sp,
-                          color: Colors.white70,
-                        ),
+                        l10n.checkingLowStockItems,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                color: Colors.white70,
+                              ),
                       ),
                     ],
                   ),
@@ -807,12 +870,13 @@ class _OrdersState extends State<Orders> {
                   final cardWidth =
                       (availableWidth - ((numberOfCards - 1) * spacing)) /
                           numberOfCards;
+                  final ordersData = _buildOrdersData(l10n);
                   return Wrap(
                     spacing: spacing,
                     runSpacing: 20,
-                    children: List.generate(_ordersData.length, (index) {
+                    children: List.generate(ordersData.length, (index) {
                       final bool isSelected = (_selectedCardIndex == index);
-                      final data = _ordersData[index];
+                      final data = ordersData[index];
                       return GestureDetector(
                         onTap: () => _onCardTap(index),
                         child: SizedBox(
@@ -831,7 +895,8 @@ class _OrdersState extends State<Orders> {
                               if (data.hasDropdown && index == 1 && isSelected)
                                 Positioned(
                                   top: 55.h,
-                                  right: 12.w,
+                                  right: isRtl ? null : 12.w,
+                                  left: isRtl ? 12.w : null,
                                   child: Container(
                                     width: 140.w,
                                     decoration: BoxDecoration(
@@ -884,13 +949,21 @@ class _OrdersState extends State<Orders> {
                                                 ),
                                                 SizedBox(width: 6.w),
                                                 Text(
-                                                  'All Status',
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    fontSize: 12.sp,
-                                                    color: Colors.white70,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
+                                                  l10n.allStatus,
+                                                  style: isArabic
+                                                      ? GoogleFonts.cairo(
+                                                          fontSize: 12.sp,
+                                                          color: Colors.white70,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        )
+                                                      : GoogleFonts
+                                                          .spaceGrotesk(
+                                                          fontSize: 12.sp,
+                                                          color: Colors.white70,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
                                                 ),
                                               ],
                                             ),
@@ -921,16 +994,27 @@ class _OrdersState extends State<Orders> {
                                                     Flexible(
                                                       child: Text(
                                                         status == null
-                                                            ? 'All Status'
+                                                            ? l10n.allStatus
                                                             : _getStatusDisplayName(
-                                                                status),
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          fontSize: 12.sp,
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
+                                                                status, l10n),
+                                                        style: isArabic
+                                                            ? GoogleFonts.cairo(
+                                                                fontSize: 12.sp,
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              )
+                                                            : GoogleFonts
+                                                                .spaceGrotesk(
+                                                                fontSize: 12.sp,
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
                                                         overflow: TextOverflow
                                                             .ellipsis,
                                                       ),
@@ -942,10 +1026,15 @@ class _OrdersState extends State<Orders> {
                                           },
                                           dropdownColor: const Color.fromARGB(
                                               255, 45, 60, 80),
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 12.sp,
-                                            color: Colors.white,
-                                          ),
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  fontSize: 12.sp,
+                                                  color: Colors.white,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  fontSize: 12.sp,
+                                                  color: Colors.white,
+                                                ),
                                           icon: Padding(
                                             padding:
                                                 EdgeInsets.only(right: 8.w),
@@ -1022,26 +1111,48 @@ class _OrdersState extends State<Orders> {
                                                         ),
                                                         SizedBox(width: 8.w),
                                                         Text(
-                                                          'All Status',
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            fontSize: 12.sp,
-                                                            color: _selectedActiveStatus ==
-                                                                    null
-                                                                ? const Color
-                                                                    .fromARGB(
-                                                                    255,
-                                                                    105,
-                                                                    65,
-                                                                    198)
-                                                                : Colors.white,
-                                                            fontWeight:
-                                                                _selectedActiveStatus == null
-                                                                    ? FontWeight
-                                                                        .w600
-                                                                    : FontWeight
-                                                                        .w500,
-                                                          ),
+                                                          l10n.allStatus,
+                                                          style: isArabic
+                                                              ? GoogleFonts
+                                                                  .cairo(
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                  color: _selectedActiveStatus ==
+                                                                          null
+                                                                      ? const Color
+                                                                          .fromARGB(
+                                                                          255,
+                                                                          105,
+                                                                          65,
+                                                                          198)
+                                                                      : Colors
+                                                                          .white,
+                                                                  fontWeight: _selectedActiveStatus == null
+                                                                      ? FontWeight
+                                                                          .w600
+                                                                      : FontWeight
+                                                                          .w500,
+                                                                )
+                                                              : GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                  color: _selectedActiveStatus ==
+                                                                          null
+                                                                      ? const Color
+                                                                          .fromARGB(
+                                                                          255,
+                                                                          105,
+                                                                          65,
+                                                                          198)
+                                                                      : Colors
+                                                                          .white,
+                                                                  fontWeight: _selectedActiveStatus == null
+                                                                      ? FontWeight
+                                                                          .w600
+                                                                      : FontWeight
+                                                                          .w500,
+                                                                ),
                                                         ),
                                                       ],
                                                     ),
@@ -1111,25 +1222,46 @@ class _OrdersState extends State<Orders> {
                                                           Flexible(
                                                             child: Text(
                                                               _getStatusDisplayName(
-                                                                  status),
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                fontSize: 12.sp,
-                                                                color: isSelected
-                                                                    ? const Color
-                                                                        .fromARGB(
-                                                                        255,
-                                                                        105,
-                                                                        65,
-                                                                        198)
-                                                                    : Colors
-                                                                        .white,
-                                                                fontWeight: isSelected
-                                                                    ? FontWeight
-                                                                        .w600
-                                                                    : FontWeight
-                                                                        .w500,
-                                                              ),
+                                                                  status, l10n),
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      fontSize:
+                                                                          12.sp,
+                                                                      color: isSelected
+                                                                          ? const Color
+                                                                              .fromARGB(
+                                                                              255,
+                                                                              105,
+                                                                              65,
+                                                                              198)
+                                                                          : Colors
+                                                                              .white,
+                                                                      fontWeight: isSelected
+                                                                          ? FontWeight
+                                                                              .w600
+                                                                          : FontWeight
+                                                                              .w500,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      fontSize:
+                                                                          12.sp,
+                                                                      color: isSelected
+                                                                          ? const Color
+                                                                              .fromARGB(
+                                                                              255,
+                                                                              105,
+                                                                              65,
+                                                                              198)
+                                                                          : Colors
+                                                                              .white,
+                                                                      fontWeight: isSelected
+                                                                          ? FontWeight
+                                                                              .w600
+                                                                          : FontWeight
+                                                                              .w500,
+                                                                    ),
                                                               overflow:
                                                                   TextOverflow
                                                                       .ellipsis,
@@ -1164,17 +1296,23 @@ class _OrdersState extends State<Orders> {
                   Text(
                     // Optionally update title based on filter.
                     _selectedFilter == "Total"
-                        ? "All Orders"
+                        ? l10n.allOrders
                         : _selectedFilter == "Active"
-                            ? "Active Orders"
+                            ? l10n.activeOrders
                             : _selectedFilter == "Completed"
-                                ? "Completed Orders"
-                                : "Cancelled Orders",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 30.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                                ? l10n.completedOrders
+                                : l10n.cancelledOrders,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 30.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 30.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                   ),
                   SizedBox(width: 24.w),
                   // Placeholder for potential filter chips.
@@ -1201,12 +1339,18 @@ class _OrdersState extends State<Orders> {
                       ),
                       onPressed: _showAssignOrdersPopup,
                       child: Text(
-                        'Assign',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                        l10n.assign,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                       ),
                     ),
                     SizedBox(width: 16.w),
@@ -1232,14 +1376,22 @@ class _OrdersState extends State<Orders> {
                                 _searchQuery = value;
                               });
                             },
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                            ),
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                  ),
                             decoration: InputDecoration(
-                              hintText: 'Search ID',
-                              hintStyle: GoogleFonts.spaceGrotesk(
-                                color: Colors.white70,
-                              ),
+                              hintText: l10n.searchId,
+                              hintStyle: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white70,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white70,
+                                    ),
                               border: InputBorder.none,
                               isDense: true,
                             ),
@@ -1279,10 +1431,15 @@ class _OrdersState extends State<Orders> {
                       SizedBox(height: 16.h),
                       Text(
                         _errorMessage!,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          color: Colors.white,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 16.sp,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                color: Colors.white,
+                              ),
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 16.h),
@@ -1293,10 +1450,14 @@ class _OrdersState extends State<Orders> {
                               const Color.fromARGB(255, 105, 65, 198),
                         ),
                         child: Text(
-                          'Retry',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                          ),
+                          l10n.retry,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                ),
                         ),
                       ),
                     ],
@@ -1339,23 +1500,24 @@ class _OrderCardData {
 }
 
 // Helper function to convert status values to display names
-String _getStatusDisplayName(String status) {
+String _getStatusDisplayName(String status, AppLocalizations l10n) {
   switch (status) {
     case 'Accepted':
-      return 'Accepted';
+      return l10n.statusAccepted;
     case 'Assigned':
-      return 'Assigned';
+      return l10n.statusAssigned;
     case 'Preparing':
-      return 'Preparing';
+      return l10n.statusPreparing;
     case 'Prepared':
-      return 'Prepared';
+      return l10n.statusPrepared;
     case 'on_theway':
-      return 'On Theway';
+      return l10n.statusOnTheWay;
     default:
       return status;
   }
-} // Helper function to get status indicator colors
+}
 
+// Helper function to get status indicator colors
 Color _getStatusColor(String status) {
   switch (status) {
     case 'Accepted':

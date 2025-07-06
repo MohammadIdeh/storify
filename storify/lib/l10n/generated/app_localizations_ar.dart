@@ -643,9 +643,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sellPrice => 'سعر البيع';
 
   @override
-  String get quantity => 'الكمية';
-
-  @override
   String get unit => 'الوحدة';
 
   @override
@@ -784,9 +781,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notSpecified => 'غير محدد';
-
-  @override
-  String get notAvailable => 'غير متوفر';
 
   @override
   String get enterThreshold => 'أدخل الحد الأدنى';
@@ -1136,4 +1130,381 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sell => 'البيع';
+
+  @override
+  String get supplierOrders => 'طلبات الموردين';
+
+  @override
+  String get customerOrders => 'طلبات العملاء';
+
+  @override
+  String get orderFromSupplier => 'طلب من مورد';
+
+  @override
+  String get customerHistory => 'سجل العملاء';
+
+  @override
+  String get totalOrders => 'إجمالي الطلبات';
+
+  @override
+  String get activeOrders => 'الطلبات النشطة';
+
+  @override
+  String get completedOrders => 'الطلبات المكتملة';
+
+  @override
+  String get cancelledOrders => 'الطلبات الملغاة';
+
+  @override
+  String get allStatus => 'جميع الحالات';
+
+  @override
+  String get statusAccepted => 'مقبول';
+
+  @override
+  String get statusAssigned => 'مُعيَّن';
+
+  @override
+  String get statusPreparing => 'قيد التحضير';
+
+  @override
+  String get statusPrepared => 'جاهز';
+
+  @override
+  String get statusOnTheWay => 'في الطريق';
+
+  @override
+  String get statusPending => 'في الانتظار';
+
+  @override
+  String get statusDelivered => 'تم التسليم';
+
+  @override
+  String get statusShipped => 'تم الشحن';
+
+  @override
+  String get statusDeclined => 'مرفوض';
+
+  @override
+  String get statusRejected => 'مرفوض';
+
+  @override
+  String get statusDeclinedByAdmin => 'مرفوض من الإدارة';
+
+  @override
+  String get statusPartiallyAccepted => 'مقبول جزئياً';
+
+  @override
+  String get allOrders => 'جميع الطلبات';
+
+  @override
+  String get assign => 'تعيين';
+
+  @override
+  String get searchId => 'البحث بالرقم';
+
+  @override
+  String get checkingLowStockItems => 'جاري فحص العناصر منخفضة المخزون...';
+
+  @override
+  String get noLowStockItemsFound =>
+      'لم يتم العثور على عناصر منخفضة المخزون في الوقت الحالي';
+
+  @override
+  String get errorFetchingLowStock => 'خطأ في جلب العناصر منخفضة المخزون';
+
+  @override
+  String get unexpectedCustomerOrdersFormat =>
+      'تنسيق غير متوقع لاستجابة طلبات العملاء';
+
+  @override
+  String get errorFetchingOrders => 'خطأ في جلب الطلبات';
+
+  @override
+  String get criticalStockAlert => 'تنبيه مخزون حرج!';
+
+  @override
+  String get lowStockAlert => 'تنبيه مخزون منخفض';
+
+  @override
+  String get justNow => 'الآن';
+
+  @override
+  String get orderDetails => 'تفاصيل الطلب';
+
+  @override
+  String get printInvoice => 'طباعة الفاتورة';
+
+  @override
+  String get image => 'الصورة';
+
+  @override
+  String get item => 'العنصر';
+
+  @override
+  String get unitPrice => 'سعر الوحدة';
+
+  @override
+  String get quantity => 'الكمية';
+
+  @override
+  String get prodDate => 'تاريخ الإنتاج';
+
+  @override
+  String get expDate => 'تاريخ الانتهاء';
+
+  @override
+  String get product => 'منتج';
+
+  @override
+  String get grandTotal => 'الإجمالي الكبير';
+
+  @override
+  String get orderInfo => 'معلومات الطلب';
+
+  @override
+  String get deliveryDate => 'تاريخ التسليم';
+
+  @override
+  String get orderTime => 'وقت الطلب';
+
+  @override
+  String get paymentStatus => 'حالة الدفع';
+
+  @override
+  String get systemOrder => 'طلب النظام';
+
+  @override
+  String get orderActions => 'إجراءات الطلب';
+
+  @override
+  String get addNoteForDeclining => 'أضف ملاحظة (مطلوبة للرفض)...';
+
+  @override
+  String get addNoteForOrder => 'أضف ملاحظة لهذا الطلب (اختيارية)...';
+
+  @override
+  String get acceptEntireOrder => 'قبول الطلب كاملاً';
+
+  @override
+  String get declineOrder => 'رفض الطلب';
+
+  @override
+  String get acceptOrder => 'قبول الطلب';
+
+  @override
+  String get rejectOrder => 'رفض الطلب';
+
+  @override
+  String get note => 'ملاحظة';
+
+  @override
+  String get supplierInfo => 'معلومات المورد';
+
+  @override
+  String get customerInfo => 'معلومات العميل';
+
+  @override
+  String get phone => 'الهاتف';
+
+  @override
+  String get address => 'العنوان';
+
+  @override
+  String get notAvailable => 'غير متوفر';
+
+  @override
+  String get goBack => 'العودة';
+
+  @override
+  String get errorFetchingOrderDetails => 'خطأ في جلب تفاصيل الطلب';
+
+  @override
+  String get failedToLoadOrderDetails => 'فشل في تحميل تفاصيل الطلب';
+
+  @override
+  String get statusCode => 'رمز الحالة';
+
+  @override
+  String get failedToLoadCustomerOrderDetails =>
+      'فشل في تحميل تفاصيل طلب العميل';
+
+  @override
+  String get errorFetchingCustomerOrderDetails =>
+      'خطأ في جلب تفاصيل طلب العميل';
+
+  @override
+  String get orderDataNotFound => 'بيانات الطلب غير موجودة في الاستجابة';
+
+  @override
+  String get orderAcceptedSuccessfully => 'تم قبول الطلب بنجاح';
+
+  @override
+  String get failedToAcceptOrder => 'فشل في قبول الطلب';
+
+  @override
+  String get errorAcceptingOrder => 'خطأ في قبول الطلب';
+
+  @override
+  String get provideReasonForDeclining => 'يرجى تقديم سبب لرفض هذا الطلب';
+
+  @override
+  String get orderDeclinedSuccessfully => 'تم رفض الطلب بنجاح';
+
+  @override
+  String get failedToDeclineOrder => 'فشل في رفض الطلب';
+
+  @override
+  String get errorDecliningOrder => 'خطأ في رفض الطلب';
+
+  @override
+  String get provideReasonForRejecting => 'يرجى تقديم سبب لرفض هذا الطلب';
+
+  @override
+  String get orderRejectedSuccessfully => 'تم رفض الطلب بنجاح';
+
+  @override
+  String get failedToRejectOrder => 'فشل في رفض الطلب';
+
+  @override
+  String get errorRejectingOrder => 'خطأ في رفض الطلب';
+
+  @override
+  String get assignOrdersToDelivery => 'تعيين الطلبات للتوصيل';
+
+  @override
+  String get loadingData => 'جاري تحميل البيانات...';
+
+  @override
+  String get preparedOrders => 'الطلبات المحضرة';
+
+  @override
+  String get deselectAll => 'إلغاء تحديد الكل';
+
+  @override
+  String get selectAll => 'تحديد الكل';
+
+  @override
+  String get noPreparedOrdersAvailable => 'لا توجد طلبات محضرة متاحة';
+
+  @override
+  String get order => 'طلب';
+
+  @override
+  String get assignmentDetails => 'تفاصيل التعيين';
+
+  @override
+  String get selectEmployee => 'اختر موظف';
+
+  @override
+  String get estimatedTimeMinutes => 'الوقت المقدر (بالدقائق)';
+
+  @override
+  String get enterMinutes => 'أدخل الدقائق';
+
+  @override
+  String get notesOptional => 'ملاحظات (اختيارية)';
+
+  @override
+  String get addDeliveryNotes => 'أضف ملاحظات التوصيل...';
+
+  @override
+  String get selectedOrders => 'الطلبات المحددة';
+
+  @override
+  String get ordersSelected => 'طلبات محددة';
+
+  @override
+  String get assignOrders => 'تعيين الطلبات';
+
+  @override
+  String get assigning => 'جاري التعيين...';
+
+  @override
+  String get selectAtLeastOneOrder => 'يرجى تحديد طلب واحد على الأقل للتعيين';
+
+  @override
+  String get selectDeliveryEmployee => 'يرجى اختيار موظف توصيل';
+
+  @override
+  String get enterValidEstimatedTime => 'يرجى إدخال وقت مقدر صحيح';
+
+  @override
+  String get invalidOrderIds => 'أرقام طلبات غير صحيحة';
+
+  @override
+  String get errorAssigningOrders => 'خطأ في تعيين الطلبات';
+
+  @override
+  String get assignmentResult => 'نتيجة التعيين';
+
+  @override
+  String get successfullyAssigned => 'تم تعيين بنجاح';
+
+  @override
+  String get failedToAssign => 'فشل في تعيين';
+
+  @override
+  String get customerOrdersHistory => 'سجل طلبات العملاء';
+
+  @override
+  String get viewDetailedCustomerInfo =>
+      'عرض معلومات العملاء التفصيلية وسجل الطلبات';
+
+  @override
+  String get searchCustomers => 'البحث عن العملاء...';
+
+  @override
+  String get avgOrders => 'متوسط الطلبات';
+
+  @override
+  String get balance => 'الرصيد';
+
+  @override
+  String get since => 'منذ';
+
+  @override
+  String get noCustomersFound => 'لم يتم العثور على عملاء';
+
+  @override
+  String get orderHistory => 'سجل الطلبات';
+
+  @override
+  String get customerOrderHistory => ' سجل طلبات';
+
+  @override
+  String get selectACustomer => 'اختر عميل';
+
+  @override
+  String get chooseCustomerFromList => 'اختر عميل من القائمة لعرض سجل طلباته';
+
+  @override
+  String get noOrdersFound => 'لم يتم العثور على طلبات';
+
+  @override
+  String get customerHasntPlacedOrders => 'لم يقم هذا العميل بوضع أي طلبات بعد';
+
+  @override
+  String get date => 'التاريخ';
+
+  @override
+  String get discount => 'الخصم';
+
+  @override
+  String get paid => 'مدفوع';
+
+  @override
+  String get viewItems => 'عرض العناصر';
+
+  @override
+  String get deliveryBy => 'توصيل بواسطة';
+
+  @override
+  String get failedToLoadCustomers => 'فشل في تحميل العملاء';
+
+  @override
+  String get failedToLoadCustomerHistory => 'فشل في تحميل سجل العميل';
+
+  @override
+  String get statusCancelled => 'ملغي';
 }

@@ -1,10 +1,12 @@
-// lib/admin/widgets/OrderSupplierWidgets/assignOrderPopup.dart
+// lib/admin/widgets/OrderSupplierWidgets/assignOrderPopup.dart (Localized)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+// Localization imports
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/delivery_models.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/delivery_service.dart';
-
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
 
 /// Show the assign order popup
@@ -150,10 +152,12 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
   }
 
   Future<void> _assignOrders() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_selectedOrderIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select at least one order to assign'),
+          content: Text(l10n.selectAtLeastOneOrder),
           backgroundColor: Colors.red,
         ),
       );
@@ -163,7 +167,7 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
     if (_selectedEmployee == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select a delivery employee'),
+          content: Text(l10n.selectDeliveryEmployee),
           backgroundColor: Colors.red,
         ),
       );
@@ -174,7 +178,7 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
     if (estimatedTime == null || estimatedTime <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter a valid estimated time'),
+          content: Text(l10n.enterValidEstimatedTime),
           backgroundColor: Colors.red,
         ),
       );
@@ -198,7 +202,7 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
           .toList();
 
       if (orderIdsAsInt.isEmpty) {
-        throw Exception('Invalid order IDs');
+        throw Exception(l10n.invalidOrderIds);
       }
 
       // Create assignment request
@@ -231,7 +235,7 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error assigning orders: $e'),
+          content: Text('${l10n.errorAssigningOrders}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -239,17 +243,25 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
   }
 
   Future<void> _showResultDialog(OrderAssignmentResult result) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: const Color.fromARGB(255, 36, 50, 69),
           title: Text(
-            'Assignment Result',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            l10n.assignmentResult,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -257,31 +269,46 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
             children: [
               if (result.hasSuccessfulAssignments) ...[
                 Text(
-                  '✅ Successfully assigned ${result.successCount} orders',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.green,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  '✅ ${l10n.successfullyAssigned} ${result.successCount} ${l10n.orders}',
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
                 SizedBox(height: 8.h),
               ],
               if (result.hasErrors) ...[
                 Text(
-                  '❌ Failed to assign ${result.errorCount} orders',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  '❌ ${l10n.failedToAssign} ${result.errorCount} ${l10n.orders}',
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
                 SizedBox(height: 8.h),
                 ...result.errors.map((error) => Padding(
                       padding: EdgeInsets.only(bottom: 4.h),
                       child: Text(
                         '• $error',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                              ),
                       ),
                     )),
               ],
@@ -291,11 +318,16 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'OK',
-                style: GoogleFonts.spaceGrotesk(
-                  color: const Color.fromARGB(255, 105, 65, 198),
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.ok,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
             ),
           ],
@@ -306,6 +338,11 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
 
   @override
   Widget build(BuildContext context) {
+    // Localization setup
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(20.w),
@@ -337,12 +374,18 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                   ),
                   SizedBox(width: 12.w),
                   Text(
-                    'Assign Orders to Delivery',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    l10n.assignOrdersToDelivery,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -371,11 +414,16 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                             ),
                             SizedBox(height: 16.h),
                             Text(
-                              'Loading data...',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white70,
-                                fontSize: 16.sp,
-                              ),
+                              l10n.loadingData,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white70,
+                                      fontSize: 16.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white70,
+                                      fontSize: 16.sp,
+                                    ),
                             ),
                           ],
                         ),
@@ -392,20 +440,31 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                 ),
                                 SizedBox(height: 16.h),
                                 Text(
-                                  'Error loading data',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  l10n.errorLoadingData,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                 ),
                                 SizedBox(height: 8.h),
                                 Text(
                                   _errorMessage!,
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white70,
-                                    fontSize: 14.sp,
-                                  ),
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white70,
+                                          fontSize: 14.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white70,
+                                          fontSize: 14.sp,
+                                        ),
                                   textAlign: TextAlign.center,
                                 ),
                                 SizedBox(height: 16.h),
@@ -416,11 +475,16 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                         const Color.fromARGB(255, 105, 65, 198),
                                   ),
                                   child: Text(
-                                    'Retry',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    l10n.retry,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                   ),
                                 ),
                               ],
@@ -439,12 +503,18 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                     Row(
                                       children: [
                                         Text(
-                                          'Prepared Orders (${_preparedOrders.length})',
-                                          style: GoogleFonts.spaceGrotesk(
-                                            color: Colors.white,
-                                            fontSize: 18.sp,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                          '${l10n.preparedOrders} (${_preparedOrders.length})',
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white,
+                                                  fontSize: 18.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white,
+                                                  fontSize: 18.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                         ),
                                         const Spacer(),
                                         if (_preparedOrders.isNotEmpty)
@@ -453,13 +523,29 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                             child: Text(
                                               _selectedOrderIds.length ==
                                                       _preparedOrders.length
-                                                  ? 'Deselect All'
-                                                  : 'Select All',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: const Color.fromARGB(
-                                                    255, 105, 65, 198),
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                                  ? l10n.deselectAll
+                                                  : l10n.selectAll,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color:
+                                                          const Color.fromARGB(
+                                                              255,
+                                                              105,
+                                                              65,
+                                                              198),
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color:
+                                                          const Color.fromARGB(
+                                                              255,
+                                                              105,
+                                                              65,
+                                                              198),
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
                                             ),
                                           ),
                                       ],
@@ -481,12 +567,19 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                                   ),
                                                   SizedBox(height: 16.h),
                                                   Text(
-                                                    'No prepared orders available',
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      color: Colors.white70,
-                                                      fontSize: 16.sp,
-                                                    ),
+                                                    l10n.noPreparedOrdersAvailable,
+                                                    style: isArabic
+                                                        ? GoogleFonts.cairo(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize: 16.sp,
+                                                          )
+                                                        : GoogleFonts
+                                                            .spaceGrotesk(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize: 16.sp,
+                                                          ),
                                                   ),
                                                 ],
                                               ),
@@ -527,16 +620,21 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                                   ),
                                                   child: Row(
                                                     children: [
-                                                      Checkbox(
-                                                        value: isSelected,
-                                                        onChanged: (value) =>
-                                                            _toggleOrderSelection(
-                                                                order.orderId),
-                                                        activeColor: const Color
-                                                            .fromARGB(
-                                                            255, 105, 65, 198),
-                                                      ),
-                                                      SizedBox(width: 12.w),
+                                                      // Adjust checkbox position for RTL
+                                                      if (!isRtl) ...[
+                                                        Checkbox(
+                                                          value: isSelected,
+                                                          onChanged: (value) =>
+                                                              _toggleOrderSelection(
+                                                                  order
+                                                                      .orderId),
+                                                          activeColor:
+                                                              const Color
+                                                                  .fromARGB(255,
+                                                                  105, 65, 198),
+                                                        ),
+                                                        SizedBox(width: 12.w),
+                                                      ],
                                                       Expanded(
                                                         child: Column(
                                                           crossAxisAlignment:
@@ -546,35 +644,53 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                                             Row(
                                                               children: [
                                                                 Text(
-                                                                  'Order #${order.orderId}',
-                                                                  style: GoogleFonts
-                                                                      .spaceGrotesk(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    fontSize:
-                                                                        16.sp,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                  ),
+                                                                  '${l10n.order} #${order.orderId}',
+                                                                  style: isArabic
+                                                                      ? GoogleFonts.cairo(
+                                                                          color:
+                                                                              Colors.white,
+                                                                          fontSize:
+                                                                              16.sp,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                        )
+                                                                      : GoogleFonts.spaceGrotesk(
+                                                                          color:
+                                                                              Colors.white,
+                                                                          fontSize:
+                                                                              16.sp,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                        ),
                                                                 ),
                                                                 const Spacer(),
                                                                 Text(
                                                                   '\$${order.totalAmount.toStringAsFixed(2)}',
-                                                                  style: GoogleFonts
-                                                                      .spaceGrotesk(
-                                                                    color: const Color
-                                                                        .fromARGB(
-                                                                        255,
-                                                                        0,
-                                                                        196,
-                                                                        255),
-                                                                    fontSize:
-                                                                        16.sp,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                  ),
+                                                                  style: isArabic
+                                                                      ? GoogleFonts.cairo(
+                                                                          color: const Color
+                                                                              .fromARGB(
+                                                                              255,
+                                                                              0,
+                                                                              196,
+                                                                              255),
+                                                                          fontSize:
+                                                                              16.sp,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                        )
+                                                                      : GoogleFonts.spaceGrotesk(
+                                                                          color: const Color
+                                                                              .fromARGB(
+                                                                              255,
+                                                                              0,
+                                                                              196,
+                                                                              255),
+                                                                          fontSize:
+                                                                              16.sp,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                        ),
                                                                 ),
                                                               ],
                                                             ),
@@ -582,36 +698,78 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                                                 height: 4.h),
                                                             Text(
                                                               order.storeName,
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                color: Colors
-                                                                    .white70,
-                                                                fontSize: 14.sp,
-                                                              ),
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          14.sp,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white70,
+                                                                      fontSize:
+                                                                          14.sp,
+                                                                    ),
                                                             ),
                                                             Text(
                                                               order.phoneNo,
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                color: Colors
-                                                                    .white60,
-                                                                fontSize: 12.sp,
-                                                              ),
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      color: Colors
+                                                                          .white60,
+                                                                      fontSize:
+                                                                          12.sp,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white60,
+                                                                      fontSize:
+                                                                          12.sp,
+                                                                    ),
                                                             ),
                                                             SizedBox(
                                                                 height: 4.h),
                                                             Text(
-                                                              '${order.totalProducts} items',
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                color: Colors
-                                                                    .white54,
-                                                                fontSize: 12.sp,
-                                                              ),
+                                                              '${order.totalProducts} ${l10n.items}',
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      color: Colors
+                                                                          .white54,
+                                                                      fontSize:
+                                                                          12.sp,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white54,
+                                                                      fontSize:
+                                                                          12.sp,
+                                                                    ),
                                                             ),
                                                           ],
                                                         ),
                                                       ),
+                                                      // Checkbox on right for RTL
+                                                      if (isRtl) ...[
+                                                        SizedBox(width: 12.w),
+                                                        Checkbox(
+                                                          value: isSelected,
+                                                          onChanged: (value) =>
+                                                              _toggleOrderSelection(
+                                                                  order
+                                                                      .orderId),
+                                                          activeColor:
+                                                              const Color
+                                                                  .fromARGB(255,
+                                                                  105, 65, 198),
+                                                        ),
+                                                      ],
                                                     ],
                                                   ),
                                                 );
@@ -631,23 +789,35 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Assignment Details',
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white,
-                                        fontSize: 18.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      l10n.assignmentDetails,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white,
+                                              fontSize: 18.sp,
+                                              fontWeight: FontWeight.w600,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white,
+                                              fontSize: 18.sp,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                     ),
                                     SizedBox(height: 20.h),
 
                                     // Delivery employee dropdown
                                     Text(
-                                      'Delivery Employee',
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white70,
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      l10n.deliveryEmployee,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                     ),
                                     SizedBox(height: 8.h),
                                     Container(
@@ -668,19 +838,30 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                         child: DropdownButton<DeliveryEmployee>(
                                           value: _selectedEmployee,
                                           hint: Text(
-                                            'Select Employee',
-                                            style: GoogleFonts.spaceGrotesk(
-                                              color: Colors.white54,
-                                            ),
+                                            l10n.selectEmployee,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white54,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white54,
+                                                  ),
                                           ),
                                           dropdownColor: const Color.fromARGB(
                                               255, 36, 50, 69),
-                                          style: GoogleFonts.spaceGrotesk(
-                                            color: Colors.white,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.white70,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white,
+                                                ),
+                                          icon: Transform.flip(
+                                            flipX: isRtl,
+                                            child: const Icon(
+                                              Icons.arrow_drop_down,
+                                              color: Colors.white70,
+                                            ),
                                           ),
                                           isExpanded: true,
                                           items: _deliveryEmployees
@@ -710,21 +891,40 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                                       children: [
                                                         Text(
                                                           employee.user.name,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color: Colors.white,
-                                                            fontSize: 14.sp,
-                                                          ),
+                                                          style: isArabic
+                                                              ? GoogleFonts
+                                                                  .cairo(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize:
+                                                                      14.sp,
+                                                                )
+                                                              : GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize:
+                                                                      14.sp,
+                                                                ),
                                                         ),
                                                         Text(
                                                           employee
                                                               .user.phoneNumber,
-                                                          style: GoogleFonts
-                                                              .spaceGrotesk(
-                                                            color:
-                                                                Colors.white60,
-                                                            fontSize: 12.sp,
-                                                          ),
+                                                          style: isArabic
+                                                              ? GoogleFonts
+                                                                  .cairo(
+                                                                  color: Colors
+                                                                      .white60,
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                )
+                                                              : GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                  color: Colors
+                                                                      .white60,
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                ),
                                                         ),
                                                       ],
                                                     ),
@@ -746,25 +946,42 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
 
                                     // Estimated time
                                     Text(
-                                      'Estimated Time (minutes)',
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white70,
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      l10n.estimatedTimeMinutes,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                     ),
                                     SizedBox(height: 8.h),
                                     TextField(
                                       controller: _estimatedTimeController,
                                       keyboardType: TextInputType.number,
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white,
-                                      ),
+                                      textAlign: isRtl
+                                          ? TextAlign.right
+                                          : TextAlign.left,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white,
+                                            ),
                                       decoration: InputDecoration(
-                                        hintText: 'Enter minutes',
-                                        hintStyle: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white54,
-                                        ),
+                                        hintText: l10n.enterMinutes,
+                                        hintStyle: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.white54,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.white54,
+                                              ),
                                         filled: true,
                                         fillColor: const Color.fromARGB(
                                             255, 36, 50, 69),
@@ -799,25 +1016,42 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
 
                                     // Notes
                                     Text(
-                                      'Notes (Optional)',
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white70,
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      l10n.notesOptional,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white70,
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                     ),
                                     SizedBox(height: 8.h),
                                     TextField(
                                       controller: _notesController,
                                       maxLines: 3,
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white,
-                                      ),
+                                      textAlign: isRtl
+                                          ? TextAlign.right
+                                          : TextAlign.left,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white,
+                                            ),
                                       decoration: InputDecoration(
-                                        hintText: 'Add delivery notes...',
-                                        hintStyle: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white54,
-                                        ),
+                                        hintText: l10n.addDeliveryNotes,
+                                        hintStyle: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.white54,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.white54,
+                                              ),
                                         filled: true,
                                         fillColor: const Color.fromARGB(
                                             255, 36, 50, 69),
@@ -866,22 +1100,47 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Selected Orders',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white,
-                                                fontSize: 14.sp,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                              l10n.selectedOrders,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white,
+                                                      fontSize: 14.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white,
+                                                      fontSize: 14.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
                                             ),
                                             SizedBox(height: 8.h),
                                             Text(
-                                              '${_selectedOrderIds.length} orders selected',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: const Color.fromARGB(
-                                                    255, 105, 65, 198),
-                                                fontSize: 16.sp,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                              '${_selectedOrderIds.length} ${l10n.ordersSelected}',
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color:
+                                                          const Color.fromARGB(
+                                                              255,
+                                                              105,
+                                                              65,
+                                                              198),
+                                                      fontSize: 16.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color:
+                                                          const Color.fromARGB(
+                                                              255,
+                                                              105,
+                                                              65,
+                                                              198),
+                                                      fontSize: 16.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
                                             ),
                                           ],
                                         ),
@@ -921,24 +1180,39 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                                   ),
                                                   SizedBox(width: 12.w),
                                                   Text(
-                                                    'Assigning...',
-                                                    style: GoogleFonts
-                                                        .spaceGrotesk(
-                                                      color: Colors.white,
-                                                      fontSize: 16.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
+                                                    l10n.assigning,
+                                                    style: isArabic
+                                                        ? GoogleFonts.cairo(
+                                                            color: Colors.white,
+                                                            fontSize: 16.sp,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          )
+                                                        : GoogleFonts
+                                                            .spaceGrotesk(
+                                                            color: Colors.white,
+                                                            fontSize: 16.sp,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
                                                   ),
                                                 ],
                                               )
                                             : Text(
-                                                'Assign Orders',
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                  fontSize: 16.sp,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                                                l10n.assignOrders,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        color: Colors.white,
+                                                        fontSize: 16.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        color: Colors.white,
+                                                        fontSize: 16.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
                                               ),
                                       ),
                                     ),

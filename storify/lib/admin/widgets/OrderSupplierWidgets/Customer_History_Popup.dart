@@ -1,7 +1,10 @@
-// lib/admin/widgets/OrderSupplierWidgets/customer_history_popup.dart
+// lib/admin/widgets/OrderSupplierWidgets/customer_history_popup.dart (Localized)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+// Localization imports
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/Customer_Service.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/customer_models.dart';
 
@@ -47,8 +50,10 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
         _isLoadingCustomers = false;
       });
     } catch (e) {
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations)!;
       setState(() {
-        _errorMessage = 'Failed to load customers: $e';
+        _errorMessage = '${l10n.failedToLoadCustomers}: $e';
         _isLoadingCustomers = false;
       });
     }
@@ -70,8 +75,10 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
         _isLoadingHistory = false;
       });
     } catch (e) {
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations)!;
       setState(() {
-        _errorMessage = 'Failed to load customer history: $e';
+        _errorMessage = '${l10n.failedToLoadCustomerHistory}: $e';
         _isLoadingHistory = false;
       });
     }
@@ -108,7 +115,7 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
     return filtered;
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(String status, AppLocalizations l10n) {
     switch (status.toLowerCase()) {
       case 'delivered':
       case 'shipped':
@@ -132,7 +139,34 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
     }
   }
 
-  Widget _buildCustomerStats() {
+  String _getLocalizedStatusText(String status, AppLocalizations l10n) {
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        return l10n.statusDelivered;
+      case 'shipped':
+        return l10n.statusShipped;
+      case 'cancelled':
+        return l10n.statusCancelled;
+      case 'declined':
+        return l10n.statusDeclined;
+      case 'rejected':
+        return l10n.statusRejected;
+      case 'accepted':
+        return l10n.statusAccepted;
+      case 'assigned':
+        return l10n.statusAssigned;
+      case 'preparing':
+        return l10n.statusPreparing;
+      case 'prepared':
+        return l10n.statusPrepared;
+      case 'on_theway':
+        return l10n.statusOnTheWay;
+      default:
+        return status;
+    }
+  }
+
+  Widget _buildCustomerStats(AppLocalizations l10n, bool isArabic) {
     if (_customers.isEmpty) return const SizedBox.shrink();
 
     final stats = CustomerService.getCustomerStats(_customers);
@@ -146,41 +180,55 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          _buildStatItem(l10n.totalCustomers, stats['total']!.toString(),
+              Colors.blue, isArabic),
           _buildStatItem(
-              'Total Customers', stats['total']!.toString(), Colors.blue),
-          _buildStatItem('Active', stats['active']!.toString(), Colors.green),
-          _buildStatItem(
-              'Total Orders', stats['totalOrders']!.toString(), Colors.orange),
-          _buildStatItem(
-              'Avg Orders', stats['avgOrders']!.toString(), Colors.purple),
+              l10n.active, stats['active']!.toString(), Colors.green, isArabic),
+          _buildStatItem(l10n.totalOrders, stats['totalOrders']!.toString(),
+              Colors.orange, isArabic),
+          _buildStatItem(l10n.avgOrders, stats['avgOrders']!.toString(),
+              Colors.purple, isArabic),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
+  Widget _buildStatItem(
+      String label, String value, Color color, bool isArabic) {
     return Column(
       children: [
         Text(
           value,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
         ),
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 12.sp,
-            color: Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 12.sp,
+                  color: Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 12.sp,
+                  color: Colors.white70,
+                ),
         ),
       ],
     );
   }
 
-  Widget _buildCustomerCard(Customer customer) {
+  Widget _buildCustomerCard(
+      Customer customer, AppLocalizations l10n, bool isArabic, bool isRtl) {
     final isSelected = _selectedCustomer?.id == customer.id;
 
     return Container(
@@ -245,11 +293,17 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                           Expanded(
                             child: Text(
                               customer.user.name,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
                             ),
                           ),
                           Container(
@@ -267,14 +321,24 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                               ),
                             ),
                             child: Text(
-                              customer.user.isActive,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w600,
-                                color: customer.user.isActive == 'Active'
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
+                              customer.user.isActive == 'Active'
+                                  ? l10n.active
+                                  : l10n.inactive,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: customer.user.isActive == 'Active'
+                                          ? Colors.green
+                                          : Colors.red,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: customer.user.isActive == 'Active'
+                                          ? Colors.green
+                                          : Colors.red,
+                                    ),
                             ),
                           ),
                         ],
@@ -282,17 +346,27 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                       SizedBox(height: 4.h),
                       Text(
                         customer.user.email,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12.sp,
-                          color: Colors.white70,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 12.sp,
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 12.sp,
+                                color: Colors.white70,
+                              ),
                       ),
                       Text(
                         customer.user.phoneNumber,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12.sp,
-                          color: Colors.white60,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 12.sp,
+                                color: Colors.white60,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 12.sp,
+                                color: Colors.white60,
+                              ),
                       ),
                       SizedBox(height: 8.h),
                       Row(
@@ -306,10 +380,15 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                           Expanded(
                             child: Text(
                               customer.address,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12.sp,
-                                color: Colors.white54,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 12.sp,
+                                      color: Colors.white54,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 12.sp,
+                                      color: Colors.white54,
+                                    ),
                             ),
                           ),
                         ],
@@ -325,37 +404,56 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${customer.orderCount} Orders',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: const Color.fromARGB(255, 105, 65, 198),
-                      ),
+                      '${customer.orderCount} ${l10n.orders}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color.fromARGB(255, 105, 65, 198),
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color.fromARGB(255, 105, 65, 198),
+                            ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      'Balance: \$${customer.accountBalance}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12.sp,
-                        color: Colors.white70,
-                      ),
+                      '${l10n.balance}: \$${customer.accountBalance}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      'Since ${CustomerService.formatDate(customer.user.registrationDate)}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10.sp,
-                        color: Colors.white54,
-                      ),
+                      '${l10n.since} ${CustomerService.formatDate(customer.user.registrationDate)}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 10.sp,
+                              color: Colors.white54,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 10.sp,
+                              color: Colors.white54,
+                            ),
                     ),
                   ],
                 ),
 
                 SizedBox(width: 8.w),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16.sp,
-                  color: Colors.white54,
+                Transform.flip(
+                  flipX: isRtl,
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16.sp,
+                    color: Colors.white54,
+                  ),
                 ),
               ],
             ),
@@ -365,7 +463,8 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
     );
   }
 
-  Widget _buildOrderCard(CustomerOrder order) {
+  Widget _buildOrderCard(
+      CustomerOrder order, AppLocalizations l10n, bool isArabic) {
     final orderStats = CustomerService.getOrderStats([order]);
 
     return Container(
@@ -382,28 +481,41 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
           Row(
             children: [
               Text(
-                'Order #${order.id}',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                '${l10n.order} #${order.id}',
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
               ),
               const Spacer(),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(order.status).withOpacity(0.2),
+                  color: _getStatusColor(order.status, l10n).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: _getStatusColor(order.status)),
+                  border:
+                      Border.all(color: _getStatusColor(order.status, l10n)),
                 ),
                 child: Text(
-                  order.status,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(order.status),
-                  ),
+                  _getLocalizedStatusText(order.status, l10n),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: _getStatusColor(order.status, l10n),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: _getStatusColor(order.status, l10n),
+                        ),
                 ),
               ),
             ],
@@ -419,29 +531,45 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Date: ${order.formattedDate}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12.sp,
-                        color: Colors.white70,
-                      ),
+                      '${l10n.date}: ${order.formattedDate}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      'Items: ${order.items.length}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12.sp,
-                        color: Colors.white70,
-                      ),
+                      '${l10n.items}: ${order.items.length}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            ),
                     ),
                     if (order.note != null) ...[
                       SizedBox(height: 4.h),
                       Text(
-                        'Note: ${order.note!}',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12.sp,
-                          color: Colors.white60,
-                          fontStyle: FontStyle.italic,
-                        ),
+                        '${l10n.note}: ${order.note!}',
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 12.sp,
+                                color: Colors.white60,
+                                fontStyle: FontStyle.italic,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 12.sp,
+                                color: Colors.white60,
+                                fontStyle: FontStyle.italic,
+                              ),
                       ),
                     ],
                   ],
@@ -452,29 +580,45 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                 children: [
                   Text(
                     '\$${order.totalCost.toStringAsFixed(2)}',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: const Color.fromARGB(255, 105, 65, 198),
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                            color: const Color.fromARGB(255, 105, 65, 198),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                            color: const Color.fromARGB(255, 105, 65, 198),
+                          ),
                   ),
                   if (order.discount > 0) ...[
                     SizedBox(height: 4.h),
                     Text(
-                      'Discount: \$${order.discount.toStringAsFixed(2)}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12.sp,
-                        color: Colors.green,
-                      ),
+                      '${l10n.discount}: \$${order.discount.toStringAsFixed(2)}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.green,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.green,
+                            ),
                     ),
                   ],
                   SizedBox(height: 4.h),
                   Text(
-                    'Paid: \$${order.amountPaid.toStringAsFixed(2)}',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
-                    ),
+                    '${l10n.paid}: \$${order.amountPaid.toStringAsFixed(2)}',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          ),
                   ),
                 ],
               ),
@@ -486,12 +630,18 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
             SizedBox(height: 12.h),
             ExpansionTile(
               title: Text(
-                'View Items (${order.items.length})',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                '${l10n.viewItems} (${order.items.length})',
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
               ),
               iconColor: Colors.white70,
               collapsedIconColor: Colors.white70,
@@ -539,18 +689,29 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                           children: [
                             Text(
                               item.product.name,
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
                             ),
                             Text(
-                              'Quantity: ${item.quantity}',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12.sp,
-                                color: Colors.white70,
-                              ),
+                              '${l10n.quantity}: ${item.quantity}',
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 12.sp,
+                                      color: Colors.white70,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 12.sp,
+                                      color: Colors.white70,
+                                    ),
                             ),
                           ],
                         ),
@@ -558,11 +719,17 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
 
                       Text(
                         '\$${item.subtotal.toStringAsFixed(2)}',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                       ),
                     ],
                   ),
@@ -589,11 +756,16 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    'Delivery by: ${order.deliveryEmployee!.user.name}',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
-                    ),
+                    '${l10n.deliveryBy}: ${order.deliveryEmployee!.user.name}',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          ),
                   ),
                 ],
               ),
@@ -604,7 +776,7 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
     );
   }
 
-  Widget _buildOrderHistoryStats() {
+  Widget _buildOrderHistoryStats(AppLocalizations l10n, bool isArabic) {
     if (_customerOrderHistory == null ||
         _customerOrderHistory!.orders.isEmpty) {
       return const SizedBox.shrink();
@@ -622,12 +794,14 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('Total', stats['total'].toString(), Colors.blue),
           _buildStatItem(
-              'Completed', stats['completed'].toString(), Colors.green),
-          _buildStatItem('Active', stats['active'].toString(), Colors.orange),
+              l10n.total, stats['total'].toString(), Colors.blue, isArabic),
+          _buildStatItem(l10n.completed, stats['completed'].toString(),
+              Colors.green, isArabic),
           _buildStatItem(
-              'Cancelled', stats['cancelled'].toString(), Colors.red),
+              l10n.active, stats['active'].toString(), Colors.orange, isArabic),
+          _buildStatItem(l10n.cancelled, stats['cancelled'].toString(),
+              Colors.red, isArabic),
         ],
       ),
     );
@@ -635,6 +809,11 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
 
   @override
   Widget build(BuildContext context) {
+    // Localization setup
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(20.w),
@@ -676,19 +855,30 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Customer Orders History',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        l10n.customerOrdersHistory,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                       ),
                       Text(
-                        'View detailed customer information and order history',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14.sp,
-                          color: Colors.white70,
-                        ),
+                        l10n.viewDetailedCustomerInfo,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                color: Colors.white70,
+                              ),
                       ),
                     ],
                   ),
@@ -735,14 +925,28 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                         _searchQuery = value;
                                       });
                                     },
-                                    style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white),
+                                    textAlign: isRtl
+                                        ? TextAlign.right
+                                        : TextAlign.left,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(color: Colors.white)
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.white),
                                     decoration: InputDecoration(
-                                      hintText: 'Search customers...',
-                                      hintStyle: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white54),
-                                      prefixIcon: Icon(Icons.search,
-                                          color: Colors.white54),
+                                      hintText: l10n.searchCustomers,
+                                      hintStyle: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white54)
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white54),
+                                      prefixIcon: isRtl
+                                          ? null
+                                          : Icon(Icons.search,
+                                              color: Colors.white54),
+                                      suffixIcon: isRtl
+                                          ? Icon(Icons.search,
+                                              color: Colors.white54)
+                                          : null,
                                       border: InputBorder.none,
                                       contentPadding: EdgeInsets.symmetric(
                                           horizontal: 16.w, vertical: 12.h),
@@ -763,16 +967,29 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                     value: _statusFilter,
                                     dropdownColor:
                                         const Color.fromARGB(255, 36, 50, 69),
-                                    style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white),
-                                    icon: Icon(Icons.arrow_drop_down,
-                                        color: Colors.white70),
-                                    items: _statusOptions.map((status) {
-                                      return DropdownMenuItem(
-                                        value: status,
-                                        child: Text(status),
-                                      );
-                                    }).toList(),
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(color: Colors.white)
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.white),
+                                    icon: Transform.flip(
+                                      flipX: isRtl,
+                                      child: Icon(Icons.arrow_drop_down,
+                                          color: Colors.white70),
+                                    ),
+                                    items: [
+                                      DropdownMenuItem(
+                                        value: 'All',
+                                        child: Text(l10n.all),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'Active',
+                                        child: Text(l10n.active),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'Inactive',
+                                        child: Text(l10n.inactive),
+                                      ),
+                                    ],
                                     onChanged: (value) {
                                       setState(() {
                                         _statusFilter = value!;
@@ -787,18 +1004,24 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                           SizedBox(height: 20.h),
 
                           // Customer stats
-                          _buildCustomerStats(),
+                          _buildCustomerStats(l10n, isArabic),
 
                           SizedBox(height: 20.h),
 
                           // Customers list
                           Text(
-                            'Customers (${_filteredCustomers.length})',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            '${l10n.customers} (${_filteredCustomers.length})',
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                           ),
 
                           SizedBox(height: 12.h),
@@ -824,11 +1047,16 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                             ),
                                             SizedBox(height: 16.h),
                                             Text(
-                                              'No customers found',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 18.sp,
-                                                color: Colors.white70,
-                                              ),
+                                              l10n.noCustomersFound,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      fontSize: 18.sp,
+                                                      color: Colors.white70,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      fontSize: 18.sp,
+                                                      color: Colors.white70,
+                                                    ),
                                             ),
                                           ],
                                         ),
@@ -837,7 +1065,10 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                         itemCount: _filteredCustomers.length,
                                         itemBuilder: (context, index) {
                                           return _buildCustomerCard(
-                                              _filteredCustomers[index]);
+                                              _filteredCustomers[index],
+                                              l10n,
+                                              isArabic,
+                                              isRtl);
                                         },
                                       ),
                           ),
@@ -872,13 +1103,19 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                   SizedBox(width: 12.w),
                                   Text(
                                     _selectedCustomer != null
-                                        ? '${_selectedCustomer!.user.name}\'s Order History'
-                                        : 'Order History',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
+                                        ? '${_selectedCustomer!.user.name}${l10n.customerOrderHistory}'
+                                        : l10n.orderHistory,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            fontSize: 18.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            fontSize: 18.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
                                   ),
                                 ],
                               ),
@@ -900,18 +1137,28 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                             ),
                                             SizedBox(height: 16.h),
                                             Text(
-                                              'Select a customer',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 18.sp,
-                                                color: Colors.white70,
-                                              ),
+                                              l10n.selectACustomer,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      fontSize: 18.sp,
+                                                      color: Colors.white70,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      fontSize: 18.sp,
+                                                      color: Colors.white70,
+                                                    ),
                                             ),
                                             Text(
-                                              'Choose a customer from the list to view their order history',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 14.sp,
-                                                color: Colors.white54,
-                                              ),
+                                              l10n.chooseCustomerFromList,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      fontSize: 14.sp,
+                                                      color: Colors.white54,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      fontSize: 14.sp,
+                                                      color: Colors.white54,
+                                                    ),
                                               textAlign: TextAlign.center,
                                             ),
                                           ],
@@ -940,20 +1187,34 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                                     ),
                                                     SizedBox(height: 16.h),
                                                     Text(
-                                                      'No orders found',
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        fontSize: 18.sp,
-                                                        color: Colors.white70,
-                                                      ),
+                                                      l10n.noOrdersFound,
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              fontSize: 18.sp,
+                                                              color: Colors
+                                                                  .white70,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              fontSize: 18.sp,
+                                                              color: Colors
+                                                                  .white70,
+                                                            ),
                                                     ),
                                                     Text(
-                                                      'This customer hasn\'t placed any orders yet',
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        fontSize: 14.sp,
-                                                        color: Colors.white54,
-                                                      ),
+                                                      l10n.customerHasntPlacedOrders,
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              fontSize: 14.sp,
+                                                              color: Colors
+                                                                  .white54,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              fontSize: 14.sp,
+                                                              color: Colors
+                                                                  .white54,
+                                                            ),
                                                     ),
                                                   ],
                                                 ),
@@ -961,7 +1222,8 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                             : Column(
                                                 children: [
                                                   // Order stats
-                                                  _buildOrderHistoryStats(),
+                                                  _buildOrderHistoryStats(
+                                                      l10n, isArabic),
 
                                                   // Orders list
                                                   Expanded(
@@ -973,7 +1235,9 @@ class _CustomerHistoryPopupState extends State<CustomerHistoryPopup> {
                                                           (context, index) {
                                                         return _buildOrderCard(
                                                             _customerOrderHistory!
-                                                                .orders[index]);
+                                                                .orders[index],
+                                                            l10n,
+                                                            isArabic);
                                                       },
                                                     ),
                                                   ),
