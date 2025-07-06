@@ -36,6 +36,9 @@ class _TrackScreenState extends State<Track> {
   int _currentPage = 1;
   final int _ordersPerPage = 10;
 
+  // ADD THIS: Key to force map refresh
+  GlobalKey _mapKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -143,9 +146,9 @@ class _TrackScreenState extends State<Track> {
 
   Future<void> _cancelOrder(int orderId) async {
     try {
-      // Show confirmation dialog
-      final shouldCancel = await _showCancelConfirmation(orderId);
-      if (!shouldCancel) return;
+      // Show reason input dialog
+      final cancelReason = await _showCancelReasonDialog(orderId);
+      if (cancelReason == null || cancelReason.trim().isEmpty) return;
 
       // Show loading indicator
       showDialog(
@@ -169,12 +172,8 @@ class _TrackScreenState extends State<Track> {
       );
 
       final headers = await AuthService.getAuthHeaders(role: 'Admin');
-
-      // Add Content-Type for JSON body
       headers['Content-Type'] = 'application/json';
-
-      // Required request body
-      final requestBody = json.encode({"reason": "administrative_decision"});
+      final requestBody = json.encode({"reason": cancelReason.trim()});
 
       final response = await http.post(
         Uri.parse(
@@ -192,6 +191,17 @@ class _TrackScreenState extends State<Track> {
         // Refresh data
         await _fetchTrackingData();
         await _fetchAllOrders();
+
+        // REFRESH THE MAP
+        final mapState = _mapKey.currentState;
+        if (mapState != null) {
+          try {
+            // Use dynamic to call the method
+            await (mapState as dynamic).refreshMapData();
+          } catch (e) {
+            print('Failed to refresh map: $e');
+          }
+        }
       } else {
         final errorData =
             response.body.isNotEmpty ? json.decode(response.body) : {};
@@ -205,54 +215,159 @@ class _TrackScreenState extends State<Track> {
     }
   }
 
-  Future<bool> _showCancelConfirmation(int orderId) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.r),
+  Future<String?> _showCancelReasonDialog(int orderId) async {
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return await showDialog<String>(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.cancel,
+              color: Colors.red,
+              size: 24.sp,
             ),
-            title: Text(
-              'Cancel Order',
+            SizedBox(width: 8.w),
+            Text(
+              'Cancel Order #$orderId',
               style: GoogleFonts.spaceGrotesk(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
+                fontSize: 18.sp,
               ),
             ),
-            content: Text(
-              'Are you sure you want to cancel Order #$orderId? This action cannot be undone.',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  'Keep Order',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white70,
-                  ),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please provide a reason for canceling this order:',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white70,
+                  fontSize: 14.sp,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+              SizedBox(height: 16.h),
+              TextFormField(
+                controller: reasonController,
+                autofocus: true,
+                maxLines: 3,
+                maxLength: 200,
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontSize: 14.sp,
                 ),
-                child: Text(
-                  'Cancel Order',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                decoration: InputDecoration(
+                  hintText: 'Enter cancellation reason...',
+                  hintStyle: GoogleFonts.spaceGrotesk(
+                    color: Colors.white54,
+                    fontSize: 14.sp,
                   ),
+                  filled: true,
+                  fillColor: const Color.fromARGB(255, 46, 57, 84),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(
+                      color: const Color.fromARGB(255, 99, 102, 241),
+                      width: 2,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: 2,
+                    ),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(
+                      color: Colors.red,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.all(16.w),
+                  counterStyle: GoogleFonts.spaceGrotesk(
+                    color: Colors.white54,
+                    fontSize: 12.sp,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Cancellation reason is required';
+                  }
+                  if (value.trim().length < 10) {
+                    return 'Reason must be at least 10 characters';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                '⚠️ This action cannot be undone',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.red.withOpacity(0.8),
+                  fontSize: 12.sp,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ],
           ),
-        ) ??
-        false;
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: Text(
+              'Keep Order',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white70,
+                fontSize: 14.sp,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(context).pop(reasonController.text);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: EdgeInsets.symmetric(
+                horizontal: 20.w,
+                vertical: 12.h,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            child: Text(
+              'Cancel Order',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14.sp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSuccessMessage(String message) {
@@ -308,6 +423,17 @@ class _TrackScreenState extends State<Track> {
       _fetchTrackingData(),
       _fetchAllOrders(),
     ]);
+
+    // ALSO REFRESH THE MAP
+    final mapState = _mapKey.currentState;
+    if (mapState != null) {
+      try {
+        // Use dynamic to call the method
+        await (mapState as dynamic).refreshMapData();
+      } catch (e) {
+        print('Failed to refresh map: $e');
+      }
+    }
   }
 
   void _onNavItemTap(int index) {
@@ -778,10 +904,8 @@ class _TrackScreenState extends State<Track> {
               children: [
                 if (status == 'on_theway') ...[
                   IconButton(
-                    onPressed: () {
-                      print(
-                          '🔧 DEBUG: Cancel button clicked for order $orderId');
-                    },
+                    onPressed: () => _cancelOrder(
+                        orderId), // FIX: Actually call the cancel function
                     icon: Icon(
                       Icons.cancel,
                       color: Colors.red,
@@ -1111,7 +1235,8 @@ class _TrackScreenState extends State<Track> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                print('🔧 DEBUG: Cancel button in details dialog clicked');
+                _cancelOrder(
+                    order['id']); // FIX: Actually call the cancel function
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.red.withOpacity(0.2),
@@ -1219,6 +1344,7 @@ class _TrackScreenState extends State<Track> {
                   /// --- Advanced Map Section ---
                   const SizedBox(height: 40),
                   AdvancedTrackingMap(
+                    key: _mapKey, // THIS IS THE KEY FIX!
                     onOrderCancel: _cancelOrder,
                   ),
 

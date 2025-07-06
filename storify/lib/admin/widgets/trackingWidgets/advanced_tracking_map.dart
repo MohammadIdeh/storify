@@ -28,6 +28,38 @@ class AdvancedTrackingMap extends StatefulWidget {
 }
 
 class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
+  // PUBLIC METHOD: This is called from track.dart to refresh the map
+  Future<void> refreshMapData() async {
+    debugPrint('🔄 Refreshing map data after order cancellation...');
+
+    // Store the currently selected order ID
+    final previouslySelectedOrderId = _selectedOrderId;
+
+    await _fetchTrackingData();
+
+    // Check if the previously selected order still exists
+    if (previouslySelectedOrderId != null) {
+      final orderStillExists =
+          _orders.any((order) => order['orderId'] == previouslySelectedOrderId);
+
+      if (!orderStillExists) {
+        debugPrint(
+            '⚠️ Previously selected order #$previouslySelectedOrderId no longer exists, resetting selection');
+        setState(() {
+          _selectedOrderId = null;
+          _showAllOrders = true;
+        });
+      }
+    }
+
+    // Refresh the map view
+    if (mapController != null && _currentLatLng != null) {
+      await mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(_currentLatLng!, 12),
+      );
+    }
+  }
+
   GoogleMapController? mapController;
   LatLng? _currentLatLng;
   final Set<Marker> _markers = {};
@@ -119,6 +151,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           _orders = data['orders'] ?? [];
           _isLoading = false;
         });
+
+        // ADD DEBUG LOGGING
+        debugPrint('✅ Map data refreshed - Found ${_orders.length} orders');
         await _updateMapMarkersWithRealRoutes();
       } else {
         setState(() {
@@ -421,6 +456,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       _isLoadingRoutes = true;
     });
 
+    // CLEAR EXISTING DATA FIRST
     _markers.clear();
     _polylines.clear();
 
@@ -1324,9 +1360,23 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   if (canCancel) ...[
                     SizedBox(width: 4.w),
                     GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         print(
                             '🔧 DEBUG: Cancel icon clicked on route card for order $orderId');
+
+                        // Show immediate visual feedback
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Processing cancellation for Order #$orderId...',
+                              style:
+                                  GoogleFonts.spaceGrotesk(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
                         // Call parent's cancel function
                         widget.onOrderCancel?.call(orderId);
                       },
@@ -1502,9 +1552,23 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       print(
                           '🔧 DEBUG: Cancel Order button clicked in details panel for order ${order['orderId']}');
+
+                      // Show immediate visual feedback
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Processing cancellation for Order #${order['orderId']}...',
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                          ),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+
                       widget.onOrderCancel?.call(order['orderId']);
                     },
                     icon: const Icon(Icons.cancel),
@@ -1655,9 +1719,23 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                 if (canCancel) ...[
                   SizedBox(width: 8.w),
                   GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       print(
                           '🔧 DEBUG: Cancel button clicked in order card for order $orderId');
+
+                      // Show immediate visual feedback
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Processing cancellation for Order #$orderId...',
+                            style:
+                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                          ),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+
                       widget.onOrderCancel?.call(orderId);
                     },
                     child: Container(
