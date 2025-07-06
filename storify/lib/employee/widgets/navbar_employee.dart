@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/GeneralWidgets/NotificationPopup.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
-import 'package:storify/supplier/widgets/SupplierNotificationPopup.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notification_service.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
@@ -244,7 +244,7 @@ class _NavigationBarEmployeeState extends State<NavigationBarEmployee> {
               top: 100,
               child: Material(
                 color: Colors.transparent,
-                child: SupplierNotificationPopup(
+                child: NotificationPopup(
                   onCloseMenu: _closeNotificationMenu,
                   notifications: _notifications,
                 ),

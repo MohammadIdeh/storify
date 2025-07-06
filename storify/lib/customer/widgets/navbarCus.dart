@@ -6,8 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
-import 'package:storify/supplier/widgets/SupplierNotificationPopup.dart';
 import 'package:storify/utilis/notificationModel.dart';
+import 'package:storify/GeneralWidgets/NotificationPopup.dart';
 import 'package:storify/utilis/notification_service.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
@@ -248,7 +248,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
               top: 100,
               child: Material(
                 color: Colors.transparent,
-                child: SupplierNotificationPopup(
+                child: NotificationPopup(
                   onCloseMenu: _closeNotificationMenu,
                   notifications: _notifications,
                 ),

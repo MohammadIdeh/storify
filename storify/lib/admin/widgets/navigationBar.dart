@@ -8,7 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/utilis/notificationModel.dart';
-import 'package:storify/utilis/notificationPopUpAdmin.dart';
+import 'package:storify/GeneralWidgets/NotificationPopup.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/services/user_profile_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
