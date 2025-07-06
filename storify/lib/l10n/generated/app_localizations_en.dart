@@ -483,4 +483,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get totalCustomers => 'Total Customers';
+
+  @override
+  String get markAllAsRead => 'Mark all as read';
+
+  @override
+  String get noNotificationsYet => 'No notifications yet';
+
+  @override
+  String get addTestNotification => 'Add Test Notification';
+
+  @override
+  String get testDatabase => 'Test Database';
+
+  @override
+  String get testNotificationTitle => 'Test Notification';
+
+  @override
+  String get testNotificationMessage =>
+      'This is a test notification added manually';
+
+  @override
+  String get tapToViewLowStockItems => '• Tap to view low stock items';
+
+  @override
+  String get pleaseNavigateToOrdersScreen =>
+      'Please navigate to the Orders screen to view low stock items';
 }

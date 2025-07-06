@@ -155,5 +155,13 @@
     "totalProducts": "Total Products",
     "totalPaidOrders": "Total Paid Orders",
     "totalUsers": "Total Users",
-    "totalCustomers": "Total Customers"
+    "totalCustomers": "Total Customers",
+    "markAllAsRead": "Mark all as read",
+    "noNotificationsYet": "No notifications yet",
+    "addTestNotification": "Add Test Notification",
+    "testDatabase": "Test Database",
+    "testNotificationTitle": "Test Notification",
+    "testNotificationMessage": "This is a test notification added manually",
+    "tapToViewLowStockItems": "• Tap to view low stock items",
+    "pleaseNavigateToOrdersScreen": "Please navigate to the Orders screen to view low stock items"
 }

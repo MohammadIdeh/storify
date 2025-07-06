@@ -1,9 +1,11 @@
-// lib/utilis/notificationPopUpAdmin.dart (Enhanced version with low stock handling)
+// lib/GeneralWidgets/NotificationPopup.dart (Localized version)
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notification_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class NotificationPopup extends StatefulWidget {
   final Function() onCloseMenu;
@@ -52,6 +54,10 @@ class _NotificationPopupState extends State<NotificationPopup> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Container(
       width: 380.w,
       constraints: BoxConstraints(maxHeight: 500.h),
@@ -76,12 +82,18 @@ class _NotificationPopupState extends State<NotificationPopup> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Notifications',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  l10n.notifications,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                 ),
                 if (_notifications.isNotEmpty)
                   TextButton(
@@ -90,11 +102,16 @@ class _NotificationPopupState extends State<NotificationPopup> {
                       widget.onCloseMenu();
                     },
                     child: Text(
-                      'Mark all as read',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14.sp,
-                        color: Colors.white,
-                      ),
+                      l10n.markAllAsRead,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              color: Colors.white,
+                            ),
                     ),
                   ),
               ],
@@ -118,19 +135,24 @@ class _NotificationPopupState extends State<NotificationPopup> {
                       ),
                       SizedBox(height: 16.h),
                       Text(
-                        'No notifications yet',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          color: Colors.white.withOpacity(0.5),
-                        ),
+                        l10n.noNotificationsYet,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 16.sp,
+                                color: Colors.white.withOpacity(0.5),
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                color: Colors.white.withOpacity(0.5),
+                              ),
                       ),
                       SizedBox(height: 20.h),
                       // Add a test button for debugging
                       ElevatedButton(
                         onPressed: () async {
                           await NotificationService().addManualNotification(
-                              'Test Notification',
-                              'This is a test notification added manually');
+                              l10n.testNotificationTitle,
+                              l10n.testNotificationMessage);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
@@ -139,11 +161,16 @@ class _NotificationPopupState extends State<NotificationPopup> {
                               horizontal: 16.w, vertical: 8.h),
                         ),
                         child: Text(
-                          'Add Test Notification',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            color: Colors.white,
-                          ),
+                          l10n.addTestNotification,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                         ),
                       ),
                       SizedBox(height: 10.h),
@@ -158,11 +185,16 @@ class _NotificationPopupState extends State<NotificationPopup> {
                               horizontal: 16.w, vertical: 8.h),
                         ),
                         child: Text(
-                          'Test Database',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            color: Colors.white,
-                          ),
+                          l10n.testDatabase,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                ),
                         ),
                       ),
                     ],
@@ -178,7 +210,8 @@ class _NotificationPopupState extends State<NotificationPopup> {
                       height: 1,
                     ),
                     itemBuilder: (context, index) {
-                      return _buildNotificationItem(_notifications[index]);
+                      return _buildNotificationItem(
+                          _notifications[index], l10n, isArabic);
                     },
                   ),
                 ),
@@ -187,7 +220,8 @@ class _NotificationPopupState extends State<NotificationPopup> {
     );
   }
 
-  Widget _buildNotificationItem(NotificationItem notification) {
+  Widget _buildNotificationItem(
+      NotificationItem notification, AppLocalizations l10n, bool isArabic) {
     // Check if this is a low stock notification
     final isLowStockNotification = notification.title.contains('Stock Alert') ||
         notification.title.contains('Low Stock');
@@ -220,7 +254,11 @@ class _NotificationPopupState extends State<NotificationPopup> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                        'Please navigate to the Orders screen to view low stock items'),
+                      l10n.pleaseNavigateToOrdersScreen,
+                      style: isArabic
+                          ? GoogleFonts.cairo()
+                          : GoogleFonts.spaceGrotesk(),
+                    ),
                     backgroundColor: Colors.orange,
                     duration: Duration(seconds: 3),
                   ),
@@ -270,40 +308,64 @@ class _NotificationPopupState extends State<NotificationPopup> {
                 children: [
                   Text(
                     notification.title,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
                     notification.message,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      color: Colors.white70,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 14.sp,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            color: Colors.white70,
+                          ),
                   ),
                   SizedBox(height: 8.h),
                   Row(
                     children: [
                       Text(
                         notification.timeAgo,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12.sp,
-                          color: Colors.white70,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 12.sp,
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 12.sp,
+                                color: Colors.white70,
+                              ),
                       ),
                       // Show click instruction for low stock notifications
                       if (isLowStockNotification)
                         Expanded(
                           child: Text(
-                            ' • Tap to view low stock items',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 11.sp,
-                              color: const Color.fromARGB(255, 105, 65, 198),
-                              fontStyle: FontStyle.italic,
-                            ),
+                            l10n.tapToViewLowStockItems,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 11.sp,
+                                    color:
+                                        const Color.fromARGB(255, 105, 65, 198),
+                                    fontStyle: FontStyle.italic,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 11.sp,
+                                    color:
+                                        const Color.fromARGB(255, 105, 65, 198),
+                                    fontStyle: FontStyle.italic,
+                                  ),
                           ),
                         ),
                     ],

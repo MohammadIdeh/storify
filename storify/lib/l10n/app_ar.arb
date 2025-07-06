@@ -155,5 +155,13 @@
     "totalProducts": "إجمالي المنتجات",
     "totalPaidOrders": "إجمالي الطلبات المدفوعة",
     "totalUsers": "إجمالي المستخدمين",
-    "totalCustomers": "إجمالي العملاء"
+    "totalCustomers": "إجمالي العملاء",
+    "markAllAsRead": "تحديد الكل كمقروء",
+    "noNotificationsYet": "لا توجد إشعارات بعد",
+    "addTestNotification": "إضافة إشعار تجريبي",
+    "testDatabase": "اختبار قاعدة البيانات",
+    "testNotificationTitle": "إشعار تجريبي",
+    "testNotificationMessage": "هذا إشعار تجريبي تم إضافته يدوياً",
+    "tapToViewLowStockItems": "• اضغط لعرض المنتجات قليلة المخزون",
+    "pleaseNavigateToOrdersScreen": "يرجى الانتقال إلى شاشة الطلبات لعرض المنتجات قليلة المخزون"
 }

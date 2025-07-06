@@ -1033,6 +1033,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Customers'**
   String get totalCustomers;
+
+  /// No description provided for @markAllAsRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all as read'**
+  String get markAllAsRead;
+
+  /// No description provided for @noNotificationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get noNotificationsYet;
+
+  /// No description provided for @addTestNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Test Notification'**
+  String get addTestNotification;
+
+  /// No description provided for @testDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Database'**
+  String get testDatabase;
+
+  /// No description provided for @testNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Notification'**
+  String get testNotificationTitle;
+
+  /// No description provided for @testNotificationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a test notification added manually'**
+  String get testNotificationMessage;
+
+  /// No description provided for @tapToViewLowStockItems.
+  ///
+  /// In en, this message translates to:
+  /// **'• Tap to view low stock items'**
+  String get tapToViewLowStockItems;
+
+  /// No description provided for @pleaseNavigateToOrdersScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Please navigate to the Orders screen to view low stock items'**
+  String get pleaseNavigateToOrdersScreen;
 }
 
 class _AppLocalizationsDelegate

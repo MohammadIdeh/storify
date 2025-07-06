@@ -479,4 +479,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get totalCustomers => 'إجمالي العملاء';
+
+  @override
+  String get markAllAsRead => 'تحديد الكل كمقروء';
+
+  @override
+  String get noNotificationsYet => 'لا توجد إشعارات بعد';
+
+  @override
+  String get addTestNotification => 'إضافة إشعار تجريبي';
+
+  @override
+  String get testDatabase => 'اختبار قاعدة البيانات';
+
+  @override
+  String get testNotificationTitle => 'إشعار تجريبي';
+
+  @override
+  String get testNotificationMessage => 'هذا إشعار تجريبي تم إضافته يدوياً';
+
+  @override
+  String get tapToViewLowStockItems => '• اضغط لعرض المنتجات قليلة المخزون';
+
+  @override
+  String get pleaseNavigateToOrdersScreen =>
+      'يرجى الانتقال إلى شاشة الطلبات لعرض المنتجات قليلة المخزون';
 }
