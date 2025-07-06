@@ -210,7 +210,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customer => 'عميل';
 
   @override
-  String get supplier => 'مورد';
+  String get supplier => 'المورد';
 
   @override
   String get deliveryEmployee => 'موظف التوصيل';
@@ -596,8 +596,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notAuthorizedToAccessFeature => 'غير مخول للوصول إلى هذه الميزة.';
 
   @override
-  String get failedToLoadSuppliers =>
-      'فشل في تحميل الموردين. يرجى المحاولة مرة أخرى.';
+  String failedToLoadSuppliers(String error) {
+    return 'فشل في تحميل الموردين: $error';
+  }
 
   @override
   String get networkError => 'خطأ في الشبكة. يرجى التحقق من اتصالك.';
@@ -994,7 +995,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invalidResponseFormat => 'تنسيق الاستجابة غير صحيح';
 
   @override
-  String get failedToLoadProducts => 'فشل في تحميل المنتجات';
+  String failedToLoadProducts(String error) {
+    return 'فشل في تحميل المنتجات: $error';
+  }
 
   @override
   String get errorFetchingProducts => 'خطأ في جلب المنتجات';
@@ -1153,7 +1156,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get completedOrders => 'الطلبات المكتملة';
 
   @override
-  String get cancelledOrders => 'الطلبات الملغاة';
+  String get cancelledOrders => 'الطلبات الملغية';
 
   @override
   String get allStatus => 'جميع الحالات';
@@ -1254,10 +1257,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get expDate => 'تاريخ الانتهاء';
 
   @override
-  String get product => 'منتج';
+  String get product => 'المنتج';
 
   @override
-  String get grandTotal => 'الإجمالي الكبير';
+  String get grandTotal => 'الإجمالي الكلي';
 
   @override
   String get orderInfo => 'معلومات الطلب';
@@ -1507,4 +1510,289 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get statusCancelled => 'ملغي';
+
+  @override
+  String get lowStockAlertAdvancedOrderGeneration =>
+      'تنبيه مخزون منخفض - إنشاء طلبات متقدم';
+
+  @override
+  String itemsNeedRestocking(int count) {
+    return '$count عنصر يحتاج إعادة تخزين';
+  }
+
+  @override
+  String get useSameSupplierForAllItems => 'استخدام نفس المورد لجميع العناصر:';
+
+  @override
+  String get selectGlobalSupplier => 'اختيار المورد العام';
+
+  @override
+  String get critical => 'حرج';
+
+  @override
+  String get high => 'عالي';
+
+  @override
+  String get medium => 'متوسط';
+
+  @override
+  String get low => 'منخفض';
+
+  @override
+  String get selected => 'مختار';
+
+  @override
+  String get currentMin => 'الحالي/الأدنى';
+
+  @override
+  String get orderQty => 'كمية الطلب';
+
+  @override
+  String suppliersAvailable(int count) {
+    return '$count مورد متاح';
+  }
+
+  @override
+  String need(int amount) {
+    return 'المطلوب: $amount';
+  }
+
+  @override
+  String get noSuppliers => 'لا يوجد موردين';
+
+  @override
+  String get selectSupplier => 'اختيار المورد';
+
+  @override
+  String get errorLoadingSuppliers => 'خطأ في تحميل الموردين';
+
+  @override
+  String get selectAtLeastOneItem =>
+      'يرجى تحديد عنصر واحد على الأقل لإنشاء الطلبات';
+
+  @override
+  String errorGeneratingOrders(String error) {
+    return 'خطأ في إنشاء الطلبات: $error';
+  }
+
+  @override
+  String itemsSelected(int selected, int total) {
+    return '$selected من $total عنصر مختار';
+  }
+
+  @override
+  String globalSupplier(String name) {
+    return 'المورد العام: $name';
+  }
+
+  @override
+  String get generating => 'جاري الإنشاء...';
+
+  @override
+  String get generateOrders => 'إنشاء الطلبات';
+
+  @override
+  String get pendingOrders => 'الطلبات المعلقة';
+
+  @override
+  String get activeSuppliers => 'الموردين النشطين';
+
+  @override
+  String get lowStockItems => 'عناصر المخزون المنخفض';
+
+  @override
+  String get monthlyRevenue => 'الإيرادات الشهرية';
+
+  @override
+  String get noOrdersToDisplay => 'لا توجد طلبات للعرض';
+
+  @override
+  String get noOrdersMatchFilter => 'لا توجد طلبات تطابق المرشح';
+
+  @override
+  String get adjustFilterCriteria => 'حاول تعديل معايير البحث أو المرشح';
+
+  @override
+  String noOrdersWithStatus(String status) {
+    return 'لا توجد طلبات بحالة \"$status\"';
+  }
+
+  @override
+  String get supplierName => 'اسم المورد';
+
+  @override
+  String get customerName => 'اسم العميل';
+
+  @override
+  String get totalAmount => 'المبلغ الإجمالي';
+
+  @override
+  String totalOrdersCount(int count) {
+    return 'إجمالي $count طلب';
+  }
+
+  @override
+  String get orderStatusAccepted => 'مقبول';
+
+  @override
+  String get orderStatusPending => 'معلق';
+
+  @override
+  String get orderStatusDelivered => 'تم التسليم';
+
+  @override
+  String get orderStatusShipped => 'تم الشحن';
+
+  @override
+  String get orderStatusDeclined => 'مرفوض';
+
+  @override
+  String get orderStatusRejected => 'مرفوض';
+
+  @override
+  String get orderStatusDeclinedByAdmin => 'مرفوض من قبل المدير';
+
+  @override
+  String get orderStatusPartiallyAccepted => 'مقبول جزئياً';
+
+  @override
+  String get orderStatusPrepared => 'جاهز';
+
+  @override
+  String get orderStatusOnTheWay => 'في الطريق';
+
+  @override
+  String get orderStatusAssigned => 'مخصص';
+
+  @override
+  String get orderStatusPreparing => 'قيد التحضير';
+
+  @override
+  String get placeOrderFromSuppliers => 'إنشاء طلب من الموردين';
+
+  @override
+  String get pleaseChooseSupplier => 'يرجى اختيار مورد';
+
+  @override
+  String get cart => 'السلة';
+
+  @override
+  String cartItemsCount(int count) {
+    return '($count عناصر)';
+  }
+
+  @override
+  String get cartEmpty => 'سلتك فارغة';
+
+  @override
+  String get addProductsToCart => 'أضف منتجات من القائمة لإنشاء طلب';
+
+  @override
+  String get unknownSupplier => 'مورد غير معروف';
+
+  @override
+  String get confirmAllOrders => 'تأكيد جميع الطلبات';
+
+  @override
+  String get processingOrders => 'جاري معالجة الطلبات...';
+
+  @override
+  String productsWithCount(int count) {
+    return 'المنتجات ($count)';
+  }
+
+  @override
+  String get noProductsToDisplay => 'لا توجد منتجات للعرض';
+
+  @override
+  String get selectSupplierFirst => 'يرجى اختيار مورد أولاً';
+
+  @override
+  String get noProductsAvailable => 'لا توجد منتجات متاحة';
+
+  @override
+  String get supplierNoProducts => 'هذا المورد ليس لديه منتجات مدرجة';
+
+  @override
+  String get noProductSelected => 'لم يتم اختيار منتج';
+
+  @override
+  String get selectProductFromList => 'اختر منتجاً من القائمة لرؤية التفاصيل';
+
+  @override
+  String inStock(int quantity) {
+    return 'متوفر: $quantity';
+  }
+
+  @override
+  String get addToCart => 'إضافة للسلة';
+
+  @override
+  String get betterPriceAvailable => 'يتوفر سعر أفضل!';
+
+  @override
+  String get productAvailableAtLowerPrice => 'هذا المنتج متاح بسعر أقل:';
+
+  @override
+  String currentSupplier(String name) {
+    return 'الحالي: $name';
+  }
+
+  @override
+  String betterSupplier(String name) {
+    return 'الأفضل: $name';
+  }
+
+  @override
+  String get youSave => 'توفر:';
+
+  @override
+  String savingsAmount(String amount, String percentage) {
+    return '$amount\$ ($percentage%)';
+  }
+
+  @override
+  String get switchSuppliersQuestion => 'هل تريد تغيير المورد لهذا المنتج؟';
+
+  @override
+  String get keepCurrent => 'الاحتفاظ بالحالي';
+
+  @override
+  String get switchSupplier => 'تغيير المورد';
+
+  @override
+  String get newOrderReceived => 'تم استلام طلب جديد';
+
+  @override
+  String orderReceivedFrom(String supplierName) {
+    return 'لقد استلمت طلباً جديداً من $supplierName';
+  }
+
+  @override
+  String orderPlacedSuccessfully(String supplierName) {
+    return 'تم إنشاء الطلب بنجاح لـ $supplierName';
+  }
+
+  @override
+  String failedToPlaceOrder(String error) {
+    return 'فشل في إنشاء الطلب: $error';
+  }
+
+  @override
+  String failedToPlaceOrderForSupplier(int supplierId) {
+    return 'فشل في إنشاء طلب للمورد #$supplierId';
+  }
+
+  @override
+  String errorPlacingOrder(String error) {
+    return 'خطأ في إنشاء الطلب: $error';
+  }
+
+  @override
+  String get confirmOrder => 'تأكيد الطلب';
+
+  @override
+  String quantityPrice(int quantity, String price) {
+    return '$quantity × $price\$';
+  }
 }

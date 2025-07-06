@@ -192,7 +192,6 @@
     "search": "بحث",
     "bulkExport": "تصدير مجمع",
     "notAuthorizedToAccessFeature": "غير مخول للوصول إلى هذه الميزة.",
-    "failedToLoadSuppliers": "فشل في تحميل الموردين. يرجى المحاولة مرة أخرى.",
     "networkError": "خطأ في الشبكة. يرجى التحقق من اتصالك.",
     "pleaseSelectCategory": "يرجى اختيار فئة",
     "pleaseSelectAtLeastOneSupplier": "يرجى اختيار مورد واحد على الأقل",
@@ -492,5 +491,272 @@
     "deliveryBy": "توصيل بواسطة",
     "failedToLoadCustomers": "فشل في تحميل العملاء",
     "failedToLoadCustomerHistory": "فشل في تحميل سجل العميل",
-    "statusCancelled": "ملغي"
+    "statusCancelled": "ملغي",
+    "lowStockAlertAdvancedOrderGeneration": "تنبيه مخزون منخفض - إنشاء طلبات متقدم",
+    "itemsNeedRestocking": "{count} عنصر يحتاج إعادة تخزين",
+    "@itemsNeedRestocking": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "selectAll": "تحديد الكل",
+    "useSameSupplierForAllItems": "استخدام نفس المورد لجميع العناصر:",
+    "selectGlobalSupplier": "اختيار المورد العام",
+    "critical": "حرج",
+    "high": "عالي",
+    "medium": "متوسط",
+    "low": "منخفض",
+    "selected": "مختار",
+    "product": "المنتج",
+    "currentMin": "الحالي/الأدنى",
+    "orderQty": "كمية الطلب",
+    "alert": "تنبيه",
+    "supplier": "المورد",
+    "suppliersAvailable": "{count} مورد متاح",
+    "@suppliersAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "need": "المطلوب: {amount}",
+    "@need": {
+        "placeholders": {
+            "amount": {
+                "type": "int"
+            }
+        }
+    },
+    "noSuppliers": "لا يوجد موردين",
+    "selectSupplier": "اختيار المورد",
+    "errorLoadingSuppliers": "خطأ في تحميل الموردين",
+    "selectAtLeastOneItem": "يرجى تحديد عنصر واحد على الأقل لإنشاء الطلبات",
+    "errorGeneratingOrders": "خطأ في إنشاء الطلبات: {error}",
+    "@errorGeneratingOrders": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "itemsSelected": "{selected} من {total} عنصر مختار",
+    "@itemsSelected": {
+        "placeholders": {
+            "selected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "globalSupplier": "المورد العام: {name}",
+    "@globalSupplier": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "generating": "جاري الإنشاء...",
+    "generateOrders": "إنشاء الطلبات",
+    "pendingOrders": "الطلبات المعلقة",
+    "completedOrders": "الطلبات المكتملة",
+    "cancelledOrders": "الطلبات الملغية",
+    "totalOrders": "إجمالي الطلبات",
+    "activeSuppliers": "الموردين النشطين",
+    "lowStockItems": "عناصر المخزون المنخفض",
+    "monthlyRevenue": "الإيرادات الشهرية",
+    "totalProducts": "إجمالي المنتجات",
+    "noOrdersFound": "لم يتم العثور على طلبات",
+    "noOrdersToDisplay": "لا توجد طلبات للعرض",
+    "noOrdersMatchFilter": "لا توجد طلبات تطابق المرشح",
+    "adjustFilterCriteria": "حاول تعديل معايير البحث أو المرشح",
+    "noOrdersWithStatus": "لا توجد طلبات بحالة \"{status}\"",
+    "@noOrdersWithStatus": {
+        "placeholders": {
+            "status": {
+                "type": "String"
+            }
+        }
+    },
+    "orderId": "رقم الطلب",
+    "supplierName": "اسم المورد",
+    "customerName": "اسم العميل",
+    "phoneNumber": "رقم الهاتف",
+    "orderDate": "تاريخ الطلب",
+    "totalProducts": "إجمالي المنتجات",
+    "totalAmount": "المبلغ الإجمالي",
+    "status": "الحالة",
+    "totalOrdersCount": "إجمالي {count} طلب",
+    "@totalOrdersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "orderStatusAccepted": "مقبول",
+    "orderStatusPending": "معلق",
+    "orderStatusDelivered": "تم التسليم",
+    "orderStatusShipped": "تم الشحن",
+    "orderStatusDeclined": "مرفوض",
+    "orderStatusRejected": "مرفوض",
+    "orderStatusDeclinedByAdmin": "مرفوض من قبل المدير",
+    "orderStatusPartiallyAccepted": "مقبول جزئياً",
+    "orderStatusPrepared": "جاهز",
+    "orderStatusOnTheWay": "في الطريق",
+    "orderStatusAssigned": "مخصص",
+    "orderStatusPreparing": "قيد التحضير",
+    "placeOrderFromSuppliers": "إنشاء طلب من الموردين",
+    "selectSupplier": "اختيار المورد",
+    "pleaseChooseSupplier": "يرجى اختيار مورد",
+    "failedToLoadSuppliers": "فشل في تحميل الموردين: {error}",
+    "@failedToLoadSuppliers": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "failedToLoadProducts": "فشل في تحميل المنتجات: {error}",
+    "@failedToLoadProducts": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "cart": "السلة",
+    "cartItemsCount": "({count} عناصر)",
+    "@cartItemsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "cartEmpty": "سلتك فارغة",
+    "addProductsToCart": "أضف منتجات من القائمة لإنشاء طلب",
+    "unknownSupplier": "مورد غير معروف",
+    "grandTotal": "الإجمالي الكلي",
+    "confirmAllOrders": "تأكيد جميع الطلبات",
+    "processingOrders": "جاري معالجة الطلبات...",
+    "products": "المنتجات",
+    "productsWithCount": "المنتجات ({count})",
+    "@productsWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noProductsToDisplay": "لا توجد منتجات للعرض",
+    "selectSupplierFirst": "يرجى اختيار مورد أولاً",
+    "noProductsAvailable": "لا توجد منتجات متاحة",
+    "supplierNoProducts": "هذا المورد ليس لديه منتجات مدرجة",
+    "productDetails": "تفاصيل المنتج",
+    "noProductSelected": "لم يتم اختيار منتج",
+    "selectProductFromList": "اختر منتجاً من القائمة لرؤية التفاصيل",
+    "inStock": "متوفر: {quantity}",
+    "@inStock": {
+        "placeholders": {
+            "quantity": {
+                "type": "int"
+            }
+        }
+    },
+    "description": "الوصف",
+    "noDescriptionAvailable": "لا يوجد وصف متاح",
+    "addToCart": "إضافة للسلة",
+    "betterPriceAvailable": "يتوفر سعر أفضل!",
+    "productAvailableAtLowerPrice": "هذا المنتج متاح بسعر أقل:",
+    "currentSupplier": "الحالي: {name}",
+    "@currentSupplier": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "betterSupplier": "الأفضل: {name}",
+    "@betterSupplier": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "youSave": "توفر:",
+    "savingsAmount": "{amount}$ ({percentage}%)",
+    "@savingsAmount": {
+        "placeholders": {
+            "amount": {
+                "type": "String"
+            },
+            "percentage": {
+                "type": "String"
+            }
+        }
+    },
+    "switchSuppliersQuestion": "هل تريد تغيير المورد لهذا المنتج؟",
+    "keepCurrent": "الاحتفاظ بالحالي",
+    "switchSupplier": "تغيير المورد",
+    "newOrderReceived": "تم استلام طلب جديد",
+    "orderReceivedFrom": "لقد استلمت طلباً جديداً من {supplierName}",
+    "@orderReceivedFrom": {
+        "placeholders": {
+            "supplierName": {
+                "type": "String"
+            }
+        }
+    },
+    "justNow": "الآن",
+    "orderPlacedSuccessfully": "تم إنشاء الطلب بنجاح لـ {supplierName}",
+    "@orderPlacedSuccessfully": {
+        "placeholders": {
+            "supplierName": {
+                "type": "String"
+            }
+        }
+    },
+    "failedToPlaceOrder": "فشل في إنشاء الطلب: {error}",
+    "@failedToPlaceOrder": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "failedToPlaceOrderForSupplier": "فشل في إنشاء طلب للمورد #{supplierId}",
+    "@failedToPlaceOrderForSupplier": {
+        "placeholders": {
+            "supplierId": {
+                "type": "int"
+            }
+        }
+    },
+    "errorPlacingOrder": "خطأ في إنشاء الطلب: {error}",
+    "@errorPlacingOrder": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "confirmOrder": "تأكيد الطلب",
+    "quantityPrice": "{quantity} × {price}$",
+    "@quantityPrice": {
+        "placeholders": {
+            "quantity": {
+                "type": "int"
+            },
+            "price": {
+                "type": "String"
+            }
+        }
+    }
 }

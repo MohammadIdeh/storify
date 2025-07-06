@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_models.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class LowStockPopup extends StatefulWidget {
   final List<LowStockItem> lowStockItems;
@@ -136,12 +138,13 @@ class _LowStockPopupState extends State<LowStockPopup> {
   }
 
   Future<void> _generateOrders() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final selectedItems = _items.where((item) => item.isSelected).toList();
 
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select at least one item to generate orders'),
+          content: Text(l10n.selectAtLeastOneItem),
           backgroundColor: Colors.orange,
         ),
       );
@@ -240,7 +243,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error generating orders: $e'),
+            content: Text(l10n.errorGeneratingOrders(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -269,380 +272,432 @@ class _LowStockPopupState extends State<LowStockPopup> {
     }
   }
 
+  TextStyle _getTextStyle({
+    required double fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    if (isArabic) {
+      return GoogleFonts.cairo(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    } else {
+      return GoogleFonts.spaceGrotesk(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      );
+    }
+  }
+
+  EdgeInsets _getDirectionalPadding({
+    double start = 0,
+    double top = 0,
+    double end = 0,
+    double bottom = 0,
+  }) {
+    final isRtl = LocalizationHelper.isRTL(context);
+    if (isRtl) {
+      return EdgeInsets.fromLTRB(end, top, start, bottom);
+    }
+    return EdgeInsets.fromLTRB(start, top, end, bottom);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     final selectedCount = _items.where((item) => item.isSelected).length;
     final alertCounts = LowStockService.getAlertLevelCounts(_items);
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.all(20.w),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.9,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 29, 41, 57),
-          borderRadius: BorderRadius.circular(20.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: EdgeInsets.all(24.w),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 36, 50, 69),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20.r),
-                  topRight: Radius.circular(20.r),
-                ),
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(20.w),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.95,
+          height: MediaQuery.of(context).size.height * 0.9,
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 29, 41, 57),
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
-              child: Column(
-                children: [
-                  // Title Row
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 28.sp,
-                      ),
-                      SizedBox(width: 12.w),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Low Stock Alert - Advanced Order Generation',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            '${_items.length} items need restocking',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _selectAll,
-                            onChanged: (value) => _toggleSelectAll(),
-                            activeColor:
-                                const Color.fromARGB(255, 105, 65, 198),
-                            checkColor: Colors.white,
-                          ),
-                          Text(
-                            'Select All',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(width: 16.w),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 24.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 16.h),
-
-                  // Global Options Row
-                  Row(
-                    children: [
-                      // Global Supplier Toggle
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _useGlobalSupplier,
-                            onChanged: (value) {
-                              setState(() {
-                                _useGlobalSupplier = value ?? false;
-                              });
-                            },
-                            activeColor:
-                                const Color.fromARGB(255, 105, 65, 198),
-                          ),
-                          Text(
-                            'Use same supplier for all items:',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(width: 12.w),
-
-                      // Global Supplier Dropdown
-                      if (_useGlobalSupplier && _allSuppliers.isNotEmpty)
-                        Container(
-                          width: 200.w,
-                          padding: EdgeInsets.symmetric(horizontal: 12.w),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8.r),
-                            border: Border.all(
-                              color: const Color.fromARGB(255, 105, 65, 198),
-                            ),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<LowStockSupplier>(
-                              value: _globalSupplier,
-                              hint: Text(
-                                'Select Global Supplier',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 12.sp,
-                                  color: Colors.white54,
-                                ),
-                              ),
-                              dropdownColor:
-                                  const Color.fromARGB(255, 36, 50, 69),
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12.sp,
-                                color: Colors.white,
-                              ),
-                              icon: Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.white70,
-                                size: 20.sp,
-                              ),
-                              isExpanded: true,
-                              items: _allSuppliers.map((supplier) {
-                                return DropdownMenuItem<LowStockSupplier>(
-                                  value: supplier,
-                                  child: Text(
-                                    supplier.supplierName,
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 12.sp,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (supplier) {
-                                setState(() {
-                                  _globalSupplier = supplier;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Content
-            Expanded(
-              child: Padding(
+            ],
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
                 padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 36, 50, 69),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
+                  ),
+                ),
                 child: Column(
                   children: [
-                    // Summary Stats
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(16.w),
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 36, 50, 69),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatItem('Critical',
-                              alertCounts['CRITICAL'] ?? 0, Colors.red),
-                          _buildStatItem('High', alertCounts['HIGH'] ?? 0,
-                              Colors.deepOrange),
-                          _buildStatItem('Medium', alertCounts['MEDIUM'] ?? 0,
-                              Colors.orange),
-                          _buildStatItem(
-                              'Low', alertCounts['LOW'] ?? 0, Colors.yellow),
-                          _buildStatItem('Selected', selectedCount,
-                              const Color.fromARGB(255, 105, 65, 198)),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 20.h),
-
-                    // Items List
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 36, 50, 69),
-                          borderRadius: BorderRadius.circular(12.r),
+                    // Title Row
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.orange,
+                          size: 28.sp,
                         ),
-                        child: Column(
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: isRtl
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.lowStockAlertAdvancedOrderGeneration,
+                                style: _getTextStyle(
+                                  fontSize: 22.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                l10n.itemsNeedRestocking(_items.length),
+                                style: _getTextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
                           children: [
-                            // List Header
-                            Container(
-                              padding: EdgeInsets.all(16.w),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 47, 71, 82),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(12.r),
-                                  topRight: Radius.circular(12.r),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  SizedBox(width: 40.w), // Checkbox space
-                                  Expanded(
-                                      flex: 2,
-                                      child: Text('Product',
-                                          style: _headerStyle())),
-                                  Expanded(
-                                      flex: 1,
-                                      child: Text('Current/Min',
-                                          style: _headerStyle())),
-                                  Expanded(
-                                      flex: 1,
-                                      child: Text('Order Qty',
-                                          style: _headerStyle())),
-                                  Expanded(
-                                      flex: 1,
-                                      child:
-                                          Text('Alert', style: _headerStyle())),
-                                  if (!_useGlobalSupplier)
-                                    Expanded(
-                                        flex: 2,
-                                        child: Text('Supplier',
-                                            style: _headerStyle())),
-                                ],
-                              ),
+                            Checkbox(
+                              value: _selectAll,
+                              onChanged: (value) => _toggleSelectAll(),
+                              activeColor:
+                                  const Color.fromARGB(255, 105, 65, 198),
+                              checkColor: Colors.white,
                             ),
-
-                            // Items List
-                            Expanded(
-                              child: ListView.separated(
-                                padding: EdgeInsets.all(16.w),
-                                itemCount: _items.length,
-                                separatorBuilder: (context, index) => Divider(
-                                  color: Colors.white.withOpacity(0.1),
-                                  height: 16.h,
-                                ),
-                                itemBuilder: (context, index) {
-                                  return _buildItemRow(_items[index], index);
-                                },
+                            Text(
+                              l10n.selectAll,
+                              style: _getTextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
+                        SizedBox(width: 16.w),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    // Global Options Row
+                    Row(
+                      children: [
+                        // Global Supplier Toggle
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _useGlobalSupplier,
+                              onChanged: (value) {
+                                setState(() {
+                                  _useGlobalSupplier = value ?? false;
+                                });
+                              },
+                              activeColor:
+                                  const Color.fromARGB(255, 105, 65, 198),
+                            ),
+                            Text(
+                              l10n.useSameSupplierForAllItems,
+                              style: _getTextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: 12.w),
+
+                        // Global Supplier Dropdown
+                        if (_useGlobalSupplier && _allSuppliers.isNotEmpty)
+                          Container(
+                            width: 200.w,
+                            padding:
+                                _getDirectionalPadding(start: 12.w, end: 12.w),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<LowStockSupplier>(
+                                value: _globalSupplier,
+                                hint: Text(
+                                  l10n.selectGlobalSupplier,
+                                  style: _getTextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                                dropdownColor:
+                                    const Color.fromARGB(255, 36, 50, 69),
+                                style: _getTextStyle(
+                                  fontSize: 12.sp,
+                                  color: Colors.white,
+                                ),
+                                icon: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.white70,
+                                  size: 20.sp,
+                                ),
+                                isExpanded: true,
+                                items: _allSuppliers.map((supplier) {
+                                  return DropdownMenuItem<LowStockSupplier>(
+                                    value: supplier,
+                                    child: Text(
+                                      supplier.supplierName,
+                                      style: _getTextStyle(
+                                        fontSize: 12.sp,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (supplier) {
+                                  setState(() {
+                                    _globalSupplier = supplier;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(24.w),
+                  child: Column(
+                    children: [
+                      // Summary Stats
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(16.w),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 36, 50, 69),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(l10n.critical,
+                                alertCounts['CRITICAL'] ?? 0, Colors.red),
+                            _buildStatItem(l10n.high, alertCounts['HIGH'] ?? 0,
+                                Colors.deepOrange),
+                            _buildStatItem(l10n.medium,
+                                alertCounts['MEDIUM'] ?? 0, Colors.orange),
+                            _buildStatItem(l10n.low, alertCounts['LOW'] ?? 0,
+                                Colors.yellow),
+                            _buildStatItem(l10n.selected, selectedCount,
+                                const Color.fromARGB(255, 105, 65, 198)),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: 20.h),
+
+                      // Items List
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 36, 50, 69),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Column(
+                            children: [
+                              // List Header
+                              Container(
+                                padding: EdgeInsets.all(16.w),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 47, 71, 82),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(12.r),
+                                    topRight: Radius.circular(12.r),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(width: 40.w), // Checkbox space
+                                    Expanded(
+                                        flex: 2,
+                                        child: Text(l10n.product,
+                                            style: _headerStyle())),
+                                    Expanded(
+                                        flex: 1,
+                                        child: Text(l10n.currentMin,
+                                            style: _headerStyle())),
+                                    Expanded(
+                                        flex: 1,
+                                        child: Text(l10n.orderQty,
+                                            style: _headerStyle())),
+                                    Expanded(
+                                        flex: 1,
+                                        child: Text(l10n.alert,
+                                            style: _headerStyle())),
+                                    if (!_useGlobalSupplier)
+                                      Expanded(
+                                          flex: 2,
+                                          child: Text(l10n.supplier,
+                                              style: _headerStyle())),
+                                  ],
+                                ),
+                              ),
+
+                              // Items List
+                              Expanded(
+                                child: ListView.separated(
+                                  padding: EdgeInsets.all(16.w),
+                                  itemCount: _items.length,
+                                  separatorBuilder: (context, index) => Divider(
+                                    color: Colors.white.withOpacity(0.1),
+                                    height: 16.h,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    return _buildItemRow(_items[index], index);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Footer with Generate Orders Button
+              Container(
+                padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 36, 50, 69),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20.r),
+                    bottomRight: Radius.circular(20.r),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: isRtl
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.itemsSelected(selectedCount, _items.length),
+                            style: _getTextStyle(
+                              fontSize: 16.sp,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          if (_useGlobalSupplier && _globalSupplier != null)
+                            Text(
+                              l10n.globalSupplier(
+                                  _globalSupplier!.supplierName),
+                              style: _getTextStyle(
+                                fontSize: 14.sp,
+                                color: const Color.fromARGB(255, 105, 65, 198),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 200.w,
+                      height: 48.h,
+                      child: ElevatedButton(
+                        onPressed: _isGeneratingOrders || selectedCount == 0
+                            ? null
+                            : _generateOrders,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 105, 65, 198),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isGeneratingOrders
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20.w,
+                                    height: 20.h,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Text(
+                                    l10n.generating,
+                                    style: _getTextStyle(
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                l10n.generateOrders,
+                                style: _getTextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-
-            // Footer with Generate Orders Button
-            Container(
-              padding: EdgeInsets.all(24.w),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 36, 50, 69),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20.r),
-                  bottomRight: Radius.circular(20.r),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$selectedCount of ${_items.length} items selected',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      if (_useGlobalSupplier && _globalSupplier != null)
-                        Text(
-                          'Global supplier: ${_globalSupplier!.supplierName}',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 14.sp,
-                            color: const Color.fromARGB(255, 105, 65, 198),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 200.w,
-                    height: 48.h,
-                    child: ElevatedButton(
-                      onPressed: _isGeneratingOrders || selectedCount == 0
-                          ? null
-                          : _generateOrders,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color.fromARGB(255, 105, 65, 198),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isGeneratingOrders
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 20.w,
-                                  height: 20.h,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Text(
-                                  'Generating...',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Text(
-                              'Generate Orders',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -653,7 +708,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
       children: [
         Text(
           count.toString(),
-          style: GoogleFonts.spaceGrotesk(
+          style: _getTextStyle(
             fontSize: 24.sp,
             fontWeight: FontWeight.bold,
             color: color,
@@ -661,7 +716,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
         ),
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
+          style: _getTextStyle(
             fontSize: 12.sp,
             color: Colors.white70,
           ),
@@ -671,7 +726,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
   }
 
   TextStyle _headerStyle() {
-    return GoogleFonts.spaceGrotesk(
+    return _getTextStyle(
       fontSize: 14.sp,
       fontWeight: FontWeight.w600,
       color: Colors.white,
@@ -679,6 +734,9 @@ class _LowStockPopupState extends State<LowStockPopup> {
   }
 
   Widget _buildItemRow(LowStockItem item, int index) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isRtl = LocalizationHelper.isRTL(context);
+
     final suppliers = item.suppliers;
     final selectedSupplier = _selectedSuppliers[item.product.productId];
     final quantityController = _quantityControllers[item.product.productId];
@@ -701,59 +759,70 @@ class _LowStockPopupState extends State<LowStockPopup> {
           // Product Info
           Expanded(
             flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.product.name,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    item.product.name,
+                    style: _getTextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  item.product.category,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: Colors.white70,
+                  Text(
+                    item.product.category,
+                    style: _getTextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.white70,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                Text(
-                  '${item.suppliers.length} suppliers available',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 11.sp,
-                    color: Colors.white60,
+                  Text(
+                    l10n.suppliersAvailable(item.suppliers.length),
+                    style: _getTextStyle(
+                      fontSize: 11.sp,
+                      color: Colors.white60,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
           // Current/Min Stock
           Expanded(
             flex: 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${item.product.quantity}/${item.product.lowStock}',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    '${item.product.quantity}/${item.product.lowStock}',
+                    style: _getTextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                Text(
-                  'Need: ${item.stockDeficit}',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: Colors.orange,
+                  Text(
+                    l10n.need(item.stockDeficit),
+                    style: _getTextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.orange,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -761,30 +830,30 @@ class _LowStockPopupState extends State<LowStockPopup> {
           Expanded(
             flex: 1,
             child: Container(
-              width: 80.w,
-              height: 40.h,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+              padding: EdgeInsets.symmetric(horizontal: 8.w),
+              child: Container(
+                width: 80.w,
+                height: 40.h,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                  ),
                 ),
-              ),
-              alignment: Alignment.center, // Added alignment
-              child: Center(
-                // Wrapped with Center widget
+                alignment: Alignment.center,
                 child: TextField(
                   controller: quantityController,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: _getTextStyle(
                     fontSize: 14.sp,
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
-                    isCollapsed: true, // Ensures perfect vertical centering
+                    isCollapsed: true,
                     contentPadding: EdgeInsets.zero,
                   ),
                   inputFormatters: [
@@ -797,52 +866,52 @@ class _LowStockPopupState extends State<LowStockPopup> {
             ),
           ),
 
-          SizedBox(
-            width: 20,
-          ),
           // Alert Level
           Expanded(
             flex: 1,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
-              decoration: BoxDecoration(
-                color: _getAlertColor(item.alertLevel).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: _getAlertColor(item.alertLevel),
-                  width: 1,
+              padding: EdgeInsets.symmetric(horizontal: 8.w),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
+                decoration: BoxDecoration(
+                  color: _getAlertColor(item.alertLevel).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: _getAlertColor(item.alertLevel),
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Text(
-                item.alertLevel.toUpperCase(),
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w600,
-                  color: _getAlertColor(item.alertLevel),
+                child: Text(
+                  _getLocalizedAlertLevel(item.alertLevel),
+                  style: _getTextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: _getAlertColor(item.alertLevel),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ),
-          SizedBox(
-            width: 20,
-          ),
+
           // Supplier Dropdown (only show if not using global supplier)
           if (!_useGlobalSupplier)
             Expanded(
               flex: 2,
               child: Container(
-                margin: EdgeInsets.only(left: 8.w),
-                padding: EdgeInsets.symmetric(horizontal: 12.w),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
                   ),
+                  child: _buildSupplierDropdown(
+                      suppliers, selectedSupplier, item.product.productId),
                 ),
-                child: _buildSupplierDropdown(
-                    suppliers, selectedSupplier, item.product.productId),
               ),
             ),
         ],
@@ -850,14 +919,32 @@ class _LowStockPopupState extends State<LowStockPopup> {
     );
   }
 
+  String _getLocalizedAlertLevel(String alertLevel) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    switch (alertLevel.toUpperCase()) {
+      case 'CRITICAL':
+        return l10n.critical;
+      case 'HIGH':
+        return l10n.high;
+      case 'MEDIUM':
+        return l10n.medium;
+      case 'LOW':
+        return l10n.low;
+      default:
+        return alertLevel;
+    }
+  }
+
   Widget _buildSupplierDropdown(List<LowStockSupplier> suppliers,
       LowStockSupplier? selectedSupplier, int productId) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     try {
       if (suppliers.isEmpty) {
         return Center(
           child: Text(
-            'No suppliers',
-            style: GoogleFonts.spaceGrotesk(
+            l10n.noSuppliers,
+            style: _getTextStyle(
               fontSize: 12.sp,
               color: Colors.white54,
             ),
@@ -874,14 +961,14 @@ class _LowStockPopupState extends State<LowStockPopup> {
         child: DropdownButton<LowStockSupplier>(
           value: validSelectedSupplier,
           hint: Text(
-            'Select Supplier',
-            style: GoogleFonts.spaceGrotesk(
+            l10n.selectSupplier,
+            style: _getTextStyle(
               fontSize: 12.sp,
               color: Colors.white54,
             ),
           ),
           dropdownColor: const Color.fromARGB(255, 36, 50, 69),
-          style: GoogleFonts.spaceGrotesk(
+          style: _getTextStyle(
             fontSize: 12.sp,
             color: Colors.white,
           ),
@@ -900,7 +987,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
                 children: [
                   Text(
                     supplier.supplierName,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: _getTextStyle(
                       fontSize: 12.sp,
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -910,7 +997,7 @@ class _LowStockPopupState extends State<LowStockPopup> {
                   if (supplier.priceSupplier > 0)
                     Text(
                       '\$${supplier.priceSupplier.toStringAsFixed(2)}',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: _getTextStyle(
                         fontSize: 10.sp,
                         color: Colors.white70,
                       ),
@@ -931,8 +1018,8 @@ class _LowStockPopupState extends State<LowStockPopup> {
       return Container(
         padding: EdgeInsets.symmetric(vertical: 8.h),
         child: Text(
-          'Error loading suppliers',
-          style: GoogleFonts.spaceGrotesk(
+          l10n.errorLoadingSuppliers,
+          style: _getTextStyle(
             fontSize: 12.sp,
             color: Colors.red,
           ),

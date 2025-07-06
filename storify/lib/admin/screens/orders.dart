@@ -765,7 +765,7 @@ class _OrdersState extends State<Orders> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            fixedSize: Size(180.w, 50.h),
+                            fixedSize: Size(195.w, 50.h),
                             elevation: 1,
                           ),
                           onPressed: () {

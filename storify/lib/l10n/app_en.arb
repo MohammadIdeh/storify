@@ -492,5 +492,272 @@
     "deliveryBy": "Delivery by",
     "failedToLoadCustomers": "Failed to load customers",
     "failedToLoadCustomerHistory": "Failed to load customer history",
-    "statusCancelled": "Cancelled"
+    "statusCancelled": "Cancelled",
+    "lowStockAlertAdvancedOrderGeneration": "Low Stock Alert - Advanced Order Generation",
+    "itemsNeedRestocking": "{count} items need restocking",
+    "@itemsNeedRestocking": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "selectAll": "Select All",
+    "useSameSupplierForAllItems": "Use same supplier for all items:",
+    "selectGlobalSupplier": "Select Global Supplier",
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "selected": "Selected",
+    "product": "Product",
+    "currentMin": "Current/Min",
+    "orderQty": "Order Qty",
+    "alert": "Alert",
+    "supplier": "Supplier",
+    "suppliersAvailable": "{count} suppliers available",
+    "@suppliersAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "need": "Need: {amount}",
+    "@need": {
+        "placeholders": {
+            "amount": {
+                "type": "int"
+            }
+        }
+    },
+    "noSuppliers": "No suppliers",
+    "selectSupplier": "Select Supplier",
+    "errorLoadingSuppliers": "Error loading suppliers",
+    "selectAtLeastOneItem": "Please select at least one item to generate orders",
+    "errorGeneratingOrders": "Error generating orders: {error}",
+    "@errorGeneratingOrders": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "itemsSelected": "{selected} of {total} items selected",
+    "@itemsSelected": {
+        "placeholders": {
+            "selected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "globalSupplier": "Global supplier: {name}",
+    "@globalSupplier": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "generating": "Generating...",
+    "generateOrders": "Generate Orders",
+    "pendingOrders": "Pending Orders",
+    "completedOrders": "Completed Orders",
+    "cancelledOrders": "Cancelled Orders",
+    "totalOrders": "Total Orders",
+    "activeSuppliers": "Active Suppliers",
+    "lowStockItems": "Low Stock Items",
+    "monthlyRevenue": "Monthly Revenue",
+    "totalProducts": "Total Products",
+    "noOrdersFound": "No orders found",
+    "noOrdersToDisplay": "There are no orders to display",
+    "noOrdersMatchFilter": "No orders match your filter",
+    "adjustFilterCriteria": "Try adjusting your search or filter criteria",
+    "noOrdersWithStatus": "No orders with status \"{status}\"",
+    "@noOrdersWithStatus": {
+        "placeholders": {
+            "status": {
+                "type": "String"
+            }
+        }
+    },
+    "orderId": "Order ID",
+    "supplierName": "Supplier Name",
+    "customerName": "Customer Name",
+    "phoneNumber": "Phone No",
+    "orderDate": "Order Date",
+    "totalProducts": "Total Products",
+    "totalAmount": "Total Amount",
+    "status": "Status",
+    "totalOrdersCount": "Total {count} Orders",
+    "@totalOrdersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "orderStatusAccepted": "Accepted",
+    "orderStatusPending": "Pending",
+    "orderStatusDelivered": "Delivered",
+    "orderStatusShipped": "Shipped",
+    "orderStatusDeclined": "Declined",
+    "orderStatusRejected": "Rejected",
+    "orderStatusDeclinedByAdmin": "Declined by Admin",
+    "orderStatusPartiallyAccepted": "Partially Accepted",
+    "orderStatusPrepared": "Prepared",
+    "orderStatusOnTheWay": "On the Way",
+    "orderStatusAssigned": "Assigned",
+    "orderStatusPreparing": "Preparing",
+    "placeOrderFromSuppliers": "Place Order from Suppliers",
+    "selectSupplier": "Select Supplier",
+    "pleaseChooseSupplier": "Please choose a supplier",
+    "failedToLoadSuppliers": "Failed to load suppliers: {error}",
+    "@failedToLoadSuppliers": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "failedToLoadProducts": "Failed to load products: {error}",
+    "@failedToLoadProducts": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "cart": "Cart",
+    "cartItemsCount": "({count} items)",
+    "@cartItemsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "cartEmpty": "Your cart is empty",
+    "addProductsToCart": "Add products from the list to place an order",
+    "unknownSupplier": "Unknown Supplier",
+    "grandTotal": "Grand Total",
+    "confirmAllOrders": "Confirm All Orders",
+    "processingOrders": "Processing Orders...",
+    "products": "Products",
+    "productsWithCount": "Products ({count})",
+    "@productsWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noProductsToDisplay": "No products to display",
+    "selectSupplierFirst": "Please select a supplier first",
+    "noProductsAvailable": "No products available",
+    "supplierNoProducts": "This supplier has no products listed",
+    "productDetails": "Product Details",
+    "noProductSelected": "No product selected",
+    "selectProductFromList": "Select a product from the list to see details",
+    "inStock": "In Stock: {quantity}",
+    "@inStock": {
+        "placeholders": {
+            "quantity": {
+                "type": "int"
+            }
+        }
+    },
+    "description": "Description",
+    "noDescriptionAvailable": "No description available",
+    "addToCart": "Add to Cart",
+    "betterPriceAvailable": "Better Price Available!",
+    "productAvailableAtLowerPrice": "This product is available at a lower price:",
+    "currentSupplier": "Current: {name}",
+    "@currentSupplier": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "betterSupplier": "Better: {name}",
+    "@betterSupplier": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "youSave": "You Save:",
+    "savingsAmount": "${amount} ({percentage}%)",
+    "@savingsAmount": {
+        "placeholders": {
+            "amount": {
+                "type": "String"
+            },
+            "percentage": {
+                "type": "String"
+            }
+        }
+    },
+    "switchSuppliersQuestion": "Would you like to switch suppliers for this product?",
+    "keepCurrent": "Keep Current",
+    "switchSupplier": "Switch Supplier",
+    "newOrderReceived": "New Order Received",
+    "orderReceivedFrom": "You have received a new order from {supplierName}",
+    "@orderReceivedFrom": {
+        "placeholders": {
+            "supplierName": {
+                "type": "String"
+            }
+        }
+    },
+    "justNow": "Just now",
+    "orderPlacedSuccessfully": "Order placed successfully for {supplierName}",
+    "@orderPlacedSuccessfully": {
+        "placeholders": {
+            "supplierName": {
+                "type": "String"
+            }
+        }
+    },
+    "failedToPlaceOrder": "Failed to place order: {error}",
+    "@failedToPlaceOrder": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "failedToPlaceOrderForSupplier": "Failed to place order for supplier #{supplierId}",
+    "@failedToPlaceOrderForSupplier": {
+        "placeholders": {
+            "supplierId": {
+                "type": "int"
+            }
+        }
+    },
+    "errorPlacingOrder": "Error placing order: {error}",
+    "@errorPlacingOrder": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "confirmOrder": "Confirm Order",
+    "quantityPrice": "{quantity} × ${price}",
+    "@quantityPrice": {
+        "placeholders": {
+            "quantity": {
+                "type": "int"
+            },
+            "price": {
+                "type": "String"
+            }
+        }
+    }
 }

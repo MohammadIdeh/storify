@@ -347,7 +347,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneNumber.
   ///
   /// In en, this message translates to:
-  /// **'Phone Number'**
+  /// **'Phone No'**
   String get phoneNumber;
 
   /// No description provided for @userId.
@@ -1253,8 +1253,8 @@ abstract class AppLocalizations {
   /// No description provided for @failedToLoadSuppliers.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load suppliers. Please try again.'**
-  String get failedToLoadSuppliers;
+  /// **'Failed to load suppliers: {error}'**
+  String failedToLoadSuppliers(String error);
 
   /// No description provided for @networkError.
   ///
@@ -1841,7 +1841,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderId.
   ///
   /// In en, this message translates to:
-  /// **'Order Id'**
+  /// **'Order ID'**
   String get orderId;
 
   /// No description provided for @orderPrice.
@@ -2003,8 +2003,8 @@ abstract class AppLocalizations {
   /// No description provided for @failedToLoadProducts.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load products'**
-  String get failedToLoadProducts;
+  /// **'Failed to load products: {error}'**
+  String failedToLoadProducts(String error);
 
   /// No description provided for @errorFetchingProducts.
   ///
@@ -3007,6 +3007,492 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancelled'**
   String get statusCancelled;
+
+  /// No description provided for @lowStockAlertAdvancedOrderGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock Alert - Advanced Order Generation'**
+  String get lowStockAlertAdvancedOrderGeneration;
+
+  /// No description provided for @itemsNeedRestocking.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items need restocking'**
+  String itemsNeedRestocking(int count);
+
+  /// No description provided for @useSameSupplierForAllItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Use same supplier for all items:'**
+  String get useSameSupplierForAllItems;
+
+  /// No description provided for @selectGlobalSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Global Supplier'**
+  String get selectGlobalSupplier;
+
+  /// No description provided for @critical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get critical;
+
+  /// No description provided for @high.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get high;
+
+  /// No description provided for @medium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get medium;
+
+  /// No description provided for @low.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get low;
+
+  /// No description provided for @selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get selected;
+
+  /// No description provided for @currentMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Current/Min'**
+  String get currentMin;
+
+  /// No description provided for @orderQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Qty'**
+  String get orderQty;
+
+  /// No description provided for @suppliersAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} suppliers available'**
+  String suppliersAvailable(int count);
+
+  /// No description provided for @need.
+  ///
+  /// In en, this message translates to:
+  /// **'Need: {amount}'**
+  String need(int amount);
+
+  /// No description provided for @noSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers'**
+  String get noSuppliers;
+
+  /// No description provided for @selectSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Supplier'**
+  String get selectSupplier;
+
+  /// No description provided for @errorLoadingSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading suppliers'**
+  String get errorLoadingSuppliers;
+
+  /// No description provided for @selectAtLeastOneItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one item to generate orders'**
+  String get selectAtLeastOneItem;
+
+  /// No description provided for @errorGeneratingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Error generating orders: {error}'**
+  String errorGeneratingOrders(String error);
+
+  /// No description provided for @itemsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} items selected'**
+  String itemsSelected(int selected, int total);
+
+  /// No description provided for @globalSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Global supplier: {name}'**
+  String globalSupplier(String name);
+
+  /// No description provided for @generating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating...'**
+  String get generating;
+
+  /// No description provided for @generateOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Orders'**
+  String get generateOrders;
+
+  /// No description provided for @pendingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Orders'**
+  String get pendingOrders;
+
+  /// No description provided for @activeSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Suppliers'**
+  String get activeSuppliers;
+
+  /// No description provided for @lowStockItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock Items'**
+  String get lowStockItems;
+
+  /// No description provided for @monthlyRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Revenue'**
+  String get monthlyRevenue;
+
+  /// No description provided for @noOrdersToDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no orders to display'**
+  String get noOrdersToDisplay;
+
+  /// No description provided for @noOrdersMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders match your filter'**
+  String get noOrdersMatchFilter;
+
+  /// No description provided for @adjustFilterCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search or filter criteria'**
+  String get adjustFilterCriteria;
+
+  /// No description provided for @noOrdersWithStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders with status \"{status}\"'**
+  String noOrdersWithStatus(String status);
+
+  /// No description provided for @supplierName.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Name'**
+  String get supplierName;
+
+  /// No description provided for @customerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Name'**
+  String get customerName;
+
+  /// No description provided for @totalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Amount'**
+  String get totalAmount;
+
+  /// No description provided for @totalOrdersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {count} Orders'**
+  String totalOrdersCount(int count);
+
+  /// No description provided for @orderStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get orderStatusAccepted;
+
+  /// No description provided for @orderStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get orderStatusPending;
+
+  /// No description provided for @orderStatusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get orderStatusDelivered;
+
+  /// No description provided for @orderStatusShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get orderStatusShipped;
+
+  /// No description provided for @orderStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get orderStatusDeclined;
+
+  /// No description provided for @orderStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get orderStatusRejected;
+
+  /// No description provided for @orderStatusDeclinedByAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined by Admin'**
+  String get orderStatusDeclinedByAdmin;
+
+  /// No description provided for @orderStatusPartiallyAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Accepted'**
+  String get orderStatusPartiallyAccepted;
+
+  /// No description provided for @orderStatusPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared'**
+  String get orderStatusPrepared;
+
+  /// No description provided for @orderStatusOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'On the Way'**
+  String get orderStatusOnTheWay;
+
+  /// No description provided for @orderStatusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get orderStatusAssigned;
+
+  /// No description provided for @orderStatusPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get orderStatusPreparing;
+
+  /// No description provided for @placeOrderFromSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Place Order from Suppliers'**
+  String get placeOrderFromSuppliers;
+
+  /// No description provided for @pleaseChooseSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a supplier'**
+  String get pleaseChooseSupplier;
+
+  /// No description provided for @cart.
+  ///
+  /// In en, this message translates to:
+  /// **'Cart'**
+  String get cart;
+
+  /// No description provided for @cartItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'({count} items)'**
+  String cartItemsCount(int count);
+
+  /// No description provided for @cartEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cart is empty'**
+  String get cartEmpty;
+
+  /// No description provided for @addProductsToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'Add products from the list to place an order'**
+  String get addProductsToCart;
+
+  /// No description provided for @unknownSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Supplier'**
+  String get unknownSupplier;
+
+  /// No description provided for @confirmAllOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm All Orders'**
+  String get confirmAllOrders;
+
+  /// No description provided for @processingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing Orders...'**
+  String get processingOrders;
+
+  /// No description provided for @productsWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Products ({count})'**
+  String productsWithCount(int count);
+
+  /// No description provided for @noProductsToDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'No products to display'**
+  String get noProductsToDisplay;
+
+  /// No description provided for @selectSupplierFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a supplier first'**
+  String get selectSupplierFirst;
+
+  /// No description provided for @noProductsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No products available'**
+  String get noProductsAvailable;
+
+  /// No description provided for @supplierNoProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'This supplier has no products listed'**
+  String get supplierNoProducts;
+
+  /// No description provided for @noProductSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No product selected'**
+  String get noProductSelected;
+
+  /// No description provided for @selectProductFromList.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a product from the list to see details'**
+  String get selectProductFromList;
+
+  /// No description provided for @inStock.
+  ///
+  /// In en, this message translates to:
+  /// **'In Stock: {quantity}'**
+  String inStock(int quantity);
+
+  /// No description provided for @addToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Cart'**
+  String get addToCart;
+
+  /// No description provided for @betterPriceAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Better Price Available!'**
+  String get betterPriceAvailable;
+
+  /// No description provided for @productAvailableAtLowerPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'This product is available at a lower price:'**
+  String get productAvailableAtLowerPrice;
+
+  /// No description provided for @currentSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Current: {name}'**
+  String currentSupplier(String name);
+
+  /// No description provided for @betterSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Better: {name}'**
+  String betterSupplier(String name);
+
+  /// No description provided for @youSave.
+  ///
+  /// In en, this message translates to:
+  /// **'You Save:'**
+  String get youSave;
+
+  /// No description provided for @savingsAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'\${amount} ({percentage}%)'**
+  String savingsAmount(String amount, String percentage);
+
+  /// No description provided for @switchSuppliersQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to switch suppliers for this product?'**
+  String get switchSuppliersQuestion;
+
+  /// No description provided for @keepCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Current'**
+  String get keepCurrent;
+
+  /// No description provided for @switchSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Supplier'**
+  String get switchSupplier;
+
+  /// No description provided for @newOrderReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'New Order Received'**
+  String get newOrderReceived;
+
+  /// No description provided for @orderReceivedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'You have received a new order from {supplierName}'**
+  String orderReceivedFrom(String supplierName);
+
+  /// No description provided for @orderPlacedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placed successfully for {supplierName}'**
+  String orderPlacedSuccessfully(String supplierName);
+
+  /// No description provided for @failedToPlaceOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to place order: {error}'**
+  String failedToPlaceOrder(String error);
+
+  /// No description provided for @failedToPlaceOrderForSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to place order for supplier #{supplierId}'**
+  String failedToPlaceOrderForSupplier(int supplierId);
+
+  /// No description provided for @errorPlacingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Error placing order: {error}'**
+  String errorPlacingOrder(String error);
+
+  /// No description provided for @confirmOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Order'**
+  String get confirmOrder;
+
+  /// No description provided for @quantityPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'{quantity} × \${price}'**
+  String quantityPrice(int quantity, String price);
 }
 
 class _AppLocalizationsDelegate

@@ -672,7 +672,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       if (localizedProductError.contains('Invalid response format')) {
         localizedProductError = l10n.invalidResponseFormat;
       } else if (localizedProductError.contains('Failed to load products')) {
-        localizedProductError = l10n.failedToLoadProducts +
+        localizedProductError = l10n.invalidResponseFormat +
             ': ' +
             localizedProductError.split(': ').last;
       } else if (localizedProductError.contains('Error fetching products')) {

@@ -134,7 +134,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullName => 'Full Name';
 
   @override
-  String get phoneNumber => 'Phone Number';
+  String get phoneNumber => 'Phone No';
 
   @override
   String get userId => 'User ID';
@@ -603,8 +603,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'You are not authorized to access this feature.';
 
   @override
-  String get failedToLoadSuppliers =>
-      'Failed to load suppliers. Please try again.';
+  String failedToLoadSuppliers(String error) {
+    return 'Failed to load suppliers: $error';
+  }
 
   @override
   String get networkError => 'Network error. Please check your connection.';
@@ -922,7 +923,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No selling history available for this product';
 
   @override
-  String get orderId => 'Order Id';
+  String get orderId => 'Order ID';
 
   @override
   String get orderPrice => 'Order Price';
@@ -1004,7 +1005,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidResponseFormat => 'Invalid response format';
 
   @override
-  String get failedToLoadProducts => 'Failed to load products';
+  String failedToLoadProducts(String error) {
+    return 'Failed to load products: $error';
+  }
 
   @override
   String get errorFetchingProducts => 'Error fetching products';
@@ -1521,4 +1524,294 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusCancelled => 'Cancelled';
+
+  @override
+  String get lowStockAlertAdvancedOrderGeneration =>
+      'Low Stock Alert - Advanced Order Generation';
+
+  @override
+  String itemsNeedRestocking(int count) {
+    return '$count items need restocking';
+  }
+
+  @override
+  String get useSameSupplierForAllItems => 'Use same supplier for all items:';
+
+  @override
+  String get selectGlobalSupplier => 'Select Global Supplier';
+
+  @override
+  String get critical => 'Critical';
+
+  @override
+  String get high => 'High';
+
+  @override
+  String get medium => 'Medium';
+
+  @override
+  String get low => 'Low';
+
+  @override
+  String get selected => 'Selected';
+
+  @override
+  String get currentMin => 'Current/Min';
+
+  @override
+  String get orderQty => 'Order Qty';
+
+  @override
+  String suppliersAvailable(int count) {
+    return '$count suppliers available';
+  }
+
+  @override
+  String need(int amount) {
+    return 'Need: $amount';
+  }
+
+  @override
+  String get noSuppliers => 'No suppliers';
+
+  @override
+  String get selectSupplier => 'Select Supplier';
+
+  @override
+  String get errorLoadingSuppliers => 'Error loading suppliers';
+
+  @override
+  String get selectAtLeastOneItem =>
+      'Please select at least one item to generate orders';
+
+  @override
+  String errorGeneratingOrders(String error) {
+    return 'Error generating orders: $error';
+  }
+
+  @override
+  String itemsSelected(int selected, int total) {
+    return '$selected of $total items selected';
+  }
+
+  @override
+  String globalSupplier(String name) {
+    return 'Global supplier: $name';
+  }
+
+  @override
+  String get generating => 'Generating...';
+
+  @override
+  String get generateOrders => 'Generate Orders';
+
+  @override
+  String get pendingOrders => 'Pending Orders';
+
+  @override
+  String get activeSuppliers => 'Active Suppliers';
+
+  @override
+  String get lowStockItems => 'Low Stock Items';
+
+  @override
+  String get monthlyRevenue => 'Monthly Revenue';
+
+  @override
+  String get noOrdersToDisplay => 'There are no orders to display';
+
+  @override
+  String get noOrdersMatchFilter => 'No orders match your filter';
+
+  @override
+  String get adjustFilterCriteria =>
+      'Try adjusting your search or filter criteria';
+
+  @override
+  String noOrdersWithStatus(String status) {
+    return 'No orders with status \"$status\"';
+  }
+
+  @override
+  String get supplierName => 'Supplier Name';
+
+  @override
+  String get customerName => 'Customer Name';
+
+  @override
+  String get totalAmount => 'Total Amount';
+
+  @override
+  String totalOrdersCount(int count) {
+    return 'Total $count Orders';
+  }
+
+  @override
+  String get orderStatusAccepted => 'Accepted';
+
+  @override
+  String get orderStatusPending => 'Pending';
+
+  @override
+  String get orderStatusDelivered => 'Delivered';
+
+  @override
+  String get orderStatusShipped => 'Shipped';
+
+  @override
+  String get orderStatusDeclined => 'Declined';
+
+  @override
+  String get orderStatusRejected => 'Rejected';
+
+  @override
+  String get orderStatusDeclinedByAdmin => 'Declined by Admin';
+
+  @override
+  String get orderStatusPartiallyAccepted => 'Partially Accepted';
+
+  @override
+  String get orderStatusPrepared => 'Prepared';
+
+  @override
+  String get orderStatusOnTheWay => 'On the Way';
+
+  @override
+  String get orderStatusAssigned => 'Assigned';
+
+  @override
+  String get orderStatusPreparing => 'Preparing';
+
+  @override
+  String get placeOrderFromSuppliers => 'Place Order from Suppliers';
+
+  @override
+  String get pleaseChooseSupplier => 'Please choose a supplier';
+
+  @override
+  String get cart => 'Cart';
+
+  @override
+  String cartItemsCount(int count) {
+    return '($count items)';
+  }
+
+  @override
+  String get cartEmpty => 'Your cart is empty';
+
+  @override
+  String get addProductsToCart =>
+      'Add products from the list to place an order';
+
+  @override
+  String get unknownSupplier => 'Unknown Supplier';
+
+  @override
+  String get confirmAllOrders => 'Confirm All Orders';
+
+  @override
+  String get processingOrders => 'Processing Orders...';
+
+  @override
+  String productsWithCount(int count) {
+    return 'Products ($count)';
+  }
+
+  @override
+  String get noProductsToDisplay => 'No products to display';
+
+  @override
+  String get selectSupplierFirst => 'Please select a supplier first';
+
+  @override
+  String get noProductsAvailable => 'No products available';
+
+  @override
+  String get supplierNoProducts => 'This supplier has no products listed';
+
+  @override
+  String get noProductSelected => 'No product selected';
+
+  @override
+  String get selectProductFromList =>
+      'Select a product from the list to see details';
+
+  @override
+  String inStock(int quantity) {
+    return 'In Stock: $quantity';
+  }
+
+  @override
+  String get addToCart => 'Add to Cart';
+
+  @override
+  String get betterPriceAvailable => 'Better Price Available!';
+
+  @override
+  String get productAvailableAtLowerPrice =>
+      'This product is available at a lower price:';
+
+  @override
+  String currentSupplier(String name) {
+    return 'Current: $name';
+  }
+
+  @override
+  String betterSupplier(String name) {
+    return 'Better: $name';
+  }
+
+  @override
+  String get youSave => 'You Save:';
+
+  @override
+  String savingsAmount(String amount, String percentage) {
+    return '\$$amount ($percentage%)';
+  }
+
+  @override
+  String get switchSuppliersQuestion =>
+      'Would you like to switch suppliers for this product?';
+
+  @override
+  String get keepCurrent => 'Keep Current';
+
+  @override
+  String get switchSupplier => 'Switch Supplier';
+
+  @override
+  String get newOrderReceived => 'New Order Received';
+
+  @override
+  String orderReceivedFrom(String supplierName) {
+    return 'You have received a new order from $supplierName';
+  }
+
+  @override
+  String orderPlacedSuccessfully(String supplierName) {
+    return 'Order placed successfully for $supplierName';
+  }
+
+  @override
+  String failedToPlaceOrder(String error) {
+    return 'Failed to place order: $error';
+  }
+
+  @override
+  String failedToPlaceOrderForSupplier(int supplierId) {
+    return 'Failed to place order for supplier #$supplierId';
+  }
+
+  @override
+  String errorPlacingOrder(String error) {
+    return 'Error placing order: $error';
+  }
+
+  @override
+  String get confirmOrder => 'Confirm Order';
+
+  @override
+  String quantityPrice(int quantity, String price) {
+    return '$quantity × \$$price';
+  }
 }

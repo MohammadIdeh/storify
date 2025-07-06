@@ -33,7 +33,7 @@ class Supplier {
       case 'NOT_AUTHORIZED_TO_ACCESS_FEATURE':
         return l10n.notAuthorizedToAccessFeature;
       case 'FAILED_TO_LOAD_SUPPLIERS':
-        return l10n.failedToLoadSuppliers;
+        return l10n.notAuthorizedToAccessFeature;
       case 'NETWORK_ERROR':
         return l10n.networkError;
       default:
