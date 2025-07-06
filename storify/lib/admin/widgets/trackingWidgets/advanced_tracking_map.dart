@@ -10,6 +10,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -492,9 +494,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               position: deliveryLocation,
               icon: await _getDeliveryManIcon(urgency),
               infoWindow: InfoWindow(
-                title: '🚚 Delivery Man - Order #$orderId',
+                title:
+                    '🚚 ${context.l10n.deliveryMan} - ${context.l10n.route} #$orderId',
                 snippet:
-                    'Customer: ${order['customer']?['personalInfo']?['name'] ?? 'Unknown'}\nValue: \$${order['orderMetrics']?['totalValue'] ?? 0}\nStatus: ${order['orderStatus']?['current'] ?? 'pending'}',
+                    '${context.l10n.customer}: ${order['customer']?['personalInfo']?['name'] ?? context.l10n.unknownCustomer}\n${context.l10n.totalValue}: \$${order['orderMetrics']?['totalValue'] ?? 0}\n${context.l10n.status}: ${order['orderStatus']?['current'] ?? 'pending'}',
                 onTap: () => _selectSpecificOrder(orderId),
               ),
               onTap: () => _selectSpecificOrder(orderId),
@@ -509,9 +512,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               icon: await _getCustomerIcon(),
               infoWindow: InfoWindow(
                 title:
-                    '🏠 ${order['customer']?['personalInfo']?['name'] ?? 'Customer'}',
+                    '🏠 ${order['customer']?['personalInfo']?['name'] ?? context.l10n.customer}',
                 snippet:
-                    'Order #$orderId\nAddress: ${order['customer']?['deliveryAddress']?['fullAddress'] ?? 'Unknown'}\nPhone: ${order['customer']?['personalInfo']?['phone'] ?? 'N/A'}',
+                    '${context.l10n.route} #$orderId\n${context.l10n.address}: ${order['customer']?['deliveryAddress']?['fullAddress'] ?? context.l10n.unknownAddress}\n${context.l10n.phone}: ${order['customer']?['personalInfo']?['phone'] ?? 'N/A'}',
                 onTap: () => _selectSpecificOrder(orderId),
               ),
               onTap: () => _selectSpecificOrder(orderId),
@@ -572,9 +575,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           position: _currentLatLng!,
           icon: await _getAdminIcon(),
           infoWindow: InfoWindow(
-            title: '👑 Admin Control Center',
+            title: '👑 ${context.l10n.adminControlCenter}',
             snippet:
-                'Monitoring ${_orders.length} active deliveries\nYour current location',
+                '${context.l10n.monitoring} ${_orders.length} ${context.l10n.activeDeliveries}\n${context.l10n.yourCurrentLocation}',
           ),
         ),
       );
@@ -761,6 +764,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     final summary = _trackingData!['summary'];
     if (summary == null) return const SizedBox.shrink();
 
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Container(
       padding: EdgeInsets.all(16.w),
       margin: EdgeInsets.only(bottom: 16.h),
@@ -778,12 +785,18 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               Row(
                 children: [
                   Text(
-                    'Live Route Summary',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                    l10n.liveRouteSummary,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                   ),
                   SizedBox(width: 8.w),
                   if (_isLoadingRoutes)
@@ -814,12 +827,18 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                         ),
                         SizedBox(width: 4.w),
                         Text(
-                          'REAL ROUTES',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 10.sp,
-                            color: const Color(0xFF10B981),
-                            fontWeight: FontWeight.w600,
-                          ),
+                          l10n.realRoutes,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 10.sp,
+                                  color: const Color(0xFF10B981),
+                                  fontWeight: FontWeight.w600,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 10.sp,
+                                  color: const Color(0xFF10B981),
+                                  fontWeight: FontWeight.w600,
+                                ),
                         ),
                       ],
                     ),
@@ -841,20 +860,22 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               children: [
                 Expanded(
                   child: _buildSummaryItem(
-                    'Active Routes',
+                    l10n.activeRoutes,
                     _orders.length
                         .toString(), // Use actual orders count instead of backend count
                     Icons.route,
                     const Color(0xFF6366F1),
+                    isArabic,
                   ),
                 ),
                 SizedBox(width: 12.w),
                 Expanded(
                   child: _buildSummaryItem(
-                    'Total Value',
+                    l10n.totalValue,
                     '\$${summary['totalValueInTransit'] ?? 0}',
                     Icons.attach_money,
                     const Color(0xFF10B981),
+                    isArabic,
                   ),
                 ),
               ],
@@ -864,19 +885,21 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               children: [
                 Expanded(
                   child: _buildSummaryItem(
-                    'Avg Distance',
-                    '${_calculateAverageDistance().toStringAsFixed(1)} km',
+                    l10n.avgDistance,
+                    '${_calculateAverageDistance().toStringAsFixed(1)} ${l10n.km}',
                     Icons.straighten,
                     const Color(0xFF8B5CF6),
+                    isArabic,
                   ),
                 ),
                 SizedBox(width: 12.w),
                 Expanded(
                   child: _buildSummaryItem(
-                    'Outstanding',
+                    l10n.outstanding,
                     '\$${summary['outstandingPayments'] ?? 0}',
                     Icons.payment,
                     const Color(0xFFF59E0B),
+                    isArabic,
                   ),
                 ),
               ],
@@ -923,7 +946,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildSummaryItem(
-      String title, String value, IconData icon, Color color) {
+      String title, String value, IconData icon, Color color, bool isArabic) {
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
@@ -937,18 +960,29 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
           SizedBox(height: 4.h),
           Text(
             value,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
           ),
           Text(
             title,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 12.sp,
-              color: Colors.white70,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  ),
           ),
         ],
       ),
@@ -956,6 +990,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildUrgencyBreakdown(Map<String, dynamic> urgencyData) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
@@ -966,25 +1004,34 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Route Priority Breakdown',
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+            l10n.routePriorityBreakdown,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
           ),
           SizedBox(height: 8.h),
-          Row(
-            children: [
-              _buildUrgencyChip(
-                  'High', urgencyData['high'] ?? 0, Colors.red, '━━━'),
-              SizedBox(width: 8.w),
-              _buildUrgencyChip(
-                  'Medium', urgencyData['medium'] ?? 0, Colors.orange, '┅┅┅'),
-              SizedBox(width: 8.w),
-              _buildUrgencyChip(
-                  'Low', urgencyData['low'] ?? 0, Colors.green, '⋯⋯⋯'),
-            ],
+          Directionality(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+            child: Row(
+              children: [
+                _buildUrgencyChip(l10n.high, urgencyData['high'] ?? 0,
+                    Colors.red, '━━━', isArabic),
+                SizedBox(width: 8.w),
+                _buildUrgencyChip(l10n.medium, urgencyData['medium'] ?? 0,
+                    Colors.orange, '┅┅┅', isArabic),
+                SizedBox(width: 8.w),
+                _buildUrgencyChip(l10n.low, urgencyData['low'] ?? 0,
+                    Colors.green, '⋯⋯⋯', isArabic),
+              ],
+            ),
           ),
         ],
       ),
@@ -992,7 +1039,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildUrgencyChip(
-      String label, int count, Color color, String pattern) {
+      String label, int count, Color color, String pattern, bool isArabic) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
@@ -1017,20 +1064,31 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               SizedBox(width: 4.w),
               Text(
                 '$label ($count)',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12.sp,
-                  color: Colors.white,
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                      ),
               ),
             ],
           ),
           Text(
             pattern,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 10.sp,
-              color: color,
-              fontWeight: FontWeight.w900,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 10.sp,
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 10.sp,
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                  ),
           ),
         ],
       ),
@@ -1038,6 +1096,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildFilterControls() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Container(
       padding: EdgeInsets.all(16.w),
       margin: EdgeInsets.only(bottom: 16.h),
@@ -1050,79 +1112,111 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Route Controls',
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+            l10n.routeControls,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+          ),
+          SizedBox(height: 12.h),
+          Directionality(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => setState(() {
+                      _showAllOrders = true;
+                      _selectedOrderId = null;
+                    }),
+                    icon: Icon(
+                        _showAllOrders ? Icons.route : Icons.route_outlined),
+                    label: Text(
+                      _showAllOrders ? l10n.allRoutes : l10n.showAll,
+                      style: isArabic
+                          ? GoogleFonts.cairo()
+                          : GoogleFonts.spaceGrotesk(),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _showAllOrders
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF6B7280),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await _fetchTrackingData();
+                    },
+                    icon: _isLoadingRoutes
+                        ? SizedBox(
+                            width: 16.w,
+                            height: 16.h,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.refresh),
+                    label: Text(
+                      _isLoadingRoutes ? l10n.updating : l10n.refreshRoutes,
+                      style: isArabic
+                          ? GoogleFonts.cairo()
+                          : GoogleFonts.spaceGrotesk(),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6366F1),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 12.h),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => setState(() {
-                    _showAllOrders = true;
-                    _selectedOrderId = null;
-                  }),
-                  icon:
-                      Icon(_showAllOrders ? Icons.route : Icons.route_outlined),
-                  label: Text(_showAllOrders ? 'All Routes' : 'Show All'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _showAllOrders
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFF6B7280),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await _fetchTrackingData();
-                  },
-                  icon: _isLoadingRoutes
-                      ? SizedBox(
-                          width: 16.w,
-                          height: 16.h,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  label:
-                      Text(_isLoadingRoutes ? 'Updating...' : 'Refresh Routes'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Wrap(
-            spacing: 8.w,
-            children: [
-              _buildFilterChip('All Routes', 'all'),
-              _buildFilterChip('High Priority', 'high'),
-              _buildFilterChip('Medium Priority', 'medium'),
-              _buildFilterChip('Low Priority', 'low'),
-            ],
+          Directionality(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+            child: Wrap(
+              spacing: 8.w,
+              children: [
+                _buildFilterChip(l10n.allRoutes, 'all', isArabic),
+                _buildFilterChip(l10n.highPriority, 'high', isArabic),
+                _buildFilterChip(l10n.mediumPriority, 'medium', isArabic),
+                _buildFilterChip(l10n.lowPriority, 'low', isArabic),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
+  Widget _buildFilterChip(String label, String value, bool isArabic) {
     final isSelected = _selectedFilter == value;
     return FilterChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: isArabic
+            ? GoogleFonts.cairo(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 12.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 12.sp,
+              ),
+      ),
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
@@ -1131,14 +1225,14 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       },
       backgroundColor: const Color(0xFF374151),
       selectedColor: const Color(0xFF6366F1),
-      labelStyle: GoogleFonts.spaceGrotesk(
-        color: isSelected ? Colors.white : Colors.white70,
-        fontSize: 12.sp,
-      ),
     );
   }
 
   Widget _buildLiveOrdersCards() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     final filteredOrders = _orders.where((order) {
       if (_selectedFilter == 'all') return true;
       final urgency =
@@ -1165,11 +1259,16 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               ),
               SizedBox(height: 12.h),
               Text(
-                'No Active Routes',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  color: Colors.white70,
-                ),
+                l10n.noActiveRoutes,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16.sp,
+                        color: Colors.white70,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16.sp,
+                        color: Colors.white70,
+                      ),
               ),
             ],
           ),
@@ -1196,6 +1295,9 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildLiveOrderCard(Map<String, dynamic> order, Color routeColor) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
     final orderId = order['orderId'];
     final canCancel = order['orderStatus']?['current'] == 'on_theway';
 
@@ -1223,197 +1325,266 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         borderRadius: BorderRadius.circular(16.r),
         child: Padding(
           padding: EdgeInsets.all(12.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 3.w,
-                    height: 20.h,
-                    decoration: BoxDecoration(
-                      color: routeColor,
-                      borderRadius: BorderRadius.circular(2.r),
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      'Route #$orderId',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+          child: Directionality(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 3.w,
+                      height: 20.h,
+                      decoration: BoxDecoration(
+                        color: routeColor,
+                        borderRadius: BorderRadius.circular(2.r),
                       ),
                     ),
-                  ),
-                  Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: _getUrgencyColor(
-                              order['orderStatus']?['urgencyLevel'] ?? 'Medium')
-                          .withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8.r),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        '${l10n.route} #$orderId',
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                      ),
                     ),
-                    child: Text(
-                      order['orderStatus']?['urgencyLevel'] ?? 'Medium',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 8.sp,
-                        color: _getUrgencyColor(
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                      decoration: BoxDecoration(
+                        color: _getUrgencyColor(order['orderStatus']
+                                    ?['urgencyLevel'] ??
+                                'Medium')
+                            .withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Text(
+                        _getLocalizedUrgency(
                             order['orderStatus']?['urgencyLevel'] ?? 'Medium'),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                children: [
-                  Icon(
-                    Icons.local_shipping,
-                    size: 12.sp,
-                    color: routeColor,
-                  ),
-                  SizedBox(width: 4.w),
-                  Text(
-                    '→',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                  Icon(
-                    Icons.home,
-                    size: 12.sp,
-                    color: Colors.blue,
-                  ),
-                ],
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                order['customer']?['personalInfo']?['name'] ??
-                    'Unknown Customer',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12.sp,
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 4.h),
-              Row(
-                children: [
-                  Icon(
-                    Icons.attach_money,
-                    size: 14.sp,
-                    color: const Color(0xFF10B981),
-                  ),
-                  Text(
-                    '\$${order['orderMetrics']?['totalValue'] ?? 0}',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: const Color(0xFF10B981),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Icon(
-                    Icons.verified,
-                    size: 12.sp,
-                    color: routeColor,
-                  ),
-                  SizedBox(width: 2.w),
-                  Text(
-                    'REAL',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 10.sp,
-                      color: routeColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 12.sp,
-                    color: Colors.white54,
-                  ),
-                  SizedBox(width: 4.w),
-                  Expanded(
-                    child: Text(
-                      order['orderStatus']?['orderAge']?['formatted'] ??
-                          'Unknown',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10.sp,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ),
-                  if (canCancel) ...[
-                    SizedBox(width: 4.w),
-                    GestureDetector(
-                      onTap: () async {
-                        print(
-                            '🔧 DEBUG: Cancel icon clicked on route card for order $orderId');
-
-                        // Show immediate visual feedback
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Processing cancellation for Order #$orderId...',
-                              style:
-                                  GoogleFonts.spaceGrotesk(color: Colors.white),
-                            ),
-                            backgroundColor: Colors.orange,
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-
-                        // Call parent's cancel function
-                        widget.onOrderCancel?.call(orderId);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4.w),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6.r),
-                          border: Border.all(color: Colors.red, width: 1),
-                        ),
-                        child: Icon(
-                          Icons.cancel_outlined,
-                          size: 14.sp,
-                          color: Colors.red,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 8.sp,
+                                color: _getUrgencyColor(order['orderStatus']
+                                        ?['urgencyLevel'] ??
+                                    'Medium'),
+                                fontWeight: FontWeight.w600,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 8.sp,
+                                color: _getUrgencyColor(order['orderStatus']
+                                        ?['urgencyLevel'] ??
+                                    'Medium'),
+                                fontWeight: FontWeight.w600,
+                              ),
                       ),
                     ),
                   ],
-                  SizedBox(width: 4.w),
-                  Container(
-                    width: 8.w,
-                    height: 8.h,
-                    decoration: BoxDecoration(
+                ),
+                SizedBox(height: 8.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_shipping,
+                      size: 12.sp,
                       color: routeColor,
-                      shape: BoxShape.circle,
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    SizedBox(width: 4.w),
+                    Text(
+                      '→',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w900,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w900,
+                            ),
+                    ),
+                    SizedBox(width: 4.w),
+                    Icon(
+                      Icons.home,
+                      size: 12.sp,
+                      color: Colors.blue,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  order['customer']?['personalInfo']?['name'] ??
+                      l10n.unknownCustomer,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 12.sp,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 12.sp,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.attach_money,
+                      size: 14.sp,
+                      color: const Color(0xFF10B981),
+                    ),
+                    Text(
+                      '\$${order['orderMetrics']?['totalValue'] ?? 0}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Icon(
+                      Icons.verified,
+                      size: 12.sp,
+                      color: routeColor,
+                    ),
+                    SizedBox(width: 2.w),
+                    Text(
+                      l10n.real,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 10.sp,
+                              color: routeColor,
+                              fontWeight: FontWeight.w700,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 10.sp,
+                              color: routeColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 12.sp,
+                      color: Colors.white54,
+                    ),
+                    SizedBox(width: 4.w),
+                    Expanded(
+                      child: Text(
+                        order['orderStatus']?['orderAge']?['formatted'] ??
+                            l10n.unknown,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 10.sp,
+                                color: Colors.white54,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 10.sp,
+                                color: Colors.white54,
+                              ),
+                      ),
+                    ),
+                    if (canCancel) ...[
+                      SizedBox(width: 4.w),
+                      GestureDetector(
+                        onTap: () async {
+                          print(
+                              '🔧 DEBUG: Cancel icon clicked on route card for order $orderId');
+
+                          // Show immediate visual feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${l10n.processingCancellation} #$orderId...',
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
+                              ),
+                              backgroundColor: Colors.orange,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+
+                          // Call parent's cancel function
+                          widget.onOrderCancel?.call(orderId);
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4.w),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6.r),
+                            border: Border.all(color: Colors.red, width: 1),
+                          ),
+                          child: Icon(
+                            Icons.cancel_outlined,
+                            size: 14.sp,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                    SizedBox(width: 4.w),
+                    Container(
+                      width: 8.w,
+                      height: 8.h,
+                      decoration: BoxDecoration(
+                        color: routeColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  String _getLocalizedUrgency(String urgency) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    switch (urgency.toLowerCase()) {
+      case 'high':
+        return l10n.high;
+      case 'medium':
+        return l10n.medium;
+      case 'low':
+        return l10n.low;
+      default:
+        return l10n.medium;
+    }
+  }
+
   Widget _buildOrderDetails() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_selectedOrderId == null || _showAllOrders) {
       return _buildOrdersList();
     }
@@ -1434,155 +1605,203 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: const Color.fromARGB(255, 46, 57, 84)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                Icons.route,
-                color: Colors.white,
-                size: 20.sp,
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                'Route #${order['orderId'] ?? 'N/A'}',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () => setState(() {
-                  _selectedOrderId = null;
-                  _showAllOrders = true;
-                }),
-                icon: const Icon(Icons.close, color: Colors.white70),
-              ),
-            ],
-          ),
-          SizedBox(height: 16.h),
-
-          // Route Status
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color:
-                  _getStatusColor(order['orderStatus']?['current'] ?? 'pending')
-                      .withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20.r),
-              border: Border.all(
-                color: _getStatusColor(
-                    order['orderStatus']?['current'] ?? 'pending'),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+      child: Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
               children: [
                 Icon(
                   Icons.route,
-                  size: 16.sp,
-                  color: _getStatusColor(
-                      order['orderStatus']?['current'] ?? 'pending'),
+                  color: Colors.white,
+                  size: 20.sp,
                 ),
-                SizedBox(width: 6.w),
+                SizedBox(width: 8.w),
                 Text(
-                  'ROUTE ${(order['orderStatus']?['current'] ?? 'pending').toString().toUpperCase()}',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(
-                        order['orderStatus']?['current'] ?? 'pending'),
-                  ),
+                  '${l10n.route} #${order['orderId'] ?? 'N/A'}',
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setState(() {
+                    _selectedOrderId = null;
+                    _showAllOrders = true;
+                  }),
+                  icon: const Icon(Icons.close, color: Colors.white70),
                 ),
               ],
             ),
-          ),
+            SizedBox(height: 16.h),
 
-          SizedBox(height: 16.h),
-
-          // Route Information
-          _buildDetailSection('Route Information', [
-            _buildDetailRow(
-                'Delivery Man', 'Delivery Agent #${order['orderId']}'),
-            _buildDetailRow('Customer',
-                order['customer']?['personalInfo']?['name'] ?? 'N/A'),
-            _buildDetailRow(
-                'Route Status', order['orderStatus']?['current'] ?? 'N/A'),
-            _buildDetailRow('Priority Level',
-                order['orderStatus']?['urgencyLevel'] ?? 'N/A'),
-            _buildDetailRow('Estimated Distance',
-                '${_calculateDistance(order).toStringAsFixed(1)} km'),
-          ]),
-
-          SizedBox(height: 16.h),
-
-          // Customer Info
-          _buildDetailSection('Delivery Destination', [
-            _buildDetailRow('Customer Phone',
-                order['customer']?['personalInfo']?['phone'] ?? 'N/A'),
-            _buildDetailRow('Delivery Address',
-                order['customer']?['deliveryAddress']?['fullAddress'] ?? 'N/A'),
-            _buildDetailRow('Total Value',
-                '\$${order['orderMetrics']?['totalValue'] ?? 0}'),
-            _buildDetailRow(
-                'Items Count', '${order['orderMetrics']?['totalItems'] ?? 0}'),
-          ]),
-
-          SizedBox(height: 16.h),
-
-          // Actions
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _focusOnRoute(order),
-                  icon: const Icon(Icons.my_location),
-                  label: const Text('Follow Route'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
-                    foregroundColor: Colors.white,
-                  ),
+            // Route Status
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: _getStatusColor(
+                        order['orderStatus']?['current'] ?? 'pending')
+                    .withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20.r),
+                border: Border.all(
+                  color: _getStatusColor(
+                      order['orderStatus']?['current'] ?? 'pending'),
                 ),
               ),
-              if (canCancel) ...[
-                SizedBox(width: 12.w),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.route,
+                    size: 16.sp,
+                    color: _getStatusColor(
+                        order['orderStatus']?['current'] ?? 'pending'),
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    '${l10n.route.toUpperCase()} ${(order['orderStatus']?['current'] ?? 'pending').toString().toUpperCase()}',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: _getStatusColor(
+                                order['orderStatus']?['current'] ?? 'pending'),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: _getStatusColor(
+                                order['orderStatus']?['current'] ?? 'pending'),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 16.h),
+
+            // Route Information
+            _buildDetailSection(
+                l10n.routeInformation,
+                [
+                  _buildDetailRow(l10n.deliveryMan,
+                      '${l10n.deliveryAgent} #${order['orderId']}', isArabic),
+                  _buildDetailRow(
+                      l10n.customer,
+                      order['customer']?['personalInfo']?['name'] ?? 'N/A',
+                      isArabic),
+                  _buildDetailRow(l10n.routeStatus,
+                      order['orderStatus']?['current'] ?? 'N/A', isArabic),
+                  _buildDetailRow(
+                      l10n.priorityLevel,
+                      _getLocalizedUrgency(
+                          order['orderStatus']?['urgencyLevel'] ?? 'Medium'),
+                      isArabic),
+                  _buildDetailRow(
+                      l10n.estimatedDistance,
+                      '${_calculateDistance(order).toStringAsFixed(1)} ${l10n.km}',
+                      isArabic),
+                ],
+                isArabic),
+
+            SizedBox(height: 16.h),
+
+            // Customer Info
+            _buildDetailSection(
+                l10n.deliveryDestination,
+                [
+                  _buildDetailRow(
+                      l10n.customerPhone,
+                      order['customer']?['personalInfo']?['phone'] ?? 'N/A',
+                      isArabic),
+                  _buildDetailRow(
+                      l10n.deliveryAddress,
+                      order['customer']?['deliveryAddress']?['fullAddress'] ??
+                          'N/A',
+                      isArabic),
+                  _buildDetailRow(
+                      l10n.totalValue,
+                      '\$${order['orderMetrics']?['totalValue'] ?? 0}',
+                      isArabic),
+                  _buildDetailRow(l10n.itemsCount,
+                      '${order['orderMetrics']?['totalItems'] ?? 0}', isArabic),
+                ],
+                isArabic),
+
+            SizedBox(height: 16.h),
+
+            // Actions
+            Row(
+              children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      print(
-                          '🔧 DEBUG: Cancel Order button clicked in details panel for order ${order['orderId']}');
-
-                      // Show immediate visual feedback
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Processing cancellation for Order #${order['orderId']}...',
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.orange,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-
-                      widget.onOrderCancel?.call(order['orderId']);
-                    },
-                    icon: const Icon(Icons.cancel),
-                    label: const Text('Cancel Order'),
+                    onPressed: () => _focusOnRoute(order),
+                    icon: const Icon(Icons.my_location),
+                    label: Text(
+                      l10n.followRoute,
+                      style: isArabic
+                          ? GoogleFonts.cairo()
+                          : GoogleFonts.spaceGrotesk(),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
                     ),
                   ),
                 ),
+                if (canCancel) ...[
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        print(
+                            '🔧 DEBUG: Cancel Order button clicked in details panel for order ${order['orderId']}');
+
+                        // Show immediate visual feedback
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${l10n.processingCancellation} #${order['orderId']}...',
+                              style: isArabic
+                                  ? GoogleFonts.cairo(color: Colors.white)
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white),
+                            ),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
+                        widget.onOrderCancel?.call(order['orderId']);
+                      },
+                      icon: const Icon(Icons.cancel),
+                      label: Text(
+                        l10n.cancelOrder,
+                        style: isArabic
+                            ? GoogleFonts.cairo()
+                            : GoogleFonts.spaceGrotesk(),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1610,6 +1829,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
   }
 
   Widget _buildOrdersList() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     final filteredOrders = _orders.where((order) {
       if (_selectedFilter == 'all') return true;
       final urgency =
@@ -1625,43 +1848,55 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: const Color.fromARGB(255, 46, 57, 84)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.route,
-                color: Colors.white,
-                size: 20.sp,
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                'Active Routes (${filteredOrders.length})',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
+      child: Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.route,
                   color: Colors.white,
+                  size: 20.sp,
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Expanded(
-            child: ListView.builder(
-              itemCount: filteredOrders.length,
-              itemBuilder: (context, index) {
-                final order = filteredOrders[index];
-                return _buildOrderCard(order);
-              },
+                SizedBox(width: 8.w),
+                Text(
+                  '${l10n.activeRoutes} (${filteredOrders.length})',
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                ),
+              ],
             ),
-          ),
-        ],
+            SizedBox(height: 12.h),
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredOrders.length,
+                itemBuilder: (context, index) {
+                  final order = filteredOrders[index];
+                  return _buildOrderCard(order);
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
     final orderId = order['orderId'];
     final canCancel = order['orderStatus']?['current'] == 'on_theway';
 
@@ -1679,161 +1914,214 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
       ),
       child: InkWell(
         onTap: () => _selectOrder(orderId),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.route,
-                  size: 16.sp,
-                  color: const Color(0xFF6366F1),
-                ),
-                SizedBox(width: 6.w),
-                Text(
-                  'Route #$orderId',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+        child: Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.route,
+                    size: 16.sp,
+                    color: const Color(0xFF6366F1),
                   ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: _getUrgencyColor(
-                            order['orderStatus']?['urgencyLevel'] ?? 'Medium')
-                        .withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12.r),
+                  SizedBox(width: 6.w),
+                  Text(
+                    '${l10n.route} #$orderId',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                   ),
-                  child: Text(
-                    order['orderStatus']?['urgencyLevel'] ?? 'Medium',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 10.sp,
+                  const Spacer(),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                    decoration: BoxDecoration(
                       color: _getUrgencyColor(
+                              order['orderStatus']?['urgencyLevel'] ?? 'Medium')
+                          .withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text(
+                      _getLocalizedUrgency(
                           order['orderStatus']?['urgencyLevel'] ?? 'Medium'),
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 10.sp,
+                              color: _getUrgencyColor(order['orderStatus']
+                                      ?['urgencyLevel'] ??
+                                  'Medium'),
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 10.sp,
+                              color: _getUrgencyColor(order['orderStatus']
+                                      ?['urgencyLevel'] ??
+                                  'Medium'),
+                            ),
                     ),
                   ),
-                ),
-                if (canCancel) ...[
-                  SizedBox(width: 8.w),
-                  GestureDetector(
-                    onTap: () async {
-                      print(
-                          '🔧 DEBUG: Cancel button clicked in order card for order $orderId');
+                  if (canCancel) ...[
+                    SizedBox(width: 8.w),
+                    GestureDetector(
+                      onTap: () async {
+                        print(
+                            '🔧 DEBUG: Cancel button clicked in order card for order $orderId');
 
-                      // Show immediate visual feedback
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Processing cancellation for Order #$orderId...',
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
+                        // Show immediate visual feedback
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${l10n.processingCancellation} #$orderId...',
+                              style: isArabic
+                                  ? GoogleFonts.cairo(color: Colors.white)
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white),
+                            ),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 2),
                           ),
-                          backgroundColor: Colors.orange,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                        );
 
-                      widget.onOrderCancel?.call(orderId);
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(6.w),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(color: Colors.red, width: 1),
+                        widget.onOrderCancel?.call(orderId);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(6.w),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: Colors.red, width: 1),
+                        ),
+                        child: Icon(
+                          Icons.cancel_outlined,
+                          size: 16.sp,
+                          color: Colors.red,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.cancel_outlined,
-                        size: 16.sp,
-                        color: Colors.red,
-                      ),
+                    ),
+                  ],
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_shipping,
+                    size: 12.sp,
+                    color: Colors.orange,
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    ' → ',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          ),
+                  ),
+                  Icon(
+                    Icons.home,
+                    size: 12.sp,
+                    color: Colors.blue,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      order['customer']?['personalInfo']?['name'] ??
+                          l10n.unknownCustomer,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white70,
+                            ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
-              ],
-            ),
-            SizedBox(height: 8.h),
-            Row(
-              children: [
-                Icon(
-                  Icons.local_shipping,
-                  size: 12.sp,
-                  color: Colors.orange,
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  ' → ',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: Colors.white70,
+              ),
+              SizedBox(height: 4.h),
+              Row(
+                children: [
+                  Text(
+                    '\$${order['orderMetrics']?['totalValue'] ?? 0}',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            color: const Color(0xFF10B981),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            color: const Color(0xFF10B981),
+                          ),
                   ),
-                ),
-                Icon(
-                  Icons.home,
-                  size: 12.sp,
-                  color: Colors.blue,
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    order['customer']?['personalInfo']?['name'] ??
-                        'Unknown Customer',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: Colors.white70,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Text(
+                    ' • ${order['orderMetrics']?['totalItems'] ?? 0} ${l10n.items}',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 4.h),
-            Row(
-              children: [
-                Text(
-                  '\$${order['orderMetrics']?['totalValue'] ?? 0}',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: const Color(0xFF10B981),
+                  const Spacer(),
+                  Text(
+                    '${_calculateDistance(order).toStringAsFixed(1)} ${l10n.km}',
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 10.sp,
+                            color: Colors.white54,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 10.sp,
+                            color: Colors.white54,
+                          ),
                   ),
-                ),
-                Text(
-                  ' • ${order['orderMetrics']?['totalItems'] ?? 0} items',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: Colors.white70,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_calculateDistance(order).toStringAsFixed(1)} km',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 10.sp,
-                    color: Colors.white54,
-                  ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailSection(String title, List<Widget> children) {
+  Widget _buildDetailSection(
+      String title, List<Widget> children, bool isArabic) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -1848,26 +2136,37 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, bool isArabic) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         children: [
           Text(
             '$label: ',
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 12.sp,
-              color: Colors.white70,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  ),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 12.sp,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 12.sp,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 12.sp,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
             ),
           ),
         ],
@@ -1940,6 +2239,10 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (widget.showAsCards) {
       // Show orders as cards layout
       if (_isLoading) {
@@ -1967,16 +2270,26 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                 Icon(Icons.error_outline, color: Colors.red, size: 32.sp),
                 SizedBox(height: 8.h),
                 Text(
-                  'Failed to load routes',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    color: Colors.white,
-                  ),
+                  l10n.failedToLoadRoutes,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          color: Colors.white,
+                        ),
                 ),
                 SizedBox(height: 8.h),
                 ElevatedButton(
                   onPressed: _fetchTrackingData,
-                  child: const Text('Retry'),
+                  child: Text(
+                    l10n.retry,
+                    style: isArabic
+                        ? GoogleFonts.cairo()
+                        : GoogleFonts.spaceGrotesk(),
+                  ),
                 ),
               ],
             ),
@@ -2017,16 +2330,26 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
               Icon(Icons.error_outline, color: Colors.red, size: 48.sp),
               SizedBox(height: 16.h),
               Text(
-                'Failed to load tracking data',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  color: Colors.white,
-                ),
+                l10n.failedToLoadTrackingData,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16.sp,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16.sp,
+                        color: Colors.white,
+                      ),
               ),
               SizedBox(height: 16.h),
               ElevatedButton(
                 onPressed: _fetchTrackingData,
-                child: const Text('Retry'),
+                child: Text(
+                  l10n.retry,
+                  style: isArabic
+                      ? GoogleFonts.cairo()
+                      : GoogleFonts.spaceGrotesk(),
+                ),
               ),
             ],
           ),
@@ -2036,215 +2359,252 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
 
     final initial = _currentLatLng ?? const LatLng(31.9000, 35.2000);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Map Section
-        Expanded(
-          flex: 3,
-          child: Container(
-            height: 820.h,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24.r),
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      const Color.fromARGB(255, 66, 67, 121).withOpacity(0.3),
-                  spreadRadius: 5,
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(24.r),
-                  child: GoogleMap(
-                    onMapCreated: _onMapCreated,
-                    initialCameraPosition: CameraPosition(
-                      target: initial,
-                      zoom: 12.0,
-                    ),
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: true,
-                    markers: _markers,
-                    polylines: _polylines,
-                    mapType: MapType.normal,
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Map Section
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 820.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        const Color.fromARGB(255, 66, 67, 121).withOpacity(0.3),
+                    spreadRadius: 5,
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
-                ),
-                // Updated indicator for real routes
-                Positioned(
-                  top: 16.h,
-                  left: 16.w,
-                  child: Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(20.r),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24.r),
+                    child: GoogleMap(
+                      onMapCreated: _onMapCreated,
+                      initialCameraPosition: CameraPosition(
+                        target: initial,
+                        zoom: 12.0,
+                      ),
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: true,
+                      markers: _markers,
+                      polylines: _polylines,
+                      mapType: MapType.normal,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8.w,
-                          height: 8.h,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF10B981),
-                            shape: BoxShape.circle,
+                  ),
+                  // Updated indicator for real routes
+                  Positioned(
+                    top: 16.h,
+                    left: isRtl ? null : 16.w,
+                    right: isRtl ? 16.w : null,
+                    child: Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8.w,
+                            height: 8.h,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 6.w),
-                        Text(
-                          'REAL ROADS - ${_orders.length} ROUTES',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                          SizedBox(width: 6.w),
+                          Text(
+                            '${l10n.realRoads} - ${_orders.length} ${l10n.routes}',
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                           ),
-                        ),
-                        if (_isLoadingRoutes) ...[
-                          SizedBox(width: 8.w),
-                          SizedBox(
-                            width: 12.w,
-                            height: 12.h,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF10B981),
+                          if (_isLoadingRoutes) ...[
+                            SizedBox(width: 8.w),
+                            SizedBox(
+                              width: 12.w,
+                              height: 12.h,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF10B981),
+                                ),
                               ),
                             ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Routes legend
+                  Positioned(
+                    top: 16.h,
+                    right: isRtl ? null : 16.w,
+                    left: isRtl ? 16.w : null,
+                    child: Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.routeLegend,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                          SizedBox(height: 6.h),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.local_shipping,
+                                size: 12.sp,
+                                color: Colors.orange,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                l10n.deliveryMan,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 8.sp,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 8.sp,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 2.h),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.home,
+                                size: 12.sp,
+                                color: Colors.blue,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                l10n.customer,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 8.sp,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 8.sp,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 2.h),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                size: 10.sp,
+                                color: Colors.yellow,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                l10n.admin,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 8.sp,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 8.sp,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 4.h),
+                          Container(
+                            height: 1,
+                            width: 80.w,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: _routeColors.take(4).toList(),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            l10n.googleDirectionsRoutes,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 8.sp,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 8.sp,
+                                    color: Colors.white,
+                                  ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                // Routes legend
-                Positioned(
-                  top: 16.h,
-                  right: 16.w,
-                  child: Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ROUTE LEGEND',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.local_shipping,
-                              size: 12.sp,
-                              color: Colors.orange,
-                            ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              'Delivery Man',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 8.sp,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2.h),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.home,
-                              size: 12.sp,
-                              color: Colors.blue,
-                            ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              'Customer',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 8.sp,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 2.h),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 10.sp,
-                              color: Colors.yellow,
-                            ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              'Admin',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 8.sp,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 4.h),
-                        Container(
-                          height: 1,
-                          width: 80.w,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _routeColors.take(4).toList(),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          'Google Directions Routes',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 8.sp,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        SizedBox(width: 16.w),
-
-        // Enhanced Control Panel
-        Expanded(
-          flex: 2,
-          child: SizedBox(
-            height: 820.h,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildSummaryCards(),
-                  _buildFilterControls(),
-                  _buildOrderDetails(),
                 ],
               ),
             ),
           ),
-        ),
-      ],
+
+          SizedBox(width: 16.w),
+
+          // Enhanced Control Panel
+          Expanded(
+            flex: 2,
+            child: SizedBox(
+              height: 820.h,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildSummaryCards(),
+                    _buildFilterControls(),
+                    _buildOrderDetails(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

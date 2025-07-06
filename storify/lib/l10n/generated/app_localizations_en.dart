@@ -938,7 +938,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completed => 'Completed';
 
   @override
-  String get onTheWay => 'On the way';
+  String get onTheWay => 'On The Way';
 
   @override
   String get cancelled => 'Cancelled';
@@ -1942,4 +1942,279 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get apiDidNotReturnExpectedJsonStructure =>
       'The API did not return the expected JSON structure.';
+
+  @override
+  String get deliveryMan => 'Delivery Man';
+
+  @override
+  String get route => 'Route';
+
+  @override
+  String get unknownCustomer => 'Unknown Customer';
+
+  @override
+  String get totalValue => 'Total Value';
+
+  @override
+  String get unknownAddress => 'Unknown Address';
+
+  @override
+  String get monitoring => 'Monitoring';
+
+  @override
+  String get activeDeliveries => 'active deliveries';
+
+  @override
+  String get yourCurrentLocation => 'Your current location';
+
+  @override
+  String get adminControlCenter => 'Admin Control Center';
+
+  @override
+  String get liveRouteSummary => 'Live Route Summary';
+
+  @override
+  String get realRoutes => 'REAL ROUTES';
+
+  @override
+  String get activeRoutes => 'Active Routes';
+
+  @override
+  String get avgDistance => 'Avg Distance';
+
+  @override
+  String get km => 'km';
+
+  @override
+  String get outstanding => 'Outstanding';
+
+  @override
+  String get routePriorityBreakdown => 'Route Priority Breakdown';
+
+  @override
+  String get routeControls => 'Route Controls';
+
+  @override
+  String get allRoutes => 'All Routes';
+
+  @override
+  String get showAll => 'Show All';
+
+  @override
+  String get updating => 'Updating...';
+
+  @override
+  String get refreshRoutes => 'Refresh Routes';
+
+  @override
+  String get highPriority => 'High Priority';
+
+  @override
+  String get mediumPriority => 'Medium Priority';
+
+  @override
+  String get lowPriority => 'Low Priority';
+
+  @override
+  String get noActiveRoutes => 'No Active Routes';
+
+  @override
+  String get real => 'REAL';
+
+  @override
+  String get processingCancellation => 'Processing cancellation for Order';
+
+  @override
+  String get failedToLoadRoutes => 'Failed to load routes';
+
+  @override
+  String get failedToLoadTrackingData => 'Failed to load tracking data';
+
+  @override
+  String get realRoads => 'REAL ROADS';
+
+  @override
+  String get routes => 'ROUTES';
+
+  @override
+  String get routeLegend => 'ROUTE LEGEND';
+
+  @override
+  String get googleDirectionsRoutes => 'Google Directions Routes';
+
+  @override
+  String get routeInformation => 'Route Information';
+
+  @override
+  String get deliveryAgent => 'Delivery Agent';
+
+  @override
+  String get routeStatus => 'Route Status';
+
+  @override
+  String get priorityLevel => 'Priority Level';
+
+  @override
+  String get estimatedDistance => 'Estimated Distance';
+
+  @override
+  String get deliveryDestination => 'Delivery Destination';
+
+  @override
+  String get customerPhone => 'Customer Phone';
+
+  @override
+  String get deliveryAddress => 'Delivery Address';
+
+  @override
+  String get itemsCount => 'Items Count';
+
+  @override
+  String get followRoute => 'Follow Route';
+
+  @override
+  String get cancelOrder => 'Cancel Order';
+
+  @override
+  String get totalShipment => 'Total Shipment';
+
+  @override
+  String get authenticationFailed =>
+      'Authentication failed. Please login again.';
+
+  @override
+  String get errorFetchingTrackingData => 'Error fetching tracking data';
+
+  @override
+  String get failedToLoadOrders => 'Failed to load orders';
+
+  @override
+  String get cancelingOrder => 'Canceling order...';
+
+  @override
+  String get orderCanceledSuccessfully =>
+      'Order has been canceled successfully';
+
+  @override
+  String get failedToCancelOrder => 'Failed to cancel order';
+
+  @override
+  String get errorCancelingOrder => 'Error canceling order';
+
+  @override
+  String get provideCancellationReason =>
+      'Please provide a reason for canceling this order:';
+
+  @override
+  String get enterCancellationReason => 'Enter cancellation reason...';
+
+  @override
+  String get cancellationReasonRequired => 'Cancellation reason is required';
+
+  @override
+  String get reasonMinLength => 'Reason must be at least 10 characters';
+
+  @override
+  String get actionCannotBeUndone => '⚠️ This action cannot be undone';
+
+  @override
+  String get keepOrder => 'Keep Order';
+
+  @override
+  String get ordersHistory => 'Orders History';
+
+  @override
+  String get allOrdersFilter => 'All Orders';
+
+  @override
+  String get shipped => 'Shipped';
+
+  @override
+  String get orderIdHeader => 'Order ID';
+
+  @override
+  String get viewDetails => 'View Details';
+
+  @override
+  String cancelledByTooltip(Object name) {
+    return 'Cancelled by $name\nClick \"View Details\" for more info';
+  }
+
+  @override
+  String get administrativeDecision => 'Administrative Decision';
+
+  @override
+  String get customerRequest => 'Customer Request';
+
+  @override
+  String get inventoryIssue => 'Inventory Issue';
+
+  @override
+  String get deliveryProblem => 'Delivery Problem';
+
+  @override
+  String get paymentIssue => 'Payment Issue';
+
+  @override
+  String get systemError => 'System Error';
+
+  @override
+  String get invalidDate => 'Invalid Date';
+
+  @override
+  String get orderDetailsTitle => 'Order Details';
+
+  @override
+  String get unknownEmail => 'Unknown Email';
+
+  @override
+  String get totalCost => 'Total Cost';
+
+  @override
+  String get paymentMethod => 'Payment Method';
+
+  @override
+  String get deliveryPerson => 'Delivery Person';
+
+  @override
+  String get unknownDeliveryPerson => 'Unknown Delivery Person';
+
+  @override
+  String get created => 'Created';
+
+  @override
+  String get cancellationDetails => 'Cancellation Details';
+
+  @override
+  String get reason => 'Reason';
+
+  @override
+  String get cancelledAt => 'Cancelled At';
+
+  @override
+  String get cancelledByAdmin => 'Cancelled by Administrator';
+
+  @override
+  String get adminName => 'Admin Name';
+
+  @override
+  String get adminEmail => 'Admin Email';
+
+  @override
+  String get adminId => 'Admin ID';
+
+  @override
+  String get unknownAdmin => 'Unknown Admin';
+
+  @override
+  String get cancelledBy => 'Cancelled By';
+
+  @override
+  String get adminIdLabel => 'Admin ID';
+
+  @override
+  String get unknownProduct => 'Unknown Product';
+
+  @override
+  String get qty => 'Qty';
 }

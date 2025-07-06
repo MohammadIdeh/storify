@@ -14,7 +14,7 @@ class RolesTable extends StatefulWidget {
   final Future<bool> Function(String id) onDeleteUser;
   final Function(RoleItem updatedRole)? onEditRole;
   final Function(RoleItem role)? onToggleActiveStatus;
-  final bool isLoading; // New parameter for loading state
+  final bool isLoading;
 
   const RolesTable({
     super.key,
@@ -25,7 +25,7 @@ class RolesTable extends StatefulWidget {
     required this.onDeleteUser,
     this.onEditRole,
     this.onToggleActiveStatus,
-    this.isLoading = false, // Default to false
+    this.isLoading = false,
   });
 
   @override
@@ -39,15 +39,18 @@ class _RolesTableState extends State<RolesTable> {
 
   /// Filters roles based on the filter string and search query
   List<RoleItem> get _filteredRoles {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
     List<RoleItem> filtered = widget.roles;
 
-    // Filter by role
+    // Filter by role - handle both localized and API role names
     if (widget.filter != l10n.allUsers) {
-      filtered = filtered
-          .where((roleItem) =>
-              roleItem.role.toLowerCase() == widget.filter.toLowerCase())
-          .toList();
+      filtered = filtered.where((roleItem) {
+        // Direct comparison with display role
+        if (roleItem.role == widget.filter) return true;
+
+        // Also check if the filter matches any of the localized role names
+        return _roleMatches(roleItem.role, widget.filter, l10n);
+      }).toList();
     }
 
     // Filter by search query
@@ -87,6 +90,32 @@ class _RolesTableState extends State<RolesTable> {
     return filtered;
   }
 
+  /// Helper method to check if a role matches the filter
+  bool _roleMatches(String roleToCheck, String filter, AppLocalizations l10n) {
+    // Direct match
+    if (roleToCheck.toLowerCase() == filter.toLowerCase()) return true;
+
+    // Check all possible role translations
+    Map<String, String> roleMap = {
+      l10n.admin: "admin",
+      l10n.warehouseEmployee: "warehouseemployee",
+      l10n.customer: "customer",
+      l10n.supplier: "supplier",
+      l10n.deliveryEmployee: "deliveryemployee",
+    };
+
+    // Check if the role or filter matches any translation
+    for (var entry in roleMap.entries) {
+      if ((roleToCheck == entry.key && filter == entry.key) ||
+          (roleToCheck.toLowerCase() == entry.value && filter == entry.key) ||
+          (roleToCheck == entry.key && filter.toLowerCase() == entry.value)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   List<RoleItem> get _visibleRoles {
     final filteredList = _filteredRoles;
     final totalItems = filteredList.length;
@@ -105,18 +134,21 @@ class _RolesTableState extends State<RolesTable> {
   }
 
   Color _getRoleColor(String role) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
-    if (role.toLowerCase() == 'admin' || role == l10n.admin) {
+    // Normalize role for comparison
+    String normalizedRole = role.toLowerCase();
+
+    if (normalizedRole == 'admin' || role == l10n.admin) {
       return Colors.red.withOpacity(0.8);
-    } else if (role.toLowerCase() == 'warehouseemployee' ||
+    } else if (normalizedRole == 'warehouseemployee' ||
         role == l10n.warehouseEmployee) {
       return Colors.blue.withOpacity(0.8);
-    } else if (role.toLowerCase() == 'customer' || role == l10n.customer) {
+    } else if (normalizedRole == 'customer' || role == l10n.customer) {
       return Colors.green.withOpacity(0.8);
-    } else if (role.toLowerCase() == 'supplier' || role == l10n.supplier) {
+    } else if (normalizedRole == 'supplier' || role == l10n.supplier) {
       return Colors.orange.withOpacity(0.8);
-    } else if (role.toLowerCase() == 'deliveryemployee' ||
+    } else if (normalizedRole == 'deliveryemployee' ||
         role == l10n.deliveryEmployee) {
       return Colors.purple.withOpacity(0.8);
     }
@@ -124,19 +156,7 @@ class _RolesTableState extends State<RolesTable> {
   }
 
   String _formatRole(String role) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
-
-    if (role.toLowerCase() == 'warehouseemployee') {
-      return l10n.warehouseEmployee;
-    } else if (role.toLowerCase() == 'deliveryemployee') {
-      return l10n.deliveryEmployee;
-    } else if (role.toLowerCase() == 'admin') {
-      return l10n.admin;
-    } else if (role.toLowerCase() == 'customer') {
-      return l10n.customer;
-    } else if (role.toLowerCase() == 'supplier') {
-      return l10n.supplier;
-    }
+    // Role should already be localized when coming from the main screen
     return role;
   }
 
@@ -192,9 +212,8 @@ class _RolesTableState extends State<RolesTable> {
     );
   }
 
-  // New method for loading state
   Widget _buildLoadingState(bool isArabic) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     return Container(
       padding: EdgeInsets.all(40.w),
@@ -243,9 +262,8 @@ class _RolesTableState extends State<RolesTable> {
     );
   }
 
-  // Updated empty state method
   Widget _buildEmptyState(bool isArabic) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     return Container(
       padding: EdgeInsets.all(40.w),
@@ -306,9 +324,9 @@ class _RolesTableState extends State<RolesTable> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
-    final isArabic = LocalizationHelper.isArabic(context);
-    final isRTL = LocalizationHelper.isRTL(context);
+    final l10n = context.l10n;
+    final isArabic = context.isArabic;
+    final isRTL = context.isRTL;
 
     final filteredList = _filteredRoles;
     final totalItems = filteredList.length;
@@ -389,7 +407,7 @@ class _RolesTableState extends State<RolesTable> {
               ),
             ),
 
-            // Table Content with improved state handling
+            // Table Content
             if (widget.isLoading)
               _buildLoadingState(isArabic)
             else if (_visibleRoles.isEmpty)
@@ -480,257 +498,248 @@ class _RolesTableState extends State<RolesTable> {
 
                           // User Info
                           DataCell(
-                            Row(
+                            Directionality(
                               textDirection:
                                   isRTL ? TextDirection.rtl : TextDirection.ltr,
-                              children: [
-                                // Profile Picture or Initials
-                                Container(
-                                  width: 32.w,
-                                  height: 32.w,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: const Color.fromARGB(
-                                              255, 105, 65, 198)
-                                          .withOpacity(0.3),
-                                      width: 1,
+                              child: Row(
+                                children: [
+                                  // Profile Picture or Initials
+                                  Container(
+                                    width: 32.w,
+                                    height: 32.w,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color.fromARGB(
+                                                255, 105, 65, 198)
+                                            .withOpacity(0.3),
+                                        width: 1,
+                                      ),
                                     ),
-                                  ),
-                                  child: roleItem.profilePicture != null &&
-                                          roleItem.profilePicture!.isNotEmpty
-                                      ? ClipOval(
-                                          child: Image.network(
-                                            roleItem.profilePicture!,
+                                    child: roleItem.profilePicture != null &&
+                                            roleItem.profilePicture!.isNotEmpty
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              roleItem.profilePicture!,
+                                              width: 32.w,
+                                              height: 32.w,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 32.w,
+                                                  height: 32.w,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: const Color.fromARGB(
+                                                            255, 105, 65, 198)
+                                                        .withOpacity(0.2),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      roleItem.name.isNotEmpty
+                                                          ? roleItem.name[0]
+                                                              .toUpperCase()
+                                                          : '?',
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color: const Color
+                                                                  .fromARGB(255,
+                                                                  105, 65, 198),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14.sp,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color: const Color
+                                                                  .fromARGB(255,
+                                                                  105, 65, 198),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14.sp,
+                                                            ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              loadingBuilder: (context, child,
+                                                  loadingProgress) {
+                                                if (loadingProgress == null)
+                                                  return child;
+                                                return Container(
+                                                  width: 32.w,
+                                                  height: 32.w,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: const Color.fromARGB(
+                                                            255, 105, 65, 198)
+                                                        .withOpacity(0.1),
+                                                  ),
+                                                  child: Center(
+                                                    child: SizedBox(
+                                                      width: 16.w,
+                                                      height: 16.w,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: const Color
+                                                            .fromARGB(
+                                                            255, 105, 65, 198),
+                                                        value: loadingProgress
+                                                                    .expectedTotalBytes !=
+                                                                null
+                                                            ? loadingProgress
+                                                                    .cumulativeBytesLoaded /
+                                                                loadingProgress
+                                                                    .expectedTotalBytes!
+                                                            : null,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : Container(
                                             width: 32.w,
                                             height: 32.w,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              // Fallback to initials if image fails to load
-                                              return Container(
-                                                width: 32.w,
-                                                height: 32.w,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: const Color.fromARGB(
-                                                          255, 105, 65, 198)
-                                                      .withOpacity(0.2),
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    roleItem.name.isNotEmpty
-                                                        ? roleItem.name[0]
-                                                            .toUpperCase()
-                                                        : '?',
-                                                    style: isArabic
-                                                        ? GoogleFonts.cairo(
-                                                            color: const Color
-                                                                .fromARGB(255,
-                                                                105, 65, 198),
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 14.sp,
-                                                          )
-                                                        : GoogleFonts
-                                                            .spaceGrotesk(
-                                                            color: const Color
-                                                                .fromARGB(255,
-                                                                105, 65, 198),
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 14.sp,
-                                                          ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            loadingBuilder: (context, child,
-                                                loadingProgress) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return Container(
-                                                width: 32.w,
-                                                height: 32.w,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: const Color.fromARGB(
-                                                          255, 105, 65, 198)
-                                                      .withOpacity(0.1),
-                                                ),
-                                                child: Center(
-                                                  child: SizedBox(
-                                                    width: 16.w,
-                                                    height: 16.w,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255,
-                                                              105,
-                                                              65,
-                                                              198),
-                                                      value: loadingProgress
-                                                                  .expectedTotalBytes !=
-                                                              null
-                                                          ? loadingProgress
-                                                                  .cumulativeBytesLoaded /
-                                                              loadingProgress
-                                                                  .expectedTotalBytes!
-                                                          : null,
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        )
-                                      : Container(
-                                          width: 32.w,
-                                          height: 32.w,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: const Color.fromARGB(
-                                                    255, 105, 65, 198)
-                                                .withOpacity(0.2),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              roleItem.name.isNotEmpty
-                                                  ? roleItem.name[0]
-                                                      .toUpperCase()
-                                                  : '?',
-                                              style: isArabic
-                                                  ? GoogleFonts.cairo(
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255,
-                                                              105,
-                                                              65,
-                                                              198),
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 14.sp,
-                                                    )
-                                                  : GoogleFonts.spaceGrotesk(
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255,
-                                                              105,
-                                                              65,
-                                                              198),
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 14.sp,
-                                                    ),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: const Color.fromARGB(
+                                                      255, 105, 65, 198)
+                                                  .withOpacity(0.2),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                roleItem.name.isNotEmpty
+                                                    ? roleItem.name[0]
+                                                        .toUpperCase()
+                                                    : '?',
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        color: const Color
+                                                            .fromARGB(
+                                                            255, 105, 65, 198),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14.sp,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        color: const Color
+                                                            .fromARGB(
+                                                            255, 105, 65, 198),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14.sp,
+                                                      ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        roleItem.name,
-                                        style: isArabic
-                                            ? GoogleFonts.cairo(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13.sp,
-                                              )
-                                            : GoogleFonts.spaceGrotesk(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13.sp,
-                                              ),
-                                        overflow: TextOverflow.ellipsis,
-                                        textDirection: isRTL
-                                            ? TextDirection.rtl
-                                            : TextDirection.ltr,
-                                      ),
-                                      Text(
-                                        roleItem.email,
-                                        style: isArabic
-                                            ? GoogleFonts.cairo(
-                                                color: Colors.white54,
-                                                fontSize: 11.sp,
-                                              )
-                                            : GoogleFonts.spaceGrotesk(
-                                                color: Colors.white54,
-                                                fontSize: 11.sp,
-                                              ),
-                                        overflow: TextOverflow.ellipsis,
-                                        textDirection: TextDirection
-                                            .ltr, // Email is always LTR
-                                      ),
-                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Contact
-                          DataCell(
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  textDirection: isRTL
-                                      ? TextDirection.rtl
-                                      : TextDirection.ltr,
-                                  children: [
-                                    Icon(Icons.phone,
-                                        size: 12.sp, color: Colors.white54),
-                                    SizedBox(width: 4.w),
-                                    Text(
-                                      roleItem.phoneNo,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(fontSize: 11.sp)
-                                          : GoogleFonts.spaceGrotesk(
-                                              fontSize: 11.sp),
-                                      textDirection: TextDirection
-                                          .ltr, // Phone numbers are LTR
-                                    ),
-                                  ],
-                                ),
-                                if (roleItem.address != null &&
-                                    roleItem.address!.isNotEmpty) ...[
-                                  SizedBox(height: 2.h),
-                                  Row(
-                                    textDirection: isRTL
-                                        ? TextDirection.rtl
-                                        : TextDirection.ltr,
-                                    children: [
-                                      Icon(Icons.location_on,
-                                          size: 12.sp, color: Colors.white54),
-                                      SizedBox(width: 4.w),
-                                      Expanded(
-                                        child: Text(
-                                          roleItem.address!,
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          roleItem.name,
                                           style: isArabic
                                               ? GoogleFonts.cairo(
-                                                  fontSize: 10.sp,
-                                                  color: Colors.white54,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13.sp,
                                                 )
                                               : GoogleFonts.spaceGrotesk(
-                                                  fontSize: 10.sp,
-                                                  color: Colors.white54,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13.sp,
                                                 ),
                                           overflow: TextOverflow.ellipsis,
                                           textDirection: isRTL
                                               ? TextDirection.rtl
                                               : TextDirection.ltr,
                                         ),
+                                        Text(
+                                          roleItem.email,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white54,
+                                                  fontSize: 11.sp,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white54,
+                                                  fontSize: 11.sp,
+                                                ),
+                                          overflow: TextOverflow.ellipsis,
+                                          textDirection: TextDirection.ltr,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Contact
+                          DataCell(
+                            Directionality(
+                              textDirection:
+                                  isRTL ? TextDirection.rtl : TextDirection.ltr,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.phone,
+                                          size: 12.sp, color: Colors.white54),
+                                      SizedBox(width: 4.w),
+                                      Text(
+                                        roleItem.phoneNo,
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(fontSize: 11.sp)
+                                            : GoogleFonts.spaceGrotesk(
+                                                fontSize: 11.sp),
+                                        textDirection: TextDirection.ltr,
                                       ),
                                     ],
                                   ),
+                                  if (roleItem.address != null &&
+                                      roleItem.address!.isNotEmpty) ...[
+                                    SizedBox(height: 2.h),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.location_on,
+                                            size: 12.sp, color: Colors.white54),
+                                        SizedBox(width: 4.w),
+                                        Expanded(
+                                          child: Text(
+                                            roleItem.address!,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    fontSize: 10.sp,
+                                                    color: Colors.white54,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    fontSize: 10.sp,
+                                                    color: Colors.white54,
+                                                  ),
+                                            overflow: TextOverflow.ellipsis,
+                                            textDirection: isRTL
+                                                ? TextDirection.rtl
+                                                : TextDirection.ltr,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
 
@@ -751,8 +760,7 @@ class _RolesTableState extends State<RolesTable> {
                                           fontSize: 12.sp,
                                           fontWeight: FontWeight.w500,
                                         ),
-                                  textDirection: TextDirection
-                                      .ltr, // Dates are typically LTR
+                                  textDirection: TextDirection.ltr,
                                 ),
                                 Text(
                                   roleItem.dateAdded.split(' ')[1],
@@ -765,8 +773,7 @@ class _RolesTableState extends State<RolesTable> {
                                           fontSize: 10.sp,
                                           color: Colors.white54,
                                         ),
-                                  textDirection: TextDirection
-                                      .ltr, // Time is typically LTR
+                                  textDirection: TextDirection.ltr,
                                 ),
                               ],
                             ),
@@ -777,99 +784,104 @@ class _RolesTableState extends State<RolesTable> {
 
                           // Active Status Switch
                           DataCell(
-                            Row(
+                            Directionality(
                               textDirection:
                                   isRTL ? TextDirection.rtl : TextDirection.ltr,
-                              children: [
-                                if (isProcessing)
-                                  SizedBox(
-                                    width: 16.w,
-                                    height: 16.w,
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color.fromARGB(255, 105, 65, 198),
-                                    ),
-                                  )
-                                else
-                                  Transform.scale(
-                                    scale: 0.8,
-                                    child: CupertinoSwitch(
-                                      value: roleItem.isActive,
-                                      activeColor: Colors.green,
-                                      trackColor: Colors.red.withOpacity(0.3),
-                                      onChanged: (value) async {
-                                        if (widget.onToggleActiveStatus !=
-                                            null) {
-                                          setState(() {
-                                            _processingUsers
-                                                .add(roleItem.userId);
-                                          });
+                              child: Row(
+                                children: [
+                                  if (isProcessing)
+                                    SizedBox(
+                                      width: 16.w,
+                                      height: 16.w,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color:
+                                            Color.fromARGB(255, 105, 65, 198),
+                                      ),
+                                    )
+                                  else
+                                    Transform.scale(
+                                      scale: 0.8,
+                                      child: CupertinoSwitch(
+                                        value: roleItem.isActive,
+                                        activeColor: Colors.green,
+                                        trackColor: Colors.red.withOpacity(0.3),
+                                        onChanged: (value) async {
+                                          if (widget.onToggleActiveStatus !=
+                                              null) {
+                                            setState(() {
+                                              _processingUsers
+                                                  .add(roleItem.userId);
+                                            });
 
-                                          await widget
-                                              .onToggleActiveStatus!(roleItem);
+                                            await widget.onToggleActiveStatus!(
+                                                roleItem);
 
-                                          setState(() {
-                                            _processingUsers
-                                                .remove(roleItem.userId);
-                                          });
-                                        }
-                                      },
+                                            setState(() {
+                                              _processingUsers
+                                                  .remove(roleItem.userId);
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  SizedBox(width: 8.w),
+                                  Container(
+                                    padding: EdgeInsetsDirectional.symmetric(
+                                        horizontal: 6.w, vertical: 2.h),
+                                    decoration: BoxDecoration(
+                                      color: roleItem.isActive
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      roleItem.isActive
+                                          ? l10n.active
+                                          : l10n.inactive,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              fontSize: 9.sp,
+                                              fontWeight: FontWeight.w500,
+                                              color: roleItem.isActive
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              fontSize: 9.sp,
+                                              fontWeight: FontWeight.w500,
+                                              color: roleItem.isActive
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                            ),
                                     ),
                                   ),
-                                SizedBox(width: 8.w),
-                                Container(
-                                  padding: EdgeInsetsDirectional.symmetric(
-                                      horizontal: 6.w, vertical: 2.h),
-                                  decoration: BoxDecoration(
-                                    color: roleItem.isActive
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.red.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    roleItem.isActive
-                                        ? l10n.active
-                                        : l10n.inactive,
-                                    style: isArabic
-                                        ? GoogleFonts.cairo(
-                                            fontSize: 9.sp,
-                                            fontWeight: FontWeight.w500,
-                                            color: roleItem.isActive
-                                                ? Colors.green
-                                                : Colors.red,
-                                          )
-                                        : GoogleFonts.spaceGrotesk(
-                                            fontSize: 9.sp,
-                                            fontWeight: FontWeight.w500,
-                                            color: roleItem.isActive
-                                                ? Colors.green
-                                                : Colors.red,
-                                          ),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
 
                           // Actions
                           DataCell(
-                            Row(
+                            Directionality(
                               textDirection:
                                   isRTL ? TextDirection.rtl : TextDirection.ltr,
-                              children: [
-                                // Edit Button
-                                _buildActionButton(
-                                  icon: Icons.edit_outlined,
-                                  color: Colors.blue,
-                                  tooltip: l10n.editUser,
-                                  onTap: () {
-                                    if (widget.onEditRole != null) {
-                                      widget.onEditRole!(roleItem);
-                                    }
-                                  },
-                                ),
-                                SizedBox(width: 8.w),
-                              ],
+                              child: Row(
+                                children: [
+                                  // Edit Button
+                                  _buildActionButton(
+                                    icon: Icons.edit_outlined,
+                                    color: Colors.blue,
+                                    tooltip: l10n.editUser,
+                                    onTap: () {
+                                      if (widget.onEditRole != null) {
+                                        widget.onEditRole!(roleItem);
+                                      }
+                                    },
+                                  ),
+                                  SizedBox(width: 8.w),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -879,7 +891,7 @@ class _RolesTableState extends State<RolesTable> {
                 ),
               ),
 
-            // Pagination (only show when not loading and has data)
+            // Pagination
             if (!widget.isLoading && totalPages > 1)
               Container(
                 padding: EdgeInsets.all(20.w),
@@ -890,105 +902,107 @@ class _RolesTableState extends State<RolesTable> {
                     bottomRight: Radius.circular(16.r),
                   ),
                 ),
-                child: Row(
+                child: Directionality(
                   textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
-                  children: [
-                    Text(
-                      "${l10n.showing} ${((_currentPage - 1) * _itemsPerPage) + 1}-${_currentPage * _itemsPerPage > totalItems ? totalItems : _currentPage * _itemsPerPage} ${l10n.offf} $totalItems ${l10n.users}",
-                      style: isArabic
-                          ? GoogleFonts.cairo(
-                              fontSize: 14.sp,
-                              color: Colors.white70,
-                            )
-                          : GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              color: Colors.white70,
-                            ),
-                    ),
-                    const Spacer(),
+                  child: Row(
+                    children: [
+                      Text(
+                        "${l10n.showing} ${((_currentPage - 1) * _itemsPerPage) + 1}-${_currentPage * _itemsPerPage > totalItems ? totalItems : _currentPage * _itemsPerPage} ${l10n.offf} $totalItems ${l10n.users}",
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                color: Colors.white70,
+                              ),
+                      ),
+                      const Spacer(),
 
-                    // Previous Button
-                    IconButton(
-                      icon: Icon(
-                          isRTL ? Icons.chevron_right : Icons.chevron_left,
-                          size: 20.sp,
-                          color: Colors.white70),
-                      onPressed: _currentPage > 1
-                          ? () {
+                      // Previous Button
+                      IconButton(
+                        icon: Icon(
+                            isRTL ? Icons.chevron_right : Icons.chevron_left,
+                            size: 20.sp,
+                            color: Colors.white70),
+                        onPressed: _currentPage > 1
+                            ? () {
+                                setState(() {
+                                  _currentPage--;
+                                });
+                              }
+                            : null,
+                      ),
+
+                      // Page Numbers
+                      ...List.generate(totalPages, (index) {
+                        final pageIndex = index + 1;
+                        final bool isSelected = (pageIndex == _currentPage);
+
+                        return Padding(
+                          padding:
+                              EdgeInsetsDirectional.symmetric(horizontal: 2.w),
+                          child: InkWell(
+                            onTap: () {
                               setState(() {
-                                _currentPage--;
+                                _currentPage = pageIndex;
                               });
-                            }
-                          : null,
-                    ),
-
-                    // Page Numbers
-                    ...List.generate(totalPages, (index) {
-                      final pageIndex = index + 1;
-                      final bool isSelected = (pageIndex == _currentPage);
-
-                      return Padding(
-                        padding:
-                            EdgeInsetsDirectional.symmetric(horizontal: 2.w),
-                        child: InkWell(
-                          onTap: () {
-                            setState(() {
-                              _currentPage = pageIndex;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: EdgeInsetsDirectional.symmetric(
-                                horizontal: 12.w, vertical: 8.h),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color.fromARGB(255, 105, 65, 198)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: EdgeInsetsDirectional.symmetric(
+                                  horizontal: 12.w, vertical: 8.h),
+                              decoration: BoxDecoration(
                                 color: isSelected
                                     ? const Color.fromARGB(255, 105, 65, 198)
                                     : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color.fromARGB(255, 105, 65, 198)
+                                      : Colors.transparent,
+                                ),
+                              ),
+                              child: Text(
+                                "$pageIndex",
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.white70,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w600,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.white70,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                               ),
                             ),
-                            child: Text(
-                              "$pageIndex",
-                              style: isArabic
-                                  ? GoogleFonts.cairo(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.white70,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w600,
-                                    )
-                                  : GoogleFonts.spaceGrotesk(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.white70,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                            ),
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
 
-                    // Next Button
-                    IconButton(
-                      icon: Icon(
-                          isRTL ? Icons.chevron_left : Icons.chevron_right,
-                          size: 20.sp,
-                          color: Colors.white70),
-                      onPressed: _currentPage < totalPages
-                          ? () {
-                              setState(() {
-                                _currentPage++;
-                              });
-                            }
-                          : null,
-                    ),
-                  ],
+                      // Next Button
+                      IconButton(
+                        icon: Icon(
+                            isRTL ? Icons.chevron_left : Icons.chevron_right,
+                            size: 20.sp,
+                            color: Colors.white70),
+                        onPressed: _currentPage < totalPages
+                            ? () {
+                                setState(() {
+                                  _currentPage++;
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],

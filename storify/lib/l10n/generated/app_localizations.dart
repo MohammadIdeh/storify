@@ -1871,7 +1871,7 @@ abstract class AppLocalizations {
   /// No description provided for @onTheWay.
   ///
   /// In en, this message translates to:
-  /// **'On the way'**
+  /// **'On The Way'**
   String get onTheWay;
 
   /// No description provided for @cancelled.
@@ -3733,6 +3733,546 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The API did not return the expected JSON structure.'**
   String get apiDidNotReturnExpectedJsonStructure;
+
+  /// No description provided for @deliveryMan.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Man'**
+  String get deliveryMan;
+
+  /// No description provided for @route.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get route;
+
+  /// No description provided for @unknownCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Customer'**
+  String get unknownCustomer;
+
+  /// No description provided for @totalValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Value'**
+  String get totalValue;
+
+  /// No description provided for @unknownAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Address'**
+  String get unknownAddress;
+
+  /// No description provided for @monitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitoring'**
+  String get monitoring;
+
+  /// No description provided for @activeDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'active deliveries'**
+  String get activeDeliveries;
+
+  /// No description provided for @yourCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current location'**
+  String get yourCurrentLocation;
+
+  /// No description provided for @adminControlCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Control Center'**
+  String get adminControlCenter;
+
+  /// No description provided for @liveRouteSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Route Summary'**
+  String get liveRouteSummary;
+
+  /// No description provided for @realRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'REAL ROUTES'**
+  String get realRoutes;
+
+  /// No description provided for @activeRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Routes'**
+  String get activeRoutes;
+
+  /// No description provided for @avgDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Distance'**
+  String get avgDistance;
+
+  /// No description provided for @km.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get km;
+
+  /// No description provided for @outstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding'**
+  String get outstanding;
+
+  /// No description provided for @routePriorityBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Priority Breakdown'**
+  String get routePriorityBreakdown;
+
+  /// No description provided for @routeControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Controls'**
+  String get routeControls;
+
+  /// No description provided for @allRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'All Routes'**
+  String get allRoutes;
+
+  /// No description provided for @showAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show All'**
+  String get showAll;
+
+  /// No description provided for @updating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating...'**
+  String get updating;
+
+  /// No description provided for @refreshRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Routes'**
+  String get refreshRoutes;
+
+  /// No description provided for @highPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'High Priority'**
+  String get highPriority;
+
+  /// No description provided for @mediumPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium Priority'**
+  String get mediumPriority;
+
+  /// No description provided for @lowPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Priority'**
+  String get lowPriority;
+
+  /// No description provided for @noActiveRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'No Active Routes'**
+  String get noActiveRoutes;
+
+  /// No description provided for @real.
+  ///
+  /// In en, this message translates to:
+  /// **'REAL'**
+  String get real;
+
+  /// No description provided for @processingCancellation.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing cancellation for Order'**
+  String get processingCancellation;
+
+  /// No description provided for @failedToLoadRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load routes'**
+  String get failedToLoadRoutes;
+
+  /// No description provided for @failedToLoadTrackingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load tracking data'**
+  String get failedToLoadTrackingData;
+
+  /// No description provided for @realRoads.
+  ///
+  /// In en, this message translates to:
+  /// **'REAL ROADS'**
+  String get realRoads;
+
+  /// No description provided for @routes.
+  ///
+  /// In en, this message translates to:
+  /// **'ROUTES'**
+  String get routes;
+
+  /// No description provided for @routeLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'ROUTE LEGEND'**
+  String get routeLegend;
+
+  /// No description provided for @googleDirectionsRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Directions Routes'**
+  String get googleDirectionsRoutes;
+
+  /// No description provided for @routeInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Information'**
+  String get routeInformation;
+
+  /// No description provided for @deliveryAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Agent'**
+  String get deliveryAgent;
+
+  /// No description provided for @routeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Status'**
+  String get routeStatus;
+
+  /// No description provided for @priorityLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority Level'**
+  String get priorityLevel;
+
+  /// No description provided for @estimatedDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Distance'**
+  String get estimatedDistance;
+
+  /// No description provided for @deliveryDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Destination'**
+  String get deliveryDestination;
+
+  /// No description provided for @customerPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Phone'**
+  String get customerPhone;
+
+  /// No description provided for @deliveryAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Address'**
+  String get deliveryAddress;
+
+  /// No description provided for @itemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Items Count'**
+  String get itemsCount;
+
+  /// No description provided for @followRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow Route'**
+  String get followRoute;
+
+  /// No description provided for @cancelOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Order'**
+  String get cancelOrder;
+
+  /// No description provided for @totalShipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Shipment'**
+  String get totalShipment;
+
+  /// No description provided for @authenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Please login again.'**
+  String get authenticationFailed;
+
+  /// No description provided for @errorFetchingTrackingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching tracking data'**
+  String get errorFetchingTrackingData;
+
+  /// No description provided for @failedToLoadOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load orders'**
+  String get failedToLoadOrders;
+
+  /// No description provided for @cancelingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Canceling order...'**
+  String get cancelingOrder;
+
+  /// No description provided for @orderCanceledSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Order has been canceled successfully'**
+  String get orderCanceledSuccessfully;
+
+  /// No description provided for @failedToCancelOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel order'**
+  String get failedToCancelOrder;
+
+  /// No description provided for @errorCancelingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Error canceling order'**
+  String get errorCancelingOrder;
+
+  /// No description provided for @provideCancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a reason for canceling this order:'**
+  String get provideCancellationReason;
+
+  /// No description provided for @enterCancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter cancellation reason...'**
+  String get enterCancellationReason;
+
+  /// No description provided for @cancellationReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason is required'**
+  String get cancellationReasonRequired;
+
+  /// No description provided for @reasonMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason must be at least 10 characters'**
+  String get reasonMinLength;
+
+  /// No description provided for @actionCannotBeUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'⚠️ This action cannot be undone'**
+  String get actionCannotBeUndone;
+
+  /// No description provided for @keepOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Order'**
+  String get keepOrder;
+
+  /// No description provided for @ordersHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders History'**
+  String get ordersHistory;
+
+  /// No description provided for @allOrdersFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All Orders'**
+  String get allOrdersFilter;
+
+  /// No description provided for @shipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get shipped;
+
+  /// No description provided for @orderIdHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get orderIdHeader;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get viewDetails;
+
+  /// No description provided for @cancelledByTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by {name}\nClick \"View Details\" for more info'**
+  String cancelledByTooltip(Object name);
+
+  /// No description provided for @administrativeDecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrative Decision'**
+  String get administrativeDecision;
+
+  /// No description provided for @customerRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Request'**
+  String get customerRequest;
+
+  /// No description provided for @inventoryIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Issue'**
+  String get inventoryIssue;
+
+  /// No description provided for @deliveryProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Problem'**
+  String get deliveryProblem;
+
+  /// No description provided for @paymentIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Issue'**
+  String get paymentIssue;
+
+  /// No description provided for @systemError.
+  ///
+  /// In en, this message translates to:
+  /// **'System Error'**
+  String get systemError;
+
+  /// No description provided for @invalidDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid Date'**
+  String get invalidDate;
+
+  /// No description provided for @orderDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetailsTitle;
+
+  /// No description provided for @unknownEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Email'**
+  String get unknownEmail;
+
+  /// No description provided for @totalCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Cost'**
+  String get totalCost;
+
+  /// No description provided for @paymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethod;
+
+  /// No description provided for @deliveryPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery Person'**
+  String get deliveryPerson;
+
+  /// No description provided for @unknownDeliveryPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Delivery Person'**
+  String get unknownDeliveryPerson;
+
+  /// No description provided for @created.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get created;
+
+  /// No description provided for @cancellationDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation Details'**
+  String get cancellationDetails;
+
+  /// No description provided for @reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get reason;
+
+  /// No description provided for @cancelledAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled At'**
+  String get cancelledAt;
+
+  /// No description provided for @cancelledByAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by Administrator'**
+  String get cancelledByAdmin;
+
+  /// No description provided for @adminName.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Name'**
+  String get adminName;
+
+  /// No description provided for @adminEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Email'**
+  String get adminEmail;
+
+  /// No description provided for @adminId.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin ID'**
+  String get adminId;
+
+  /// No description provided for @unknownAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Admin'**
+  String get unknownAdmin;
+
+  /// No description provided for @cancelledBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled By'**
+  String get cancelledBy;
+
+  /// No description provided for @adminIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin ID'**
+  String get adminIdLabel;
+
+  /// No description provided for @unknownProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Product'**
+  String get unknownProduct;
+
+  /// No description provided for @qty.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get qty;
 }
 
 class _AppLocalizationsDelegate

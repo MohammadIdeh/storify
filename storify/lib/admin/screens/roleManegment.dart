@@ -3,20 +3,13 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/admin/widgets/navigationBar.dart';
-import 'package:storify/admin/screens/Categories.dart';
-import 'package:storify/admin/screens/dashboard.dart';
-import 'package:storify/admin/screens/orders.dart';
-import 'package:storify/admin/screens/productsScreen.dart';
-import 'package:storify/admin/screens/track.dart';
 import 'package:storify/admin/widgets/rolesWidgets/role_item.dart';
 import 'package:storify/admin/widgets/rolesWidgets/rolesTable.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
-import 'package:storify/l10n/generated/app_localizations.dart';
 import 'package:storify/providers/LocalizationHelper.dart';
 
 class Rolemanegment extends StatefulWidget {
@@ -57,7 +50,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _initializeFilters() {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
     _filters = [
       l10n.allUsers,
       l10n.admin,
@@ -77,24 +70,26 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   // Updated to handle Active/NotActive format
   Future<RoleItem?> _updateUser(RoleItem updatedUser) async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     try {
       setState(() => _isLoading = true);
 
       final url = Uri.parse(
           "https://finalproject-a5ls.onrender.com/auth/${updatedUser.userId}");
+
+      // Convert localized role to API role
+      final apiRole = _getApiRoleFromDisplay(updatedUser.role);
+
       final bodyMap = {
         "name": updatedUser.name,
         "email": updatedUser.email,
         "phoneNumber": updatedUser.phoneNo,
-        "roleName": updatedUser.role,
-        "isActive": updatedUser.isActive
-            ? "Active"
-            : "NotActive", // Changed to Active/NotActive
+        "roleName": apiRole,
+        "isActive": updatedUser.isActive ? "Active" : "NotActive",
       };
 
-      if (updatedUser.role.toLowerCase() == "customer" &&
+      if (apiRole.toLowerCase() == "customer" &&
           updatedUser.address != null &&
           updatedUser.address!.isNotEmpty) {
         bodyMap["address"] = updatedUser.address!;
@@ -123,9 +118,42 @@ class _RolemanegmentState extends State<Rolemanegment> {
     }
   }
 
+  // Helper method to convert display role to API role
+  String _getApiRoleFromDisplay(String displayRole) {
+    final l10n = context.l10n;
+
+    if (displayRole == l10n.admin) return "Admin";
+    if (displayRole == l10n.warehouseEmployee) return "WarehouseEmployee";
+    if (displayRole == l10n.customer) return "Customer";
+    if (displayRole == l10n.supplier) return "Supplier";
+    if (displayRole == l10n.deliveryEmployee) return "DeliveryEmployee";
+
+    return displayRole; // fallback
+  }
+
+  // Helper method to convert API role to display role
+  String _getDisplayRoleFromApi(String apiRole) {
+    final l10n = context.l10n;
+
+    switch (apiRole.toLowerCase()) {
+      case "admin":
+        return l10n.admin;
+      case "employee":
+        return l10n.warehouseEmployee;
+      case "customer":
+        return l10n.customer;
+      case "supplier":
+        return l10n.supplier;
+      case "delivery":
+        return l10n.deliveryEmployee;
+      default:
+        return apiRole;
+    }
+  }
+
   // New method to handle switch toggle
   Future<void> _toggleUserActiveStatus(RoleItem user) async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     final updatedUser = user.copyWith(isActive: !user.isActive);
     final result = await _updateUser(updatedUser);
@@ -142,7 +170,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   Future<bool> _deleteUser(String userId) async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     try {
       setState(() => _isLoading = true);
@@ -200,11 +228,10 @@ class _RolemanegmentState extends State<Rolemanegment> {
             phoneNo: json['phoneNumber'] ?? "",
             dateAdded: DateFormat("MM-dd-yyyy HH:mm")
                 .format(DateTime.parse(json['registrationDate'])),
-            role: json['roleName'] ?? "",
+            role: _getDisplayRoleFromApi(json['roleName'] ?? ""),
             isActive: parseIsActive(json['isActive']),
             address: json['address'] ?? "",
-            profilePicture:
-                json['profilePicture'], // Added profile picture parsing
+            profilePicture: json['profilePicture'],
           );
         }).toList();
 
@@ -254,9 +281,9 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   // Updated dialog with non-editable role during edit
   Future<RoleItem?> _showUserDialog({RoleItem? roleToEdit}) async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
-    final isArabic = LocalizationHelper.isArabic(context);
-    final isRTL = LocalizationHelper.isRTL(context);
+    final l10n = context.l10n;
+    final isArabic = context.isArabic;
+    final isRTL = context.isRTL;
 
     final nameController = TextEditingController(text: roleToEdit?.name ?? "");
     final emailController =
@@ -338,7 +365,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                           controller: emailController,
                           label: l10n.emailAddress,
                           icon: Icons.email_outlined,
-                          enabled: !isEditMode, // Disable email editing
+                          enabled: !isEditMode,
                           isArabic: isArabic,
                           isRTL: isRTL,
                         ),
@@ -357,7 +384,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                         // Address Field
                         _buildInputField(
                           controller: addressController,
-                          label: selectedRole.toLowerCase() == "customer"
+                          label: selectedRole == l10n.customer
                               ? l10n.addressRequired
                               : l10n.addressOptional,
                           icon: Icons.location_on_outlined,
@@ -581,8 +608,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                       dateAdded: DateFormat("MM-dd-yyyy HH:mm")
                                           .format(DateTime.now()),
                                       role: selectedRole,
-                                      address: selectedRole.toLowerCase() ==
-                                              "customer"
+                                      address: selectedRole == l10n.customer
                                           ? addressController.text.trim()
                                           : (addressController.text
                                                   .trim()
@@ -590,8 +616,8 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                               ? addressController.text.trim()
                                               : null),
                                       isActive: localIsActive,
-                                      profilePicture: roleToEdit
-                                          ?.profilePicture, // Preserve existing profile picture
+                                      profilePicture:
+                                          roleToEdit?.profilePicture,
                                     );
                                     Navigator.pop(ctx, newRole);
                                   }
@@ -683,7 +709,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
     TextEditingController addressController,
     String selectedRole,
   ) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     if (nameController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
@@ -692,7 +718,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
       return false;
     }
 
-    if (selectedRole.toLowerCase() == "customer" &&
+    if (selectedRole == l10n.customer &&
         addressController.text.trim().isEmpty) {
       _showErrorSnackBar(l10n.addressIsRequiredForCustomers);
       return false;
@@ -709,7 +735,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _handleAddUser() async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     final newUser = await _showUserDialog();
     if (newUser != null) {
@@ -724,7 +750,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _handleEditUser(RoleItem role) async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     final updatedUser = await _showUserDialog(roleToEdit: role);
     if (updatedUser != null) {
@@ -742,23 +768,25 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   Future<RoleItem?> _addUser(RoleItem newUser) async {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final l10n = context.l10n;
 
     try {
       setState(() => _isLoading = true);
 
       final url = Uri.parse(addUserApi);
+
+      // Convert display role to API role
+      final apiRole = _getApiRoleFromDisplay(newUser.role);
+
       final bodyMap = {
         "name": newUser.name,
         "email": newUser.email,
         "phoneNumber": newUser.phoneNo,
-        "roleName": newUser.role,
-        "isActive": newUser.isActive
-            ? "Active"
-            : "NotActive", // Changed to Active/NotActive
+        "roleName": apiRole,
+        "isActive": newUser.isActive ? "Active" : "NotActive",
       };
 
-      if (newUser.role.toLowerCase() == "customer" &&
+      if (apiRole.toLowerCase() == "customer" &&
           newUser.address != null &&
           newUser.address!.isNotEmpty) {
         bodyMap["address"] = newUser.address!;
@@ -835,13 +863,12 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _showErrorSnackBar(String message) {
-    final isArabic = LocalizationHelper.isArabic(context);
-    final isRTL = LocalizationHelper.isRTL(context);
+    final isArabic = context.isArabic;
+    final isRTL = context.isRTL;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
           children: [
             Icon(Icons.error_outline, color: Colors.white, size: 20.sp),
             SizedBox(width: 8.w),
@@ -851,7 +878,6 @@ class _RolemanegmentState extends State<Rolemanegment> {
                 style: isArabic
                     ? GoogleFonts.cairo(color: Colors.white)
                     : GoogleFonts.spaceGrotesk(color: Colors.white),
-                // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
               ),
             ),
           ],
@@ -864,13 +890,12 @@ class _RolemanegmentState extends State<Rolemanegment> {
   }
 
   void _showSuccessSnackBar(String message) {
-    final isArabic = LocalizationHelper.isArabic(context);
-    final isRTL = LocalizationHelper.isRTL(context);
+    final isArabic = context.isArabic;
+    final isRTL = context.isRTL;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
-          // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
           children: [
             Icon(Icons.check_circle_outline, color: Colors.white, size: 20.sp),
             SizedBox(width: 8.w),
@@ -880,7 +905,6 @@ class _RolemanegmentState extends State<Rolemanegment> {
                 style: isArabic
                     ? GoogleFonts.cairo(color: Colors.white)
                     : GoogleFonts.spaceGrotesk(color: Colors.white),
-                // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
               ),
             ),
           ],
@@ -894,13 +918,15 @@ class _RolemanegmentState extends State<Rolemanegment> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
-    final isArabic = LocalizationHelper.isArabic(context);
-    final isRTL = LocalizationHelper.isRTL(context);
+    final l10n = context.l10n;
+    final isArabic = context.isArabic;
+    final isRTL = context.isRTL;
 
     String headerText = _selectedFilterIndex == 0
         ? l10n.userManagement
-        : "${_filters.isNotEmpty && _selectedFilterIndex < _filters.length ? _filters[_selectedFilterIndex] : ''} ${l10n.management}";
+        : isArabic
+            ? "${l10n.management} ${_filters.isNotEmpty && _selectedFilterIndex < _filters.length ? _filters[_selectedFilterIndex] : ''}"
+            : "${_filters.isNotEmpty && _selectedFilterIndex < _filters.length ? _filters[_selectedFilterIndex] : ''} ${l10n.management}";
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
@@ -989,7 +1015,9 @@ class _RolemanegmentState extends State<Rolemanegment> {
                                       _searchQuery = value;
                                     });
                                   },
-                                  // textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                                  // textDirection: isRTL
+                                  //     ? TextDirection.rtl
+                                  //     : TextDirection.ltr,
                                   style: isArabic
                                       ? GoogleFonts.cairo(color: Colors.white)
                                       : GoogleFonts.spaceGrotesk(
@@ -1076,7 +1104,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                             _selectedFilterIndex < _filters.length
                         ? _filters[_selectedFilterIndex]
                         : "",
-                    isLoading: _isLoading, // Pass the loading state
+                    isLoading: _isLoading,
                     searchQuery: _searchQuery,
                     onDeleteRole: (role) {
                       setState(() {
@@ -1085,8 +1113,7 @@ class _RolemanegmentState extends State<Rolemanegment> {
                     },
                     onDeleteUser: _deleteUser,
                     onEditRole: _handleEditUser,
-                    onToggleActiveStatus:
-                        _toggleUserActiveStatus, // Add this callback
+                    onToggleActiveStatus: _toggleUserActiveStatus,
                   ),
                 ],
               ),

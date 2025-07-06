@@ -204,10 +204,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get history => 'السجل';
 
   @override
-  String get admin => 'مدير';
+  String get admin => 'المشرف';
 
   @override
-  String get customer => 'عميل';
+  String get customer => 'العميل';
 
   @override
   String get supplier => 'مورد';
@@ -385,7 +385,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get stock => 'المخزون';
 
   @override
-  String get page => 'صفحة';
+  String get page => 'الصفحة';
 
   @override
   String get totalItems => 'إجمالي العناصر';
@@ -421,7 +421,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noProfitDataAvailable => 'لا توجد بيانات أرباح متاحة';
 
   @override
-  String get items => 'عناصر';
+  String get items => 'أصناف';
 
   @override
   String get offf => 'من';
@@ -523,7 +523,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unknown => 'غير معروف';
 
   @override
-  String get noEmail => 'لا يوجد إيميل';
+  String get noEmail => 'لا يوجد بريد إلكتروني';
 
   @override
   String get noPhone => 'لا يوجد هاتف';
@@ -566,7 +566,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inactive => 'غير نشط';
 
   @override
-  String get pending => 'في الانتظار';
+  String get pending => 'معلق';
 
   @override
   String get accepted => 'مقبول';
@@ -1922,4 +1922,277 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get apiDidNotReturnExpectedJsonStructure =>
       'لم تُرجع واجهة برمجة التطبيقات هيكل JSON المتوقع.';
+
+  @override
+  String get deliveryMan => 'رجل التوصيل';
+
+  @override
+  String get route => 'المسار';
+
+  @override
+  String get unknownCustomer => 'عميل غير معروف';
+
+  @override
+  String get totalValue => 'القيمة الإجمالية';
+
+  @override
+  String get unknownAddress => 'عنوان غير معروف';
+
+  @override
+  String get monitoring => 'مراقبة';
+
+  @override
+  String get activeDeliveries => 'عمليات توصيل نشطة';
+
+  @override
+  String get yourCurrentLocation => 'موقعك الحالي';
+
+  @override
+  String get adminControlCenter => 'مركز التحكم الإداري';
+
+  @override
+  String get liveRouteSummary => 'ملخص المسارات المباشرة';
+
+  @override
+  String get realRoutes => 'مسارات حقيقية';
+
+  @override
+  String get activeRoutes => 'المسارات النشطة';
+
+  @override
+  String get avgDistance => 'متوسط المسافة';
+
+  @override
+  String get km => 'كم';
+
+  @override
+  String get outstanding => 'المستحق';
+
+  @override
+  String get routePriorityBreakdown => 'تفصيل أولويات المسارات';
+
+  @override
+  String get routeControls => 'تحكم المسارات';
+
+  @override
+  String get allRoutes => 'جميع المسارات';
+
+  @override
+  String get showAll => 'إظهار الكل';
+
+  @override
+  String get updating => 'جاري التحديث...';
+
+  @override
+  String get refreshRoutes => 'تحديث المسارات';
+
+  @override
+  String get highPriority => 'أولوية عالية';
+
+  @override
+  String get mediumPriority => 'أولوية متوسطة';
+
+  @override
+  String get lowPriority => 'أولوية منخفضة';
+
+  @override
+  String get noActiveRoutes => 'لا توجد مسارات نشطة';
+
+  @override
+  String get real => 'حقيقي';
+
+  @override
+  String get processingCancellation => 'معالجة إلغاء الطلب';
+
+  @override
+  String get failedToLoadRoutes => 'فشل في تحميل المسارات';
+
+  @override
+  String get failedToLoadTrackingData => 'فشل في تحميل بيانات التتبع';
+
+  @override
+  String get realRoads => 'طرق حقيقية';
+
+  @override
+  String get routes => 'مسارات';
+
+  @override
+  String get routeLegend => 'مفتاح المسارات';
+
+  @override
+  String get googleDirectionsRoutes => 'مسارات خرائط جوجل';
+
+  @override
+  String get routeInformation => 'معلومات المسار';
+
+  @override
+  String get deliveryAgent => 'مندوب التوصيل';
+
+  @override
+  String get routeStatus => 'حالة المسار';
+
+  @override
+  String get priorityLevel => 'مستوى الأولوية';
+
+  @override
+  String get estimatedDistance => 'المسافة المقدرة';
+
+  @override
+  String get deliveryDestination => 'وجهة التوصيل';
+
+  @override
+  String get customerPhone => 'هاتف العميل';
+
+  @override
+  String get deliveryAddress => 'عنوان التوصيل';
+
+  @override
+  String get itemsCount => 'عدد الأصناف';
+
+  @override
+  String get followRoute => 'متابعة المسار';
+
+  @override
+  String get cancelOrder => 'إلغاء الطلب';
+
+  @override
+  String get totalShipment => 'إجمالي الشحنات';
+
+  @override
+  String get authenticationFailed =>
+      'فشل في المصادقة. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get errorFetchingTrackingData => 'خطأ في جلب بيانات التتبع';
+
+  @override
+  String get failedToLoadOrders => 'فشل في تحميل الطلبات';
+
+  @override
+  String get cancelingOrder => 'جاري إلغاء الطلب...';
+
+  @override
+  String get orderCanceledSuccessfully => 'تم إلغاء الطلب بنجاح';
+
+  @override
+  String get failedToCancelOrder => 'فشل في إلغاء الطلب';
+
+  @override
+  String get errorCancelingOrder => 'خطأ في إلغاء الطلب';
+
+  @override
+  String get provideCancellationReason => 'يرجى تقديم سبب لإلغاء هذا الطلب:';
+
+  @override
+  String get enterCancellationReason => 'أدخل سبب الإلغاء...';
+
+  @override
+  String get cancellationReasonRequired => 'سبب الإلغاء مطلوب';
+
+  @override
+  String get reasonMinLength => 'يجب أن يكون السبب 10 أحرف على الأقل';
+
+  @override
+  String get actionCannotBeUndone => '⚠️ لا يمكن التراجع عن هذا الإجراء';
+
+  @override
+  String get keepOrder => 'الاحتفاظ بالطلب';
+
+  @override
+  String get ordersHistory => 'تاريخ الطلبات';
+
+  @override
+  String get allOrdersFilter => 'جميع الطلبات';
+
+  @override
+  String get shipped => 'تم الشحن';
+
+  @override
+  String get orderIdHeader => 'رقم الطلب';
+
+  @override
+  String get viewDetails => 'عرض التفاصيل';
+
+  @override
+  String cancelledByTooltip(Object name) {
+    return 'ألغي بواسطة $name\nانقر على \"عرض التفاصيل\" لمزيد من المعلومات';
+  }
+
+  @override
+  String get administrativeDecision => 'قرار إداري';
+
+  @override
+  String get customerRequest => 'طلب العميل';
+
+  @override
+  String get inventoryIssue => 'مشكلة في المخزون';
+
+  @override
+  String get deliveryProblem => 'مشكلة في التوصيل';
+
+  @override
+  String get paymentIssue => 'مشكلة في الدفع';
+
+  @override
+  String get systemError => 'خطأ في النظام';
+
+  @override
+  String get invalidDate => 'تاريخ غير صحيح';
+
+  @override
+  String get orderDetailsTitle => 'تفاصيل الطلب';
+
+  @override
+  String get unknownEmail => 'بريد إلكتروني غير معروف';
+
+  @override
+  String get totalCost => 'التكلفة الإجمالية';
+
+  @override
+  String get paymentMethod => 'طريقة الدفع';
+
+  @override
+  String get deliveryPerson => 'شخص التوصيل';
+
+  @override
+  String get unknownDeliveryPerson => 'شخص توصيل غير معروف';
+
+  @override
+  String get created => 'تم الإنشاء';
+
+  @override
+  String get cancellationDetails => 'تفاصيل الإلغاء';
+
+  @override
+  String get reason => 'السبب';
+
+  @override
+  String get cancelledAt => 'ألغي في';
+
+  @override
+  String get cancelledByAdmin => 'ألغي بواسطة المشرف';
+
+  @override
+  String get adminName => 'اسم المشرف';
+
+  @override
+  String get adminEmail => 'بريد المشرف الإلكتروني';
+
+  @override
+  String get adminId => 'معرف المشرف';
+
+  @override
+  String get unknownAdmin => 'مشرف غير معروف';
+
+  @override
+  String get cancelledBy => 'ألغي بواسطة';
+
+  @override
+  String get adminIdLabel => 'معرف المشرف';
+
+  @override
+  String get unknownProduct => 'منتج غير معروف';
+
+  @override
+  String get qty => 'الكمية';
 }
