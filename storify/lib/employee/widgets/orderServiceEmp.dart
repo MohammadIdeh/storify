@@ -1,10 +1,248 @@
-// lib/employee/widgets/orderServiceEmp.dart - Updated version with new APIs
+// lib/employee/widgets/orderServiceEmp.dart - Updated version with enhanced start preparation response
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 
-// Batch models for the new API
+// Enhanced models to match the actual API response
+
+// Model for the complete start preparation response
+class StartPreparationResponse {
+  final String message;
+  final Map<String, dynamic> order;
+  final PreparationInfo preparationInfo;
+
+  StartPreparationResponse({
+    required this.message,
+    required this.order,
+    required this.preparationInfo,
+  });
+
+  factory StartPreparationResponse.fromJson(Map<String, dynamic> json) {
+    return StartPreparationResponse(
+      message: json['message'] ?? '',
+      order: json['order'] ?? {},
+      preparationInfo: PreparationInfo.fromJson(json['preparationInfo'] ?? {}),
+    );
+  }
+}
+
+// Model for preparation info in the start preparation response
+class PreparationInfo {
+  final int totalItems;
+  final List<ItemWithBatchInfo> itemsWithBatchInfo;
+  final List<BatchAlert> batchAlerts;
+  final bool hasMultipleBatches;
+  final bool hasNearExpiry;
+  final bool hasInsufficientStock;
+  final bool hasNoBatchTracking;
+  final bool canAutoComplete;
+  final Map<String, int> preparationTypes;
+  final List<CurrentPreparer> currentPreparers;
+
+  PreparationInfo({
+    required this.totalItems,
+    required this.itemsWithBatchInfo,
+    required this.batchAlerts,
+    required this.hasMultipleBatches,
+    required this.hasNearExpiry,
+    required this.hasInsufficientStock,
+    required this.hasNoBatchTracking,
+    required this.canAutoComplete,
+    required this.preparationTypes,
+    required this.currentPreparers,
+  });
+
+  factory PreparationInfo.fromJson(Map<String, dynamic> json) {
+    return PreparationInfo(
+      totalItems: json['totalItems'] ?? 0,
+      itemsWithBatchInfo: (json['itemsWithBatchInfo'] as List? ?? [])
+          .map((item) => ItemWithBatchInfo.fromJson(item))
+          .toList(),
+      batchAlerts: (json['batchAlerts'] as List? ?? [])
+          .map((alert) => BatchAlert.fromJson(alert))
+          .toList(),
+      hasMultipleBatches: json['hasMultipleBatches'] ?? false,
+      hasNearExpiry: json['hasNearExpiry'] ?? false,
+      hasInsufficientStock: json['hasInsufficientStock'] ?? false,
+      hasNoBatchTracking: json['hasNoBatchTracking'] ?? false,
+      canAutoComplete: json['canAutoComplete'] ?? false,
+      preparationTypes: Map<String, int>.from(json['preparationTypes'] ?? {}),
+      currentPreparers: (json['currentPreparers'] as List? ?? [])
+          .map((preparer) => CurrentPreparer.fromJson(preparer))
+          .toList(),
+    );
+  }
+}
+
+// Model for items with batch info in the preparation response
+class ItemWithBatchInfo {
+  final int productId;
+  final String productName;
+  final int requiredQuantity;
+  final int availableQuantity;
+  final FifoAllocation fifoAllocation;
+  final bool canFulfill;
+  final List<BatchAlert> alerts;
+  final String preparationType;
+
+  ItemWithBatchInfo({
+    required this.productId,
+    required this.productName,
+    required this.requiredQuantity,
+    required this.availableQuantity,
+    required this.fifoAllocation,
+    required this.canFulfill,
+    required this.alerts,
+    required this.preparationType,
+  });
+
+  factory ItemWithBatchInfo.fromJson(Map<String, dynamic> json) {
+    return ItemWithBatchInfo(
+      productId: json['productId'] ?? 0,
+      productName: json['productName'] ?? '',
+      requiredQuantity: json['requiredQuantity'] ?? 0,
+      availableQuantity: json['availableQuantity'] ?? 0,
+      fifoAllocation: FifoAllocation.fromJson(json['fifoAllocation'] ?? {}),
+      canFulfill: json['canFulfill'] ?? false,
+      alerts: (json['alerts'] as List? ?? [])
+          .map((alert) => BatchAlert.fromJson(alert))
+          .toList(),
+      preparationType: json['preparationType'] ?? '',
+    );
+  }
+}
+
+// Model for FIFO allocation details
+class FifoAllocation {
+  final List<AllocationItem> allocation;
+  final bool canFulfill;
+  final int? totalAvailable;
+  final int? requiredQuantity;
+  final List<BatchAlert> alerts;
+  final String? fifoRecommendation;
+  final BatchSummary? batchSummary;
+
+  FifoAllocation({
+    required this.allocation,
+    required this.canFulfill,
+    this.totalAvailable,
+    this.requiredQuantity,
+    required this.alerts,
+    this.fifoRecommendation,
+    this.batchSummary,
+  });
+
+  factory FifoAllocation.fromJson(Map<String, dynamic> json) {
+    return FifoAllocation(
+      allocation: (json['allocation'] as List? ?? [])
+          .map((item) => AllocationItem.fromJson(item))
+          .toList(),
+      canFulfill: json['canFulfill'] ?? false,
+      totalAvailable: json['totalAvailable'],
+      requiredQuantity: json['requiredQuantity'],
+      alerts: (json['alerts'] as List? ?? [])
+          .map((alert) => BatchAlert.fromJson(alert))
+          .toList(),
+      fifoRecommendation: json['fifoRecommendation'],
+      batchSummary: json['batchSummary'] != null
+          ? BatchSummary.fromJson(json['batchSummary'])
+          : null,
+    );
+  }
+}
+
+// Model for allocation items
+class AllocationItem {
+  final int? productId;
+  final int quantity;
+  final String source;
+  final int? batchId;
+  final String? prodDate;
+  final String? expDate;
+  final String? receivedDate;
+  final String? batchNumber;
+  final int? remainingInBatch;
+  final double? costPrice;
+  final int? supplierId;
+
+  AllocationItem({
+    this.productId,
+    required this.quantity,
+    required this.source,
+    this.batchId,
+    this.prodDate,
+    this.expDate,
+    this.receivedDate,
+    this.batchNumber,
+    this.remainingInBatch,
+    this.costPrice,
+    this.supplierId,
+  });
+
+  factory AllocationItem.fromJson(Map<String, dynamic> json) {
+    return AllocationItem(
+      productId: json['productId'],
+      quantity: json['quantity'] ?? 0,
+      source: json['source'] ?? '',
+      batchId: json['batchId'],
+      prodDate: json['prodDate'],
+      expDate: json['expDate'],
+      receivedDate: json['receivedDate'],
+      batchNumber: json['batchNumber'],
+      remainingInBatch: json['remainingInBatch'],
+      costPrice: (json['costPrice'] as num?)?.toDouble(),
+      supplierId: json['supplierId'],
+    );
+  }
+}
+
+// Model for batch summary
+class BatchSummary {
+  final int totalBatches;
+  final int batchesUsed;
+  final bool hasMultipleDates;
+  final Map<String, dynamic>? oldestBatch;
+
+  BatchSummary({
+    required this.totalBatches,
+    required this.batchesUsed,
+    required this.hasMultipleDates,
+    this.oldestBatch,
+  });
+
+  factory BatchSummary.fromJson(Map<String, dynamic> json) {
+    return BatchSummary(
+      totalBatches: json['totalBatches'] ?? 0,
+      batchesUsed: json['batchesUsed'] ?? 0,
+      hasMultipleDates: json['hasMultipleDates'] ?? false,
+      oldestBatch: json['oldestBatch'],
+    );
+  }
+}
+
+// Model for current preparers
+class CurrentPreparer {
+  final int employeeId;
+  final String employeeName;
+  final String startedAt;
+
+  CurrentPreparer({
+    required this.employeeId,
+    required this.employeeName,
+    required this.startedAt,
+  });
+
+  factory CurrentPreparer.fromJson(Map<String, dynamic> json) {
+    return CurrentPreparer(
+      employeeId: json['employeeId'] ?? 0,
+      employeeName: json['employeeName'] ?? '',
+      startedAt: json['startedAt'] ?? '',
+    );
+  }
+}
+
+// Existing models (kept for compatibility)
 class BatchInfo {
   final int productId;
   final String productName;
@@ -153,7 +391,7 @@ class BatchAlert {
     return BatchAlert(
       type: json['type'] ?? '',
       message: json['message'] ?? '',
-      severity: json['severity'] ?? '',
+      severity: json['severity'] ?? 'info',
       batchDetails: json['batchDetails'] != null
           ? List<Map<String, dynamic>>.from(json['batchDetails'])
           : null,
@@ -356,8 +594,30 @@ class OrderService {
     }
   }
 
-  // NEW: Start preparation for customer order
-  static Future<Map<String, dynamic>> startCustomerOrderPreparation(
+  // UPDATED: Start preparation for customer order - now returns enhanced response
+  static Future<StartPreparationResponse> startCustomerOrderPreparation(
+      int orderId, String? notes) async {
+    try {
+      final Map<String, dynamic> body = {};
+      if (notes != null && notes.isNotEmpty) {
+        body['notes'] = notes;
+      }
+
+      final response = await _makeRequest(
+          'POST', '$baseUrl/customer-order/$orderId/start-preparation',
+          body: body);
+
+      final data =
+          await _handleResponse(response, 'Start customer order preparation');
+      return StartPreparationResponse.fromJson(data);
+    } catch (e) {
+      debugPrint('Error starting customer order preparation: $e');
+      rethrow;
+    }
+  }
+
+  // LEGACY: Keep the old method for backward compatibility
+  static Future<Map<String, dynamic>> startCustomerOrderPreparationLegacy(
       int orderId, String? notes) async {
     try {
       final Map<String, dynamic> body = {};
@@ -376,7 +636,7 @@ class OrderService {
     }
   }
 
-  // NEW: Complete preparation for customer order
+  // Complete preparation for customer order
   static Future<Map<String, dynamic>> completeCustomerOrderPreparation(
       int orderId,
       {String? notes,
@@ -405,7 +665,7 @@ class OrderService {
     }
   }
 
-  // NEW: Get batch information for customer order
+  // Get batch information for customer order
   static Future<BatchInfoResponse> getCustomerOrderBatchInfo(
       int orderId) async {
     try {
@@ -420,6 +680,75 @@ class OrderService {
     }
   }
 
+  // Helper method to convert StartPreparationResponse to BatchInfoResponse
+  static BatchInfoResponse convertStartPreparationToBatchInfo(
+      StartPreparationResponse startResponse, int orderId) {
+    final preparationInfo = startResponse.preparationInfo;
+
+    // Convert ItemWithBatchInfo to BatchInfo
+    final batchInfoList = preparationInfo.itemsWithBatchInfo.map((item) {
+      // Convert FIFO allocation to batch and recommendation lists
+      final batches = <Batch>[];
+      final fifoRecommendations = <FifoRecommendation>[];
+
+      for (final allocation in item.fifoAllocation.allocation) {
+        if (allocation.batchId != null) {
+          // Create batch from allocation
+          batches.add(Batch(
+            id: allocation.batchId!,
+            productId: item.productId,
+            batchNumber: allocation.batchNumber,
+            quantity: allocation.quantity,
+            originalQuantity: allocation.quantity,
+            prodDate: allocation.prodDate,
+            expDate: allocation.expDate,
+            receivedDate: allocation.receivedDate ?? '',
+            supplierId: allocation.supplierId ?? 0,
+            supplierOrderId: 0, // Not available in this response
+            costPrice: allocation.costPrice ?? 0.0,
+            status: 'available',
+            notes: null,
+          ));
+
+          // Create FIFO recommendation
+          fifoRecommendations.add(FifoRecommendation(
+            batchId: allocation.batchId!,
+            quantity: allocation.quantity,
+            prodDate: allocation.prodDate,
+            expDate: allocation.expDate,
+            receivedDate: allocation.receivedDate ?? '',
+            batchNumber: allocation.batchNumber,
+            remainingInBatch:
+                allocation.remainingInBatch ?? allocation.quantity,
+            costPrice: allocation.costPrice ?? 0.0,
+            supplierId: allocation.supplierId ?? 0,
+          ));
+        }
+      }
+
+      return BatchInfo(
+        productId: item.productId,
+        productName: item.productName,
+        requiredQuantity: item.requiredQuantity,
+        availableQuantity: item.availableQuantity,
+        batches: batches,
+        fifoRecommendation: fifoRecommendations,
+        alerts: item.alerts,
+        canFulfill: item.canFulfill,
+      );
+    }).toList();
+
+    return BatchInfoResponse(
+      message: startResponse.message,
+      orderId: orderId.toString(),
+      orderStatus: 'Preparing',
+      batchInfo: batchInfoList,
+      hasCriticalAlerts: preparationInfo.batchAlerts
+          .any((alert) => alert.severity == 'critical'),
+      hasMultipleBatches: preparationInfo.hasMultipleBatches,
+    );
+  }
+
   // DEPRECATED: Old method - kept for backward compatibility
   @deprecated
   static Future<Map<String, dynamic>> updateCustomerOrderStatus(
@@ -429,7 +758,8 @@ class OrderService {
 
     // For backward compatibility, route to new methods
     if (status == "Preparing") {
-      return await startCustomerOrderPreparation(orderId, note);
+      final response = await startCustomerOrderPreparationLegacy(orderId, note);
+      return response;
     } else if (status == "Prepared") {
       return await completeCustomerOrderPreparation(orderId, notes: note);
     } else {

@@ -1,4 +1,4 @@
-// lib/employee/screens/viewOrderScreenEmp.dart - Updated with batch management
+// lib/employee/screens/viewOrderScreenEmp.dart - Updated with enhanced start preparation handling
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/employee/widgets/orderServiceEmp.dart';
 
-// Batch Selection model for UI
+// Batch Selection model for UI (unchanged)
 class BatchSelection {
   final int batchId;
   final int availableQuantity;
@@ -28,7 +28,7 @@ class BatchSelection {
   });
 }
 
-// Line item model for order details (keeping existing structure)
+// Line item model for order details (unchanged)
 class OrderLineItem {
   final int id;
   final String name;
@@ -157,6 +157,10 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       {}; // productId -> batch selections
   bool _showBatchDetails = false;
 
+  // Enhanced batch management with preparation info
+  StartPreparationResponse? _startPreparationResponse;
+  PreparationInfo? _preparationInfo;
+
   // For supplier orders, track edited quantities
   Map<int, int> _editedQuantities = {};
   bool _hasQuantityChanges = false;
@@ -272,6 +276,95 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       debugPrint('Error fetching batch info: $e');
       // Don't show error for batch info, just continue without it
     }
+  }
+
+  // NEW: Process preparation info from start preparation response
+  void _processStartPreparationResponse(StartPreparationResponse response) {
+    setState(() {
+      _startPreparationResponse = response;
+      _preparationInfo = response.preparationInfo;
+
+      // Convert to BatchInfoResponse for compatibility
+      _batchInfoResponse = OrderService.convertStartPreparationToBatchInfo(
+          response, _localOrder.orderId);
+
+      // Initialize batch selections from preparation info
+      _initializeBatchSelectionsFromPreparationInfo();
+
+      // Update order status to Preparing
+      _updateLocalOrderFromResponse(response.order);
+    });
+  }
+
+  // NEW: Initialize batch selections from preparation info
+  void _initializeBatchSelectionsFromPreparationInfo() {
+    if (_preparationInfo == null) return;
+
+    _batchSelections.clear();
+    for (final itemWithBatch in _preparationInfo!.itemsWithBatchInfo) {
+      final selections = <BatchSelection>[];
+
+      // Process allocations to create batch selections
+      for (final allocation in itemWithBatch.fifoAllocation.allocation) {
+        if (allocation.batchId != null) {
+          selections.add(BatchSelection(
+            batchId: allocation.batchId!,
+            availableQuantity:
+                allocation.remainingInBatch ?? allocation.quantity,
+            selectedQuantity: allocation.quantity,
+            prodDate: allocation.prodDate,
+            expDate: allocation.expDate,
+            batchNumber:
+                allocation.batchNumber ?? 'Batch #${allocation.batchId}',
+            isRecommended: true, // These are FIFO recommendations
+          ));
+        }
+      }
+
+      _batchSelections[itemWithBatch.productId] = selections;
+    }
+  }
+
+  // NEW: Update local order from response
+  void _updateLocalOrderFromResponse(Map<String, dynamic> orderData) {
+    // Extract customer and user data
+    final customer = orderData['customer'];
+    final user = customer != null ? customer['user'] : null;
+
+    // Format date
+    String formattedDate = "N/A";
+    if (orderData['createdAt'] != null) {
+      try {
+        final DateTime orderDate = DateTime.parse(orderData['createdAt']);
+        formattedDate = '${orderDate.month}-${orderDate.day}-${orderDate.year}';
+      } catch (e) {
+        debugPrint('Error parsing date: ${orderData['createdAt']}');
+        final now = DateTime.now();
+        formattedDate = '${now.month}-${now.day}-${now.year}';
+      }
+    }
+
+    // Get totalCost
+    double totalAmount = 0.0;
+    if (orderData['totalCost'] != null) {
+      totalAmount = (orderData['totalCost'] as num).toDouble();
+    }
+
+    // Update the order object
+    _localOrder = OrderItem(
+      orderId: orderData['id'] ?? _localOrder.orderId,
+      name: user != null && user['name'] != null
+          ? user['name']
+          : _localOrder.name,
+      phoneNo: user != null && user['phoneNumber'] != null
+          ? user['phoneNumber']
+          : _localOrder.phoneNo,
+      orderDate: formattedDate,
+      totalProducts: _lineItems.length,
+      totalAmount: totalAmount,
+      status: orderData['status'] ?? 'Preparing',
+      type: "Customer",
+    );
   }
 
   void _processCustomerOrderDetails(Map<String, dynamic> response) {
@@ -425,7 +518,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
-  // NEW: Start customer order preparation
+  // UPDATED: Start customer order preparation with enhanced response handling
   Future<void> _startCustomerOrderPreparation() async {
     if (_localOrder.status != "Accepted") {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -446,17 +539,39 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     try {
       final note = _noteController.text.trim();
 
-      // Start preparation
-      await OrderService.startCustomerOrderPreparation(
+      // Start preparation and get enhanced response
+      final startResponse = await OrderService.startCustomerOrderPreparation(
           _localOrder.orderId, note.isNotEmpty ? note : null);
 
-      // Refresh order data and fetch batch info
-      await _fetchOrderDetails();
+      // Process the enhanced response
+      _processStartPreparationResponse(startResponse);
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Show success message with preparation details
+      final alertCount = _preparationInfo?.batchAlerts.length ?? 0;
+      final hasCriticalAlerts = _preparationInfo?.batchAlerts
+              .any((alert) => alert.severity == 'critical') ??
+          false;
+
+      String message = 'Order preparation started successfully';
+      if (hasCriticalAlerts) {
+        message += ' - Critical alerts detected!';
+      } else if (alertCount > 0) {
+        message += ' - $alertCount alerts to review';
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order preparation started successfully'),
-          backgroundColor: const Color.fromARGB(255, 255, 150, 30),
+          content: Text(message),
+          backgroundColor: hasCriticalAlerts
+              ? Colors.red
+              : alertCount > 0
+                  ? Colors.orange
+                  : const Color.fromARGB(255, 255, 150, 30),
+          duration: Duration(seconds: hasCriticalAlerts ? 5 : 3),
         ),
       );
     } catch (e) {
@@ -467,7 +582,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     }
   }
 
-  // NEW: Complete customer order preparation (auto-detects manual vs auto)
+  // Complete customer order preparation (unchanged logic, but enhanced with preparation info awareness)
   Future<void> _completeCustomerOrderPreparation() async {
     if (_localOrder.status != "Preparing") {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -702,6 +817,13 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return false;
   }
 
+  // Helper getter for alerts to show
+  List<BatchAlert> get _alertsToShow {
+    return _preparationInfo?.batchAlerts ??
+        _batchInfoResponse?.batchInfo.expand((info) => info.alerts).toList() ??
+        [];
+  }
+
   List<OrderLineItem> get _visibleLineItems {
     final totalItems = _lineItems.length;
     if (totalItems == 0) return [];
@@ -721,13 +843,22 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return _lineItems.fold(0, (sum, item) => sum + item.total);
   }
 
-  // Build batch management section for customer orders
+  // ENHANCED: Build batch management section with preparation info awareness
   Widget _buildBatchManagementSection() {
     if (_localOrder.type != "Customer" ||
         _localOrder.status != "Preparing" ||
-        _batchInfoResponse == null) {
+        (_batchInfoResponse == null && _preparationInfo == null)) {
       return SizedBox.shrink();
     }
+
+    // Use preparation info if available, otherwise fall back to batch info response
+    final hasMultipleBatches = _preparationInfo?.hasMultipleBatches ??
+        _batchInfoResponse?.hasMultipleBatches ??
+        false;
+    final hasNearExpiry = _preparationInfo?.hasNearExpiry ?? false;
+    final hasCriticalAlerts = _preparationInfo?.batchAlerts
+            .any((alert) => alert.severity == 'critical') ??
+        false;
 
     return Container(
       margin: EdgeInsets.only(bottom: 20.h),
@@ -736,9 +867,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         color: const Color.fromARGB(255, 36, 50, 69),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: _batchInfoResponse!.hasCriticalAlerts
+          color: hasCriticalAlerts
               ? Colors.red
-              : _batchInfoResponse!.hasMultipleBatches
+              : hasMultipleBatches || hasNearExpiry
                   ? Colors.amber
                   : const Color.fromARGB(255, 47, 71, 82),
           width: 1.5,
@@ -750,14 +881,14 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           Row(
             children: [
               Icon(
-                _batchInfoResponse!.hasCriticalAlerts
+                hasCriticalAlerts
                     ? Icons.error_outline
-                    : _batchInfoResponse!.hasMultipleBatches
+                    : hasMultipleBatches || hasNearExpiry
                         ? Icons.warning_amber_rounded
                         : Icons.info_outline,
-                color: _batchInfoResponse!.hasCriticalAlerts
+                color: hasCriticalAlerts
                     ? Colors.red
-                    : _batchInfoResponse!.hasMultipleBatches
+                    : hasMultipleBatches || hasNearExpiry
                         ? Colors.amber
                         : Colors.blue,
                 size: 20.sp,
@@ -772,6 +903,26 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                 ),
               ),
               Spacer(),
+              // Show preparation info summary
+              if (_preparationInfo != null) ...[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    "${_preparationInfo!.totalItems} items, ${_preparationInfo!.batchAlerts.length} alerts",
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10.sp,
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+              ],
               // Toggle batch details
               TextButton(
                 onPressed: () {
@@ -791,35 +942,43 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           ),
           SizedBox(height: 12.h),
 
-          // Summary alerts
-          if (_batchInfoResponse!.batchInfo.isNotEmpty) ...[
-            for (final batchInfo in _batchInfoResponse!.batchInfo) ...[
-              for (final alert in batchInfo.alerts) ...[
-                Container(
-                  margin: EdgeInsets.only(bottom: 8.h),
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
+          // Summary alerts - prioritize preparation info alerts
+          if (_alertsToShow.isNotEmpty) ...[
+            for (final alert in _alertsToShow.take(3)) ...[
+              Container(
+                margin: EdgeInsets.only(bottom: 8.h),
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: alert.severity == 'critical'
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  alert.message,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
                     color: alert.severity == 'critical'
-                        ? Colors.red.withOpacity(0.1)
-                        : Colors.amber.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    alert.message,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      color: alert.severity == 'critical'
-                          ? Colors.red
-                          : Colors.amber,
-                    ),
+                        ? Colors.red
+                        : Colors.amber,
                   ),
                 ),
-              ],
+              ),
+            ],
+            if (_alertsToShow.length > 3) ...[
+              Text(
+                "... and ${_alertsToShow.length - 3} more alerts",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 11.sp,
+                  color: Colors.white60,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ],
           ],
 
           // Detailed batch information
-          if (_showBatchDetails) ...[
+          if (_showBatchDetails && _batchInfoResponse != null) ...[
             SizedBox(height: 16.h),
 
             // Mode indicator
@@ -1622,7 +1781,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                             ),
                             SizedBox(height: 30.h),
 
-                            // Batch Management Section (for customer orders in preparing status)
+                            // Batch Management Section (enhanced with preparation info)
                             _buildBatchManagementSection(),
 
                             // Modern Full-width Items Section
