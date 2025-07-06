@@ -7,6 +7,9 @@ import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
+
 // Models for the API response
 class ProductSalesData {
   final String day;
@@ -179,7 +182,7 @@ class _ProductSalesOverviewWidgetState
       } else {
         debugPrint('❌ Error fetching product sales: ${response.statusCode}');
         setState(() {
-          _error = 'Failed to load sales data: ${response.statusCode}';
+          _error = 'FAILED_TO_LOAD_SALES_DATA';
           _isLoading = false;
         });
       }
@@ -224,8 +227,20 @@ class _ProductSalesOverviewWidgetState
     _fetchProductSales();
   }
 
+  String _getLocalizedErrorMessage(String errorKey, AppLocalizations l10n) {
+    switch (errorKey) {
+      case 'FAILED_TO_LOAD_SALES_DATA':
+        return l10n.failedToLoadSalesData;
+      default:
+        return errorKey; // Return the key if no translation found
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
     final Color backgroundColor = const Color.fromARGB(255, 36, 50, 69);
 
     if (_isLoading) {
@@ -246,11 +261,16 @@ class _ProductSalesOverviewWidgetState
               ),
               SizedBox(height: 16.h),
               Text(
-                'Loading sales data...',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 14.sp,
-                ),
+                l10n.loadingSalesData,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
               ),
             ],
           ),
@@ -278,20 +298,33 @@ class _ProductSalesOverviewWidgetState
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading sales data',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.errorLoadingSalesData,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
               SizedBox(height: 8.h),
               Text(
-                _error!,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontSize: 12.sp,
-                ),
+                _error!.startsWith('FAILED_TO_LOAD')
+                    ? _getLocalizedErrorMessage(_error!, l10n)
+                    : _error!,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
@@ -306,8 +339,11 @@ class _ProductSalesOverviewWidgetState
                   ),
                 ),
                 child: Text(
-                  'Retry',
-                  style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                  l10n.retry,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white, fontSize: 12.sp)
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white, fontSize: 12.sp),
                 ),
               ),
             ],
@@ -326,11 +362,16 @@ class _ProductSalesOverviewWidgetState
         ),
         child: Center(
           child: Text(
-            'No sales data available',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16.sp,
-            ),
+            l10n.noSalesDataAvailable,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -359,23 +400,35 @@ class _ProductSalesOverviewWidgetState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Product Sales",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontSize: 25.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    l10n.productSales,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w500,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
                   ),
                   SizedBox(height: 4.h),
                   Row(
                     children: [
                       Text(
                         "\$${_salesData!.sales.revenue.toStringAsFixed(0)}",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w700,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
                       ),
                       SizedBox(width: 8.w),
                       if (_salesData!.sales.growth > 0)
@@ -388,31 +441,49 @@ class _ProductSalesOverviewWidgetState
                             ),
                             Text(
                               "${_salesData!.sales.growth.toStringAsFixed(1)}%",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.green,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.green,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.green,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                             ),
                           ],
                         ),
                     ],
                   ),
                   Text(
-                    "${_salesData!.sales.totalSold} units sold",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    l10n.unitsSold("${_salesData!.sales.totalSold}"),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white70,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white70,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
                   ),
                   Text(
                     "${_salesData!.dateRange.start} - ${_salesData!.dateRange.end}",
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white70,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white70,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
                   ),
                 ],
               ),
@@ -428,13 +499,19 @@ class _ProductSalesOverviewWidgetState
                     ),
                     label: Text(
                       _startDate != null && _endDate != null
-                          ? "Custom Range"
-                          : "Select Dates",
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          ? l10n.customRange
+                          : l10n.selectDates,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00A6FF),
@@ -458,12 +535,18 @@ class _ProductSalesOverviewWidgetState
                         minimumSize: Size(0, 24.h),
                       ),
                       child: Text(
-                        "Clear Filter",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
+                        l10n.clearFilter,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w400,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w400,
+                              ),
                       ),
                     ),
                   ],
@@ -477,8 +560,7 @@ class _ProductSalesOverviewWidgetState
           /// --- The Line Chart ---
           SizedBox(
             width: double.infinity,
-            height: 410.h, // Increased from 300.h to 420.h
-
+            height: 410.h,
             child: LineChart(
               LineChartData(
                 minX: 0,
@@ -496,12 +578,18 @@ class _ProductSalesOverviewWidgetState
                             if (index < _salesData!.data.length) {
                               final dataPoint = _salesData!.data[index];
                               return LineTooltipItem(
-                                "${dataPoint.day}\n${dataPoint.value.toStringAsFixed(0)} units",
-                                GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.sp,
-                                ),
+                                "${dataPoint.day}\n${l10n.unitsTooltip(dataPoint.value.toStringAsFixed(0))}",
+                                isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      ),
                               );
                             }
                             return null;
@@ -543,7 +631,8 @@ class _ProductSalesOverviewWidgetState
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index >= 0 && index < _salesData!.data.length) {
-                          return _buildBottomTitle(_salesData!.data[index].day);
+                          return _buildBottomTitle(
+                              _salesData!.data[index].day, isArabic);
                         }
                         return Container();
                       },
@@ -557,7 +646,8 @@ class _ProductSalesOverviewWidgetState
                       reservedSize: 50,
                       interval: maxY / 4,
                       getTitlesWidget: (value, meta) {
-                        return _buildLeftTitle("${_formatNumber(value)}");
+                        return _buildLeftTitle(
+                            "${_formatNumber(value)}", isArabic);
                       },
                     ),
                   ),
@@ -614,28 +704,38 @@ class _ProductSalesOverviewWidgetState
     }).toList();
   }
 
-  Widget _buildBottomTitle(String text) {
+  Widget _buildBottomTitle(String text, bool isArabic) {
     return Padding(
       padding: EdgeInsets.only(top: 8.h),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 11.sp,
-        ),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 11.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 11.sp,
+              ),
       ),
     );
   }
 
-  Widget _buildLeftTitle(String text) {
+  Widget _buildLeftTitle(String text, bool isArabic) {
     return Padding(
       padding: EdgeInsets.only(right: 8.w),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withOpacity(0.7),
-          fontSize: 10.sp,
-        ),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 10.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 10.sp,
+              ),
         textAlign: TextAlign.left,
       ),
     );
@@ -649,7 +749,7 @@ class _ProductSalesOverviewWidgetState
   }
 }
 
-// Custom Date Range Picker Dialog (copied from OrdersOverviewWidget)
+// Custom Date Range Picker Dialog
 class _ProductSalesDateRangePickerDialog extends StatefulWidget {
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
@@ -739,29 +839,29 @@ class _ProductSalesDateRangePickerDialogState
     }
   }
 
-  void _selectPresetRange(String preset) {
+  void _selectPresetRange(String preset, AppLocalizations l10n) {
     final now = DateTime.now();
     DateTime start;
     DateTime end = now;
 
     switch (preset) {
-      case 'Today':
+      case 'today':
         start = DateTime(now.year, now.month, now.day);
         break;
-      case 'Yesterday':
+      case 'yesterday':
         start = DateTime(now.year, now.month, now.day - 1);
         end = DateTime(now.year, now.month, now.day - 1);
         break;
-      case 'Last 7 days':
+      case 'last7days':
         start = now.subtract(const Duration(days: 7));
         break;
-      case 'Last 30 days':
+      case 'last30days':
         start = now.subtract(const Duration(days: 30));
         break;
-      case 'This month':
+      case 'thismonth':
         start = DateTime(now.year, now.month, 1);
         break;
-      case 'Last month':
+      case 'lastmonth':
         start = DateTime(now.year, now.month - 1, 1);
         end = DateTime(now.year, now.month, 0);
         break;
@@ -777,7 +877,20 @@ class _ProductSalesDateRangePickerDialogState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
     final bool canApply = _startDate != null && _endDate != null;
+
+    // Get localized preset labels
+    final presetData = [
+      {'key': 'today', 'label': l10n.today},
+      {'key': 'yesterday', 'label': l10n.yesterday},
+      {'key': 'last7days', 'label': l10n.last7Days},
+      {'key': 'last30days', 'label': l10n.last30Days},
+      {'key': 'thismonth', 'label': l10n.thisMonth},
+      {'key': 'lastmonth', 'label': l10n.lastMonth},
+    ];
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -801,12 +914,18 @@ class _ProductSalesDateRangePickerDialogState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Select Date Range',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  l10n.selectDateRange,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -825,27 +944,26 @@ class _ProductSalesDateRangePickerDialogState
 
             // Quick presets
             Text(
-              'Quick Select',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-              ),
+              l10n.quickSelect,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
             ),
             SizedBox(height: 8.h),
             Wrap(
               spacing: 8.w,
               runSpacing: 8.h,
-              children: [
-                'Today',
-                'Yesterday',
-                'Last 7 days',
-                'Last 30 days',
-                'This month',
-                'Last month',
-              ].map((preset) {
+              children: presetData.map((preset) {
                 return GestureDetector(
-                  onTap: () => _selectPresetRange(preset),
+                  onTap: () => _selectPresetRange(preset['key']!, l10n),
                   child: Container(
                     padding:
                         EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
@@ -857,12 +975,18 @@ class _ProductSalesDateRangePickerDialogState
                       ),
                     ),
                     child: Text(
-                      preset,
-                      style: GoogleFonts.spaceGrotesk(
-                        color: const Color(0xFF00A6FF),
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      preset['label']!,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: const Color(0xFF00A6FF),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: const Color(0xFF00A6FF),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                 );
@@ -880,12 +1004,18 @@ class _ProductSalesDateRangePickerDialogState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Start Date',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        l10n.startDate,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                       ),
                       SizedBox(height: 6.h),
                       GestureDetector(
@@ -912,13 +1042,20 @@ class _ProductSalesDateRangePickerDialogState
                                 child: Text(
                                   _startDate != null
                                       ? _displayFormatter.format(_startDate!)
-                                      : 'Select start',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: _startDate != null
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 13.sp,
-                                  ),
+                                      : l10n.selectStart,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: _startDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: _startDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        ),
                                 ),
                               ),
                             ],
@@ -937,12 +1074,18 @@ class _ProductSalesDateRangePickerDialogState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'End Date',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white70,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        l10n.endDate,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                       ),
                       SizedBox(height: 6.h),
                       GestureDetector(
@@ -969,13 +1112,20 @@ class _ProductSalesDateRangePickerDialogState
                                 child: Text(
                                   _endDate != null
                                       ? _displayFormatter.format(_endDate!)
-                                      : 'Select end',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: _endDate != null
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 13.sp,
-                                  ),
+                                      : l10n.selectEnd,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: _endDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: _endDate != null
+                                              ? Colors.white
+                                              : Colors.white54,
+                                          fontSize: 13.sp,
+                                        ),
                                 ),
                               ),
                             ],
@@ -1006,12 +1156,18 @@ class _ProductSalesDateRangePickerDialogState
                       ),
                     ),
                     child: Text(
-                      'Cancel',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      l10n.cancel,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                 ),
@@ -1036,12 +1192,18 @@ class _ProductSalesDateRangePickerDialogState
                       ),
                     ),
                     child: Text(
-                      'Apply',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      l10n.apply,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                   ),
                 ),

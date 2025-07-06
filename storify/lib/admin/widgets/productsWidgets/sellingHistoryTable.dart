@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'dart:convert';
 
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
+
 /// Model for a product selling history item from API
 class ProductSellingHistoryItem {
   final String orderId;
@@ -175,34 +178,41 @@ class _ProductSellingHistoryWidgetState
   }
 
   /// Helper: builds a color-coded pill for status.
-  Widget _buildStatusPill(String status) {
+  Widget _buildStatusPill(String status, AppLocalizations l10n, bool isArabic) {
     late Color borderColor;
     late Color bgColor;
+    late String localizedStatus;
 
     switch (status) {
       case "Completed":
-        borderColor = const Color.fromARGB(255, 48, 182, 140); // greenish
+        borderColor = const Color.fromARGB(255, 48, 182, 140);
         bgColor = borderColor.withOpacity(0.15);
+        localizedStatus = l10n.completed;
         break;
       case "On the way":
-        borderColor = const Color.fromARGB(255, 228, 0, 127); // pinkish
+        borderColor = const Color.fromARGB(255, 228, 0, 127);
         bgColor = borderColor.withOpacity(0.15);
+        localizedStatus = l10n.onTheWay;
         break;
       case "Cancelled":
-        borderColor = const Color.fromARGB(255, 229, 62, 62); // red
+        borderColor = const Color.fromARGB(255, 229, 62, 62);
         bgColor = borderColor.withOpacity(0.15);
+        localizedStatus = l10n.cancelled;
         break;
       case "Refunded":
-        borderColor = const Color.fromARGB(255, 141, 110, 199); // purple
+        borderColor = const Color.fromARGB(255, 141, 110, 199);
         bgColor = borderColor.withOpacity(0.15);
+        localizedStatus = l10n.refunded;
         break;
       case "Pending":
-        borderColor = const Color.fromARGB(255, 255, 193, 7); // yellow
+        borderColor = const Color.fromARGB(255, 255, 193, 7);
         bgColor = borderColor.withOpacity(0.15);
+        localizedStatus = l10n.pending;
         break;
       default:
         borderColor = Colors.grey;
         bgColor = Colors.grey.withOpacity(0.15);
+        localizedStatus = status;
         break;
     }
 
@@ -214,18 +224,25 @@ class _ProductSellingHistoryWidgetState
         border: Border.all(color: borderColor),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 16.sp,
-          fontWeight: FontWeight.w600,
-          color: borderColor,
-        ),
+        localizedStatus,
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: borderColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: borderColor,
+              ),
       ),
     );
   }
 
   /// Builds a header label for sorting.
-  Widget _buildSortableColumnLabel(String label, int colIndex) {
+  Widget _buildSortableColumnLabel(
+      String label, int colIndex, bool isArabic, bool isRtl) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
     if (isSorted) {
@@ -237,11 +254,14 @@ class _ProductSellingHistoryWidgetState
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment:
+          isRtl ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(fontSize: 18.sp, color: Colors.white),
+          style: isArabic
+              ? GoogleFonts.cairo(fontSize: 18.sp, color: Colors.white)
+              : GoogleFonts.spaceGrotesk(fontSize: 18.sp, color: Colors.white),
         ),
         SizedBox(width: 4.w),
         arrow,
@@ -276,7 +296,7 @@ class _ProductSellingHistoryWidgetState
   }
 
   /// Builds a pagination button.
-  Widget _buildPageButton(int pageIndex) {
+  Widget _buildPageButton(int pageIndex, bool isArabic) {
     final bool isSelected = (pageIndex == _currentPage);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 4.w),
@@ -297,11 +317,17 @@ class _ProductSellingHistoryWidgetState
         onPressed: () => _goToPage(pageIndex),
         child: Text(
           "$pageIndex",
-          style: GoogleFonts.spaceGrotesk(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                ),
         ),
       ),
     );
@@ -309,6 +335,10 @@ class _ProductSellingHistoryWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isLoading) {
       return Container(
         width: double.infinity,
@@ -326,11 +356,16 @@ class _ProductSellingHistoryWidgetState
               ),
               SizedBox(height: 16.h),
               Text(
-                'Loading selling history...',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 14.sp,
-                ),
+                l10n.loadingSellingHistory,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
               ),
             ],
           ),
@@ -357,20 +392,31 @@ class _ProductSellingHistoryWidgetState
               ),
               SizedBox(height: 16.h),
               Text(
-                'Error loading selling history',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
+                l10n.errorLoadingSellingHistory,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
               SizedBox(height: 8.h),
               Text(
                 _error!,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontSize: 12.sp,
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 12.sp,
+                      ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 16.h),
@@ -383,11 +429,16 @@ class _ProductSellingHistoryWidgetState
                   ),
                 ),
                 child: Text(
-                  'Retry',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    color: Colors.white,
-                  ),
+                  l10n.retry,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          color: Colors.white,
+                        ),
                 ),
               ),
             ],
@@ -406,11 +457,16 @@ class _ProductSellingHistoryWidgetState
         ),
         child: Center(
           child: Text(
-            'No selling history available for this product',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white70,
-              fontSize: 16.sp,
-            ),
+            l10n.noSellingHistoryAvailable,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    color: Colors.white70,
+                    fontSize: 16.sp,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white70,
+                    fontSize: 16.sp,
+                  ),
           ),
         ),
       );
@@ -445,163 +501,201 @@ class _ProductSellingHistoryWidgetState
       }
     }
 
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(29.r),
-      ),
-      child: Column(
-        children: [
-          // Wrap DataTable in horizontal SingleChildScrollView.
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(minWidth: MediaQuery.of(context).size.width),
-              child: DataTable(
-                showCheckboxColumn: false,
-                headingRowColor: WidgetStateProperty.all<Color>(
-                    const Color.fromARGB(255, 36, 50, 69)),
-                border: TableBorder(
-                  top: BorderSide(
-                      color: const Color.fromARGB(255, 34, 53, 62), width: 1),
-                  bottom: BorderSide(
-                      color: const Color.fromARGB(255, 34, 53, 62), width: 1),
-                  left: BorderSide(
-                      color: const Color.fromARGB(255, 34, 53, 62), width: 1),
-                  right: BorderSide(
-                      color: const Color.fromARGB(255, 34, 53, 62), width: 1),
-                  horizontalInside: BorderSide(
-                      color: const Color.fromARGB(255, 36, 50, 69), width: 2),
-                  verticalInside: BorderSide(
-                      color: const Color.fromARGB(255, 36, 50, 69), width: 2),
-                ),
-                columnSpacing: 20.w,
-                dividerThickness: 0,
-                headingTextStyle: GoogleFonts.spaceGrotesk(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-                dataTextStyle: GoogleFonts.spaceGrotesk(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 15.sp,
-                ),
-                columns: [
-                  DataColumn(
-                      label: Text("Order Id",
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp, color: Colors.white))),
-                  DataColumn(
-                    label: _buildSortableColumnLabel("Order Price", 1),
-                    onSort: (columnIndex, _) {
-                      _onSort(1);
-                    },
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(29.r),
+        ),
+        child: Column(
+          children: [
+            // Wrap DataTable in horizontal SingleChildScrollView.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints:
+                    BoxConstraints(minWidth: MediaQuery.of(context).size.width),
+                child: DataTable(
+                  showCheckboxColumn: false,
+                  headingRowColor: WidgetStateProperty.all<Color>(
+                      const Color.fromARGB(255, 36, 50, 69)),
+                  border: TableBorder(
+                    top: BorderSide(
+                        color: const Color.fromARGB(255, 34, 53, 62), width: 1),
+                    bottom: BorderSide(
+                        color: const Color.fromARGB(255, 34, 53, 62), width: 1),
+                    left: BorderSide(
+                        color: const Color.fromARGB(255, 34, 53, 62), width: 1),
+                    right: BorderSide(
+                        color: const Color.fromARGB(255, 34, 53, 62), width: 1),
+                    horizontalInside: BorderSide(
+                        color: const Color.fromARGB(255, 36, 50, 69), width: 2),
+                    verticalInside: BorderSide(
+                        color: const Color.fromARGB(255, 36, 50, 69), width: 2),
                   ),
-                  DataColumn(
-                      label: Text("Order Date",
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp, color: Colors.white))),
-                  DataColumn(
-                      label: Text("Customer",
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp, color: Colors.white))),
-                  DataColumn(
-                    label: _buildSortableColumnLabel("Quantity", 4),
-                    onSort: (columnIndex, _) {
-                      _onSort(4);
-                    },
-                  ),
-                  DataColumn(
-                    label: _buildSortableColumnLabel("Subtotal", 5),
-                    onSort: (columnIndex, _) {
-                      _onSort(5);
-                    },
-                  ),
-                  DataColumn(
-                      label: Text("Status",
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp, color: Colors.white))),
-                ],
-                rows: sortedHistory.map((order) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(order.orderId)),
-                      DataCell(Text(order.orderPrice)),
-                      DataCell(Text(order.orderDate)),
-                      DataCell(Text(order.customer)),
-                      DataCell(Text("${order.quantity}")),
-                      DataCell(Text("\$${order.subtotal.toStringAsFixed(2)}")),
-                      DataCell(_buildStatusPill(order.status)),
-                    ],
-                  );
-                }).toList(),
+                  columnSpacing: 20.w,
+                  dividerThickness: 0,
+                  headingTextStyle: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  dataTextStyle: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 15.sp,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 15.sp,
+                        ),
+                  columns: [
+                    DataColumn(
+                        label: Text(l10n.orderId,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp, color: Colors.white)
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp, color: Colors.white))),
+                    DataColumn(
+                      label: _buildSortableColumnLabel(
+                          l10n.orderPrice, 1, isArabic, isRtl),
+                      onSort: (columnIndex, _) {
+                        _onSort(1);
+                      },
+                    ),
+                    DataColumn(
+                        label: Text(l10n.orderDate,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp, color: Colors.white)
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp, color: Colors.white))),
+                    DataColumn(
+                        label: Text(l10n.customer,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp, color: Colors.white)
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp, color: Colors.white))),
+                    DataColumn(
+                      label: _buildSortableColumnLabel(
+                          l10n.quantity, 4, isArabic, isRtl),
+                      onSort: (columnIndex, _) {
+                        _onSort(4);
+                      },
+                    ),
+                    DataColumn(
+                      label: _buildSortableColumnLabel(
+                          l10n.subtotal, 5, isArabic, isRtl),
+                      onSort: (columnIndex, _) {
+                        _onSort(5);
+                      },
+                    ),
+                    DataColumn(
+                        label: Text(l10n.status,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp, color: Colors.white)
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp, color: Colors.white))),
+                  ],
+                  rows: sortedHistory.map((order) {
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(order.orderId)),
+                        DataCell(Text(order.orderPrice)),
+                        DataCell(Text(order.orderDate)),
+                        DataCell(Text(order.customer)),
+                        DataCell(Text("${order.quantity}")),
+                        DataCell(
+                            Text("\$${order.subtotal.toStringAsFixed(2)}")),
+                        DataCell(
+                            _buildStatusPill(order.status, l10n, isArabic)),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 20.h),
+            SizedBox(height: 20.h),
 
-          // Pagination row with total items info
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Total items info
-              Text(
-                "Total ${pagination.totalItems} items",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
+            // Pagination row with total items info
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Total items info
+                Text(
+                  "${l10n.total} ${pagination.totalItems} ${l10n.items}",
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
                 ),
-              ),
 
-              // Pagination controls
-              Row(
-                children: [
-                  // Left arrow
-                  IconButton(
-                    icon: Icon(Icons.arrow_back,
-                        size: 20.sp, color: Colors.white70),
-                    onPressed: pagination.hasPreviousPage
-                        ? () => _goToPage(_currentPage - 1)
-                        : null,
-                  ),
+                // Pagination controls
+                Row(
+                  children: [
+                    // Left/Right arrow (respecting RTL)
+                    IconButton(
+                      icon: Icon(isRtl ? Icons.arrow_forward : Icons.arrow_back,
+                          size: 20.sp, color: Colors.white70),
+                      onPressed: pagination.hasPreviousPage
+                          ? () => _goToPage(_currentPage - 1)
+                          : null,
+                    ),
 
-                  // Page number buttons (show max 5 pages)
-                  ...List.generate(
-                    pagination.totalPages > 5 ? 5 : pagination.totalPages,
-                    (index) {
-                      int pageNumber;
-                      if (pagination.totalPages <= 5) {
-                        pageNumber = index + 1;
-                      } else {
-                        // Smart pagination: show current page and surrounding pages
-                        if (_currentPage <= 3) {
+                    // Page number buttons (show max 5 pages)
+                    ...List.generate(
+                      pagination.totalPages > 5 ? 5 : pagination.totalPages,
+                      (index) {
+                        int pageNumber;
+                        if (pagination.totalPages <= 5) {
                           pageNumber = index + 1;
-                        } else if (_currentPage >= pagination.totalPages - 2) {
-                          pageNumber = pagination.totalPages - 4 + index;
                         } else {
-                          pageNumber = _currentPage - 2 + index;
+                          // Smart pagination: show current page and surrounding pages
+                          if (_currentPage <= 3) {
+                            pageNumber = index + 1;
+                          } else if (_currentPage >=
+                              pagination.totalPages - 2) {
+                            pageNumber = pagination.totalPages - 4 + index;
+                          } else {
+                            pageNumber = _currentPage - 2 + index;
+                          }
                         }
-                      }
-                      return _buildPageButton(pageNumber);
-                    },
-                  ),
+                        return _buildPageButton(pageNumber, isArabic);
+                      },
+                    ),
 
-                  // Right arrow
-                  IconButton(
-                    icon: Icon(Icons.arrow_forward,
-                        size: 20.sp, color: Colors.white70),
-                    onPressed: pagination.hasNextPage
-                        ? () => _goToPage(_currentPage + 1)
-                        : null,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                    // Right/Left arrow (respecting RTL)
+                    IconButton(
+                      icon: Icon(isRtl ? Icons.arrow_back : Icons.arrow_forward,
+                          size: 20.sp, color: Colors.white70),
+                      onPressed: pagination.hasNextPage
+                          ? () => _goToPage(_currentPage + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

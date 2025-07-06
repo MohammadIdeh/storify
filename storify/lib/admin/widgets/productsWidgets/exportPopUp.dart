@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xls;
 
 /// The ExportPopUp widget receives a list of ProductItemInformation via its constructor.
@@ -29,9 +31,10 @@ class _ExportPopUpState extends State<ExportPopUp> {
 
   // Get list of categories with "All" as the first option.
   List<String> _getCategoryList() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     List<String> categories =
         widget.products.map((p) => p.categoryName).toSet().toList();
-    return ['All', ...categories];
+    return [l10n.all, ...categories];
   }
 
   /// Determines whether the user has provided at least one filter criterion.
@@ -44,11 +47,12 @@ class _ExportPopUpState extends State<ExportPopUp> {
 
   /// Filtering logic: only apply filters if a value other than "All" is chosen.
   List<ProductItemInformation> _filterProducts() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     List<ProductItemInformation> filtered = List.from(widget.products);
 
     // Availability filter – only applied if a valid option is chosen.
     if (_selectedAvailability != null) {
-      bool avail = _selectedAvailability == "Active";
+      bool avail = _selectedAvailability == l10n.active;
       filtered = filtered.where((p) => p.availability == avail).toList();
     }
     // Category filter.
@@ -78,6 +82,9 @@ class _ExportPopUpState extends State<ExportPopUp> {
 
   /// Called when the user presses Submit.
   void _onSubmit() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     // Require that the user provides at least one filter criterion.
     if (!_hasChosenFilter) {
       showDialog(
@@ -88,19 +95,30 @@ class _ExportPopUpState extends State<ExportPopUp> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            "Alert",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            l10n.alert,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
           ),
           content: Text(
-            "Please choose at least one filter criterion to export.",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
+            l10n.pleaseChooseAtLeastOneFilterCriterion,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 16,
+                    color: Colors.white70,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
+                    color: Colors.white70,
+                  ),
           ),
           actions: [
             TextButton(
@@ -114,12 +132,18 @@ class _ExportPopUpState extends State<ExportPopUp> {
               ),
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                "OK",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                l10n.ok,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
               ),
             ),
           ],
@@ -137,6 +161,10 @@ class _ExportPopUpState extends State<ExportPopUp> {
 
   /// Prompts for a file name and then calls export.
   void _askForFileNameAndExport(List<ProductItemInformation> filtered) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     String fileName = "";
     showDialog(
       context: context,
@@ -147,27 +175,44 @@ class _ExportPopUpState extends State<ExportPopUp> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            "Enter Excel File Name",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            l10n.enterExcelFileName,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
           ),
           content: TextField(
             onChanged: (value) {
               fileName = value;
             },
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            textAlign: isRtl ? TextAlign.right : TextAlign.left,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 16,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
             decoration: InputDecoration(
-              hintText: "File name (without extension)",
-              hintStyle: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
+              hintText: l10n.fileNameWithoutExtension,
+              hintStyle: isArabic
+                  ? GoogleFonts.cairo(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
               filled: true,
               fillColor: const Color.fromARGB(255, 36, 50, 69),
               contentPadding:
@@ -195,12 +240,18 @@ class _ExportPopUpState extends State<ExportPopUp> {
               ),
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                "Cancel",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                l10n.cancel,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
               ),
             ),
             TextButton(
@@ -219,12 +270,18 @@ class _ExportPopUpState extends State<ExportPopUp> {
                 Navigator.of(context).pop(); // Close export popup.
               },
               child: Text(
-                "Export",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                l10n.export,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
               ),
             ),
           ],
@@ -235,17 +292,19 @@ class _ExportPopUpState extends State<ExportPopUp> {
 
   /// Generates an Excel file using Syncfusion XLSIO and downloads it on Flutter Web.
   void _exportToExcel(List<ProductItemInformation> data, String fileName) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     final xls.Workbook workbook = xls.Workbook();
     final xls.Worksheet sheet = workbook.worksheets[0];
 
-    // Column Headers.
-    sheet.getRangeByName('A1').setText('ID');
-    sheet.getRangeByName('B1').setText('Product Name');
-    sheet.getRangeByName('C1').setText('Cost Price');
-    sheet.getRangeByName('D1').setText('Sell Price');
-    sheet.getRangeByName('E1').setText('Quantity');
-    sheet.getRangeByName('F1').setText('Category');
-    sheet.getRangeByName('G1').setText('Status');
+    // Column Headers with localized text.
+    sheet.getRangeByName('A1').setText(l10n.idLabel);
+    sheet.getRangeByName('B1').setText(l10n.productName);
+    sheet.getRangeByName('C1').setText(l10n.costPrice);
+    sheet.getRangeByName('D1').setText(l10n.sellPrice);
+    sheet.getRangeByName('E1').setText(l10n.quantity);
+    sheet.getRangeByName('F1').setText(l10n.category);
+    sheet.getRangeByName('G1').setText(l10n.status);
 
     // Fill rows with all available data
     for (int i = 0; i < data.length; i++) {
@@ -280,6 +339,17 @@ class _ExportPopUpState extends State<ExportPopUp> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    // Get localized availability options
+    final List<String> availabilityOptions = [
+      l10n.all,
+      l10n.active,
+      l10n.notActive
+    ];
+
     return Dialog(
       backgroundColor: const Color.fromARGB(255, 21, 29, 38),
       shape: RoundedRectangleBorder(
@@ -294,12 +364,18 @@ class _ExportPopUpState extends State<ExportPopUp> {
             children: [
               // Title.
               Text(
-                'Bulk Export',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+                l10n.bulkExport,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
               ),
               SizedBox(height: 24.h),
               // Main Content Container.
@@ -313,12 +389,18 @@ class _ExportPopUpState extends State<ExportPopUp> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Data Info',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                      l10n.dataInfo,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                     ),
                     SizedBox(height: 20.h),
                     Row(
@@ -326,13 +408,15 @@ class _ExportPopUpState extends State<ExportPopUp> {
                         Expanded(
                           child: _buildDropdownField(
                             context: context,
-                            title: 'Availability',
-                            hint: 'Select',
-                            items: const ['All', 'Active', 'Not Active'],
+                            title: l10n.availability,
+                            hint: l10n.select,
+                            items: availabilityOptions,
+                            isArabic: isArabic,
+                            isRtl: isRtl,
                             onChanged: (value) {
                               setState(() {
                                 // When "All" is chosen, clear filter (set to null).
-                                if (value == 'All') {
+                                if (value == l10n.all) {
                                   _selectedAvailability = null;
                                 } else {
                                   _selectedAvailability = value;
@@ -345,12 +429,14 @@ class _ExportPopUpState extends State<ExportPopUp> {
                         Expanded(
                           child: _buildDropdownField(
                             context: context,
-                            title: 'Category',
-                            hint: 'Select',
+                            title: l10n.category,
+                            hint: l10n.select,
                             items: _getCategoryList(),
+                            isArabic: isArabic,
+                            isRtl: isRtl,
                             onChanged: (value) {
                               setState(() {
-                                if (value == "All") {
+                                if (value == l10n.all) {
                                   _selectedCategory = null;
                                 } else {
                                   _selectedCategory = value;
@@ -367,19 +453,23 @@ class _ExportPopUpState extends State<ExportPopUp> {
                         Expanded(
                           child: _buildNumericTextField(
                             context: context,
-                            title: 'Price From',
+                            title: l10n.priceFrom,
                             hint: '0',
                             controller: _priceFromController,
+                            isArabic: isArabic,
+                            isRtl: isRtl,
                           ),
                         ),
                         SizedBox(width: 20.w),
                         Expanded(
                           child: _buildNumericTextField(
                             context: context,
-                            title: 'Price To',
+                            title: l10n.priceTo,
                             hint: '0',
                             controller: _priceToController,
                             hasInfinityOption: true,
+                            isArabic: isArabic,
+                            isRtl: isRtl,
                           ),
                         ),
                       ],
@@ -398,18 +488,23 @@ class _ExportPopUpState extends State<ExportPopUp> {
                                 color: Color.fromARGB(255, 105, 123, 123),
                                 width: 0.5),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  8.r), // Adjust the radius as needed.
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                           ),
                           onPressed: () => Navigator.of(context).pop(),
                           child: Text(
-                            'Cancel',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            l10n.cancel,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                           ),
                         ),
                         SizedBox(width: 16.w),
@@ -425,12 +520,18 @@ class _ExportPopUpState extends State<ExportPopUp> {
                           ),
                           onPressed: _onSubmit,
                           child: Text(
-                            'Submit',
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            l10n.submit,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                           ),
                         ),
                       ],
@@ -452,6 +553,8 @@ class _ExportPopUpState extends State<ExportPopUp> {
     required String title,
     required String hint,
     required TextEditingController controller,
+    required bool isArabic,
+    required bool isRtl,
     bool hasInfinityOption = false,
   }) {
     return Column(
@@ -459,11 +562,17 @@ class _ExportPopUpState extends State<ExportPopUp> {
       children: [
         Text(
           title,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
         ),
         SizedBox(height: 6.h),
         Container(
@@ -479,25 +588,41 @@ class _ExportPopUpState extends State<ExportPopUp> {
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
             ],
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 14.sp,
-              color: Colors.white,
-            ),
+            textAlign: isRtl ? TextAlign.right : TextAlign.left,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                  ),
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: hint,
-              hintStyle: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontSize: 14.sp,
-              ),
+              hintStyle: isArabic
+                  ? GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                    ),
               suffixIcon: hasInfinityOption
                   ? IconButton(
                       icon: Text(
                         "∞",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          color: Colors.white,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 16.sp,
+                                color: Colors.white,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 16.sp,
+                                color: Colors.white,
+                              ),
                       ),
                       onPressed: () {
                         setState(() {
@@ -520,17 +645,25 @@ class _ExportPopUpState extends State<ExportPopUp> {
     required String hint,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    required bool isArabic,
+    required bool isRtl,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
         ),
         SizedBox(height: 6.h),
         Theme(
@@ -551,17 +684,28 @@ class _ExportPopUpState extends State<ExportPopUp> {
               iconSize: 20.sp,
               iconEnabledColor: Colors.white70,
               dropdownColor: const Color.fromARGB(255, 36, 50, 69),
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
               hint: Text(
                 hint, // e.g. "Select"
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 14.sp,
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                      ),
               ),
               decoration: InputDecoration(
                 border: OutlineInputBorder(
@@ -573,10 +717,15 @@ class _ExportPopUpState extends State<ExportPopUp> {
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 hintText: hint,
-                hintStyle: GoogleFonts.spaceGrotesk(
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                  fontSize: 14.sp,
-                ),
+                hintStyle: isArabic
+                    ? GoogleFonts.cairo(
+                        color: const Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: const Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 14.sp,
+                      ),
               ),
               items: items
                   .map((item) => DropdownMenuItem(

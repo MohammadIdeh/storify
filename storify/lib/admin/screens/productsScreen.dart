@@ -17,6 +17,8 @@ import 'package:storify/admin/widgets/productsWidgets/exportPopUp.dart';
 import 'package:storify/GeneralWidgets/longPressDraggable.dart';
 import 'package:storify/admin/widgets/productsWidgets/productsCards.dart';
 import 'package:storify/admin/widgets/productsWidgets/productsListable.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Productsscreen extends StatefulWidget {
   const Productsscreen({super.key});
@@ -30,13 +32,6 @@ class _ProductsscreenState extends State<Productsscreen> {
   int _selectedFilterIndex = 0; // 0: All, 1: Active, 2: UnActive
   int _selectedRequestFilterIndex =
       0; // 0: All, 1: Pending, 2: Accepted, 3: Declined
-  final List<String> _filters = ["All", "Active", "UnActive"];
-  final List<String> _requestFilters = [
-    "All",
-    "Pending",
-    "Accepted",
-    "Declined"
-  ];
   String _searchQuery = "";
   String _requestSearchQuery = "";
   String? profilePictureUrl;
@@ -103,36 +98,41 @@ class _ProductsscreenState extends State<Productsscreen> {
       });
       _updateProductCards();
     } catch (e) {
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations)!;
       // Handle error - maybe show a snackbar
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load dashboard stats: $e')),
+        SnackBar(content: Text(l10n.failedToLoadDashboardStats(e.toString()))),
       );
     }
   }
 
   // Update product cards with latest stats
   void _updateProductCards() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     final List<Widget> cards = [
       ProductsCards(
-        title: 'Total Products',
+        title: l10n.totalProducts,
         value: _stats.totalProducts.toString(),
         subtext: '',
         key: UniqueKey(),
       ),
       ProductsCards(
-        title: 'Active Products',
+        title: l10n.activeProducts,
         value: _stats.activeProducts.toString(),
         subtext: '',
         key: UniqueKey(),
       ),
       ProductsCards(
-        title: 'UnActive Products',
+        title: l10n.inactiveProducts,
         value: _stats.inactiveProducts.toString(),
         subtext: '',
         key: UniqueKey(),
       ),
       ProductsCards(
-        title: 'Total Categories',
+        title: l10n.totalCategories,
         value: _stats.totalCategories.toString(),
         subtext: '',
         key: UniqueKey(),
@@ -186,6 +186,9 @@ class _ProductsscreenState extends State<Productsscreen> {
 
   /// Builds one toggle chip.
   Widget _buildFilterChip(String label, int index, bool isRequestFilter) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     final bool isSelected = isRequestFilter
         ? (_selectedRequestFilterIndex == index)
         : (_selectedFilterIndex == index);
@@ -210,13 +213,21 @@ class _ProductsscreenState extends State<Productsscreen> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : const Color.fromARGB(255, 230, 230, 230),
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                ),
         ),
       ),
     );
@@ -273,6 +284,9 @@ class _ProductsscreenState extends State<Productsscreen> {
 
   // Build the view mode toggle buttons
   Widget _buildViewModeToggle() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       width: 300.w,
       decoration: BoxDecoration(
@@ -282,9 +296,9 @@ class _ProductsscreenState extends State<Productsscreen> {
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       child: Row(
         children: [
-          _buildViewModeButton("Products", 'products'),
+          _buildViewModeButton(l10n.products, 'products'),
           SizedBox(width: 8.w),
-          _buildViewModeButton("Requested Products", 'requests'),
+          _buildViewModeButton(l10n.requestedProducts, 'requests'),
         ],
       ),
     );
@@ -292,6 +306,9 @@ class _ProductsscreenState extends State<Productsscreen> {
 
   // Build individual view mode button
   Widget _buildViewModeButton(String label, String mode) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     final bool isSelected = (_viewMode == mode);
 
     return InkWell(
@@ -310,13 +327,21 @@ class _ProductsscreenState extends State<Productsscreen> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : const Color.fromARGB(255, 230, 230, 230),
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                ),
         ),
       ),
     );
@@ -335,6 +360,19 @@ class _ProductsscreenState extends State<Productsscreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    // Get localized filter arrays
+    final List<String> _filters = [l10n.all, l10n.active, l10n.inactive];
+    final List<String> _requestFilters = [
+      l10n.all,
+      l10n.pending,
+      l10n.accepted,
+      l10n.declined
+    ];
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: PreferredSize(
@@ -347,7 +385,11 @@ class _ProductsscreenState extends State<Productsscreen> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+          padding: EdgeInsets.only(
+            left: isRtl ? 45.w : 45.w,
+            top: 20.h,
+            right: isRtl ? 45.w : 45.w,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -355,12 +397,18 @@ class _ProductsscreenState extends State<Productsscreen> {
               Row(
                 children: [
                   Text(
-                    "Products",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 35.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color.fromARGB(255, 246, 246, 246),
-                    ),
+                    l10n.products,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 35.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 246, 246, 246),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 35.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 246, 246, 246),
+                          ),
                   ),
                 ],
               ),
@@ -396,8 +444,8 @@ class _ProductsscreenState extends State<Productsscreen> {
 
               /// --- Row Under the Cards (Product List + Filters + Search + Buttons) ---
               _viewMode == 'products'
-                  ? _buildProductsControls()
-                  : _buildRequestedProductsControls(),
+                  ? _buildProductsControls(_filters)
+                  : _buildRequestedProductsControls(_requestFilters),
               SizedBox(height: 30.h),
 
               /// --- Table based on view mode ---
@@ -429,17 +477,27 @@ class _ProductsscreenState extends State<Productsscreen> {
   }
 
   // Build controls for Products view
-  Widget _buildProductsControls() {
+  Widget _buildProductsControls(List<String> filters) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Row(
       children: [
         // "Product List" text.
         Text(
-          "Product List",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 30.sp,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          l10n.productList,
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 30.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 30.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(width: 24.w),
         // Container for filter chips.
@@ -451,11 +509,11 @@ class _ProductsscreenState extends State<Productsscreen> {
           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
           child: Row(
             children: [
-              _buildFilterChip(_filters[0], 0, false),
+              _buildFilterChip(filters[0], 0, false),
               SizedBox(width: 8.w),
-              _buildFilterChip(_filters[1], 1, false),
+              _buildFilterChip(filters[1], 1, false),
               SizedBox(width: 8.w),
-              _buildFilterChip(_filters[2], 2, false),
+              _buildFilterChip(filters[2], 2, false),
             ],
           ),
         ),
@@ -474,8 +532,7 @@ class _ProductsscreenState extends State<Productsscreen> {
             final isLoggedIn = await AuthService.isLoggedIn();
             if (!isLoggedIn) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('You must be logged in to add products')),
+                SnackBar(content: Text(l10n.mustBeLoggedInToAddProducts)),
               );
               return;
             }
@@ -505,12 +562,18 @@ class _ProductsscreenState extends State<Productsscreen> {
               ),
               SizedBox(width: 8.w),
               Text(
-                'Add Product',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color.fromARGB(255, 105, 123, 123),
-                ),
+                l10n.addProduct,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      ),
               ),
             ],
           ),
@@ -531,14 +594,15 @@ class _ProductsscreenState extends State<Productsscreen> {
                 width: 120.w,
                 child: TextField(
                   onChanged: _updateSearchQuery,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                  ),
+                  textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Search',
-                    hintStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                    ),
+                    hintText: l10n.search,
+                    hintStyle: isArabic
+                        ? GoogleFonts.cairo(color: Colors.white70)
+                        : GoogleFonts.spaceGrotesk(color: Colors.white70),
                     border: InputBorder.none,
                     isDense: true,
                   ),
@@ -575,14 +639,21 @@ class _ProductsscreenState extends State<Productsscreen> {
             );
           },
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Bulk Export',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color.fromARGB(255, 105, 123, 123),
-                ),
+                l10n.bulkExport,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      ),
               ),
             ],
           ),
@@ -592,17 +663,27 @@ class _ProductsscreenState extends State<Productsscreen> {
   }
 
   // Build controls for Requested Products view
-  Widget _buildRequestedProductsControls() {
+  Widget _buildRequestedProductsControls(List<String> requestFilters) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Row(
       children: [
         // "Requested Products" text.
         Text(
-          "Requested Products",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 30.sp,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          l10n.requestedProducts,
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 30.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 30.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(width: 24.w),
         // Container for filter chips.
@@ -614,13 +695,13 @@ class _ProductsscreenState extends State<Productsscreen> {
           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
           child: Row(
             children: [
-              _buildFilterChip(_requestFilters[0], 0, true),
+              _buildFilterChip(requestFilters[0], 0, true),
               SizedBox(width: 8.w),
-              _buildFilterChip(_requestFilters[1], 1, true),
+              _buildFilterChip(requestFilters[1], 1, true),
               SizedBox(width: 8.w),
-              _buildFilterChip(_requestFilters[2], 2, true),
+              _buildFilterChip(requestFilters[2], 2, true),
               SizedBox(width: 8.w),
-              _buildFilterChip(_requestFilters[3], 3, true),
+              _buildFilterChip(requestFilters[3], 3, true),
             ],
           ),
         ),
@@ -640,14 +721,15 @@ class _ProductsscreenState extends State<Productsscreen> {
                 width: 120.w,
                 child: TextField(
                   onChanged: _updateSearchQuery,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                  ),
+                  textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Search',
-                    hintStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                    ),
+                    hintText: l10n.search,
+                    hintStyle: isArabic
+                        ? GoogleFonts.cairo(color: Colors.white70)
+                        : GoogleFonts.spaceGrotesk(color: Colors.white70),
                     border: InputBorder.none,
                     isDense: true,
                   ),
@@ -687,12 +769,18 @@ class _ProductsscreenState extends State<Productsscreen> {
               ),
               SizedBox(width: 8.w),
               Text(
-                'Refresh',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color.fromARGB(255, 105, 123, 123),
-                ),
+                l10n.refresh,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      ),
               ),
             ],
           ),

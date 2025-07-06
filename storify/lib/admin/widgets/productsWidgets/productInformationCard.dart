@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:storify/admin/widgets/productsWidgets/supplist.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class ProductInformationCard extends StatefulWidget {
   final ProductItemInformation product;
@@ -242,6 +244,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
 
   // Save changes to API with authentication
   Future<void> _saveChanges() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     // Extract values from controllers
     _productName = _nameController.text;
     _costPrice = double.tryParse(_costPriceController.text) ?? _costPrice;
@@ -268,7 +272,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
       if (!isLoggedIn) {
         setState(() {
           _isLoading = false;
-          _error = "Not logged in. Only admin users can edit products.";
+          _error = l10n.notLoggedInAdminOnlyEdit;
         });
         _showErrorDialog();
         return;
@@ -377,8 +381,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_imageChanged && !updateData.containsKey('image')
-                ? 'Product updated successfully (without image changes)'
-                : 'Product updated successfully'),
+                ? l10n.productUpdatedSuccessfullyWithoutImageChanges
+                : l10n.productUpdatedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -386,53 +390,61 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         // Authentication error
         setState(() {
           _isLoading = false;
-          _error = 'Authentication failed. Please log in as admin.';
+          _error = l10n.authenticationFailedPleaseLoginAsAdmin;
         });
         _showErrorDialog();
       } else {
         // Other errors
         setState(() {
           _isLoading = false;
-          _error =
-              'Failed to update product: ${response.statusCode}\n${response.body}';
+          _error = l10n.failedToUpdateProductWithDetails(
+              response.statusCode.toString(), response.body);
         });
         _showErrorDialog();
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Error: $e';
+        _error = '${l10n.error}: $e';
       });
       _showErrorDialog();
     }
   }
 
   void _showErrorDialog() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color.fromARGB(255, 36, 50, 69),
         title: Text(
-          'Error',
-          style: GoogleFonts.spaceGrotesk(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          l10n.error,
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
         ),
         content: Text(
-          _error ?? 'Failed to update product.',
-          style: GoogleFonts.spaceGrotesk(
-            color: Colors.white,
-          ),
+          _error ?? l10n.failedToUpdateProduct,
+          style: isArabic
+              ? GoogleFonts.cairo(color: Colors.white)
+              : GoogleFonts.spaceGrotesk(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'OK',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-              ),
+              l10n.ok,
+              style: isArabic
+                  ? GoogleFonts.cairo(color: Colors.white)
+                  : GoogleFonts.spaceGrotesk(color: Colors.white),
             ),
           ),
         ],
@@ -467,6 +479,10 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isLoading) {
       return Container(
         height: 570, // Increased height for new fields
@@ -498,12 +514,18 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Product Information",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                  l10n.productInformation,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -517,11 +539,16 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                   ),
                   onPressed: _toggleEditing,
                   child: Text(
-                    _isEditing ? "Save" : "Edit",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    _isEditing ? l10n.save : l10n.edit,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w600,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
                   ),
                 ),
               ],
@@ -583,11 +610,16 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                       ),
                                       const SizedBox(height: 10),
                                       Text(
-                                        "Drop or Import",
-                                        style: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                        ),
+                                        l10n.dropOrImport,
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                              ),
                                       ),
                                     ],
                                   ),
@@ -608,105 +640,139 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildDetailRow(
-                        title: "Product ID",
+                        title: l10n.productId,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: Text(
                           "${widget.product.productId}",
-                          style: _labelStyle(),
+                          style: _labelStyle(isArabic),
                         ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Product Name",
+                        title: l10n.productName,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? TextField(
                                 controller: _nameController,
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
                                 decoration:
-                                    _inputDecoration("Enter product name"),
+                                    _inputDecoration(l10n.enterProductName),
                               )
                             : Text(
                                 _productName,
-                                style: _labelStyle(),
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Cost Price",
+                        title: l10n.costPrice,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? TextField(
                                 controller: _costPriceController,
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                         decimal: true),
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
                                 decoration:
-                                    _inputDecoration("Enter cost price"),
+                                    _inputDecoration(l10n.enterCostPrice),
                               )
                             : Text(
                                 "\$${_costPrice.toStringAsFixed(2)}",
-                                style: _labelStyle(),
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Sell Price",
+                        title: l10n.sellPrice,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? TextField(
                                 controller: _sellPriceController,
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                         decimal: true),
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
                                 decoration:
-                                    _inputDecoration("Enter sell price"),
+                                    _inputDecoration(l10n.enterSellPrice),
                               )
                             : Text(
                                 "\$${_sellPrice.toStringAsFixed(2)}",
-                                style: _labelStyle(),
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Quantity",
+                        title: l10n.quantity,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? TextField(
                                 controller: _quantityController,
                                 keyboardType: TextInputType.number,
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
-                                decoration: _inputDecoration("Enter quantity"),
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
+                                decoration:
+                                    _inputDecoration(l10n.enterQuantity),
                               )
                             : Text(
-                                "$_quantity", // <-- Use this instead
-                                style: _labelStyle(),
+                                "$_quantity",
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       // New Unit field
                       _buildDetailRow(
-                        title: "Unit",
+                        title: l10n.unit,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? TextField(
                                 controller: _unitController,
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
-                                decoration: _inputDecoration(
-                                    "e.g., kg, pieces, liters"),
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
+                                decoration: _inputDecoration(l10n.unitHint),
                               )
                             : Text(
-                                _unit ?? "Not specified",
-                                style: _labelStyle(),
+                                _unit ?? l10n.notSpecified,
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Category",
+                        title: l10n.category,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: Text(
                           _selectedCategoryName,
-                          style: _labelStyle(),
+                          style: _labelStyle(isArabic),
                         ),
                       ),
                     ],
@@ -721,29 +787,38 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildDetailRow(
-                        title: "Barcode",
+                        title: l10n.barcode,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: Text(
-                          _barcode ?? "Not available",
-                          style: _labelStyle(),
+                          _barcode ?? l10n.notAvailable,
+                          style: _labelStyle(isArabic),
                         ),
                       ),
                       SizedBox(height: 12.h),
                       // New Low Stock field with warning indicator
                       _buildDetailRow(
-                        title: "Low Stock Threshold",
+                        title: l10n.lowStockThreshold,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? TextField(
                                 controller: _lowStockController,
                                 keyboardType: TextInputType.number,
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
-                                decoration: _inputDecoration("Enter threshold"),
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
+                                decoration:
+                                    _inputDecoration(l10n.enterThreshold),
                               )
                             : Row(
                                 children: [
                                   Text(
-                                    _lowStock?.toString() ?? "Not set",
-                                    style: _labelStyle(),
+                                    _lowStock?.toString() ?? l10n.notSet,
+                                    style: _labelStyle(isArabic),
                                   ),
                                   if (widget.product.isLowStock) ...[
                                     SizedBox(width: 8),
@@ -763,12 +838,18 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                               color: Colors.orange, size: 16),
                                           SizedBox(width: 4),
                                           Text(
-                                            "Low Stock",
-                                            style: GoogleFonts.spaceGrotesk(
-                                              color: Colors.orange,
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            l10n.lowStock,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.orange,
+                                                    fontSize: 12.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.orange,
+                                                    fontSize: 12.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                           ),
                                         ],
                                       ),
@@ -779,21 +860,26 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Status",
+                        title: l10n.status,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? DropdownButtonFormField<String>(
                                 value: _isActive ? 'Active' : 'NotActive',
                                 dropdownColor:
                                     const Color.fromARGB(255, 36, 50, 69),
-                                style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white),
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
                                 decoration: _inputDecorationDropdown(),
-                                items: const [
+                                items: [
                                   DropdownMenuItem(
-                                      value: 'Active', child: Text("Active")),
+                                      value: 'Active',
+                                      child: Text(l10n.active)),
                                   DropdownMenuItem(
                                       value: 'NotActive',
-                                      child: Text("Not Active")),
+                                      child: Text(l10n.notActive)),
                                 ],
                                 onChanged: (String? value) {
                                   if (value != null) {
@@ -813,26 +899,40 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  _isActive ? "Active" : "Not Active",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
+                                  _isActive ? l10n.active : l10n.notActive,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
                                 ),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Production Date",
+                        title: l10n.productionDate,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? Row(
                                 children: [
                                   Expanded(
                                     child: TextField(
                                       controller: _prodDateController,
-                                      style: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white),
+                                      textAlign: isRtl
+                                          ? TextAlign.right
+                                          : TextAlign.left,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white)
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white),
                                       decoration:
                                           _inputDecoration("YYYY-MM-DD"),
                                       readOnly: true,
@@ -850,21 +950,29 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                                 _prodDate != null
                                     ? DateFormat('yyyy-MM-dd')
                                         .format(_prodDate!)
-                                    : "Not specified",
-                                style: _labelStyle(),
+                                    : l10n.notSpecified,
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                       SizedBox(height: 12.h),
                       _buildDetailRow(
-                        title: "Expiry Date",
+                        title: l10n.expiryDate,
+                        isArabic: isArabic,
+                        isRtl: isRtl,
                         child: _isEditing
                             ? Row(
                                 children: [
                                   Expanded(
                                     child: TextField(
                                       controller: _expDateController,
-                                      style: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white),
+                                      textAlign: isRtl
+                                          ? TextAlign.right
+                                          : TextAlign.left,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white)
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white),
                                       decoration:
                                           _inputDecoration("YYYY-MM-DD"),
                                       readOnly: true,
@@ -882,8 +990,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
                             : Text(
                                 _expDate != null
                                     ? DateFormat('yyyy-MM-dd').format(_expDate!)
-                                    : "Not specified",
-                                style: _labelStyle(),
+                                    : l10n.notSpecified,
+                                style: _labelStyle(isArabic),
                               ),
                       ),
                     ],
@@ -895,17 +1003,23 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
             // Description - Full width below the three columns
             SizedBox(height: 20.h),
             _buildDetailRow(
-              title: "Description",
+              title: l10n.description,
+              isArabic: isArabic,
+              isRtl: isRtl,
               child: _isEditing
                   ? TextField(
                       controller: _descriptionController,
-                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                      textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                      style: isArabic
+                          ? GoogleFonts.cairo(color: Colors.white)
+                          : GoogleFonts.spaceGrotesk(color: Colors.white),
                       maxLines: 3,
-                      decoration: _inputDecoration("Enter product description"),
+                      decoration:
+                          _inputDecoration(l10n.enterProductDescription),
                     )
                   : Text(
-                      _description ?? "No description available",
-                      style: _labelStyle(),
+                      _description ?? l10n.noDescriptionAvailable,
+                      style: _labelStyle(isArabic),
                     ),
             ),
           ],
@@ -915,17 +1029,28 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
   }
 
   // Helper for building each detail row
-  Widget _buildDetailRow({required String title, required Widget child}) {
+  Widget _buildDetailRow({
+    required String title,
+    required Widget child,
+    required bool isArabic,
+    required bool isRtl,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
         ),
         const SizedBox(height: 4),
         child,
@@ -959,11 +1084,17 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     );
   }
 
-  TextStyle _labelStyle() {
-    return GoogleFonts.spaceGrotesk(
-      fontSize: 16.sp,
-      color: Colors.white,
-      fontWeight: FontWeight.w500,
-    );
+  TextStyle _labelStyle(bool isArabic) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 16.sp,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          )
+        : GoogleFonts.spaceGrotesk(
+            fontSize: 16.sp,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          );
   }
 }

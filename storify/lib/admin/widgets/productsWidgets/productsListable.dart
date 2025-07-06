@@ -5,6 +5,8 @@ import 'package:storify/admin/screens/productOverview.dart';
 import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class ProductslistTable extends StatefulWidget {
   final int selectedFilterIndex; // 0: All, 1: Active, 2: UnActive
@@ -76,21 +78,37 @@ class ProductslistTableState extends State<ProductslistTable> {
           _notifyOperationCompleted();
         } else {
           setState(() {
-            _error = 'Invalid data format';
+            _error = 'INVALID_DATA_FORMAT';
             _isLoading = false;
           });
         }
       } else {
         setState(() {
-          _error = 'Failed to load products. Error: ${response.statusCode}';
+          _error = 'FAILED_TO_LOAD_PRODUCTS_${response.statusCode}';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _error = 'Network error: $e';
+        _error = 'NETWORK_ERROR';
         _isLoading = false;
       });
+    }
+  }
+
+  String _getLocalizedErrorMessage(String errorKey, AppLocalizations l10n) {
+    if (errorKey.startsWith('FAILED_TO_LOAD_PRODUCTS_')) {
+      final statusCode = errorKey.replaceFirst('FAILED_TO_LOAD_PRODUCTS_', '');
+      return l10n.failedToLoadProductsWithError(statusCode);
+    }
+
+    switch (errorKey) {
+      case 'INVALID_DATA_FORMAT':
+        return l10n.invalidDataFormat;
+      case 'NETWORK_ERROR':
+        return l10n.networkErrorOccurred;
+      default:
+        return errorKey; // Return the key if no translation found
     }
   }
 
@@ -127,7 +145,8 @@ class ProductslistTableState extends State<ProductslistTable> {
   }
 
   /// Helper: builds a header label with a sort arrow.
-  Widget _buildSortableColumnLabel(String label, int colIndex) {
+  Widget _buildSortableColumnLabel(
+      String label, int colIndex, bool isArabic, bool isRtl) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
     if (isSorted) {
@@ -137,15 +156,48 @@ class ProductslistTableState extends State<ProductslistTable> {
         color: Colors.white,
       );
     }
-    // Changed mainAxisAlignment to start so everything is left-aligned.
+
     return Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Text(label),
-        SizedBox(width: 4.w),
-        arrow,
-      ],
+      mainAxisAlignment:
+          isRtl ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: isRtl
+          ? [
+              arrow,
+              if (isSorted) SizedBox(width: 4.w),
+              Text(
+                label,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+              ),
+            ]
+          : [
+              Text(
+                label,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+              ),
+              if (isSorted) SizedBox(width: 4.w),
+              arrow,
+            ],
     );
   }
 
@@ -164,6 +216,10 @@ class ProductslistTableState extends State<ProductslistTable> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -178,20 +234,32 @@ class ProductslistTableState extends State<ProductslistTable> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Error loading products',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              l10n.errorLoadingProducts,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
             ),
             SizedBox(height: 8.h),
             Text(
-              _error!,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
+              _getLocalizedErrorMessage(_error!, l10n),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 16.h),
             ElevatedButton(
@@ -203,11 +271,16 @@ class ProductslistTableState extends State<ProductslistTable> {
                 ),
               ),
               child: Text(
-                'Retry',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  color: Colors.white,
-                ),
+                l10n.retry,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white,
+                      ),
               ),
             ),
           ],
@@ -271,45 +344,119 @@ class ProductslistTableState extends State<ProductslistTable> {
                     ),
                     columnSpacing: 20.w,
                     dividerThickness: 0,
-                    headingTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    dataTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 13.sp,
-                    ),
+                    headingTextStyle: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    dataTextStyle: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13.sp,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13.sp,
+                          ),
                     columns: [
                       // ID Column
-                      const DataColumn(label: Text("ID")),
+                      DataColumn(
+                        label: Text(
+                          l10n.idLabel,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                        ),
+                      ),
                       // Image & Name Column
-                      const DataColumn(label: Text("Image & Name")),
+                      DataColumn(
+                        label: Text(
+                          l10n.imageAndName,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                        ),
+                      ),
                       // Cost Price Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Cost Price", 1),
+                        label: _buildSortableColumnLabel(
+                            l10n.costPrice, 1, isArabic, isRtl),
                         onSort: (columnIndex, _) {
                           _onSort(1);
                         },
                       ),
                       // Sell Price Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Sell Price", 2),
+                        label: _buildSortableColumnLabel(
+                            l10n.sellPrice, 2, isArabic, isRtl),
                         onSort: (columnIndex, _) {
                           _onSort(2);
                         },
                       ),
                       // Qty Column (sortable)
                       DataColumn(
-                        label: _buildSortableColumnLabel("Qty", 3),
+                        label: _buildSortableColumnLabel(
+                            l10n.qtyShort, 3, isArabic, isRtl),
                         onSort: (columnIndex, _) {
                           _onSort(3);
                         },
                       ),
                       // Category Column
-                      const DataColumn(label: Text("Category")),
+                      DataColumn(
+                        label: Text(
+                          l10n.category,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                        ),
+                      ),
                       // Availability Column
-                      const DataColumn(label: Text("Availability")),
+                      DataColumn(
+                        label: Text(
+                          l10n.availability,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                        ),
+                      ),
                     ],
                     rows: visibleProducts.map((product) {
                       return DataRow(
@@ -347,7 +494,20 @@ class ProductslistTableState extends State<ProductslistTable> {
                         },
                         cells: [
                           // ID cell
-                          DataCell(Text("${product.productId}")),
+                          DataCell(
+                            Text(
+                              "${product.productId}",
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    ),
+                            ),
+                          ),
                           // Image & Name cell
                           DataCell(
                             Row(
@@ -379,24 +539,85 @@ class ProductslistTableState extends State<ProductslistTable> {
                                     product.name,
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            color:
+                                                Colors.white.withOpacity(0.8),
+                                            fontSize: 13.sp,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            color:
+                                                Colors.white.withOpacity(0.8),
+                                            fontSize: 13.sp,
+                                          ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           // Cost Price cell
-                          DataCell(Text(
-                              "\$${product.costPrice.toStringAsFixed(2)}")),
-                          // Sell Price cell
-                          DataCell(Text(
-                              "\$${product.sellPrice.toStringAsFixed(2)}")),
-                          // Qty cell
-                          DataCell(Text("${product.qty}")),
-                          // Category cell
-                          DataCell(Text(product.categoryName)),
-                          // Availability cell
                           DataCell(
-                              _buildAvailabilityPill(product.availability)),
+                            Text(
+                              "\$${product.costPrice.toStringAsFixed(2)}",
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    ),
+                            ),
+                          ),
+                          // Sell Price cell
+                          DataCell(
+                            Text(
+                              "\$${product.sellPrice.toStringAsFixed(2)}",
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    ),
+                            ),
+                          ),
+                          // Qty cell
+                          DataCell(
+                            Text(
+                              "${product.qty}",
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    ),
+                            ),
+                          ),
+                          // Category cell
+                          DataCell(
+                            Text(
+                              product.categoryName,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 13.sp,
+                                    ),
+                            ),
+                          ),
+                          // Availability cell
+                          DataCell(_buildAvailabilityPill(
+                              product.availability, l10n, isArabic)),
                         ],
                       );
                     }).toList(),
@@ -410,18 +631,27 @@ class ProductslistTableState extends State<ProductslistTable> {
                   children: [
                     Spacer(),
                     Text(
-                      "Total $totalItems items",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
-                      ),
+                      l10n.totalItemsCount(totalItems.toString()),
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white70,
+                            ),
                     ),
                     SizedBox(width: 10.w),
-                    // Left arrow
+                    // Previous page arrow (in RTL, this points right)
                     IconButton(
-                      icon: Icon(Icons.arrow_back,
-                          size: 20.sp, color: Colors.white70),
+                      icon: Icon(
+                        isRtl ? Icons.arrow_forward : Icons.arrow_back,
+                        size: 20.sp,
+                        color: Colors.white70,
+                      ),
                       onPressed: _currentPage > 1
                           ? () {
                               setState(() {
@@ -432,13 +662,16 @@ class ProductslistTableState extends State<ProductslistTable> {
                     ),
                     Row(
                       children: List.generate(totalPages, (index) {
-                        return _buildPageButton(index + 1);
+                        return _buildPageButton(index + 1, isArabic);
                       }),
                     ),
-                    // Right arrow
+                    // Next page arrow (in RTL, this points left)
                     IconButton(
-                      icon: Icon(Icons.arrow_forward,
-                          size: 20.sp, color: Colors.white70),
+                      icon: Icon(
+                        isRtl ? Icons.arrow_back : Icons.arrow_forward,
+                        size: 20.sp,
+                        color: Colors.white70,
+                      ),
                       onPressed: _currentPage < totalPages
                           ? () {
                               setState(() {
@@ -458,11 +691,12 @@ class ProductslistTableState extends State<ProductslistTable> {
   }
 
   /// Availability pill.
-  Widget _buildAvailabilityPill(bool isActive) {
+  Widget _buildAvailabilityPill(
+      bool isActive, AppLocalizations l10n, bool isArabic) {
     final Color bgColor = isActive
         ? const Color.fromARGB(178, 0, 224, 116) // green
         : const Color.fromARGB(255, 229, 62, 62); // red
-    final String label = isActive ? "Active" : "UnActive";
+    final String label = isActive ? l10n.active : l10n.inactive;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
@@ -473,17 +707,23 @@ class ProductslistTableState extends State<ProductslistTable> {
       ),
       child: Text(
         label,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: bgColor,
-        ),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              ),
       ),
     );
   }
 
   /// Pagination button builder.
-  Widget _buildPageButton(int pageIndex) {
+  Widget _buildPageButton(int pageIndex, bool isArabic) {
     final bool isSelected = (pageIndex == _currentPage);
 
     return Padding(
@@ -509,11 +749,17 @@ class ProductslistTableState extends State<ProductslistTable> {
         },
         child: Text(
           "$pageIndex",
-          style: GoogleFonts.spaceGrotesk(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                ),
         ),
       ),
     );

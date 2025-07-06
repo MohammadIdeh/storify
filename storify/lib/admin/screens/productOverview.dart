@@ -6,6 +6,8 @@ import 'package:storify/admin/widgets/productsWidgets/ProductSalesOverviewWidget
 import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:storify/admin/widgets/productsWidgets/productInformationCard.dart';
 import 'package:storify/admin/widgets/productsWidgets/sellingHistoryTable.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Productoverview extends StatefulWidget {
   final ProductItemInformation product;
@@ -34,15 +36,23 @@ class _ProductoverviewState extends State<Productoverview> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+          padding: EdgeInsets.only(
+            left: isRtl ? 45.w : 45.w,
+            top: 20.h,
+            right: isRtl ? 45.w : 45.w,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back button and title row (unchanged)
+              // Back button and title row
               Row(
                 children: [
                   ElevatedButton(
@@ -62,38 +72,56 @@ class _ProductoverviewState extends State<Productoverview> {
                       Navigator.pushNamed(context, '/admin/products');
                     },
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SvgPicture.asset(
-                          'assets/images/back.svg',
-                          width: 18.w,
-                          height: 18.h,
+                        Transform.flip(
+                          flipX: isRtl,
+                          child: SvgPicture.asset(
+                            'assets/images/back.svg',
+                            width: 18.w,
+                            height: 18.h,
+                          ),
                         ),
                         SizedBox(width: 12.w),
                         Text(
-                          'Back',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w700,
-                            color: const Color.fromARGB(255, 105, 123, 123),
-                          ),
+                          l10n.back,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 17.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      const Color.fromARGB(255, 105, 123, 123),
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 17.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      const Color.fromARGB(255, 105, 123, 123),
+                                ),
                         ),
                       ],
                     ),
                   ),
                   SizedBox(width: 20.w),
                   Text(
-                    "Product Overview",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color.fromARGB(255, 246, 246, 246),
-                    ),
+                    l10n.productOverview,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 28.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 246, 246, 246),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 28.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 246, 246, 246),
+                          ),
                   ),
                 ],
               ),
               SizedBox(height: 40.h),
 
-              // Product info card and sales overview row (updated)
+              // Product info card and sales overview row
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -128,12 +156,18 @@ class _ProductoverviewState extends State<Productoverview> {
                     Row(
                       children: [
                         Text(
-                          "Suppliers",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                          l10n.suppliers,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 22.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 22.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
                         ),
                         SizedBox(width: 16),
                         Container(
@@ -145,12 +179,19 @@ class _ProductoverviewState extends State<Productoverview> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            "${_currentProduct.suppliers.length} suppliers",
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14.sp,
-                              color: Color.fromARGB(255, 105, 65, 198),
-                              fontWeight: FontWeight.w600,
-                            ),
+                            l10n.suppliersCount(
+                                "${_currentProduct.suppliers.length}"),
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 14.sp,
+                                    color: Color.fromARGB(255, 105, 65, 198),
+                                    fontWeight: FontWeight.w600,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 14.sp,
+                                    color: Color.fromARGB(255, 105, 65, 198),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                           ),
                         ),
                       ],
@@ -165,11 +206,16 @@ class _ProductoverviewState extends State<Productoverview> {
                       child: _currentProduct.suppliers.isEmpty
                           ? Center(
                               child: Text(
-                                "No suppliers assigned to this product",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white70,
-                                  fontSize: 16.sp,
-                                ),
+                                l10n.noSuppliersAssigned,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white70,
+                                        fontSize: 16.sp,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white70,
+                                        fontSize: 16.sp,
+                                      ),
                               ),
                             )
                           : ListView.builder(
@@ -179,13 +225,14 @@ class _ProductoverviewState extends State<Productoverview> {
                                 final supplier =
                                     _currentProduct.suppliers[index];
                                 final user = supplier['user'] ?? {};
-                                final supplierName = user['name'] ?? 'Unknown';
+                                final supplierName =
+                                    user['name'] ?? l10n.unknown;
                                 final supplierEmail =
-                                    user['email'] ?? 'No email';
+                                    user['email'] ?? l10n.noEmail;
                                 final supplierPhone =
-                                    user['phoneNumber'] ?? 'No phone';
+                                    user['phoneNumber'] ?? l10n.noPhone;
                                 final supplierId =
-                                    supplier['id'] ?? 'Unknown ID';
+                                    supplier['id'] ?? l10n.unknownId;
 
                                 return ListTile(
                                   leading: CircleAvatar(
@@ -196,11 +243,17 @@ class _ProductoverviewState extends State<Productoverview> {
                                       supplierName.isNotEmpty
                                           ? supplierName[0].toUpperCase()
                                           : '?',
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 18,
-                                      ),
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 18,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 18,
+                                            ),
                                     ),
                                   ),
                                   title: Row(
@@ -208,11 +261,17 @@ class _ProductoverviewState extends State<Productoverview> {
                                       Expanded(
                                         child: Text(
                                           supplierName,
-                                          style: GoogleFonts.spaceGrotesk(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 16.sp,
-                                          ),
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 16.sp,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 16.sp,
+                                                ),
                                         ),
                                       ),
                                       SizedBox(width: 8),
@@ -225,21 +284,31 @@ class _ProductoverviewState extends State<Productoverview> {
                                               BorderRadius.circular(10),
                                         ),
                                         child: Text(
-                                          "ID: $supplierId",
-                                          style: GoogleFonts.spaceGrotesk(
-                                            color: Colors.white70,
-                                            fontSize: 12.sp,
-                                          ),
+                                          l10n.supplierId(supplierId),
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white70,
+                                                  fontSize: 12.sp,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white70,
+                                                  fontSize: 12.sp,
+                                                ),
                                         ),
                                       ),
                                     ],
                                   ),
                                   subtitle: Text(
                                     "$supplierEmail • $supplierPhone",
-                                    style: GoogleFonts.spaceGrotesk(
-                                      color: Colors.white70,
-                                      fontSize: 14.sp,
-                                    ),
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            color: Colors.white70,
+                                            fontSize: 14.sp,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.white70,
+                                            fontSize: 14.sp,
+                                          ),
                                   ),
                                 );
                               },
@@ -250,16 +319,22 @@ class _ProductoverviewState extends State<Productoverview> {
               ),
               SizedBox(height: 30.h),
 
-              // Selling History section (unchanged)
+              // Selling History section
               Row(
                 children: [
                   Text(
-                    'Selling History',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color.fromARGB(255, 255, 255, 255),
-                    ),
+                    l10n.sellingHistory,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 255, 255, 255),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 255, 255, 255),
+                          ),
                   ),
                 ],
               ),

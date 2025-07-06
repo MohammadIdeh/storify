@@ -469,9 +469,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get topProducts => 'أفضل المنتجات';
 
   @override
-  String get totalProducts => 'إجمالي المنتجات';
-
-  @override
   String get totalPaidOrders => 'إجمالي الطلبات المدفوعة';
 
   @override
@@ -504,4 +501,489 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get pleaseNavigateToOrdersScreen =>
       'يرجى الانتقال إلى شاشة الطلبات لعرض المنتجات قليلة المخزون';
+
+  @override
+  String get back => 'رجوع';
+
+  @override
+  String get productOverview => 'نظرة عامة على المنتج';
+
+  @override
+  String get suppliers => 'الموردون';
+
+  @override
+  String suppliersCount(Object count) {
+    return '$count موردين';
+  }
+
+  @override
+  String get noSuppliersAssigned => 'لا يوجد موردون مخصصون لهذا المنتج';
+
+  @override
+  String get unknown => 'غير معروف';
+
+  @override
+  String get noEmail => 'لا يوجد إيميل';
+
+  @override
+  String get noPhone => 'لا يوجد هاتف';
+
+  @override
+  String get unknownId => 'معرف غير معروف';
+
+  @override
+  String supplierId(Object id) {
+    return 'المعرف: $id';
+  }
+
+  @override
+  String get sellingHistory => 'تاريخ المبيعات';
+
+  @override
+  String get totalProducts => 'إجمالي المنتجات';
+
+  @override
+  String get activeProducts => 'المنتجات النشطة';
+
+  @override
+  String get inactiveProducts => 'المنتجات غير النشطة';
+
+  @override
+  String get totalCategories => 'إجمالي الفئات';
+
+  @override
+  String failedToLoadDashboardStats(Object error) {
+    return 'فشل في تحميل إحصائيات لوحة التحكم: $error';
+  }
+
+  @override
+  String get all => 'الكل';
+
+  @override
+  String get active => 'نشط';
+
+  @override
+  String get inactive => 'غير نشط';
+
+  @override
+  String get pending => 'في الانتظار';
+
+  @override
+  String get accepted => 'مقبول';
+
+  @override
+  String get declined => 'مرفوض';
+
+  @override
+  String get requestedProducts => 'المنتجات المطلوبة';
+
+  @override
+  String get productList => 'قائمة المنتجات';
+
+  @override
+  String get mustBeLoggedInToAddProducts => 'يجب تسجيل الدخول لإضافة المنتجات';
+
+  @override
+  String get addProduct => 'إضافة منتج';
+
+  @override
+  String get search => 'بحث';
+
+  @override
+  String get bulkExport => 'تصدير مجمع';
+
+  @override
+  String get notAuthorizedToAccessFeature => 'غير مخول للوصول إلى هذه الميزة.';
+
+  @override
+  String get failedToLoadSuppliers =>
+      'فشل في تحميل الموردين. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get networkError => 'خطأ في الشبكة. يرجى التحقق من اتصالك.';
+
+  @override
+  String get pleaseSelectCategory => 'يرجى اختيار فئة';
+
+  @override
+  String get pleaseSelectAtLeastOneSupplier =>
+      'يرجى اختيار مورد واحد على الأقل';
+
+  @override
+  String get authenticationTokenRequired => 'رمز المصادقة مطلوب';
+
+  @override
+  String get productAddedSuccessfully => 'تم إضافة المنتج بنجاح';
+
+  @override
+  String failedToAddProduct(Object statusCode) {
+    return 'فشل في إضافة المنتج: $statusCode';
+  }
+
+  @override
+  String get selectedSuppliersNotFound =>
+      'الموردون المحددون غير موجودون. يرجى التحديث والمحاولة مرة أخرى.';
+
+  @override
+  String get refreshSuppliers => 'تحديث الموردين';
+
+  @override
+  String get notAuthorizedToAddProducts => 'غير مخول لإضافة المنتجات';
+
+  @override
+  String get addNewProduct => 'إضافة منتج جديد';
+
+  @override
+  String get productName => 'اسم المنتج';
+
+  @override
+  String get costPrice => 'سعر التكلفة';
+
+  @override
+  String get sellPrice => 'سعر البيع';
+
+  @override
+  String get quantity => 'الكمية';
+
+  @override
+  String get unit => 'الوحدة';
+
+  @override
+  String get unitHint => 'مثل: كيلو، قطع، لتر';
+
+  @override
+  String get lowStockThreshold => 'حد المخزون المنخفض';
+
+  @override
+  String get status => 'الحالة';
+
+  @override
+  String get notActive => 'غير نشط';
+
+  @override
+  String get barcodeOptional => 'الباركود (اختياري)';
+
+  @override
+  String get productionDateOptional => 'تاريخ الإنتاج (اختياري)';
+
+  @override
+  String get expiryDateOptional => 'تاريخ انتهاء الصلاحية (اختياري)';
+
+  @override
+  String get suppliersRequired => 'الموردون (مطلوب)';
+
+  @override
+  String get selectSuppliersForProduct => 'اختر الموردين لهذا المنتج:';
+
+  @override
+  String get noSuppliersAvailable => 'لا يوجد موردون متاحون';
+
+  @override
+  String get idLabel => 'المعرف';
+
+  @override
+  String selectedSuppliersCount(Object count) {
+    return 'الموردون المحددون ($count):';
+  }
+
+  @override
+  String get description => 'الوصف';
+
+  @override
+  String get enterProductDescription => 'أدخل وصف المنتج';
+
+  @override
+  String get uploadImage => 'رفع صورة';
+
+  @override
+  String get pleaseEnterProductName => 'يرجى إدخال اسم المنتج';
+
+  @override
+  String get pleaseEnterCostPrice => 'يرجى إدخال سعر التكلفة';
+
+  @override
+  String get pleaseEnterValidNumber => 'يرجى إدخال رقم صحيح';
+
+  @override
+  String get pleaseEnterSellPrice => 'يرجى إدخال سعر البيع';
+
+  @override
+  String get pleaseEnterQuantity => 'يرجى إدخال الكمية';
+
+  @override
+  String get pleaseEnterUnit => 'يرجى إدخال الوحدة';
+
+  @override
+  String get pleaseEnterLowStockThreshold => 'يرجى إدخال حد المخزون المنخفض';
+
+  @override
+  String get selectDate => 'اختر التاريخ';
+
+  @override
+  String get noItemsAvailable => 'لا توجد عناصر متاحة';
+
+  @override
+  String selectItem(Object item) {
+    return 'اختر $item';
+  }
+
+  @override
+  String get alert => 'تنبيه';
+
+  @override
+  String get pleaseChooseAtLeastOneFilterCriterion =>
+      'يرجى اختيار معيار تصفية واحد على الأقل للتصدير.';
+
+  @override
+  String get ok => 'موافق';
+
+  @override
+  String get enterExcelFileName => 'أدخل اسم ملف الإكسل';
+
+  @override
+  String get fileNameWithoutExtension => 'اسم الملف (بدون امتداد)';
+
+  @override
+  String get export => 'تصدير';
+
+  @override
+  String get dataInfo => 'معلومات البيانات';
+
+  @override
+  String get availability => 'التوفر';
+
+  @override
+  String get priceFrom => 'السعر من';
+
+  @override
+  String get priceTo => 'السعر إلى';
+
+  @override
+  String get submit => 'إرسال';
+
+  @override
+  String get productInformation => 'معلومات المنتج';
+
+  @override
+  String get edit => 'تعديل';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get enterProductName => 'أدخل اسم المنتج';
+
+  @override
+  String get enterCostPrice => 'أدخل سعر التكلفة';
+
+  @override
+  String get enterSellPrice => 'أدخل سعر البيع';
+
+  @override
+  String get enterQuantity => 'أدخل الكمية';
+
+  @override
+  String get notSpecified => 'غير محدد';
+
+  @override
+  String get notAvailable => 'غير متوفر';
+
+  @override
+  String get enterThreshold => 'أدخل الحد الأدنى';
+
+  @override
+  String get lowStock => 'مخزون منخفض';
+
+  @override
+  String get notSet => 'غير محدد';
+
+  @override
+  String get productionDate => 'تاريخ الإنتاج';
+
+  @override
+  String get expiryDate => 'تاريخ انتهاء الصلاحية';
+
+  @override
+  String get dropOrImport => 'إسقاط أو استيراد';
+
+  @override
+  String get noDescriptionAvailable => 'لا يوجد وصف متاح';
+
+  @override
+  String get notLoggedInAdminOnlyEdit =>
+      'غير مسجل الدخول. المشرفون فقط يمكنهم تعديل المنتجات.';
+
+  @override
+  String get productUpdatedSuccessfully => 'تم تحديث المنتج بنجاح';
+
+  @override
+  String get productUpdatedSuccessfullyWithoutImageChanges =>
+      'تم تحديث المنتج بنجاح (بدون تغييرات في الصورة)';
+
+  @override
+  String get authenticationFailedPleaseLoginAsAdmin =>
+      'فشل في المصادقة. يرجى تسجيل الدخول كمشرف.';
+
+  @override
+  String failedToUpdateProductWithDetails(Object body, Object statusCode) {
+    return 'فشل في تحديث المنتج: $statusCode\n$body';
+  }
+
+  @override
+  String get failedToUpdateProduct => 'فشل في تحديث المنتج.';
+
+  @override
+  String get productSales => 'مبيعات المنتج';
+
+  @override
+  String get loadingSalesData => 'جاري تحميل بيانات المبيعات...';
+
+  @override
+  String get errorLoadingSalesData => 'خطأ في تحميل بيانات المبيعات';
+
+  @override
+  String get noSalesDataAvailable => 'لا توجد بيانات مبيعات متاحة';
+
+  @override
+  String unitsSold(Object count) {
+    return '$count وحدة مباعة';
+  }
+
+  @override
+  String unitsTooltip(Object count) {
+    return '$count وحدة';
+  }
+
+  @override
+  String get failedToLoadSalesData => 'فشل في تحميل بيانات المبيعات';
+
+  @override
+  String get barcode => 'باركود';
+
+  @override
+  String get invalidDataFormat => 'تنسيق البيانات غير صحيح';
+
+  @override
+  String failedToLoadProductsWithError(Object statusCode) {
+    return 'فشل في تحميل المنتجات. خطأ: $statusCode';
+  }
+
+  @override
+  String get networkErrorOccurred => 'حدث خطأ في الشبكة';
+
+  @override
+  String get imageAndName => 'الصورة والاسم';
+
+  @override
+  String get qtyShort => 'الكمية';
+
+  @override
+  String totalItemsCount(Object count) {
+    return 'المجموع $count عنصر';
+  }
+
+  @override
+  String get totalProductsCard => 'إجمالي المنتجات';
+
+  @override
+  String get activeProductsCard => 'المنتجات النشطة';
+
+  @override
+  String get inactiveProductsCard => 'المنتجات غير النشطة';
+
+  @override
+  String get totalCategoriesCard => 'إجمالي الفئات';
+
+  @override
+  String get lowStockProductsCard => 'منتجات مخزون منخفض';
+
+  @override
+  String get outOfStockProductsCard => 'منتجات نفدت من المخزون';
+
+  @override
+  String get productRequestDetails => 'تفاصيل طلب المنتج';
+
+  @override
+  String get id => 'المعرف';
+
+  @override
+  String get supplierInformation => 'معلومات المورد';
+
+  @override
+  String get loadingSellingHistory => 'جاري تحميل سجل المبيعات...';
+
+  @override
+  String get errorLoadingSellingHistory => 'خطأ في تحميل سجل المبيعات';
+
+  @override
+  String get noSellingHistoryAvailable => 'لا يوجد سجل مبيعات متاح لهذا المنتج';
+
+  @override
+  String get orderId => 'رقم الطلب';
+
+  @override
+  String get orderPrice => 'سعر الطلب';
+
+  @override
+  String get orderDate => 'تاريخ الطلب';
+
+  @override
+  String get subtotal => 'المجموع الفرعي';
+
+  @override
+  String get completed => 'مكتمل';
+
+  @override
+  String get onTheWay => 'في الطريق';
+
+  @override
+  String get cancelled => 'ملغي';
+
+  @override
+  String get refunded => 'مسترد';
+
+  @override
+  String get errorLoadingRequestedProducts => 'خطأ في تحميل المنتجات المطلوبة';
+
+  @override
+  String get accountBalance => 'رصيد الحساب';
+
+  @override
+  String get productDetails => 'تفاصيل المنتج';
+
+  @override
+  String get requestDate => 'تاريخ الطلب';
+
+  @override
+  String get warranty => 'الضمان';
+
+  @override
+  String get adminNote => 'ملاحظة المشرف';
+
+  @override
+  String get actions => 'الإجراءات';
+
+  @override
+  String get adminNoteOptional => 'ملاحظة المشرف (اختيارية)';
+
+  @override
+  String get addNoteToSupplier => 'إضافة ملاحظة للمورد...';
+
+  @override
+  String get decline => 'رفض';
+
+  @override
+  String get accept => 'قبول';
+
+  @override
+  String get productRequestHasBeen => 'تم طلب المنتج';
+
+  @override
+  String get failedToProcessRequest => 'فشل في معالجة الطلب';
+
+  @override
+  String get adminNoteColon => 'ملاحظة المشرف:';
+
+  @override
+  String get dateRequested => 'تاريخ الطلب';
 }

@@ -473,9 +473,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get topProducts => 'Top products';
 
   @override
-  String get totalProducts => 'Total Products';
-
-  @override
   String get totalPaidOrders => 'Total Paid Orders';
 
   @override
@@ -509,4 +506,494 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pleaseNavigateToOrdersScreen =>
       'Please navigate to the Orders screen to view low stock items';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get productOverview => 'Product Overview';
+
+  @override
+  String get suppliers => 'Suppliers';
+
+  @override
+  String suppliersCount(Object count) {
+    return '$count suppliers';
+  }
+
+  @override
+  String get noSuppliersAssigned => 'No suppliers assigned to this product';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String get noEmail => 'No email';
+
+  @override
+  String get noPhone => 'No phone';
+
+  @override
+  String get unknownId => 'Unknown ID';
+
+  @override
+  String supplierId(Object id) {
+    return 'ID: $id';
+  }
+
+  @override
+  String get sellingHistory => 'Selling History';
+
+  @override
+  String get totalProducts => 'Total Products';
+
+  @override
+  String get activeProducts => 'Active Products';
+
+  @override
+  String get inactiveProducts => 'UnActive Products';
+
+  @override
+  String get totalCategories => 'Total Categories';
+
+  @override
+  String failedToLoadDashboardStats(Object error) {
+    return 'Failed to load dashboard stats: $error';
+  }
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get inactive => 'UnActive';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get accepted => 'Accepted';
+
+  @override
+  String get declined => 'Declined';
+
+  @override
+  String get requestedProducts => 'Requested Products';
+
+  @override
+  String get productList => 'Product List';
+
+  @override
+  String get mustBeLoggedInToAddProducts =>
+      'You must be logged in to add products';
+
+  @override
+  String get addProduct => 'Add Product';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get bulkExport => 'Bulk Export';
+
+  @override
+  String get notAuthorizedToAccessFeature =>
+      'You are not authorized to access this feature.';
+
+  @override
+  String get failedToLoadSuppliers =>
+      'Failed to load suppliers. Please try again.';
+
+  @override
+  String get networkError => 'Network error. Please check your connection.';
+
+  @override
+  String get pleaseSelectCategory => 'Please select a category';
+
+  @override
+  String get pleaseSelectAtLeastOneSupplier =>
+      'Please select at least one supplier';
+
+  @override
+  String get authenticationTokenRequired => 'Authentication token is required';
+
+  @override
+  String get productAddedSuccessfully => 'Product added successfully';
+
+  @override
+  String failedToAddProduct(Object statusCode) {
+    return 'Failed to add product: $statusCode';
+  }
+
+  @override
+  String get selectedSuppliersNotFound =>
+      'Selected suppliers not found. Please refresh and try again.';
+
+  @override
+  String get refreshSuppliers => 'Refresh Suppliers';
+
+  @override
+  String get notAuthorizedToAddProducts =>
+      'You are not authorized to add products';
+
+  @override
+  String get addNewProduct => 'Add New Product';
+
+  @override
+  String get productName => 'Product Name';
+
+  @override
+  String get costPrice => 'Cost Price';
+
+  @override
+  String get sellPrice => 'Sell Price';
+
+  @override
+  String get quantity => 'Quantity';
+
+  @override
+  String get unit => 'Unit';
+
+  @override
+  String get unitHint => 'e.g., kg, pieces, liters';
+
+  @override
+  String get lowStockThreshold => 'Low Stock Threshold';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get notActive => 'Not Active';
+
+  @override
+  String get barcodeOptional => 'Barcode (Optional)';
+
+  @override
+  String get productionDateOptional => 'Production Date (Optional)';
+
+  @override
+  String get expiryDateOptional => 'Expiry Date (Optional)';
+
+  @override
+  String get suppliersRequired => 'Suppliers (Required)';
+
+  @override
+  String get selectSuppliersForProduct => 'Select suppliers for this product:';
+
+  @override
+  String get noSuppliersAvailable => 'No suppliers available';
+
+  @override
+  String get idLabel => 'ID';
+
+  @override
+  String selectedSuppliersCount(Object count) {
+    return 'Selected suppliers ($count):';
+  }
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get enterProductDescription => 'Enter product description';
+
+  @override
+  String get uploadImage => 'Upload Image';
+
+  @override
+  String get pleaseEnterProductName => 'Please enter product name';
+
+  @override
+  String get pleaseEnterCostPrice => 'Please enter cost price';
+
+  @override
+  String get pleaseEnterValidNumber => 'Please enter a valid number';
+
+  @override
+  String get pleaseEnterSellPrice => 'Please enter sell price';
+
+  @override
+  String get pleaseEnterQuantity => 'Please enter quantity';
+
+  @override
+  String get pleaseEnterUnit => 'Please enter unit';
+
+  @override
+  String get pleaseEnterLowStockThreshold => 'Please enter low stock threshold';
+
+  @override
+  String get selectDate => 'Select Date';
+
+  @override
+  String get noItemsAvailable => 'No items available';
+
+  @override
+  String selectItem(Object item) {
+    return 'Select $item';
+  }
+
+  @override
+  String get alert => 'Alert';
+
+  @override
+  String get pleaseChooseAtLeastOneFilterCriterion =>
+      'Please choose at least one filter criterion to export.';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get enterExcelFileName => 'Enter Excel File Name';
+
+  @override
+  String get fileNameWithoutExtension => 'File name (without extension)';
+
+  @override
+  String get export => 'Export';
+
+  @override
+  String get dataInfo => 'Data Info';
+
+  @override
+  String get availability => 'Availability';
+
+  @override
+  String get priceFrom => 'Price From';
+
+  @override
+  String get priceTo => 'Price To';
+
+  @override
+  String get submit => 'Submit';
+
+  @override
+  String get productInformation => 'Product Information';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get enterProductName => 'Enter product name';
+
+  @override
+  String get enterCostPrice => 'Enter cost price';
+
+  @override
+  String get enterSellPrice => 'Enter sell price';
+
+  @override
+  String get enterQuantity => 'Enter quantity';
+
+  @override
+  String get notSpecified => 'Not specified';
+
+  @override
+  String get notAvailable => 'Not available';
+
+  @override
+  String get enterThreshold => 'Enter threshold';
+
+  @override
+  String get lowStock => 'Low Stock';
+
+  @override
+  String get notSet => 'Not set';
+
+  @override
+  String get productionDate => 'Production Date';
+
+  @override
+  String get expiryDate => 'Expiry Date';
+
+  @override
+  String get dropOrImport => 'Drop or Import';
+
+  @override
+  String get noDescriptionAvailable => 'No description available';
+
+  @override
+  String get notLoggedInAdminOnlyEdit =>
+      'Not logged in. Only admin users can edit products.';
+
+  @override
+  String get productUpdatedSuccessfully => 'Product updated successfully';
+
+  @override
+  String get productUpdatedSuccessfullyWithoutImageChanges =>
+      'Product updated successfully (without image changes)';
+
+  @override
+  String get authenticationFailedPleaseLoginAsAdmin =>
+      'Authentication failed. Please log in as admin.';
+
+  @override
+  String failedToUpdateProductWithDetails(Object body, Object statusCode) {
+    return 'Failed to update product: $statusCode\n$body';
+  }
+
+  @override
+  String get failedToUpdateProduct => 'Failed to update product.';
+
+  @override
+  String get productSales => 'Product Sales';
+
+  @override
+  String get loadingSalesData => 'Loading sales data...';
+
+  @override
+  String get errorLoadingSalesData => 'Error loading sales data';
+
+  @override
+  String get noSalesDataAvailable => 'No sales data available';
+
+  @override
+  String unitsSold(Object count) {
+    return '$count units sold';
+  }
+
+  @override
+  String unitsTooltip(Object count) {
+    return '$count units';
+  }
+
+  @override
+  String get failedToLoadSalesData => 'Failed to load sales data';
+
+  @override
+  String get barcode => 'barcode';
+
+  @override
+  String get invalidDataFormat => 'Invalid data format';
+
+  @override
+  String failedToLoadProductsWithError(Object statusCode) {
+    return 'Failed to load products. Error: $statusCode';
+  }
+
+  @override
+  String get networkErrorOccurred => 'Network error occurred';
+
+  @override
+  String get imageAndName => 'Image & Name';
+
+  @override
+  String get qtyShort => 'Qty';
+
+  @override
+  String totalItemsCount(Object count) {
+    return 'Total $count items';
+  }
+
+  @override
+  String get totalProductsCard => 'Total Products';
+
+  @override
+  String get activeProductsCard => 'Active Products';
+
+  @override
+  String get inactiveProductsCard => 'Inactive Products';
+
+  @override
+  String get totalCategoriesCard => 'Total Categories';
+
+  @override
+  String get lowStockProductsCard => 'Low Stock Products';
+
+  @override
+  String get outOfStockProductsCard => 'Out of Stock Products';
+
+  @override
+  String get productRequestDetails => 'Product Request Details';
+
+  @override
+  String get id => 'ID';
+
+  @override
+  String get supplierInformation => 'Supplier Information';
+
+  @override
+  String get loadingSellingHistory => 'Loading selling history...';
+
+  @override
+  String get errorLoadingSellingHistory => 'Error loading selling history';
+
+  @override
+  String get noSellingHistoryAvailable =>
+      'No selling history available for this product';
+
+  @override
+  String get orderId => 'Order Id';
+
+  @override
+  String get orderPrice => 'Order Price';
+
+  @override
+  String get orderDate => 'Order Date';
+
+  @override
+  String get subtotal => 'Subtotal';
+
+  @override
+  String get completed => 'Completed';
+
+  @override
+  String get onTheWay => 'On the way';
+
+  @override
+  String get cancelled => 'Cancelled';
+
+  @override
+  String get refunded => 'Refunded';
+
+  @override
+  String get errorLoadingRequestedProducts =>
+      'Error loading requested products';
+
+  @override
+  String get accountBalance => 'Account Balance';
+
+  @override
+  String get productDetails => 'Product Details';
+
+  @override
+  String get requestDate => 'Request Date';
+
+  @override
+  String get warranty => 'Warranty';
+
+  @override
+  String get adminNote => 'Admin Note';
+
+  @override
+  String get actions => 'Actions';
+
+  @override
+  String get adminNoteOptional => 'Admin Note (Optional)';
+
+  @override
+  String get addNoteToSupplier => 'Add a note to the supplier...';
+
+  @override
+  String get decline => 'Decline';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get productRequestHasBeen => 'Product request has been';
+
+  @override
+  String get failedToProcessRequest => 'Failed to process request';
+
+  @override
+  String get adminNoteColon => 'Admin Note:';
+
+  @override
+  String get dateRequested => 'Date Requested';
 }

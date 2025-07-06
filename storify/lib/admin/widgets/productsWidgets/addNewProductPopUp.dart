@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class Supplier {
   final int id;
@@ -24,6 +26,19 @@ class Supplier {
       id: json['id'] ?? 0,
       name: json['user']?['name'] ?? json['name'] ?? 'Unknown Supplier',
     );
+  }
+
+  String _getLocalizedErrorMessage(String errorKey, AppLocalizations l10n) {
+    switch (errorKey) {
+      case 'NOT_AUTHORIZED_TO_ACCESS_FEATURE':
+        return l10n.notAuthorizedToAccessFeature;
+      case 'FAILED_TO_LOAD_SUPPLIERS':
+        return l10n.failedToLoadSuppliers;
+      case 'NETWORK_ERROR':
+        return l10n.networkError;
+      default:
+        return errorKey; // Return the key if no translation found
+    }
   }
 }
 
@@ -130,16 +145,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         setState(() {
-          _errorMessage = 'You are not authorized to access this feature.';
+          _errorMessage = 'NOT_AUTHORIZED_TO_ACCESS_FEATURE';
         });
       } else {
         setState(() {
-          _errorMessage = 'Failed to load suppliers. Please try again.';
+          _errorMessage = 'FAILED_TO_LOAD_SUPPLIERS';
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Network error. Please check your connection.';
+        _errorMessage = 'NETWORK_ERROR';
       });
     } finally {
       setState(() {
@@ -204,6 +219,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
   }
 
   Future<void> _submitProduct() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (!_formKey.currentState!.validate()) {
       // If validation fails
       return;
@@ -211,14 +228,14 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
 
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+        SnackBar(content: Text(l10n.pleaseSelectCategory)),
       );
       return;
     }
 
     if (_selectedSupplierIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one supplier')),
+        SnackBar(content: Text(l10n.pleaseSelectAtLeastOneSupplier)),
       );
       return;
     }
@@ -232,7 +249,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       // Get the token
       final token = await AuthService.getToken();
       if (token == null) {
-        throw Exception('Authentication token is required');
+        throw Exception(l10n.authenticationTokenRequired);
       }
 
       // Create a multipart request for the product
@@ -349,7 +366,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         if (mounted) {
           Navigator.pop(context, true); // Return true to indicate success
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Product added successfully')),
+            SnackBar(content: Text(l10n.productAddedSuccessfully)),
           );
         }
       } else if (response.statusCode == 400 &&
@@ -439,13 +456,13 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
           if (mounted) {
             Navigator.pop(context, true);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Product added successfully')),
+              SnackBar(content: Text(l10n.productAddedSuccessfully)),
             );
           }
           return;
         } else {
           String errorMessage =
-              'Failed to add product: ${retryResponse.statusCode}';
+              l10n.failedToAddProduct(retryResponse.statusCode.toString());
           try {
             final errorData = json.decode(retryResponse.body);
             errorMessage = errorData['message'] ?? errorMessage;
@@ -458,11 +475,10 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Selected suppliers not found. Please refresh and try again.'),
+              content: Text(l10n.selectedSuppliersNotFound),
               backgroundColor: Colors.orange,
               action: SnackBarAction(
-                label: 'Refresh Suppliers',
+                label: l10n.refreshSuppliers,
                 onPressed: () {
                   _fetchSuppliers();
                 },
@@ -472,10 +488,11 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         // Unauthorized access
-        throw Exception('You are not authorized to add products');
+        throw Exception(l10n.notAuthorizedToAddProducts);
       } else {
         // Error adding product
-        String errorMessage = 'Failed to add product: ${response.statusCode}';
+        String errorMessage =
+            l10n.failedToAddProduct(response.statusCode.toString());
         try {
           final errorData = json.decode(response.body);
           errorMessage = errorData['message'] ?? errorMessage;
@@ -485,7 +502,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text('${l10n.error}: ${e.toString()}')),
         );
       }
     } finally {
@@ -499,6 +516,14 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    // Get localized status options
+    final List<String> statusOptions = [l10n.active, l10n.notActive];
+    final List<String> statusValues = ['Active', 'NotActive'];
+
     return Dialog(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       shape: RoundedRectangleBorder(
@@ -511,9 +536,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Center(
-                    child: Text(_errorMessage!,
-                        style: GoogleFonts.spaceGrotesk(color: Colors.white)))
+                ? Center(child: Text("error"))
                 : SingleChildScrollView(
                     child: Form(
                       key: _formKey,
@@ -525,12 +548,18 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                           Row(
                             children: [
                               Text(
-                                'Add New Product',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 24.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
+                                l10n.addNewProduct,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 24.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 24.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
                               ),
                               const Spacer(),
                               IconButton(
@@ -554,10 +583,12 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Product Name
                               _buildTextField(
                                 controller: _nameController,
-                                label: 'Product Name',
+                                label: l10n.productName,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter product name';
+                                    return l10n.pleaseEnterProductName;
                                   }
                                   return null;
                                 },
@@ -565,11 +596,13 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
 
                               // Category Dropdown
                               _buildDropdown<Category>(
-                                label: 'Category',
+                                label: l10n.category,
                                 items: _categories,
                                 displayProperty: (category) => category.name,
                                 valueProperty: (category) => category.id,
                                 value: _selectedCategoryId,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedCategoryId = value;
@@ -580,14 +613,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Cost Price
                               _buildTextField(
                                 controller: _costPriceController,
-                                label: 'Cost Price',
+                                label: l10n.costPrice,
                                 keyboardType: TextInputType.number,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter cost price';
+                                    return l10n.pleaseEnterCostPrice;
                                   }
                                   if (double.tryParse(value) == null) {
-                                    return 'Please enter a valid number';
+                                    return l10n.pleaseEnterValidNumber;
                                   }
                                   return null;
                                 },
@@ -596,14 +631,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Sell Price
                               _buildTextField(
                                 controller: _sellPriceController,
-                                label: 'Sell Price',
+                                label: l10n.sellPrice,
                                 keyboardType: TextInputType.number,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter sell price';
+                                    return l10n.pleaseEnterSellPrice;
                                   }
                                   if (double.tryParse(value) == null) {
-                                    return 'Please enter a valid number';
+                                    return l10n.pleaseEnterValidNumber;
                                   }
                                   return null;
                                 },
@@ -612,14 +649,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Quantity
                               _buildTextField(
                                 controller: _quantityController,
-                                label: 'Quantity',
+                                label: l10n.quantity,
                                 keyboardType: TextInputType.number,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter quantity';
+                                    return l10n.pleaseEnterQuantity;
                                   }
                                   if (int.tryParse(value) == null) {
-                                    return 'Please enter a valid number';
+                                    return l10n.pleaseEnterValidNumber;
                                   }
                                   return null;
                                 },
@@ -628,11 +667,13 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Unit (New Field)
                               _buildTextField(
                                 controller: _unitController,
-                                label: 'Unit',
-                                hintText: 'e.g., kg, pieces, liters',
+                                label: l10n.unit,
+                                hintText: l10n.unitHint,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter unit';
+                                    return l10n.pleaseEnterUnit;
                                   }
                                   return null;
                                 },
@@ -641,14 +682,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Low Stock (New Field)
                               _buildTextField(
                                 controller: _lowStockController,
-                                label: 'Low Stock Threshold',
+                                label: l10n.lowStockThreshold,
                                 keyboardType: TextInputType.number,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter low stock threshold';
+                                    return l10n.pleaseEnterLowStockThreshold;
                                   }
                                   if (int.tryParse(value) == null) {
-                                    return 'Please enter a valid number';
+                                    return l10n.pleaseEnterValidNumber;
                                   }
                                   return null;
                                 },
@@ -656,11 +699,14 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
 
                               // Status Dropdown
                               _buildDropdown<String>(
-                                label: 'Status',
-                                items: ['Active', 'NotActive'],
+                                label: l10n.status,
+                                items: statusOptions,
                                 displayProperty: (status) => status,
-                                valueProperty: (status) => status,
+                                valueProperty: (status) =>
+                                    statusValues[statusOptions.indexOf(status)],
                                 value: _status,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 onChanged: (value) {
                                   setState(() {
                                     _status = value!;
@@ -671,13 +717,17 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               // Barcode (Optional)
                               _buildTextField(
                                 controller: _barcodeController,
-                                label: 'Barcode (Optional)',
+                                label: l10n.barcodeOptional,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                               ),
 
                               // Production Date (Optional)
                               _buildDatePicker(
-                                label: 'Production Date (Optional)',
+                                label: l10n.productionDateOptional,
                                 value: _prodDate,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 onChanged: (date) {
                                   setState(() {
                                     _prodDate = date;
@@ -687,8 +737,10 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
 
                               // Expiry Date (Optional)
                               _buildDatePicker(
-                                label: 'Expiry Date (Optional)',
+                                label: l10n.expiryDateOptional,
                                 value: _expDate,
+                                isRtl: isRtl,
+                                isArabic: isArabic,
                                 onChanged: (date) {
                                   setState(() {
                                     _expDate = date;
@@ -701,7 +753,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                           SizedBox(height: 16.h),
 
                           // Suppliers (Multi-select)
-                          _buildMultiSelectSuppliers(),
+                          _buildMultiSelectSuppliers(isArabic, isRtl),
 
                           SizedBox(height: 16.h),
 
@@ -710,17 +762,25 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Description',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
+                                l10n.description,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
                               ),
                               SizedBox(height: 8.h),
                               TextFormField(
                                 controller: _descriptionController,
                                 maxLines: 3,
+                                textAlign:
+                                    isRtl ? TextAlign.right : TextAlign.left,
                                 decoration: InputDecoration(
                                   filled: true,
                                   fillColor:
@@ -729,14 +789,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide.none,
                                   ),
-                                  hintText: 'Enter product description',
-                                  hintStyle: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white60,
-                                  ),
+                                  hintText: l10n.enterProductDescription,
+                                  hintStyle: isArabic
+                                      ? GoogleFonts.cairo(color: Colors.white60)
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white60),
                                 ),
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                ),
+                                style: isArabic
+                                    ? GoogleFonts.cairo(color: Colors.white)
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white),
                               ),
                             ],
                           ),
@@ -783,11 +845,16 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                                 ),
                                 onPressed: _pickImage,
                                 child: Text(
-                                  'Upload Image',
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  l10n.uploadImage,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                 ),
                               ),
                             ],
@@ -811,12 +878,18 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                               ),
                               onPressed: _submitProduct,
                               child: Text(
-                                'Add Product',
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
+                                l10n.addProduct,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
                               ),
                             ),
                           ),
@@ -828,17 +901,25 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     );
   }
 
-  Widget _buildMultiSelectSuppliers() {
+  Widget _buildMultiSelectSuppliers(bool isArabic, bool isRtl) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Suppliers (Required)',
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+          l10n.suppliersRequired,
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -851,20 +932,30 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Select suppliers for this product:',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontSize: 14.sp,
-                ),
+                l10n.selectSuppliersForProduct,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                      ),
               ),
               SizedBox(height: 12.h),
               if (_suppliers.isEmpty)
                 Text(
-                  'No suppliers available',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white60,
-                    fontSize: 14.sp,
-                  ),
+                  l10n.noSuppliersAvailable,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white60,
+                          fontSize: 14.sp,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white60,
+                          fontSize: 14.sp,
+                        ),
                 )
               else
                 Container(
@@ -886,13 +977,20 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                             });
                           },
                           title: Text(
-                            '${supplier.name} (ID: ${supplier.id})',
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontSize: 14.sp,
-                            ),
+                            '${supplier.name} (${l10n.idLabel}: ${supplier.id})',
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.white,
+                                    fontSize: 14.sp,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                    fontSize: 14.sp,
+                                  ),
                           ),
-                          controlAffinity: ListTileControlAffinity.leading,
+                          controlAffinity: isRtl
+                              ? ListTileControlAffinity.trailing
+                              : ListTileControlAffinity.leading,
                           activeColor: const Color.fromARGB(255, 105, 65, 198),
                           checkColor: Colors.white,
                           contentPadding: EdgeInsets.zero,
@@ -904,12 +1002,19 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
               if (_selectedSupplierIds.isNotEmpty) ...[
                 SizedBox(height: 12.h),
                 Text(
-                  'Selected suppliers (${_selectedSupplierIds.length}):',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white70,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  l10n.selectedSuppliersCount(
+                      _selectedSupplierIds.length.toString()),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white70,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
                 ),
                 SizedBox(height: 8.h),
                 Wrap(
@@ -921,10 +1026,15 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                     return Chip(
                       label: Text(
                         '${supplier.name} (${supplier.id})',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                              ),
                       ),
                       deleteIcon:
                           Icon(Icons.close, size: 16.sp, color: Colors.white),
@@ -949,6 +1059,8 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    required bool isRtl,
+    required bool isArabic,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
     String? hintText,
@@ -958,17 +1070,24 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
+          textAlign: isRtl ? TextAlign.right : TextAlign.left,
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color.fromARGB(255, 36, 50, 69),
@@ -976,14 +1095,14 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            hintText: hintText ?? 'Enter $label',
-            hintStyle: GoogleFonts.spaceGrotesk(
-              color: Colors.white60,
-            ),
+            hintText: hintText ?? label,
+            hintStyle: isArabic
+                ? GoogleFonts.cairo(color: Colors.white60)
+                : GoogleFonts.spaceGrotesk(color: Colors.white60),
           ),
-          style: GoogleFonts.spaceGrotesk(
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(color: Colors.white)
+              : GoogleFonts.spaceGrotesk(color: Colors.white),
         ),
       ],
     );
@@ -993,17 +1112,27 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     required String label,
     required DateTime? value,
     required Function(DateTime?) onChanged,
+    required bool isRtl,
+    required bool isArabic,
   }) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         InkWell(
@@ -1042,10 +1171,14 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                 Text(
                   value != null
                       ? DateFormat('yyyy-MM-dd').format(value)
-                      : 'Select Date',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: value != null ? Colors.white : Colors.white60,
-                  ),
+                      : l10n.selectDate,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: value != null ? Colors.white : Colors.white60,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: value != null ? Colors.white : Colors.white60,
+                        ),
                 ),
                 const Spacer(),
                 const Icon(
@@ -1067,17 +1200,27 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
     required dynamic Function(T) valueProperty,
     required dynamic value,
     required Function(dynamic) onChanged,
+    required bool isRtl,
+    required bool isArabic,
   }) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -1097,10 +1240,10 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                       DropdownMenuItem<dynamic>(
                         value: null,
                         child: Text(
-                          'No items available',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white60,
-                          ),
+                          l10n.noItemsAvailable,
+                          style: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white60)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white60),
                         ),
                       )
                     ]
@@ -1109,17 +1252,17 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                         value: valueProperty(item),
                         child: Text(
                           displayProperty(item),
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                          ),
+                          style: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white),
                         ),
                       );
                     }).toList(),
               hint: Text(
-                'Select $label',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white60,
-                ),
+                l10n.selectItem(label),
+                style: isArabic
+                    ? GoogleFonts.cairo(color: Colors.white60)
+                    : GoogleFonts.spaceGrotesk(color: Colors.white60),
               ),
               onChanged: onChanged,
             ),

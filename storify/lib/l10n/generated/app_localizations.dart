@@ -1010,12 +1010,6 @@ abstract class AppLocalizations {
   /// **'Top products'**
   String get topProducts;
 
-  /// No description provided for @totalProducts.
-  ///
-  /// In en, this message translates to:
-  /// **'Total Products'**
-  String get totalProducts;
-
   /// No description provided for @totalPaidOrders.
   ///
   /// In en, this message translates to:
@@ -1081,6 +1075,918 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please navigate to the Orders screen to view low stock items'**
   String get pleaseNavigateToOrdersScreen;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @productOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Overview'**
+  String get productOverview;
+
+  /// No description provided for @suppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get suppliers;
+
+  /// No description provided for @suppliersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} suppliers'**
+  String suppliersCount(Object count);
+
+  /// No description provided for @noSuppliersAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers assigned to this product'**
+  String get noSuppliersAssigned;
+
+  /// No description provided for @unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknown;
+
+  /// No description provided for @noEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'No email'**
+  String get noEmail;
+
+  /// No description provided for @noPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'No phone'**
+  String get noPhone;
+
+  /// No description provided for @unknownId.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown ID'**
+  String get unknownId;
+
+  /// No description provided for @supplierId.
+  ///
+  /// In en, this message translates to:
+  /// **'ID: {id}'**
+  String supplierId(Object id);
+
+  /// No description provided for @sellingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Selling History'**
+  String get sellingHistory;
+
+  /// No description provided for @totalProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Products'**
+  String get totalProducts;
+
+  /// No description provided for @activeProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Products'**
+  String get activeProducts;
+
+  /// No description provided for @inactiveProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'UnActive Products'**
+  String get inactiveProducts;
+
+  /// No description provided for @totalCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Categories'**
+  String get totalCategories;
+
+  /// No description provided for @failedToLoadDashboardStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load dashboard stats: {error}'**
+  String failedToLoadDashboardStats(Object error);
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get active;
+
+  /// No description provided for @inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'UnActive'**
+  String get inactive;
+
+  /// No description provided for @pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pending;
+
+  /// No description provided for @accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get accepted;
+
+  /// No description provided for @declined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get declined;
+
+  /// No description provided for @requestedProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested Products'**
+  String get requestedProducts;
+
+  /// No description provided for @productList.
+  ///
+  /// In en, this message translates to:
+  /// **'Product List'**
+  String get productList;
+
+  /// No description provided for @mustBeLoggedInToAddProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be logged in to add products'**
+  String get mustBeLoggedInToAddProducts;
+
+  /// No description provided for @addProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Product'**
+  String get addProduct;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @bulkExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk Export'**
+  String get bulkExport;
+
+  /// No description provided for @notAuthorizedToAccessFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not authorized to access this feature.'**
+  String get notAuthorizedToAccessFeature;
+
+  /// No description provided for @failedToLoadSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load suppliers. Please try again.'**
+  String get failedToLoadSuppliers;
+
+  /// No description provided for @networkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection.'**
+  String get networkError;
+
+  /// No description provided for @pleaseSelectCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a category'**
+  String get pleaseSelectCategory;
+
+  /// No description provided for @pleaseSelectAtLeastOneSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one supplier'**
+  String get pleaseSelectAtLeastOneSupplier;
+
+  /// No description provided for @authenticationTokenRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication token is required'**
+  String get authenticationTokenRequired;
+
+  /// No description provided for @productAddedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Product added successfully'**
+  String get productAddedSuccessfully;
+
+  /// No description provided for @failedToAddProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add product: {statusCode}'**
+  String failedToAddProduct(Object statusCode);
+
+  /// No description provided for @selectedSuppliersNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected suppliers not found. Please refresh and try again.'**
+  String get selectedSuppliersNotFound;
+
+  /// No description provided for @refreshSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Suppliers'**
+  String get refreshSuppliers;
+
+  /// No description provided for @notAuthorizedToAddProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not authorized to add products'**
+  String get notAuthorizedToAddProducts;
+
+  /// No description provided for @addNewProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Product'**
+  String get addNewProduct;
+
+  /// No description provided for @productName.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Name'**
+  String get productName;
+
+  /// No description provided for @costPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Price'**
+  String get costPrice;
+
+  /// No description provided for @sellPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sell Price'**
+  String get sellPrice;
+
+  /// No description provided for @quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quantity;
+
+  /// No description provided for @unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unit;
+
+  /// No description provided for @unitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., kg, pieces, liters'**
+  String get unitHint;
+
+  /// No description provided for @lowStockThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock Threshold'**
+  String get lowStockThreshold;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @notActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Active'**
+  String get notActive;
+
+  /// No description provided for @barcodeOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode (Optional)'**
+  String get barcodeOptional;
+
+  /// No description provided for @productionDateOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Date (Optional)'**
+  String get productionDateOptional;
+
+  /// No description provided for @expiryDateOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry Date (Optional)'**
+  String get expiryDateOptional;
+
+  /// No description provided for @suppliersRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers (Required)'**
+  String get suppliersRequired;
+
+  /// No description provided for @selectSuppliersForProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Select suppliers for this product:'**
+  String get selectSuppliersForProduct;
+
+  /// No description provided for @noSuppliersAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers available'**
+  String get noSuppliersAvailable;
+
+  /// No description provided for @idLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get idLabel;
+
+  /// No description provided for @selectedSuppliersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected suppliers ({count}):'**
+  String selectedSuppliersCount(Object count);
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @enterProductDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter product description'**
+  String get enterProductDescription;
+
+  /// No description provided for @uploadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Image'**
+  String get uploadImage;
+
+  /// No description provided for @pleaseEnterProductName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter product name'**
+  String get pleaseEnterProductName;
+
+  /// No description provided for @pleaseEnterCostPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter cost price'**
+  String get pleaseEnterCostPrice;
+
+  /// No description provided for @pleaseEnterValidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid number'**
+  String get pleaseEnterValidNumber;
+
+  /// No description provided for @pleaseEnterSellPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter sell price'**
+  String get pleaseEnterSellPrice;
+
+  /// No description provided for @pleaseEnterQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter quantity'**
+  String get pleaseEnterQuantity;
+
+  /// No description provided for @pleaseEnterUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter unit'**
+  String get pleaseEnterUnit;
+
+  /// No description provided for @pleaseEnterLowStockThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter low stock threshold'**
+  String get pleaseEnterLowStockThreshold;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get selectDate;
+
+  /// No description provided for @noItemsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No items available'**
+  String get noItemsAvailable;
+
+  /// No description provided for @selectItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {item}'**
+  String selectItem(Object item);
+
+  /// No description provided for @alert.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert'**
+  String get alert;
+
+  /// No description provided for @pleaseChooseAtLeastOneFilterCriterion.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose at least one filter criterion to export.'**
+  String get pleaseChooseAtLeastOneFilterCriterion;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @enterExcelFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Excel File Name'**
+  String get enterExcelFileName;
+
+  /// No description provided for @fileNameWithoutExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'File name (without extension)'**
+  String get fileNameWithoutExtension;
+
+  /// No description provided for @export.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get export;
+
+  /// No description provided for @dataInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Info'**
+  String get dataInfo;
+
+  /// No description provided for @availability.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get availability;
+
+  /// No description provided for @priceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Price From'**
+  String get priceFrom;
+
+  /// No description provided for @priceTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Price To'**
+  String get priceTo;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// No description provided for @productInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Information'**
+  String get productInformation;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @enterProductName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter product name'**
+  String get enterProductName;
+
+  /// No description provided for @enterCostPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter cost price'**
+  String get enterCostPrice;
+
+  /// No description provided for @enterSellPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter sell price'**
+  String get enterSellPrice;
+
+  /// No description provided for @enterQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter quantity'**
+  String get enterQuantity;
+
+  /// No description provided for @notSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get notSpecified;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get notAvailable;
+
+  /// No description provided for @enterThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter threshold'**
+  String get enterThreshold;
+
+  /// No description provided for @lowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock'**
+  String get lowStock;
+
+  /// No description provided for @notSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
+
+  /// No description provided for @productionDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Date'**
+  String get productionDate;
+
+  /// No description provided for @expiryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry Date'**
+  String get expiryDate;
+
+  /// No description provided for @dropOrImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop or Import'**
+  String get dropOrImport;
+
+  /// No description provided for @noDescriptionAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No description available'**
+  String get noDescriptionAvailable;
+
+  /// No description provided for @notLoggedInAdminOnlyEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Not logged in. Only admin users can edit products.'**
+  String get notLoggedInAdminOnlyEdit;
+
+  /// No description provided for @productUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Product updated successfully'**
+  String get productUpdatedSuccessfully;
+
+  /// No description provided for @productUpdatedSuccessfullyWithoutImageChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Product updated successfully (without image changes)'**
+  String get productUpdatedSuccessfullyWithoutImageChanges;
+
+  /// No description provided for @authenticationFailedPleaseLoginAsAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Please log in as admin.'**
+  String get authenticationFailedPleaseLoginAsAdmin;
+
+  /// No description provided for @failedToUpdateProductWithDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update product: {statusCode}\n{body}'**
+  String failedToUpdateProductWithDetails(Object body, Object statusCode);
+
+  /// No description provided for @failedToUpdateProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update product.'**
+  String get failedToUpdateProduct;
+
+  /// No description provided for @productSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Sales'**
+  String get productSales;
+
+  /// No description provided for @loadingSalesData.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading sales data...'**
+  String get loadingSalesData;
+
+  /// No description provided for @errorLoadingSalesData.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading sales data'**
+  String get errorLoadingSalesData;
+
+  /// No description provided for @noSalesDataAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales data available'**
+  String get noSalesDataAvailable;
+
+  /// No description provided for @unitsSold.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units sold'**
+  String unitsSold(Object count);
+
+  /// No description provided for @unitsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units'**
+  String unitsTooltip(Object count);
+
+  /// No description provided for @failedToLoadSalesData.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load sales data'**
+  String get failedToLoadSalesData;
+
+  /// No description provided for @barcode.
+  ///
+  /// In en, this message translates to:
+  /// **'barcode'**
+  String get barcode;
+
+  /// No description provided for @invalidDataFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid data format'**
+  String get invalidDataFormat;
+
+  /// No description provided for @failedToLoadProductsWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load products. Error: {statusCode}'**
+  String failedToLoadProductsWithError(Object statusCode);
+
+  /// No description provided for @networkErrorOccurred.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error occurred'**
+  String get networkErrorOccurred;
+
+  /// No description provided for @imageAndName.
+  ///
+  /// In en, this message translates to:
+  /// **'Image & Name'**
+  String get imageAndName;
+
+  /// No description provided for @qtyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get qtyShort;
+
+  /// No description provided for @totalItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {count} items'**
+  String totalItemsCount(Object count);
+
+  /// No description provided for @totalProductsCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Products'**
+  String get totalProductsCard;
+
+  /// No description provided for @activeProductsCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Products'**
+  String get activeProductsCard;
+
+  /// No description provided for @inactiveProductsCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive Products'**
+  String get inactiveProductsCard;
+
+  /// No description provided for @totalCategoriesCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Categories'**
+  String get totalCategoriesCard;
+
+  /// No description provided for @lowStockProductsCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock Products'**
+  String get lowStockProductsCard;
+
+  /// No description provided for @outOfStockProductsCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of Stock Products'**
+  String get outOfStockProductsCard;
+
+  /// No description provided for @productRequestDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Request Details'**
+  String get productRequestDetails;
+
+  /// No description provided for @id.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get id;
+
+  /// No description provided for @supplierInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Information'**
+  String get supplierInformation;
+
+  /// No description provided for @loadingSellingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading selling history...'**
+  String get loadingSellingHistory;
+
+  /// No description provided for @errorLoadingSellingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading selling history'**
+  String get errorLoadingSellingHistory;
+
+  /// No description provided for @noSellingHistoryAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No selling history available for this product'**
+  String get noSellingHistoryAvailable;
+
+  /// No description provided for @orderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Id'**
+  String get orderId;
+
+  /// No description provided for @orderPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Price'**
+  String get orderPrice;
+
+  /// No description provided for @orderDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Date'**
+  String get orderDate;
+
+  /// No description provided for @subtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotal;
+
+  /// No description provided for @completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completed;
+
+  /// No description provided for @onTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get onTheWay;
+
+  /// No description provided for @cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get cancelled;
+
+  /// No description provided for @refunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get refunded;
+
+  /// No description provided for @errorLoadingRequestedProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading requested products'**
+  String get errorLoadingRequestedProducts;
+
+  /// No description provided for @accountBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Balance'**
+  String get accountBalance;
+
+  /// No description provided for @productDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Details'**
+  String get productDetails;
+
+  /// No description provided for @requestDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Date'**
+  String get requestDate;
+
+  /// No description provided for @warranty.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty'**
+  String get warranty;
+
+  /// No description provided for @adminNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Note'**
+  String get adminNote;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @adminNoteOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Note (Optional)'**
+  String get adminNoteOptional;
+
+  /// No description provided for @addNoteToSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note to the supplier...'**
+  String get addNoteToSupplier;
+
+  /// No description provided for @decline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get decline;
+
+  /// No description provided for @accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get accept;
+
+  /// No description provided for @productRequestHasBeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Product request has been'**
+  String get productRequestHasBeen;
+
+  /// No description provided for @failedToProcessRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to process request'**
+  String get failedToProcessRequest;
+
+  /// No description provided for @adminNoteColon.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Note:'**
+  String get adminNoteColon;
+
+  /// No description provided for @dateRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Requested'**
+  String get dateRequested;
 }
 
 class _AppLocalizationsDelegate

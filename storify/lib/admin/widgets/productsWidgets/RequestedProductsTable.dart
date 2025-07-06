@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/admin/widgets/productsWidgets/RequestedProductDetail.dart';
 import 'package:storify/admin/widgets/productsWidgets/RequestedProductModel.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class RequestedProductsTable extends StatefulWidget {
   final int selectedFilterIndex; // 0: All, 1: Pending, 2: Accepted, 3: Declined
@@ -32,13 +34,6 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   int? _sortColumnIndex;
   bool _sortAscending = true;
   final int _itemsPerPage = 5; // Show 5 items per page
-
-  final List<String> _statusFilters = [
-    "All",
-    "Pending",
-    "Accepted",
-    "Declined"
-  ];
 
   @override
   void initState() {
@@ -110,13 +105,38 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
 
   /// Returns filtered, searched, and sorted products.
   List<RequestedProductModel> get filteredProducts {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     List<RequestedProductModel> temp = List.from(_allProducts);
+
+    // Get localized status filters
+    final List<String> _statusFilters = [
+      l10n.all,
+      l10n.pending,
+      l10n.accepted,
+      l10n.declined
+    ];
 
     // Filter by status
     if (widget.selectedFilterIndex > 0 &&
         widget.selectedFilterIndex < _statusFilters.length) {
       String statusFilter = _statusFilters[widget.selectedFilterIndex];
-      temp = temp.where((p) => p.status == statusFilter).toList();
+      // Map localized status back to English for filtering
+      String englishStatus = '';
+      switch (widget.selectedFilterIndex) {
+        case 1:
+          englishStatus = 'Pending';
+          break;
+        case 2:
+          englishStatus = 'Accepted';
+          break;
+        case 3:
+          englishStatus = 'Declined';
+          break;
+      }
+      if (englishStatus.isNotEmpty) {
+        temp = temp.where((p) => p.status == englishStatus).toList();
+      }
     }
 
     // Search by name or ID (case-insensitive)
@@ -155,7 +175,8 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   }
 
   /// Helper: builds a header label with a sort arrow.
-  Widget _buildSortableColumnLabel(String label, int colIndex) {
+  Widget _buildSortableColumnLabel(
+      String label, int colIndex, bool isArabic, bool isRtl) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
     if (isSorted) {
@@ -167,7 +188,8 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment:
+          isRtl ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         Text(label),
         SizedBox(width: 4.w),
@@ -191,6 +213,10 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -205,20 +231,31 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Error loading requested products',
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              l10n.errorLoadingRequestedProducts,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
             ),
             SizedBox(height: 8.h),
             Text(
               _error!,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
             ),
             SizedBox(height: 16.h),
             ElevatedButton(
@@ -230,11 +267,16 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
                 ),
               ),
               child: Text(
-                'Retry',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  color: Colors.white,
-                ),
+                l10n.retry,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white,
+                      ),
               ),
             ),
           ],
@@ -263,269 +305,303 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     final BorderSide dividerSide2 =
         BorderSide(color: const Color.fromARGB(255, 36, 50, 69), width: 2);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30.r),
-              topRight: Radius.circular(30.r),
-            ),
-          ),
-          width: constraints.maxWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Wrap DataTable in horizontal SingleChildScrollView.
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-                      (Set<WidgetState> states) => Colors.transparent,
-                    ),
-                    showCheckboxColumn: false,
-                    headingRowColor:
-                        MaterialStateProperty.all<Color>(headingColor),
-                    border: TableBorder(
-                      top: dividerSide,
-                      bottom: dividerSide,
-                      left: dividerSide,
-                      right: dividerSide,
-                      horizontalInside: dividerSide2,
-                      verticalInside: dividerSide2,
-                    ),
-                    columnSpacing: 20.w,
-                    dividerThickness: 0,
-                    headingTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    dataTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 13.sp,
-                    ),
-                    columns: [
-                      // ID Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("ID", 0),
-                        onSort: (columnIndex, _) {
-                          _onSort(0);
-                        },
-                      ),
-                      // Date Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Date Requested", 1),
-                        onSort: (columnIndex, _) {
-                          _onSort(1);
-                        },
-                      ),
-                      // Image & Name Column
-                      const DataColumn(label: Text("Image & Name")),
-                      // Cost Price Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Cost Price", 3),
-                        onSort: (columnIndex, _) {
-                          _onSort(3);
-                        },
-                      ),
-                      // Sell Price Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Sell Price", 4),
-                        onSort: (columnIndex, _) {
-                          _onSort(4);
-                        },
-                      ),
-                      // Category Column
-                      const DataColumn(label: Text("Category")),
-                      // Supplier Column
-                      const DataColumn(label: Text("Supplier")),
-                      // Status Column
-                      const DataColumn(label: Text("Status")),
-                    ],
-                    rows: visibleProducts.map((product) {
-                      return DataRow(
-                        onSelectChanged: (selected) async {
-                          if (selected == true) {
-                            final updatedProduct = await Navigator.of(context)
-                                .push<RequestedProductModel>(
-                              PageRouteBuilder(
-                                pageBuilder: (context, animation,
-                                        secondaryAnimation) =>
-                                    RequestedProductDetail(product: product),
-                                transitionsBuilder: (context, animation,
-                                        secondaryAnimation, child) =>
-                                    FadeTransition(
-                                        opacity: animation, child: child),
-                                transitionDuration:
-                                    const Duration(milliseconds: 400),
-                              ),
-                            );
-
-                            // If updatedProduct is not null, update your data source.
-                            if (updatedProduct != null) {
-                              setState(() {
-                                final index = _allProducts
-                                    .indexWhere((p) => p.id == product.id);
-                                if (index != -1) {
-                                  _allProducts[index] = updatedProduct;
-                                }
-                              });
-
-                              // Notify parent that a product was updated
-                              _notifyOperationCompleted();
-                            }
-                          }
-                        },
-                        cells: [
-                          // ID cell
-                          DataCell(Text("${product.id}")),
-                          // Date cell
-                          DataCell(Text(
-                            "${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}",
-                          )),
-                          // Image & Name cell
-                          DataCell(
-                            Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  child: product.image != null
-                                      ? Image.network(
-                                          product.image!,
-                                          width: 50.w,
-                                          height: 50.h,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                            return Container(
-                                              width: 50.w,
-                                              height: 50.h,
-                                              color: Colors.grey.shade800,
-                                              child: Icon(
-                                                Icons.image_not_supported,
-                                                color: Colors.white70,
-                                                size: 24.sp,
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : Container(
-                                          width: 50.w,
-                                          height: 50.h,
-                                          color: Colors.grey.shade800,
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            color: Colors.white70,
-                                            size: 24.sp,
-                                          ),
-                                        ),
-                                ),
-                                SizedBox(width: 10.w),
-                                Expanded(
-                                  child: Text(
-                                    product.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Cost Price cell
-                          DataCell(Text(
-                              "\$${product.costPrice.toStringAsFixed(2)}")),
-                          // Sell Price cell
-                          DataCell(Text(
-                              "\$${product.sellPrice.toStringAsFixed(2)}")),
-                          // Category cell
-                          DataCell(Text(product.category.categoryName)),
-                          // Supplier cell
-                          DataCell(Text(product.supplier.user.name)),
-                          // Status cell with admin note tooltip if exists
-                          DataCell(_buildStatusPill(
-                              product.status, product.adminNote)),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30.r),
+                topRight: Radius.circular(30.r),
               ),
-              // Pagination row
-              if (visibleProducts.isNotEmpty)
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
-                  child: Row(
-                    children: [
-                      Spacer(),
-                      Text(
-                        "Total $totalItems items",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
+            ),
+            width: constraints.maxWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Wrap DataTable in horizontal SingleChildScrollView.
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                        (Set<WidgetState> states) => Colors.transparent,
+                      ),
+                      showCheckboxColumn: false,
+                      headingRowColor:
+                          MaterialStateProperty.all<Color>(headingColor),
+                      border: TableBorder(
+                        top: dividerSide,
+                        bottom: dividerSide,
+                        left: dividerSide,
+                        right: dividerSide,
+                        horizontalInside: dividerSide2,
+                        verticalInside: dividerSide2,
+                      ),
+                      columnSpacing: 20.w,
+                      dividerThickness: 0,
+                      headingTextStyle: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      dataTextStyle: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13.sp,
+                            ),
+                      columns: [
+                        // ID Column (sortable)
+                        DataColumn(
+                          label: _buildSortableColumnLabel(
+                              l10n.id, 0, isArabic, isRtl),
+                          onSort: (columnIndex, _) {
+                            _onSort(0);
+                          },
                         ),
-                      ),
-                      SizedBox(width: 10.w),
-                      // Left arrow
-                      IconButton(
-                        icon: Icon(Icons.arrow_back,
-                            size: 20.sp, color: Colors.white70),
-                        onPressed: _currentPage > 1
-                            ? () {
+                        // Date Column (sortable)
+                        DataColumn(
+                          label: _buildSortableColumnLabel(
+                              l10n.dateRequested, 1, isArabic, isRtl),
+                          onSort: (columnIndex, _) {
+                            _onSort(1);
+                          },
+                        ),
+                        // Image & Name Column
+                        DataColumn(label: Text(l10n.imageAndName)),
+                        // Cost Price Column (sortable)
+                        DataColumn(
+                          label: _buildSortableColumnLabel(
+                              l10n.costPrice, 3, isArabic, isRtl),
+                          onSort: (columnIndex, _) {
+                            _onSort(3);
+                          },
+                        ),
+                        // Sell Price Column (sortable)
+                        DataColumn(
+                          label: _buildSortableColumnLabel(
+                              l10n.sellPrice, 4, isArabic, isRtl),
+                          onSort: (columnIndex, _) {
+                            _onSort(4);
+                          },
+                        ),
+                        // Category Column
+                        DataColumn(label: Text(l10n.category)),
+                        // Supplier Column
+                        DataColumn(label: Text(l10n.supplier)),
+                        // Status Column
+                        DataColumn(label: Text(l10n.status)),
+                      ],
+                      rows: visibleProducts.map((product) {
+                        return DataRow(
+                          onSelectChanged: (selected) async {
+                            if (selected == true) {
+                              final updatedProduct = await Navigator.of(context)
+                                  .push<RequestedProductModel>(
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation,
+                                          secondaryAnimation) =>
+                                      RequestedProductDetail(product: product),
+                                  transitionsBuilder: (context, animation,
+                                          secondaryAnimation, child) =>
+                                      FadeTransition(
+                                          opacity: animation, child: child),
+                                  transitionDuration:
+                                      const Duration(milliseconds: 400),
+                                ),
+                              );
+
+                              // If updatedProduct is not null, update your data source.
+                              if (updatedProduct != null) {
                                 setState(() {
-                                  _currentPage--;
+                                  final index = _allProducts
+                                      .indexWhere((p) => p.id == product.id);
+                                  if (index != -1) {
+                                    _allProducts[index] = updatedProduct;
+                                  }
                                 });
+
+                                // Notify parent that a product was updated
+                                _notifyOperationCompleted();
                               }
-                            : null,
-                      ),
-                      Row(
-                        children: List.generate(totalPages, (index) {
-                          return _buildPageButton(index + 1);
-                        }),
-                      ),
-                      // Right arrow
-                      IconButton(
-                        icon: Icon(Icons.arrow_forward,
-                            size: 20.sp, color: Colors.white70),
-                        onPressed: _currentPage < totalPages
-                            ? () {
-                                setState(() {
-                                  _currentPage++;
-                                });
-                              }
-                            : null,
-                      ),
-                    ],
+                            }
+                          },
+                          cells: [
+                            // ID cell
+                            DataCell(Text("${product.id}")),
+                            // Date cell
+                            DataCell(Text(
+                              "${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}",
+                            )),
+                            // Image & Name cell
+                            DataCell(
+                              Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    child: product.image != null
+                                        ? Image.network(
+                                            product.image!,
+                                            width: 50.w,
+                                            height: 50.h,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Container(
+                                                width: 50.w,
+                                                height: 50.h,
+                                                color: Colors.grey.shade800,
+                                                child: Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Colors.white70,
+                                                  size: 24.sp,
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                            width: 50.w,
+                                            height: 50.h,
+                                            color: Colors.grey.shade800,
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white70,
+                                              size: 24.sp,
+                                            ),
+                                          ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: Text(
+                                      product.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Cost Price cell
+                            DataCell(Text(
+                                "\$${product.costPrice.toStringAsFixed(2)}")),
+                            // Sell Price cell
+                            DataCell(Text(
+                                "\$${product.sellPrice.toStringAsFixed(2)}")),
+                            // Category cell
+                            DataCell(Text(product.category.categoryName)),
+                            // Supplier cell
+                            DataCell(Text(product.supplier.user.name)),
+                            // Status cell with admin note tooltip if exists
+                            DataCell(_buildStatusPill(product.status,
+                                product.adminNote, l10n, isArabic)),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
+                // Pagination row
+                if (visibleProducts.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsetsDirectional.symmetric(
+                        vertical: 16.h, horizontal: 8.w),
+                    child: Row(
+                      children: [
+                        Spacer(),
+                        Text(
+                          "${l10n.total} $totalItems ${l10n.items}",
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                ),
+                        ),
+                        SizedBox(width: 10.w),
+                        // Left/Right arrow (respecting RTL)
+                        IconButton(
+                          icon: Icon(
+                              isRtl ? Icons.arrow_forward : Icons.arrow_back,
+                              size: 20.sp,
+                              color: Colors.white70),
+                          onPressed: _currentPage > 1
+                              ? () {
+                                  setState(() {
+                                    _currentPage--;
+                                  });
+                                }
+                              : null,
+                        ),
+                        Row(
+                          children: List.generate(totalPages, (index) {
+                            return _buildPageButton(index + 1, isArabic);
+                          }),
+                        ),
+                        // Right/Left arrow (respecting RTL)
+                        IconButton(
+                          icon: Icon(
+                              isRtl ? Icons.arrow_back : Icons.arrow_forward,
+                              size: 20.sp,
+                              color: Colors.white70),
+                          onPressed: _currentPage < totalPages
+                              ? () {
+                                  setState(() {
+                                    _currentPage++;
+                                  });
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
   /// Status pill with different colors based on status and tooltip for admin note.
-  Widget _buildStatusPill(String status, String? adminNote) {
+  Widget _buildStatusPill(
+      String status, String? adminNote, AppLocalizations l10n, bool isArabic) {
     late Color bgColor;
+    late String localizedStatus;
 
     switch (status) {
       case "Pending":
-        bgColor = Colors.amber; // amber/yellow for pending
+        bgColor = Colors.amber;
+        localizedStatus = l10n.pending;
         break;
       case "Accepted":
-        bgColor = const Color.fromARGB(178, 0, 224, 116); // green for accepted
+        bgColor = const Color.fromARGB(178, 0, 224, 116);
+        localizedStatus = l10n.accepted;
         break;
       case "Declined":
-        bgColor = const Color.fromARGB(255, 229, 62, 62); // red for declined
+        bgColor = const Color.fromARGB(255, 229, 62, 62);
+        localizedStatus = l10n.declined;
         break;
       default:
-        bgColor = Colors.grey; // default
+        bgColor = Colors.grey;
+        localizedStatus = status;
     }
 
     final statusPill = Container(
@@ -536,19 +612,25 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
         border: Border.all(color: bgColor),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: bgColor,
-        ),
+        localizedStatus,
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              ),
       ),
     );
 
     // If there's an admin note, wrap the status pill with a tooltip
     if (adminNote != null && adminNote.isNotEmpty) {
       return Tooltip(
-        message: "Admin Note: $adminNote",
+        message: "${l10n.adminNoteColon} $adminNote",
         preferBelow: true,
         showDuration: const Duration(seconds: 3),
         decoration: BoxDecoration(
@@ -559,10 +641,15 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
             width: 1.5,
           ),
         ),
-        textStyle: GoogleFonts.spaceGrotesk(
-          color: Colors.white,
-          fontSize: 14.sp,
-        ),
+        textStyle: isArabic
+            ? GoogleFonts.cairo(
+                color: Colors.white,
+                fontSize: 14.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 14.sp,
+              ),
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
         child: statusPill,
       );
@@ -573,7 +660,7 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   }
 
   /// Pagination button builder.
-  Widget _buildPageButton(int pageIndex) {
+  Widget _buildPageButton(int pageIndex, bool isArabic) {
     final bool isSelected = (pageIndex == _currentPage);
 
     return Padding(
@@ -599,11 +686,17 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
         },
         child: Text(
           "$pageIndex",
-          style: GoogleFonts.spaceGrotesk(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                ),
         ),
       ),
     );

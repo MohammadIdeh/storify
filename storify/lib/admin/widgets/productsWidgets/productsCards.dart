@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class ProductsCards extends StatelessWidget {
   final String title;
@@ -16,6 +18,10 @@ class ProductsCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return AspectRatio(
       aspectRatio: 318 / 199, // original width/height ratio
       child: Container(
@@ -34,63 +40,79 @@ class ProductsCards extends StatelessWidget {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16.0,
+            vertical: 16.0,
+          ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Calculate sizes based on available dimensions.
+              // Calculate sizes based on available dimensions (reduced sizes)
               final spacingBetween =
                   constraints.maxHeight * 0.16; // ~12/199 of height
               final titleFontSize =
-                  constraints.maxWidth * 0.090; // ~15/318 of width
+                  constraints.maxWidth * 0.070; // reduced from 0.090
               final valueFontSize =
-                  constraints.maxWidth * 0.10; // ~32/318 of width
-              final subtextFontSize = constraints.maxWidth * 0.045;
+                  constraints.maxWidth * 0.080; // reduced from 0.10
+              final subtextFontSize =
+                  constraints.maxWidth * 0.038; // reduced from 0.045
               final arrowSize =
                   constraints.maxWidth * 0.1; // roughly responsive arrow size
 
               return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.center, // Center all content
+                mainAxisAlignment:
+                    MainAxisAlignment.center, // Center vertically
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 30.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: GoogleFonts.spaceGrotesk(
+                  // Title text - centered
+                  Text(
+                    title,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w500,
+                            color: const Color.fromARGB(214, 255, 255, 255),
+                          )
+                        : GoogleFonts.spaceGrotesk(
                             fontSize: titleFontSize,
                             fontWeight: FontWeight.w500,
                             color: const Color.fromARGB(214, 255, 255, 255),
                           ),
-                        ),
-                      ],
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: spacingBetween),
-                  // Main value text.
-                  Center(
-                    child: Text(
-                      value,
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: valueFontSize,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                  // Main value text - centered
+                  Text(
+                    value,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: valueFontSize,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: valueFontSize,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: spacingBetween * 0.26),
-                  // Subtext.
-                  Padding(
-                    padding: const EdgeInsets.only(left: 30.0),
-                    child: Text(
-                      subtext,
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: subtextFontSize,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white70,
-                      ),
-                    ),
+                  // Subtext - centered
+                  Text(
+                    subtext,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: subtextFontSize,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: subtextFontSize,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white70,
+                          ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               );
