@@ -1,4 +1,4 @@
-// lib/admin/screens/orders.dart (Fixed version)
+// lib/admin/screens/orders.dart (Updated with Customer History)
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,11 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Ensure these imports point to your local files.
 import 'package:storify/admin/widgets/navigationBar.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
-import 'package:storify/admin/screens/Categories.dart';
-import 'package:storify/admin/screens/dashboard.dart';
-import 'package:storify/admin/screens/productsScreen.dart';
-import 'package:storify/admin/screens/roleManegment.dart';
-import 'package:storify/admin/screens/track.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderCards.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderModel.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/orderTable.dart';
@@ -23,6 +18,7 @@ import 'package:storify/admin/widgets/OrderSupplierWidgets/assignOrderPopup.dart
 import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_service.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_models.dart';
 import 'package:storify/admin/widgets/OrderSupplierWidgets/low_stock_popup.dart';
+import 'package:storify/admin/widgets/OrderSupplierWidgets/customer_history_popup.dart';
 import 'package:storify/utilis/notification_service.dart';
 import 'package:storify/utilis/notificationModel.dart';
 
@@ -632,7 +628,6 @@ class _OrdersState extends State<Orders> {
                   ),
                   const Spacer(),
                   // Show "Order From Supplier" button only in supplier mode
-
                   if (_isSupplierMode)
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -661,6 +656,42 @@ class _OrdersState extends State<Orders> {
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
+                      ),
+                    ),
+
+                  // Show "Customer Orders History" button only in customer mode
+                  if (!_isSupplierMode)
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 0, 150, 136),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        fixedSize: Size(250.w, 50.h),
+                        elevation: 1,
+                      ),
+                      onPressed: () async {
+                        // Show the customer history popup
+                        await showCustomerHistoryPopup(context);
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.history,
+                            color: Colors.white,
+                            size: 20.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'Customer History',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -796,8 +827,6 @@ class _OrdersState extends State<Orders> {
                                 circleColor: data.circleColor,
                                 isSelected: isSelected,
                               ),
-                              // NEW: Add dropdown for Active Orders card in customer mode
-                              // NEW: Add dropdown for Active Orders card in customer mode
                               // NEW: Add dropdown for Active Orders card in customer mode
                               if (data.hasDropdown && index == 1 && isSelected)
                                 Positioned(
