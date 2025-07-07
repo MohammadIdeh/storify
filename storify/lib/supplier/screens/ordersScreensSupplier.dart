@@ -1,8 +1,10 @@
-// lib/supplier/widgets/SupplierOrders.dart
+// lib/supplier/screens/ordersScreensSupplier.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/supplier/screens/productScreenSupplier.dart';
 import 'package:storify/supplier/widgets/orderwidgets/OrderDetailsWidget.dart';
 import 'package:storify/supplier/widgets/orderwidgets/OrderDetails_Model.dart';
@@ -35,19 +37,37 @@ class _SupplierOrdersState extends State<SupplierOrders> {
   Order? _selectedOrder;
   Order? _orderDetails;
 
-  // Filter options
-  final List<String> _filterOptions = [
-    "Total",
-    "Active",
-    "Completed",
-    "Cancelled"
-  ];
+  // Filter options - will be localized in build method
+  List<String> _filterOptions = [];
+
+  // Flag to prevent multiple calls
+  bool _hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProfilePicture();
-    _loadOrders();
+    _loadProfilePicture(); // Safe to call in initState as it doesn't use localization
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only run once and only after the localization context is available
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _initializeFilterOptions();
+      _loadOrders();
+    }
+  }
+
+  void _initializeFilterOptions() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    _filterOptions = [
+      l10n.totalOrders,
+      l10n.activeOrders,
+      l10n.completedOrders,
+      l10n.cancelledOrders
+    ];
   }
 
   Future<void> _loadProfilePicture() async {
@@ -58,8 +78,9 @@ class _SupplierOrdersState extends State<SupplierOrders> {
   }
 
   // Load orders from API
-// Update _loadOrders method in SupplierOrders class
   Future<void> _loadOrders() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     setState(() {
       _isLoading = true;
     });
@@ -83,10 +104,10 @@ class _SupplierOrdersState extends State<SupplierOrders> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMsg),
+              content: Text(l10n.authenticationError),
               backgroundColor: Colors.red,
               action: SnackBarAction(
-                label: 'Login',
+                label: l10n.loginButton,
                 onPressed: () {
                   // Navigate to login screen
                   // Navigator.of(context).pushReplacementNamed('/login');
@@ -100,7 +121,7 @@ class _SupplierOrdersState extends State<SupplierOrders> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to load orders: $e'),
+              content: Text('${l10n.failedToLoadOrders}: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -131,7 +152,6 @@ class _SupplierOrdersState extends State<SupplierOrders> {
   }
 
   // Handle order selection
-// In SupplierOrders.dart
   void _handleOrderSelected(Order? order) {
     setState(() {
       _selectedOrder = order;
@@ -141,8 +161,9 @@ class _SupplierOrdersState extends State<SupplierOrders> {
   }
 
   // Refresh orders after status update
-// Refresh orders after status update
   void _refreshOrders() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     setState(() {
       _isLoading = true; // Show loading indicator
     });
@@ -168,7 +189,7 @@ class _SupplierOrdersState extends State<SupplierOrders> {
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to refresh orders: $e'),
+          content: Text('${l10n.failedToRefreshOrders}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -185,119 +206,144 @@ class _SupplierOrdersState extends State<SupplierOrders> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(250),
-        child: NavigationBarSupplier(
-          currentIndex: _currentIndex,
-          onTap: _onNavItemTap,
-          profilePictureUrl: profilePictureUrl,
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(250),
+          child: NavigationBarSupplier(
+            currentIndex: _currentIndex,
+            onTap: _onNavItemTap,
+            profilePictureUrl: profilePictureUrl,
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(30.r),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Orders Header
-              Text(
-                "Order Management",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 34.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(30.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Orders Header
+                Text(
+                  l10n.orderManagement,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 34.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 34.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                 ),
-              ),
-              SizedBox(height: 24.h),
+                SizedBox(height: 24.h),
 
-              // Filter and Search Row
-              Row(
-                children: [
-                  Text(
-                    "Orders list",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 25.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                // Filter and Search Row
+                Row(
+                  children: [
+                    Text(
+                      l10n.ordersList,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 25.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 25.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 10.w,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 36, 50, 69),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-                    child: Row(
-                      children: List.generate(
-                        _filterOptions.length,
-                        (index) => Padding(
-                          padding: EdgeInsets.only(right: 8.w),
-                          child: _buildFilterChip(_filterOptions[index], index),
+                    SizedBox(width: 10.w),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 36, 50, 69),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                      child: Row(
+                        children: List.generate(
+                          _filterOptions.length,
+                          (index) => Padding(
+                            padding: EdgeInsets.only(
+                              left: isRtl ? 8.w : 0,
+                              right: isRtl ? 0 : 8.w,
+                            ),
+                            child:
+                                _buildFilterChip(_filterOptions[index], index),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Spacer(),
-                  Container(
-                    width: 300.w,
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 36, 50, 69),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: TextField(
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
+                    const Spacer(),
+                    Container(
+                      width: 300.w,
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 36, 50, 69),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
-                      decoration: InputDecoration(
-                        hintText: "Search ID",
-                        hintStyle: GoogleFonts.spaceGrotesk(
-                          color: Colors.white30,
+                      child: TextField(
+                        style: isArabic
+                            ? GoogleFonts.cairo(color: Colors.white70)
+                            : GoogleFonts.spaceGrotesk(color: Colors.white70),
+                        textDirection:
+                            isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        decoration: InputDecoration(
+                          hintText: l10n.searchOrderId,
+                          hintStyle: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white30)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white30),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.white30,
+                            size: 20.sp,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12.h),
                         ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.white30,
-                          size: 20.sp,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12.h),
+                        onChanged: _updateSearchQuery,
                       ),
-                      onChanged: _updateSearchQuery,
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16.h),
-
-              // Orders Table or loading indicator
-              _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        color: const Color.fromARGB(255, 105, 65, 198),
-                      ),
-                    )
-                  : SupplierOrderTable(
-                      orders: _orders,
-                      filter: _filterOptions[_selectedFilterIndex],
-                      searchQuery: _searchQuery,
-                      onOrderSelected: _handleOrderSelected,
-                      selectedOrder: _selectedOrder,
-                    ),
-
-              // Order Details Widget (only shown when an order is selected)
-              if (_selectedOrder != null && _orderDetails != null)
-                OrderDetailsWidget(
-                  orderDetails: _orderDetails!,
-                  onClose: _closeOrderDetails,
-                  onStatusUpdate: _refreshOrders,
-                  apiService: _apiService,
+                  ],
                 ),
-            ],
+                SizedBox(height: 16.h),
+
+                // Orders Table or loading indicator
+                _isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        ),
+                      )
+                    : SupplierOrderTable(
+                        orders: _orders,
+                        filter: _filterOptions.isNotEmpty
+                            ? _filterOptions[_selectedFilterIndex]
+                            : l10n.totalOrders,
+                        searchQuery: _searchQuery,
+                        onOrderSelected: _handleOrderSelected,
+                        selectedOrder: _selectedOrder,
+                      ),
+
+                // Order Details Widget (only shown when an order is selected)
+                if (_selectedOrder != null && _orderDetails != null)
+                  OrderDetailsWidget(
+                    orderDetails: _orderDetails!,
+                    onClose: _closeOrderDetails,
+                    onStatusUpdate: _refreshOrders,
+                    apiService: _apiService,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -306,6 +352,8 @@ class _SupplierOrdersState extends State<SupplierOrders> {
 
   Widget _buildFilterChip(String label, int index) {
     final bool isSelected = _selectedFilterIndex == index;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -325,13 +373,21 @@ class _SupplierOrdersState extends State<SupplierOrders> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : const Color.fromARGB(255, 230, 230, 230),
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                ),
         ),
       ),
     );

@@ -77,11 +77,8 @@ class _SupplierOrderPopupState extends State<SupplierOrderPopup> {
       final error = errorMessage.replaceFirst('Failed to load suppliers: ', '');
       return l10n.failedToLoadSuppliers(error);
     } else if (errorMessage.startsWith('Failed to load products:')) {
-      final error = errorMessage.replaceFirst('Failed to load products: ', '');
-      return l10n.failedToLoadProducts(error);
+      errorMessage.replaceFirst('Failed to load products: ', '');
     } else if (errorMessage.startsWith('Failed to place order:')) {
-      final error = errorMessage.replaceFirst('Failed to place order: ', '');
-      return l10n.failedToPlaceOrder(error);
     } else if (errorMessage.startsWith('Error placing order:')) {
       final error = errorMessage.replaceFirst('Error placing order: ', '');
       return l10n.errorPlacingOrder(error);

@@ -688,7 +688,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: 10.h),
+                            SizedBox(height: 0.h),
                             // Remember me and Forgot Password row.
                             Padding(
                               padding:
@@ -756,7 +756,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ],
                               ),
                             ),
-                            SizedBox(height: 35.h),
+                            SizedBox(height: 15.h),
                             // Login button.
                             SizedBox(
                               height: 55.h,
@@ -786,80 +786,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             color: Colors.white,
                                           ),
                                         ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 10.h),
-                            // Sign in with Google button.
-                            SizedBox(
-                              height: 55.h,
-                              width: 370.w,
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  shape: ContinuousRectangleBorder(
-                                    side: const BorderSide(
-                                      color: Color.fromARGB(38, 238, 238, 238),
-                                    ),
-                                    borderRadius: BorderRadius.circular(20.r),
-                                  ),
-                                  backgroundColor:
-                                      const Color.fromARGB(255, 48, 60, 80),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/images/google.svg',
-                                      width: 25.w,
-                                      height: 25.h,
-                                    ),
-                                    SizedBox(width: 10.w),
-                                    Text(
-                                      l10n.signInGoogle,
-                                      style: _getTextStyle(
-                                        fontSize: 16.sp,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 10.h),
-                            // Sign in with Apple button.
-                            SizedBox(
-                              height: 55.h,
-                              width: 370.w,
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  shape: ContinuousRectangleBorder(
-                                    side: const BorderSide(
-                                      color: Color.fromARGB(38, 238, 238, 238),
-                                    ),
-                                    borderRadius: BorderRadius.circular(20.r),
-                                  ),
-                                  backgroundColor:
-                                      const Color.fromARGB(255, 48, 60, 80),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/images/apple.svg',
-                                      width: 25.w,
-                                      height: 25.h,
-                                    ),
-                                    SizedBox(width: 10.w),
-                                    Text(
-                                      l10n.signInApple,
-                                      style: _getTextStyle(
-                                        fontSize: 16.sp,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ),

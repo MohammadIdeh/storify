@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 // Model for requested products
 class RequestedProductModel {
@@ -67,12 +69,17 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   bool _sortAscending = true;
   final int _itemsPerPage = 5; // Changed to 5 as requested
 
-  final List<String> _statusOptions = ["Pending", "Accepted", "Declined"];
+  List<String> _statusOptions = [];
 
   @override
-  void initState() {
-    super.initState();
-    _loadSupplierId().then((_) => _fetchRequestedProducts());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    _statusOptions = [l10n.pending, l10n.accepted, l10n.declined];
+
+    if (_supplierId == null) {
+      _loadSupplierId().then((_) => _fetchRequestedProducts());
+    }
   }
 
   void refreshProducts() {
@@ -172,6 +179,20 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     }
   }
 
+  // Get localized status
+  String _getLocalizedStatus(String status, AppLocalizations l10n) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return l10n.pending;
+      case 'accepted':
+        return l10n.accepted;
+      case 'declined':
+        return l10n.declined;
+      default:
+        return status;
+    }
+  }
+
   /// Returns filtered, searched, and sorted products.
   List<RequestedProductModel> get filteredProducts {
     List<RequestedProductModel> temp = List.from(_allProducts);
@@ -180,7 +201,14 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     if (widget.selectedFilterIndex > 0 &&
         widget.selectedFilterIndex <= _statusOptions.length) {
       String statusFilter = _statusOptions[widget.selectedFilterIndex - 1];
-      temp = temp.where((p) => p.status == statusFilter).toList();
+      temp = temp
+          .where((p) =>
+              _getLocalizedStatus(
+                  p.status,
+                  Localizations.of<AppLocalizations>(
+                      context, AppLocalizations)!) ==
+              statusFilter)
+          .toList();
     }
 
     // Search by name or product ID
@@ -206,7 +234,7 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   }
 
   /// Helper: builds a header label with a sort arrow.
-  Widget _buildSortableColumnLabel(String label, int colIndex) {
+  Widget _buildSortableColumnLabel(String label, int colIndex, bool isRtl) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
     if (isSorted) {
@@ -219,6 +247,7 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
       children: [
         Text(label),
         SizedBox(width: 4.w),
@@ -242,6 +271,10 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -273,191 +306,226 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30.r),
-              topRight: Radius.circular(30.r),
-            ),
-          ),
-          width: constraints.maxWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Wrap DataTable in horizontal SingleChildScrollView.
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-                      (Set<WidgetState> states) => Colors.transparent,
-                    ),
-                    showCheckboxColumn: false,
-                    headingRowColor:
-                        MaterialStateProperty.all<Color>(headingColor),
-                    border: TableBorder(
-                      top: dividerSide,
-                      bottom: dividerSide,
-                      left: dividerSide,
-                      right: dividerSide,
-                      horizontalInside: dividerSide2,
-                      verticalInside: dividerSide2,
-                    ),
-                    columnSpacing: 20.w,
-                    dividerThickness: 0,
-                    headingTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    dataTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 13.sp,
-                    ),
-                    columns: [
-                      // ID Column
-                      const DataColumn(label: Text("ID")),
-                      // Date Column (sortable)
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Date Requested", 1),
-                        onSort: (columnIndex, _) {
-                          _onSort(1);
-                        },
-                      ),
-                      // Image & Name Column
-                      const DataColumn(label: Text("Image & Name")),
-                      // Cost Price Column
-                      const DataColumn(label: Text("Cost Price")),
-                      // Category Column
-                      const DataColumn(label: Text("Category")),
-                      // Status Column
-                      const DataColumn(label: Text("Status")),
-                    ],
-                    rows: visibleProducts.map((product) {
-                      return DataRow(
-                        cells: [
-                          // ID cell
-                          DataCell(Text("${product.id}")),
-                          // Date cell
-                          DataCell(Text(
-                            "${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}",
-                          )),
-                          // Image & Name cell
-                          DataCell(
-                            Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  child: product.image != null
-                                      ? Image.network(
-                                          product.image!,
-                                          width: 50.w,
-                                          height: 50.h,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                            return Container(
-                                              width: 50.w,
-                                              height: 50.h,
-                                              color: Colors.grey.shade800,
-                                              child: Icon(
-                                                Icons.image_not_supported,
-                                                color: Colors.white70,
-                                                size: 24.sp,
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : Container(
-                                          width: 50.w,
-                                          height: 50.h,
-                                          color: Colors.grey.shade800,
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            color: Colors.white70,
-                                            size: 24.sp,
-                                          ),
-                                        ),
-                                ),
-                                SizedBox(width: 10.w),
-                                Expanded(
-                                  child: Text(
-                                    product.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Cost Price cell
-                          DataCell(Text(
-                              "\$${product.costPrice.toStringAsFixed(2)}")),
-                          // Category cell
-                          DataCell(Text(product.categoryName)),
-                          // Status cell with potential admin note tooltip
-                          DataCell(
-                            _buildStatusPill(product.status,
-                                adminNote: product.adminNote),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30.r),
+                topRight: Radius.circular(30.r),
               ),
-              // Pagination row
-              if (filteredProducts.isNotEmpty)
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
-                  child: Row(
-                    children: [
-                      Spacer(),
-                      Text(
-                        "Total $totalItems items",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
+            ),
+            width: constraints.maxWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Wrap DataTable in horizontal SingleChildScrollView.
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                        (Set<WidgetState> states) => Colors.transparent,
+                      ),
+                      showCheckboxColumn: false,
+                      headingRowColor:
+                          MaterialStateProperty.all<Color>(headingColor),
+                      border: TableBorder(
+                        top: dividerSide,
+                        bottom: dividerSide,
+                        left: dividerSide,
+                        right: dividerSide,
+                        horizontalInside: dividerSide2,
+                        verticalInside: dividerSide2,
+                      ),
+                      columnSpacing: 20.w,
+                      dividerThickness: 0,
+                      headingTextStyle: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      dataTextStyle: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13.sp,
+                            ),
+                      columns: [
+                        // ID Column
+                        DataColumn(label: Text(l10n.id)),
+                        // Date Column (sortable)
+                        DataColumn(
+                          label: _buildSortableColumnLabel(
+                              l10n.dateRequested, 1, isRtl),
+                          onSort: (columnIndex, _) {
+                            _onSort(1);
+                          },
                         ),
-                      ),
-                      SizedBox(width: 10.w),
-                      // Left arrow
-                      IconButton(
-                        icon: Icon(Icons.arrow_back,
-                            size: 20.sp, color: Colors.white70),
-                        onPressed: _currentPage > 1
-                            ? () {
-                                setState(() {
-                                  _currentPage--;
-                                });
-                              }
-                            : null,
-                      ),
-                      Row(
-                        children: List.generate(totalPages, (index) {
-                          return _buildPageButton(index + 1);
-                        }),
-                      ),
-                      // Right arrow
-                      IconButton(
-                        icon: Icon(Icons.arrow_forward,
-                            size: 20.sp, color: Colors.white70),
-                        onPressed: _currentPage < totalPages
-                            ? () {
-                                setState(() {
-                                  _currentPage++;
-                                });
-                              }
-                            : null,
-                      ),
-                    ],
+                        // Image & Name Column
+                        DataColumn(label: Text(l10n.imageAndName)),
+                        // Cost Price Column
+                        DataColumn(label: Text(l10n.costPrice)),
+                        // Category Column
+                        DataColumn(label: Text(l10n.category)),
+                        // Status Column
+                        DataColumn(label: Text(l10n.status)),
+                      ],
+                      rows: visibleProducts.map((product) {
+                        return DataRow(
+                          cells: [
+                            // ID cell
+                            DataCell(Text("${product.id}")),
+                            // Date cell
+                            DataCell(Text(
+                              "${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}",
+                            )),
+                            // Image & Name cell
+                            DataCell(
+                              Row(
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    child: product.image != null
+                                        ? Image.network(
+                                            product.image!,
+                                            width: 50.w,
+                                            height: 50.h,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Container(
+                                                width: 50.w,
+                                                height: 50.h,
+                                                color: Colors.grey.shade800,
+                                                child: Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Colors.white70,
+                                                  size: 24.sp,
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                            width: 50.w,
+                                            height: 50.h,
+                                            color: Colors.grey.shade800,
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white70,
+                                              size: 24.sp,
+                                            ),
+                                          ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: Text(
+                                      product.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      textDirection: isRtl
+                                          ? TextDirection.rtl
+                                          : TextDirection.ltr,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Cost Price cell
+                            DataCell(Text(
+                                "\$${product.costPrice.toStringAsFixed(2)}")),
+                            // Category cell
+                            DataCell(Text(product.categoryName)),
+                            // Status cell with potential admin note tooltip
+                            DataCell(
+                              _buildStatusPill(product.status, l10n, isArabic,
+                                  adminNote: product.adminNote),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
-            ],
+                // Pagination row
+                if (filteredProducts.isNotEmpty)
+                  Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+                    child: Row(
+                      textDirection:
+                          isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      children: [
+                        Spacer(),
+                        Text(
+                          "${l10n.total} $totalItems ${l10n.items}",
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                ),
+                        ),
+                        SizedBox(width: 10.w),
+                        // Previous page button
+                        IconButton(
+                          icon: Icon(
+                              Icons
+                                  .arrow_back, // Always arrow_back for previous
+                              size: 20.sp,
+                              color: Colors.white70),
+                          onPressed: _currentPage > 1
+                              ? () {
+                                  setState(() {
+                                    _currentPage--;
+                                  });
+                                }
+                              : null,
+                        ),
+                        Row(
+                          children: List.generate(totalPages, (index) {
+                            return _buildPageButton(index + 1, isArabic);
+                          }),
+                        ),
+                        // Next page button
+                        IconButton(
+                          icon: Icon(
+                              Icons
+                                  .arrow_forward, // Always arrow_forward for next
+                              size: 20.sp,
+                              color: Colors.white70),
+                          onPressed: _currentPage < totalPages
+                              ? () {
+                                  setState(() {
+                                    _currentPage++;
+                                  });
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -465,17 +533,19 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   }
 
   /// Status pill with different colors based on status and tooltip for admin note.
-  Widget _buildStatusPill(String status, {String? adminNote}) {
+  Widget _buildStatusPill(String status, AppLocalizations l10n, bool isArabic,
+      {String? adminNote}) {
     late Color bgColor;
+    String localizedStatus = _getLocalizedStatus(status, l10n);
 
-    switch (status) {
-      case "Pending":
+    switch (status.toLowerCase()) {
+      case "pending":
         bgColor = Colors.amber; // amber/yellow for pending
         break;
-      case "Accepted":
+      case "accepted":
         bgColor = const Color.fromARGB(178, 0, 224, 116); // green for accepted
         break;
-      case "Declined":
+      case "declined":
         bgColor = const Color.fromARGB(255, 229, 62, 62); // red for declined
         break;
       default:
@@ -490,19 +560,25 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
         border: Border.all(color: bgColor),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: bgColor,
-        ),
+        localizedStatus,
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              ),
       ),
     );
 
     // If there's an admin note, wrap the status pill with a tooltip
     if (adminNote != null && adminNote.isNotEmpty) {
       return Tooltip(
-        message: "Admin Note: $adminNote",
+        message: "${l10n.adminNote}: $adminNote",
         preferBelow: true,
         showDuration: const Duration(seconds: 3),
         decoration: BoxDecoration(
@@ -513,10 +589,15 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
             width: 1.5,
           ),
         ),
-        textStyle: GoogleFonts.spaceGrotesk(
-          color: Colors.white,
-          fontSize: 14.sp,
-        ),
+        textStyle: isArabic
+            ? GoogleFonts.cairo(
+                color: Colors.white,
+                fontSize: 14.sp,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 14.sp,
+              ),
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
         child: statusPill,
       );
@@ -527,7 +608,7 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
   }
 
   /// Pagination button builder.
-  Widget _buildPageButton(int pageIndex) {
+  Widget _buildPageButton(int pageIndex, bool isArabic) {
     final bool isSelected = (pageIndex == _currentPage);
 
     return Padding(
@@ -553,11 +634,17 @@ class RequestedProductsTableState extends State<RequestedProductsTable> {
         },
         child: Text(
           "$pageIndex",
-          style: GoogleFonts.spaceGrotesk(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                ),
         ),
       ),
     );

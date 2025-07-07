@@ -1733,7 +1733,7 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                       l10n.totalValue,
                       '\$${order['orderMetrics']?['totalValue'] ?? 0}',
                       isArabic),
-                  _buildDetailRow(l10n.itemsCount,
+                  _buildDetailRow(l10n.itemsCountt,
                       '${order['orderMetrics']?['totalItems'] ?? 0}', isArabic),
                 ],
                 isArabic),

@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class ProductModel {
   final int productId;
@@ -88,9 +90,11 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   bool _statusSwitch = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadSupplierId().then((_) => _fetchProducts());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_supplierId == null) {
+      _loadSupplierId().then((_) => _fetchProducts());
+    }
   }
 
   void refreshProducts() {
@@ -187,7 +191,24 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     }
   }
 
+  // Get localized status
+  String _getLocalizedStatus(String status, AppLocalizations l10n) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return l10n.active;
+      case 'not active':
+      case 'notactive':
+        return l10n.notActive;
+      default:
+        return status;
+    }
+  }
+
   Future<void> _showEditDialog(ProductModel product) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     _priceController.text =
         product.priceSupplier?.toString() ?? product.costPrice.toString();
 
@@ -203,183 +224,257 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return StatefulBuilder(builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-            title: Text(
-              'Edit Product',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          return Directionality(
+            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+            child: AlertDialog(
+              backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+              title: Text(
+                l10n.editProduct,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
               ),
-            ),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  Text(
-                    'Product: ${product.name}',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                  Text(
-                    'ID: ${product.productId}',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
-                  Text(
-                    'Supplier Price',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  if (product.priceSupplier != null)
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: <Widget>[
                     Text(
-                      'Current Supplier Price: \$${product.priceSupplier!.toStringAsFixed(2)}',
-                      style: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
-                      ),
+                      '${l10n.product}: ${product.name}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            ),
                     ),
-                  SizedBox(height: 8.h),
-                  TextField(
-                    controller: _priceController,
-                    keyboardType:
-                        TextInputType.numberWithOptions(decimal: true),
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
+                    Text(
+                      '${l10n.id}: ${product.productId}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white70,
+                            ),
                     ),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color.fromARGB(255, 29, 41, 57),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                        borderSide: BorderSide.none,
-                      ),
-                      hintText: 'Enter new price',
-                      hintStyle: GoogleFonts.spaceGrotesk(
-                        color: Colors.white38,
-                      ),
-                      prefixText: '\$ ',
-                      prefixStyle: GoogleFonts.spaceGrotesk(
-                        color: Colors.white70,
-                      ),
+                    SizedBox(height: 24.h),
+                    Text(
+                      l10n.supplierPrice,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            ),
                     ),
-                  ),
-                  SizedBox(height: 24.h),
-                  Text(
-                    'Product Status',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'Current Status: ${product.status}',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                    SizedBox(height: 8.h),
+                    if (product.priceSupplier != null)
                       Text(
-                        'Set Product Active:',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
+                        '${l10n.currentSupplierPrice}: \$${product.priceSupplier!.toStringAsFixed(2)}',
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                              ),
+                      ),
+                    SizedBox(height: 8.h),
+                    TextField(
+                      controller: _priceController,
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                            ),
+                      textDirection: TextDirection.ltr, // Keep numbers LTR
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color.fromARGB(255, 29, 41, 57),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: BorderSide.none,
                         ),
+                        hintText: l10n.enterNewPrice,
+                        hintStyle: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white38,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white38,
+                              ),
+                        prefixText: '\$ ',
+                        prefixStyle: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white70,
+                              ),
                       ),
-                      Switch(
-                        value: _statusSwitch,
-                        activeColor: Colors.green,
-                        activeTrackColor: Colors.green.withOpacity(0.3),
-                        inactiveThumbColor: Colors.red,
-                        inactiveTrackColor: Colors.red.withOpacity(0.3),
-                        onChanged: (value) {
-                          setState(() {
-                            _statusSwitch = value;
-                          });
-                        },
-                      ),
-                    ],
+                    ),
+                    SizedBox(height: 24.h),
+                    Text(
+                      l10n.productStatus,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      '${l10n.currentStatus}: ${_getLocalizedStatus(product.status, l10n)}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      textDirection:
+                          isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.setProductActive,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                  ),
+                          ),
+                        ),
+                        Switch(
+                          value: _statusSwitch,
+                          activeColor: Colors.green,
+                          activeTrackColor: Colors.green.withOpacity(0.3),
+                          inactiveThumbColor: Colors.red,
+                          inactiveTrackColor: Colors.red.withOpacity(0.3),
+                          onChanged: (value) {
+                            setState(() {
+                              _statusSwitch = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _statusSwitch
+                          ? l10n.productWillBeVisible
+                          : l10n.productWillBeHidden,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: _statusSwitch ? Colors.green : Colors.red,
+                              fontSize: 13.sp,
+                              fontStyle: FontStyle.italic,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: _statusSwitch ? Colors.green : Colors.red,
+                              fontSize: 13.sp,
+                              fontStyle: FontStyle.italic,
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text(
+                    l10n.cancel,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white70,
+                          ),
                   ),
-                  Text(
-                    _statusSwitch
-                        ? 'Product will be visible to customers'
-                        : 'Product will be hidden from customers',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: _statusSwitch ? Colors.green : Colors.red,
-                      fontSize: 13.sp,
-                      fontStyle: FontStyle.italic,
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                   ),
-                ],
-              ),
+                  child: Text(
+                    l10n.saveChanges,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                  ),
+                  onPressed: () {
+                    final priceText = _priceController.text.trim();
+                    final newPrice = double.tryParse(priceText);
+                    final newStatus = _statusSwitch ? "Active" : "NotActive";
+
+                    final statusChanged = (newStatus != product.status);
+
+                    debugPrint(
+                        '🔄 Status changed: $statusChanged (Original: ${product.status}, New: $newStatus)');
+
+                    final priceChanged = newPrice != null &&
+                        (product.priceSupplier == null ||
+                            newPrice != product.priceSupplier);
+
+                    Navigator.of(context).pop();
+
+                    if (priceChanged && statusChanged) {
+                      _updateBoth(product.productId, newPrice!, newStatus);
+                    } else if (priceChanged) {
+                      _updatePrice(product.productId, newPrice!);
+                    } else if (statusChanged) {
+                      _updateStatus(product.productId, newStatus);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.noChangesWereMade)),
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
-            actions: <Widget>[
-              TextButton(
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white70,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                ),
-                child: Text(
-                  'Save Changes',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: () {
-                  final priceText = _priceController.text.trim();
-                  final newPrice = double.tryParse(priceText);
-                  final newStatus = _statusSwitch ? "Active" : "NotActive";
-
-                  final statusChanged = (newStatus != product.status);
-
-                  debugPrint(
-                      '🔄 Status changed: $statusChanged (Original: ${product.status}, New: $newStatus)');
-
-                  final priceChanged = newPrice != null &&
-                      (product.priceSupplier == null ||
-                          newPrice != product.priceSupplier);
-
-                  Navigator.of(context).pop();
-
-                  if (priceChanged && statusChanged) {
-                    _updateBoth(product.productId, newPrice!, newStatus);
-                  } else if (priceChanged) {
-                    _updatePrice(product.productId, newPrice!);
-                  } else if (statusChanged) {
-                    _updateStatus(product.productId, newStatus);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('No changes were made')),
-                    );
-                  }
-                },
-              ),
-            ],
           );
         });
       },
@@ -387,20 +482,20 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   }
 
   Future<void> _updateBoth(int productId, double price, String status) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       await _updatePriceApi(productId, price);
-
       await _updateStatusApi(productId, status);
-
       await _fetchProducts();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Product updated successfully'),
+          content: Text(l10n.productUpdatedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -410,7 +505,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error updating product: $e'),
+          content: Text('${l10n.errorUpdatingProduct}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -418,6 +513,8 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   }
 
   Future<void> _updatePrice(int productId, double price) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     setState(() {
       _isLoading = true;
     });
@@ -426,7 +523,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       await _updatePriceApi(productId, price);
       await _fetchProducts();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Price updated successfully')),
+        SnackBar(content: Text(l10n.priceUpdatedSuccessfully)),
       );
     } catch (e) {
       setState(() {
@@ -434,7 +531,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error updating price: $e'),
+          content: Text('${l10n.errorUpdatingPrice}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -442,6 +539,8 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   }
 
   Future<void> _updateStatus(int productId, String status) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     ProductModel? productToUpdate;
     for (var product in _allProducts) {
       if (product.productId == productId) {
@@ -453,7 +552,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     if (productToUpdate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: Product not found'),
+          content: Text(l10n.errorProductNotFound),
           backgroundColor: Colors.red,
         ),
       );
@@ -476,7 +575,8 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Status updated from $oldStatus to $status'),
+          content: Text(
+              '${l10n.statusUpdatedFrom} ${_getLocalizedStatus(oldStatus, l10n)} ${l10n.to} ${_getLocalizedStatus(status, l10n)}'),
           backgroundColor: status == "Active" ? Colors.green : Colors.red,
         ),
       );
@@ -487,7 +587,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Warning: Status may not be saved on server: $e'),
+          content: Text('${l10n.warningStatusMayNotBeSaved}: $e'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -553,6 +653,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
   }
 
   List<ProductModel> get filteredProducts {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     List<ProductModel> temp = List.from(_allProducts);
 
     if (widget.selectedFilterIndex == 1) {
@@ -588,7 +689,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     return temp;
   }
 
-  Widget _buildSortableColumnLabel(String label, int colIndex) {
+  Widget _buildSortableColumnLabel(String label, int colIndex, bool isRtl) {
     bool isSorted = _sortColumnIndex == colIndex;
     Widget arrow = SizedBox.shrink();
     if (isSorted) {
@@ -601,6 +702,7 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
       children: [
         Text(label),
         SizedBox(width: 4.w),
@@ -623,6 +725,10 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -652,196 +758,233 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30.r),
-              topRight: Radius.circular(30.r),
-            ),
-          ),
-          width: constraints.maxWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-                      (Set<WidgetState> states) => Colors.transparent,
-                    ),
-                    showCheckboxColumn: false,
-                    headingRowColor:
-                        MaterialStateProperty.all<Color>(headingColor),
-                    border: TableBorder(
-                      top: dividerSide,
-                      bottom: dividerSide,
-                      left: dividerSide,
-                      right: dividerSide,
-                      horizontalInside: dividerSide2,
-                      verticalInside: dividerSide2,
-                    ),
-                    columnSpacing: 20.w,
-                    dividerThickness: 0,
-                    headingTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    dataTextStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 13.sp,
-                    ),
-                    columns: [
-                      const DataColumn(label: Text("ID")),
-                      const DataColumn(label: Text("Image & Name")),
-                      DataColumn(
-                        label: _buildSortableColumnLabel("Supplier Price", 1),
-                        onSort: (columnIndex, _) {
-                          _onSort(1);
-                        },
-                      ),
-                      const DataColumn(label: Text("Category")),
-                      const DataColumn(label: Text("Status")),
-                      const DataColumn(label: Text("Actions")),
-                    ],
-                    rows: visibleProducts.map((product) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text("${product.productId}")),
-                          DataCell(
-                            Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  child: Image.network(
-                                    product.image,
-                                    width: 50.w,
-                                    height: 50.h,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        width: 50.w,
-                                        height: 50.h,
-                                        color: Colors.grey.shade800,
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.white70,
-                                          size: 24.sp,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                SizedBox(width: 10.w),
-                                Expanded(
-                                  child: Text(
-                                    product.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          DataCell(
-                            product.priceSupplier != null
-                                ? Text(
-                                    "\$${product.priceSupplier!.toStringAsFixed(2)}")
-                                : Text("Not set",
-                                    style: TextStyle(
-                                        fontStyle: FontStyle.italic,
-                                        color: Colors.grey)),
-                          ),
-                          DataCell(Text(product.categoryName)),
-                          DataCell(_buildStatusPill(product.status)),
-                          DataCell(
-                            IconButton(
-                              icon: Icon(
-                                Icons.edit,
-                                color: const Color.fromARGB(255, 105, 65, 198),
-                                size: 22.sp,
-                              ),
-                              onPressed: () {
-                                _showEditDialog(product);
-                              },
-                              tooltip: "Edit Product",
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30.r),
+                topRight: Radius.circular(30.r),
               ),
-              if (filteredProducts.isNotEmpty)
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
-                  child: Row(
-                    children: [
-                      Spacer(),
-                      Text(
-                        "Total $totalItems items",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
+            ),
+            width: constraints.maxWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                        (Set<WidgetState> states) => Colors.transparent,
+                      ),
+                      showCheckboxColumn: false,
+                      headingRowColor:
+                          MaterialStateProperty.all<Color>(headingColor),
+                      border: TableBorder(
+                        top: dividerSide,
+                        bottom: dividerSide,
+                        left: dividerSide,
+                        right: dividerSide,
+                        horizontalInside: dividerSide2,
+                        verticalInside: dividerSide2,
+                      ),
+                      columnSpacing: 20.w,
+                      dividerThickness: 0,
+                      headingTextStyle: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      dataTextStyle: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13.sp,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13.sp,
+                            ),
+                      columns: [
+                        DataColumn(label: Text(l10n.id)),
+                        DataColumn(label: Text(l10n.imageAndName)),
+                        DataColumn(
+                          label: _buildSortableColumnLabel(
+                              l10n.supplierPrice, 1, isRtl),
+                          onSort: (columnIndex, _) {
+                            _onSort(1);
+                          },
                         ),
-                      ),
-                      SizedBox(width: 10.w),
-                      IconButton(
-                        icon: Icon(Icons.arrow_back,
-                            size: 20.sp, color: Colors.white70),
-                        onPressed: _currentPage > 1
-                            ? () {
-                                setState(() {
-                                  _currentPage--;
-                                });
-                              }
-                            : null,
-                      ),
-                      Row(
-                        children: List.generate(totalPages, (index) {
-                          return _buildPageButton(index + 1);
-                        }),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.arrow_forward,
-                            size: 20.sp, color: Colors.white70),
-                        onPressed: _currentPage < totalPages
-                            ? () {
-                                setState(() {
-                                  _currentPage++;
-                                });
-                              }
-                            : null,
-                      ),
-                    ],
+                        DataColumn(label: Text(l10n.category)),
+                        DataColumn(label: Text(l10n.status)),
+                        DataColumn(label: Text(l10n.actions)),
+                      ],
+                      rows: visibleProducts.map((product) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text("${product.productId}")),
+                            DataCell(
+                              Row(
+                                textDirection: isRtl
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    child: Image.network(
+                                      product.image,
+                                      width: 50.w,
+                                      height: 50.h,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          width: 50.w,
+                                          height: 50.h,
+                                          color: Colors.grey.shade800,
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.white70,
+                                            size: 24.sp,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: Text(
+                                      product.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      textDirection: isRtl
+                                          ? TextDirection.rtl
+                                          : TextDirection.ltr,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DataCell(
+                              product.priceSupplier != null
+                                  ? Text(
+                                      "\$${product.priceSupplier!.toStringAsFixed(2)}")
+                                  : Text(l10n.notSet,
+                                      style: TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey)),
+                            ),
+                            DataCell(Text(product.categoryName)),
+                            DataCell(_buildStatusPill(
+                                product.status, l10n, isArabic)),
+                            DataCell(
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit,
+                                  color:
+                                      const Color.fromARGB(255, 105, 65, 198),
+                                  size: 22.sp,
+                                ),
+                                onPressed: () {
+                                  _showEditDialog(product);
+                                },
+                                tooltip: l10n.editProduct,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
-            ],
+                if (filteredProducts.isNotEmpty)
+                  Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+                    child: Row(
+                      textDirection:
+                          isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      children: [
+                        Spacer(),
+                        Text(
+                          "${l10n.total} $totalItems ${l10n.items}",
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                ),
+                        ),
+                        SizedBox(width: 10.w),
+                        // Previous page button
+                        IconButton(
+                          icon: Icon(
+                              Icons
+                                  .arrow_back, // Always arrow_back for previous
+                              size: 20.sp,
+                              color: Colors.white70),
+                          onPressed: _currentPage > 1
+                              ? () {
+                                  setState(() {
+                                    _currentPage--;
+                                  });
+                                }
+                              : null,
+                        ),
+                        Row(
+                          children: List.generate(totalPages, (index) {
+                            return _buildPageButton(index + 1, isArabic);
+                          }),
+                        ),
+                        // Next page button
+                        IconButton(
+                          icon: Icon(
+                              Icons
+                                  .arrow_forward, // Always arrow_forward for next
+                              size: 20.sp,
+                              color: Colors.white70),
+                          onPressed: _currentPage < totalPages
+                              ? () {
+                                  setState(() {
+                                    _currentPage++;
+                                  });
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildStatusPill(String status) {
+  Widget _buildStatusPill(String status, AppLocalizations l10n, bool isArabic) {
     late Color bgColor;
-    String displayStatus;
+    String displayStatus = _getLocalizedStatus(status, l10n);
 
     if (status == "Active") {
       bgColor = const Color.fromARGB(178, 0, 224, 116);
-      displayStatus = "Active";
     } else if (status == "Not Active" || status == "NotActive") {
       bgColor = const Color.fromARGB(255, 229, 62, 62);
-      displayStatus = "Not Active";
     } else {
       bgColor = Colors.grey;
-      displayStatus = status;
     }
 
     return Container(
@@ -853,16 +996,22 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
       ),
       child: Text(
         displayStatus,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: bgColor,
-        ),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: bgColor,
+              ),
       ),
     );
   }
 
-  Widget _buildPageButton(int pageIndex) {
+  Widget _buildPageButton(int pageIndex, bool isArabic) {
     final bool isSelected = (pageIndex == _currentPage);
 
     return Padding(
@@ -888,11 +1037,17 @@ class ProductsTableSupplierState extends State<ProductsTableSupplier> {
         },
         child: Text(
           "$pageIndex",
-          style: GoogleFonts.spaceGrotesk(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                ),
         ),
       ),
     );

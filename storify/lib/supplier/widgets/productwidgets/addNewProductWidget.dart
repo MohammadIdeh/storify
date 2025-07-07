@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 
 class Addnewproductwidget extends StatefulWidget {
@@ -43,13 +45,28 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
   String? _imagePreviewUrl;
   String _errorMessage = '';
 
+  // Flag to prevent multiple calls
+  bool _hasInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
+    // Safe to call in initState as it doesn't use localization
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only run once and only after the localization context is available
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _fetchCategories();
+    }
   }
 
   Future<void> _fetchCategories() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -80,14 +97,15 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
             _isLoading = false;
           });
         } else {
-          throw Exception('Invalid categories data structure');
+          throw Exception(l10n.invalidCategoriesData);
         }
       } else {
-        throw Exception('Failed to load categories: ${response.statusCode}');
+        throw Exception(
+            '${l10n.failedToLoadCategories}: ${response.statusCode}');
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error loading categories: $e';
+        _errorMessage = '${l10n.errorLoadingCategories}: $e';
         _isLoading = false;
       });
       debugPrint('Error loading categories: $e');
@@ -137,14 +155,14 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
     input.click();
   }
 
-// In the _submitForm method, remove the supplierId from the form data:
-
   Future<void> _submitForm() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_formKey.currentState!.validate()) {
       if (_imageFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please select an image for the product'),
+            content: Text(l10n.pleaseSelectImage),
             backgroundColor: Colors.red,
           ),
         );
@@ -172,7 +190,6 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
           formData.append('description', _descriptionController.text);
         }
 
-        // REMOVED: formData.append('supplierId', widget.supplierId.toString());
         // The API extracts supplierId from the auth token
 
         // Add the image file
@@ -210,7 +227,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
               });
             });
           } else {
-            String errorMessage = 'Failed to submit product request';
+            String errorMessage = l10n.failedToSubmitProductRequest;
 
             // Check if responseText is not null before trying to parse it
             if (request.responseText != null &&
@@ -244,7 +261,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error submitting product request'),
+              content: Text(l10n.errorSubmittingProductRequest),
               backgroundColor: Colors.red,
             ),
           );
@@ -255,7 +272,7 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
         debugPrint('Error submitting product: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('${l10n.errorPrefix}$e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -268,28 +285,123 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     // Show loading indicator while checking role and fetching categories
     if (_isLoading) {
-      return Container(
-        margin: EdgeInsets.only(top: 20.h),
-        padding: EdgeInsets.all(24.w),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 36, 50, 69),
-          borderRadius: BorderRadius.circular(20.r),
+      return Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: Container(
+          margin: EdgeInsets.only(top: 20.h),
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 36, 50, 69),
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  color: const Color.fromARGB(255, 105, 65, 198),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  l10n.loadingText,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 16.sp,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 16.sp,
+                        ),
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Center(
+      );
+    }
+
+    // Show error message if categories couldn't be loaded
+    if (_errorMessage.isNotEmpty) {
+      return Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: Container(
+          margin: EdgeInsets.only(top: 20.h),
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 36, 50, 69),
+            borderRadius: BorderRadius.circular(20.r),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(
-                color: const Color.fromARGB(255, 105, 65, 198),
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48.sp,
               ),
               SizedBox(height: 16.h),
               Text(
-                'Loading...',
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 16.sp,
+                l10n.errorLoadingCategoriesTitle,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                _errorMessage,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                      ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24.h),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 32.w,
+                    vertical: 16.h,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: widget.onCancel,
+                child: Text(
+                  l10n.closeButton,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                 ),
               ),
             ],
@@ -298,355 +410,331 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
       );
     }
 
-    // Show error message if categories couldn't be loaded
-    if (_errorMessage.isNotEmpty) {
-      return Container(
+    // Main form UI
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
         margin: EdgeInsets.only(top: 20.h),
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 36, 50, 69),
           borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 48.sp,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'Error Loading Categories',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              _errorMessage,
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 14.sp,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 24.h),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
-                padding: EdgeInsets.symmetric(
-                  horizontal: 32.w,
-                  vertical: 16.h,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: widget.onCancel,
-              child: Text(
-                'Close',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-      );
-    }
-
-    // Main form UI
-    return Container(
-      margin: EdgeInsets.only(top: 20.h),
-      padding: EdgeInsets.all(24.w),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 36, 50, 69),
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with title and close button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Add New Product',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with title and close button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n.addNewProduct,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 24.sp,
+                  IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24.sp,
+                    ),
+                    onPressed: widget.onCancel,
                   ),
-                  onPressed: widget.onCancel,
-                ),
-              ],
-            ),
-            SizedBox(height: 24.h),
+                ],
+              ),
+              SizedBox(height: 24.h),
 
-            // Form fields in a grid layout
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16.w,
-              mainAxisSpacing: 16.h,
-              childAspectRatio: 7,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                // Product Name
-                _buildTextField(
-                  controller: _nameController,
-                  label: 'Product Name',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter product name';
-                    }
-                    return null;
-                  },
-                ),
-
-                // Category Dropdown
-                _buildDropdown(
-                  label: 'Category',
-                  value: _selectedCategory!,
-                  items: _categories.map((c) => c['name'] as String).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value!;
-                    });
-                  },
-                ),
-
-                // Cost Price
-                _buildTextField(
-                  controller: _costPriceController,
-                  label: 'Cost Price',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter cost price';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-
-                // Sell Price
-                _buildTextField(
-                  controller: _sellPriceController,
-                  label: 'Sell Price',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter sell price';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-
-                // Barcode
-                _buildTextField(
-                  controller: _barcodeController,
-                  label: 'Barcode',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter barcode';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-
-            SizedBox(height: 16.h),
-
-            // Description field
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Description (Optional)',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+              // Form fields in a grid layout
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16.w,
+                mainAxisSpacing: 16.h,
+                childAspectRatio: 7,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  // Product Name
+                  _buildTextField(
+                    controller: _nameController,
+                    label: l10n.productName,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return l10n.pleaseEnterProductName;
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                SizedBox(height: 8.h),
-                TextFormField(
-                  controller: _descriptionController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color.fromARGB(255, 29, 41, 57),
-                    border: OutlineInputBorder(
+
+                  // Category Dropdown
+                  _buildDropdown(
+                    label: l10n.categoryLabel,
+                    value: _selectedCategory!,
+                    items: _categories.map((c) => c['name'] as String).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value!;
+                      });
+                    },
+                  ),
+
+                  // Cost Price
+                  _buildTextField(
+                    controller: _costPriceController,
+                    label: l10n.costPrice,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return l10n.pleaseEnterCostPrice;
+                      }
+                      if (double.tryParse(value) == null) {
+                        return l10n.pleaseEnterValidNumber;
+                      }
+                      return null;
+                    },
+                  ),
+
+                  // Sell Price
+                  _buildTextField(
+                    controller: _sellPriceController,
+                    label: l10n.sellPrice,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return l10n.pleaseEnterSellPrice;
+                      }
+                      if (double.tryParse(value) == null) {
+                        return l10n.pleaseEnterValidNumber;
+                      }
+                      return null;
+                    },
+                  ),
+
+                  // Barcode
+                  _buildTextField(
+                    controller: _barcodeController,
+                    label: l10n.barcodeLabel,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return l10n.pleaseEnterBarcode;
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 16.h),
+
+              // Description field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.descriptionOptional,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                  ),
+                  SizedBox(height: 8.h),
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    textDirection:
+                        isRtl ? TextDirection.rtl : TextDirection.ltr,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 29, 41, 57),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      hintText: l10n.enterProductDescription,
+                      hintStyle: isArabic
+                          ? GoogleFonts.cairo(color: Colors.white60)
+                          : GoogleFonts.spaceGrotesk(color: Colors.white60),
+                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(color: Colors.white)
+                        : GoogleFonts.spaceGrotesk(color: Colors.white),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 24.h),
+
+              // Image Upload Section
+              Row(
+                children: [
+                  Container(
+                    width: 120.w,
+                    height: 120.h,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 29, 41, 57),
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      image: _imagePreviewUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(_imagePreviewUrl!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                    hintText: 'Enter product description',
-                    hintStyle: GoogleFonts.spaceGrotesk(
-                      color: Colors.white60,
-                    ),
-                  ),
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 24.h),
-
-            // Image Upload Section
-            Row(
-              children: [
-                Container(
-                  width: 120.w,
-                  height: 120.h,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 29, 41, 57),
-                    borderRadius: BorderRadius.circular(12),
-                    image: _imagePreviewUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(_imagePreviewUrl!),
-                            fit: BoxFit.cover,
+                    child: _imagePreviewUrl == null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.image,
+                                  size: 36.sp,
+                                  color: Colors.white60,
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  l10n.selectImage,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          color: Colors.white60,
+                                          fontSize: 12.sp,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          color: Colors.white60,
+                                          fontSize: 12.sp,
+                                        ),
+                                ),
+                              ],
+                            ),
                           )
                         : null,
                   ),
-                  child: _imagePreviewUrl == null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image,
-                                size: 36.sp,
-                                color: Colors.white60,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                "Select Image",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white60,
-                                  fontSize: 12.sp,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : null,
-                ),
-                SizedBox(width: 16.w),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 24.w,
-                      vertical: 12.h,
+                  SizedBox(width: 16.w),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 12.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    onPressed: _pickImageForWeb,
+                    child: Text(
+                      l10n.uploadImage,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                     ),
                   ),
-                  onPressed: _pickImageForWeb,
-                  child: Text(
-                    'Upload Image',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
-            SizedBox(height: 32.h),
+              SizedBox(height: 32.h),
 
-            // Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade700,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 32.w,
-                      vertical: 16.h,
+              // Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade700,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 32.w,
+                        vertical: 16.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: widget.onCancel,
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 32.w,
-                      vertical: 16.h,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    onPressed: widget.onCancel,
+                    child: Text(
+                      l10n.cancelButton,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                     ),
                   ),
-                  onPressed: _isUploading ? null : _submitForm,
-                  child: _isUploading
-                      ? SizedBox(
-                          width: 20.w,
-                          height: 20.h,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.0,
+                  SizedBox(width: 16.w),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 32.w,
+                        vertical: 16.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _isUploading ? null : _submitForm,
+                    child: _isUploading
+                        ? SizedBox(
+                            width: 20.w,
+                            height: 20.h,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.0,
+                            ),
+                          )
+                        : Text(
+                            l10n.addProductButton,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                           ),
-                        )
-                      : Text(
-                          'Add Product',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -659,22 +747,33 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color.fromARGB(255, 29, 41, 57),
@@ -682,14 +781,14 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            hintText: 'Enter $label',
-            hintStyle: GoogleFonts.spaceGrotesk(
-              color: Colors.white60,
-            ),
+            hintText: l10n.enterFieldHint(label),
+            hintStyle: isArabic
+                ? GoogleFonts.cairo(color: Colors.white60)
+                : GoogleFonts.spaceGrotesk(color: Colors.white60),
           ),
-          style: GoogleFonts.spaceGrotesk(
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(color: Colors.white)
+              : GoogleFonts.spaceGrotesk(color: Colors.white),
         ),
       ],
     );
@@ -701,16 +800,24 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
     required List<String> items,
     required Function(String?) onChanged,
   }) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -730,9 +837,9 @@ class _AddnewproductwidgetState extends State<Addnewproductwidget> {
                   value: item,
                   child: Text(
                     item,
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(color: Colors.white)
+                        : GoogleFonts.spaceGrotesk(color: Colors.white),
                   ),
                 );
               }).toList(),

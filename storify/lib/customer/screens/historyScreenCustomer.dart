@@ -5,10 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/customer/screens/orderScreenCustomer.dart';
 import 'package:storify/customer/widgets/CustomerOrderService.dart';
 import 'package:storify/customer/widgets/navbarCus.dart';
-
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class HistoryScreenCustomer extends StatefulWidget {
   const HistoryScreenCustomer({super.key});
@@ -36,46 +37,62 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
   @override
   void initState() {
     super.initState();
-    _loadProfilePicture();
-    _loadOrderHistory();
+    // Use post frame callback to avoid initState issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfilePicture();
+      _loadOrderHistory();
+    });
   }
 
   Future<void> _loadProfilePicture() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      profilePictureUrl = prefs.getString('profilePicture');
-    });
+    if (mounted) {
+      setState(() {
+        profilePictureUrl = prefs.getString('profilePicture');
+      });
+    }
   }
 
   Future<void> _loadOrderHistory() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final orders = await CustomerOrderService.getOrderHistory();
-      setState(() {
-        _orders = orders;
-        _filteredOrders = orders; // Initialize filtered orders with all orders
-        if (orders.isNotEmpty) {
-          _selectedOrder = orders[0];
-        }
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _filteredOrders =
+              orders; // Initialize filtered orders with all orders
+          if (orders.isNotEmpty) {
+            _selectedOrder = orders[0];
+          }
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackbar("Failed to load order history: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        final l10n =
+            Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+        _showErrorSnackbar("${l10n.customerHistoryLoadOrdersError}$e");
+      }
     }
   }
 
   void _showErrorSnackbar(String message) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.spaceGrotesk(),
+          style: isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
         ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
@@ -108,11 +125,17 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
   }
 
   String _formatDate(DateTime date) {
-    return DateFormat('dd MMM, yyyy').format(date);
+    final isArabic = LocalizationHelper.isArabic(context);
+    return isArabic
+        ? DateFormat('dd MMM, yyyy', 'ar').format(date)
+        : DateFormat('dd MMM, yyyy').format(date);
   }
 
   String _formatDateTime(DateTime date) {
-    return DateFormat('dd MMM, yyyy HH:mm').format(date);
+    final isArabic = LocalizationHelper.isArabic(context);
+    return isArabic
+        ? DateFormat('dd MMM, yyyy HH:mm', 'ar').format(date)
+        : DateFormat('dd MMM, yyyy HH:mm').format(date);
   }
 
   // Apply date filter
@@ -165,6 +188,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
 
   // Show date picker and set date
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isStartDate
@@ -172,6 +197,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
           : _endDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      locale: isArabic ? const Locale('ar', '') : const Locale('en', ''),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -188,7 +214,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
               ),
             ),
             textTheme: Theme.of(context).textTheme.apply(
-                  fontFamily: GoogleFonts.spaceGrotesk().fontFamily,
+                  fontFamily: isArabic
+                      ? GoogleFonts.cairo().fontFamily
+                      : GoogleFonts.spaceGrotesk().fontFamily,
                 ),
           ),
           child: child!,
@@ -213,6 +241,28 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
         }
       });
       _applyDateFilter();
+    }
+  }
+
+  String _getLocalizedStatus(String status) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final lowerStatus = status.toLowerCase();
+
+    switch (lowerStatus) {
+      case "delivered":
+        return l10n.customerHistoryStatusDelivered;
+      case "pending":
+        return l10n.customerHistoryStatusPending;
+      case "prepared":
+        return l10n.customerHistoryStatusPrepared;
+      case "cancelled":
+        return l10n.customerHistoryStatusCancelled;
+      case "rejected":
+        return l10n.customerHistoryStatusRejected;
+      case "accepted":
+        return l10n.customerHistoryStatusAccepted;
+      default:
+        return status;
     }
   }
 
@@ -243,19 +293,27 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
         badgeColor = Colors.blue;
     }
 
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: badgeColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
+        _getLocalizedStatus(status),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              )
+            : GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
       ),
     );
   }
@@ -271,6 +329,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 41, 57),
       appBar: PreferredSize(
@@ -294,7 +355,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                 Expanded(
                   flex: 2,
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: EdgeInsetsDirectional.all(24.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -302,12 +363,18 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Order History",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              l10n.customerHistoryTitle,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                             ),
                             IconButton(
                               onPressed: _loadOrderHistory,
@@ -316,7 +383,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                 color: Colors.white70,
                                 size: 28,
                               ),
-                              tooltip: "Refresh",
+                              tooltip: l10n.customerHistoryRefreshTooltip,
                             ),
                           ],
                         ),
@@ -324,7 +391,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
 
                         // Date Range Filter
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsetsDirectional.all(16),
                           decoration: BoxDecoration(
                             color: const Color(0xFF283548),
                             borderRadius: BorderRadius.circular(15),
@@ -340,12 +407,18 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Filter by Date Range",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                l10n.customerHistoryFilterTitle,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                               ),
                               const SizedBox(height: 16),
                               Row(
@@ -354,8 +427,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     child: InkWell(
                                       onTap: () => _selectDate(context, true),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12, horizontal: 16),
+                                        padding:
+                                            EdgeInsetsDirectional.symmetric(
+                                                vertical: 12, horizontal: 16),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF1D2939),
                                           borderRadius:
@@ -373,13 +447,20 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                             const SizedBox(width: 8),
                                             Text(
                                               _startDate == null
-                                                  ? "Start Date"
+                                                  ? l10n
+                                                      .customerHistoryStartDate
                                                   : _formatDate(_startDate!),
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: _startDate == null
-                                                    ? Colors.grey[400]
-                                                    : Colors.white,
-                                              ),
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: _startDate == null
+                                                          ? Colors.grey[400]
+                                                          : Colors.white,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: _startDate == null
+                                                          ? Colors.grey[400]
+                                                          : Colors.white,
+                                                    ),
                                             ),
                                           ],
                                         ),
@@ -391,8 +472,9 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     child: InkWell(
                                       onTap: () => _selectDate(context, false),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12, horizontal: 16),
+                                        padding:
+                                            EdgeInsetsDirectional.symmetric(
+                                                vertical: 12, horizontal: 16),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF1D2939),
                                           borderRadius:
@@ -410,13 +492,19 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                             const SizedBox(width: 8),
                                             Text(
                                               _endDate == null
-                                                  ? "End Date"
+                                                  ? l10n.customerHistoryEndDate
                                                   : _formatDate(_endDate!),
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: _endDate == null
-                                                    ? Colors.grey[400]
-                                                    : Colors.white,
-                                              ),
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: _endDate == null
+                                                          ? Colors.grey[400]
+                                                          : Colors.white,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: _endDate == null
+                                                          ? Colors.grey[400]
+                                                          : Colors.white,
+                                                    ),
                                             ),
                                           ],
                                         ),
@@ -433,15 +521,18 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                       onPressed: _applyDateFilter,
                                       icon: const Icon(Icons.filter_list),
                                       label: Text(
-                                        "Apply Filter",
-                                        style: GoogleFonts.spaceGrotesk(),
+                                        l10n.customerHistoryApplyFilter,
+                                        style: isArabic
+                                            ? GoogleFonts.cairo()
+                                            : GoogleFonts.spaceGrotesk(),
                                       ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
                                             const Color(0xFF7B5CFA),
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12),
+                                        padding:
+                                            EdgeInsetsDirectional.symmetric(
+                                                vertical: 12),
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -454,13 +545,15 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     onPressed: _clearDateFilter,
                                     icon: const Icon(Icons.clear),
                                     label: Text(
-                                      "Clear",
-                                      style: GoogleFonts.spaceGrotesk(),
+                                      l10n.customerHistoryClearFilter,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo()
+                                          : GoogleFonts.spaceGrotesk(),
                                     ),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.grey[800],
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsetsDirectional.symmetric(
                                           vertical: 12, horizontal: 16),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
@@ -488,19 +581,29 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        "No orders found",
-                                        style: GoogleFonts.spaceGrotesk(
-                                          color: Colors.grey[400],
-                                          fontSize: 16,
-                                        ),
+                                        l10n.customerHistoryNoOrdersFound,
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.grey[400],
+                                                fontSize: 16,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.grey[400],
+                                                fontSize: 16,
+                                              ),
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        "Try adjusting your filter criteria",
-                                        style: GoogleFonts.spaceGrotesk(
-                                          color: Colors.grey[400],
-                                          fontSize: 14,
-                                        ),
+                                        l10n.customerHistoryAdjustFilter,
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.grey[400],
+                                                fontSize: 14,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.grey[400],
+                                                fontSize: 14,
+                                              ),
                                       ),
                                     ],
                                   ),
@@ -517,7 +620,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     return GestureDetector(
                                       onTap: () => _selectOrder(order),
                                       child: Container(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: EdgeInsetsDirectional.all(16),
                                         decoration: BoxDecoration(
                                           color: isSelected
                                               ? const Color(0xFF7B5CFA)
@@ -553,34 +656,65 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      "Order #${order['id']}",
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16,
-                                                      ),
+                                                      l10n.customerHistoryOrderNumber(
+                                                          order['id']
+                                                              .toString()),
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            ),
                                                     ),
                                                     const SizedBox(height: 5),
                                                     Text(
-                                                      "Date: ${_formatDate(DateTime.parse(order['createdAt']))}",
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        color: Colors.grey[400],
-                                                        fontSize: 14,
-                                                      ),
+                                                      l10n.customerHistoryOrderDate(
+                                                          _formatDate(DateTime
+                                                              .parse(order[
+                                                                  'createdAt']))),
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color: Colors
+                                                                  .grey[400],
+                                                              fontSize: 14,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color: Colors
+                                                                  .grey[400],
+                                                              fontSize: 14,
+                                                            ),
                                                     ),
                                                   ],
                                                 ),
                                                 Text(
                                                   "\$${order['totalCost'].toStringAsFixed(2)}",
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 18,
-                                                  ),
+                                                  style: isArabic
+                                                      ? GoogleFonts.cairo(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 18,
+                                                        )
+                                                      : GoogleFonts
+                                                          .spaceGrotesk(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 18,
+                                                        ),
                                                 ),
                                               ],
                                             ),
@@ -593,12 +727,22 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                       .spaceBetween,
                                               children: [
                                                 Text(
-                                                  "${order['items'].length} items",
-                                                  style:
-                                                      GoogleFonts.spaceGrotesk(
-                                                    color: Colors.grey[400],
-                                                    fontSize: 14,
-                                                  ),
+                                                  l10n.customerHistoryItemsCount(
+                                                      order['items']
+                                                          .length
+                                                          .toString()),
+                                                  style: isArabic
+                                                      ? GoogleFonts.cairo(
+                                                          color:
+                                                              Colors.grey[400],
+                                                          fontSize: 14,
+                                                        )
+                                                      : GoogleFonts
+                                                          .spaceGrotesk(
+                                                          color:
+                                                              Colors.grey[400],
+                                                          fontSize: 14,
+                                                        ),
                                                 ),
                                                 _buildOrderStatusBadge(
                                                     order['status']),
@@ -620,16 +764,21 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                 Expanded(
                   flex: 3,
                   child: Padding(
-                    padding: const EdgeInsets.only(
-                        top: 24.0, right: 24.0, bottom: 24.0),
+                    padding: EdgeInsetsDirectional.only(
+                        top: 24.0, end: 24.0, bottom: 24.0),
                     child: _selectedOrder == null
                         ? Center(
                             child: Text(
-                              "Select an order to view details",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.grey[400],
-                                fontSize: 18,
-                              ),
+                              l10n.customerHistorySelectOrderMessage,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      color: Colors.grey[400],
+                                      fontSize: 18,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.grey[400],
+                                      fontSize: 18,
+                                    ),
                             ),
                           )
                         : Container(
@@ -646,7 +795,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                             ),
                             child: SingleChildScrollView(
                               child: Padding(
-                                padding: const EdgeInsets.all(24.0),
+                                padding: EdgeInsetsDirectional.all(24.0),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -656,12 +805,18 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          "Order Details",
-                                          style: GoogleFonts.spaceGrotesk(
-                                            color: Colors.white,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          l10n.customerHistoryOrderDetailsTitle,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white,
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white,
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                         ),
                                         Row(
                                           children: [
@@ -672,17 +827,20 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                               onPressed: () {},
                                               icon: const Icon(Icons.print),
                                               label: Text(
-                                                "Print Invoice",
-                                                style:
-                                                    GoogleFonts.spaceGrotesk(),
+                                                l10n.customerHistoryPrintInvoice,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo()
+                                                    : GoogleFonts
+                                                        .spaceGrotesk(),
                                               ),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
                                                     const Color(0xFF7B5CFA),
                                                 foregroundColor: Colors.white,
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 10),
+                                                padding: EdgeInsetsDirectional
+                                                    .symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 10),
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
                                                       BorderRadius.circular(8),
@@ -699,13 +857,15 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: _detailItem("Order ID",
+                                          child: _detailItem(
+                                              l10n.customerHistoryOrderIdLabel,
                                               "#${_selectedOrder!['id']}",
                                               icon: Icons.receipt),
                                         ),
                                         Expanded(
                                           child: _detailItem(
-                                              "Order Date",
+                                              l10n
+                                                  .customerHistoryOrderDateLabel,
                                               _formatDate(DateTime.parse(
                                                   _selectedOrder![
                                                       'createdAt'])),
@@ -729,7 +889,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                               null)
                                             Expanded(
                                               child: _detailItem(
-                                                "Preparation Started",
+                                                l10n.customerHistoryPreparationStarted,
                                                 _formatDateTime(DateTime.parse(
                                                     _selectedOrder![
                                                         'preparationStartedAt'])),
@@ -741,7 +901,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                               null)
                                             Expanded(
                                               child: _detailItem(
-                                                "Preparation Completed",
+                                                l10n.customerHistoryPreparationCompleted,
                                                 _formatDateTime(DateTime.parse(
                                                     _selectedOrder![
                                                         'preparationCompletedAt'])),
@@ -755,7 +915,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
 
                                     // Order items table with batch details
                                     Container(
-                                      padding: const EdgeInsets.all(24),
+                                      padding: EdgeInsetsDirectional.all(24),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF283548),
                                         borderRadius: BorderRadius.circular(16),
@@ -765,12 +925,18 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "Order Items",
-                                            style: GoogleFonts.spaceGrotesk(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                            l10n.customerHistoryOrderItemsTitle,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white,
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white,
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                           ),
                                           const SizedBox(height: 20),
 
@@ -841,10 +1007,12 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                   '🎯 Final batchDetails: $batchDetails (length: ${batchDetails.length})');
 
                                               return Container(
-                                                margin: const EdgeInsets.only(
-                                                    bottom: 16),
+                                                margin:
+                                                    EdgeInsetsDirectional.only(
+                                                        bottom: 16),
                                                 padding:
-                                                    const EdgeInsets.all(16),
+                                                    EdgeInsetsDirectional.all(
+                                                        16),
                                                 decoration: BoxDecoration(
                                                   color:
                                                       const Color(0xFF1D2939),
@@ -920,27 +1088,48 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                             children: [
                                                               Text(
                                                                 product['name'],
-                                                                style: GoogleFonts
-                                                                    .spaceGrotesk(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 16,
-                                                                ),
+                                                                style: isArabic
+                                                                    ? GoogleFonts
+                                                                        .cairo(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        fontSize:
+                                                                            16,
+                                                                      )
+                                                                    : GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        fontSize:
+                                                                            16,
+                                                                      ),
                                                               ),
                                                               const SizedBox(
                                                                   height: 4),
                                                               Text(
-                                                                "Unit Price: ${price.toStringAsFixed(2)}",
-                                                                style: GoogleFonts
-                                                                    .spaceGrotesk(
-                                                                  color: Colors
-                                                                          .grey[
-                                                                      400],
-                                                                  fontSize: 14,
-                                                                ),
+                                                                l10n.customerHistoryUnitPrice(
+                                                                    price
+                                                                        .toStringAsFixed(
+                                                                            2)),
+                                                                style: isArabic
+                                                                    ? GoogleFonts
+                                                                        .cairo(
+                                                                        color: Colors
+                                                                            .grey[400],
+                                                                        fontSize:
+                                                                            14,
+                                                                      )
+                                                                    : GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                        color: Colors
+                                                                            .grey[400],
+                                                                        fontSize:
+                                                                            14,
+                                                                      ),
                                                               ),
                                                             ],
                                                           ),
@@ -952,30 +1141,56 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                   .end,
                                                           children: [
                                                             Text(
-                                                              "Total Qty: $quantity",
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                              ),
+                                                              l10n.customerHistoryTotalQuantity(
+                                                                  quantity
+                                                                      .toString()),
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontSize:
+                                                                          14,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontSize:
+                                                                          14,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
                                                             ),
                                                             const SizedBox(
                                                                 height: 4),
                                                             Text(
                                                               "${subtotal.toStringAsFixed(2)}",
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 16,
-                                                              ),
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      fontSize:
+                                                                          16,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      fontSize:
+                                                                          16,
+                                                                    ),
                                                             ),
                                                           ],
                                                         ),
@@ -987,8 +1202,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                     Container(
                                                       width: double.infinity,
                                                       padding:
-                                                          const EdgeInsets.all(
-                                                              16),
+                                                          EdgeInsetsDirectional
+                                                              .all(16),
                                                       decoration: BoxDecoration(
                                                         color: const Color(
                                                             0xFF283548),
@@ -1019,16 +1234,26 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                               const SizedBox(
                                                                   width: 8),
                                                               Text(
-                                                                "Product Batch Information",
-                                                                style: GoogleFonts
-                                                                    .spaceGrotesk(
-                                                                  color: const Color(
-                                                                      0xFF7B5CFA),
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 16,
-                                                                ),
+                                                                l10n.customerHistoryBatchInfoTitle,
+                                                                style: isArabic
+                                                                    ? GoogleFonts
+                                                                        .cairo(
+                                                                        color: const Color(
+                                                                            0xFF7B5CFA),
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        fontSize:
+                                                                            16,
+                                                                      )
+                                                                    : GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                        color: const Color(
+                                                                            0xFF7B5CFA),
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        fontSize:
+                                                                            16,
+                                                                      ),
                                                               ),
                                                             ],
                                                           ),
@@ -1037,13 +1262,27 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                           if (batchDetails
                                                               .isNotEmpty) ...[
                                                             Text(
-                                                              "This order contains products from ${batchDetails.length} different batch${batchDetails.length > 1 ? 'es' : ''}:",
-                                                              style: GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                color: Colors
-                                                                    .grey[300],
-                                                                fontSize: 14,
-                                                              ),
+                                                              l10n.customerHistoryBatchDescription(
+                                                                  batchDetails
+                                                                      .length
+                                                                      .toString()),
+                                                              style: isArabic
+                                                                  ? GoogleFonts
+                                                                      .cairo(
+                                                                      color: Colors
+                                                                              .grey[
+                                                                          300],
+                                                                      fontSize:
+                                                                          14,
+                                                                    )
+                                                                  : GoogleFonts
+                                                                      .spaceGrotesk(
+                                                                      color: Colors
+                                                                              .grey[
+                                                                          300],
+                                                                      fontSize:
+                                                                          14,
+                                                                    ),
                                                             ),
                                                             const SizedBox(
                                                                 height: 12),
@@ -1062,16 +1301,16 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                   '🎨 Rendering batch $batchIndex: $batch');
 
                                                               return Container(
-                                                                margin: EdgeInsets.only(
+                                                                margin: EdgeInsetsDirectional.only(
                                                                     bottom: batchIndex ==
                                                                             batchDetails.length -
                                                                                 1
                                                                         ? 0
                                                                         : 12),
                                                                 padding:
-                                                                    const EdgeInsets
+                                                                    EdgeInsetsDirectional
                                                                         .all(
-                                                                        12),
+                                                                            12),
                                                                 decoration:
                                                                     BoxDecoration(
                                                                   color: const Color(
@@ -1100,8 +1339,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                               .spaceBetween,
                                                                       children: [
                                                                         Container(
-                                                                          padding: const EdgeInsets
-                                                                              .symmetric(
+                                                                          padding: EdgeInsetsDirectional.symmetric(
                                                                               horizontal: 10,
                                                                               vertical: 6),
                                                                           decoration:
@@ -1113,18 +1351,23 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                           ),
                                                                           child:
                                                                               Text(
-                                                                            "Batch #${batch['batchId'] ?? 'Unknown'}",
-                                                                            style:
-                                                                                GoogleFonts.spaceGrotesk(
-                                                                              color: Colors.white,
-                                                                              fontSize: 14,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
+                                                                            l10n.customerHistoryBatchNumber(batch['batchId']?.toString() ??
+                                                                                'Unknown'),
+                                                                            style: isArabic
+                                                                                ? GoogleFonts.cairo(
+                                                                                    color: Colors.white,
+                                                                                    fontSize: 14,
+                                                                                    fontWeight: FontWeight.bold,
+                                                                                  )
+                                                                                : GoogleFonts.spaceGrotesk(
+                                                                                    color: Colors.white,
+                                                                                    fontSize: 14,
+                                                                                    fontWeight: FontWeight.bold,
+                                                                                  ),
                                                                           ),
                                                                         ),
                                                                         Container(
-                                                                          padding: const EdgeInsets
-                                                                              .symmetric(
+                                                                          padding: EdgeInsetsDirectional.symmetric(
                                                                               horizontal: 10,
                                                                               vertical: 6),
                                                                           decoration:
@@ -1138,13 +1381,19 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                           ),
                                                                           child:
                                                                               Text(
-                                                                            "Qty: ${batch['quantity'] ?? 'Unknown'}",
-                                                                            style:
-                                                                                GoogleFonts.spaceGrotesk(
-                                                                              color: Colors.orange,
-                                                                              fontSize: 14,
-                                                                              fontWeight: FontWeight.bold,
-                                                                            ),
+                                                                            l10n.customerHistoryBatchQuantity(batch['quantity']?.toString() ??
+                                                                                'Unknown'),
+                                                                            style: isArabic
+                                                                                ? GoogleFonts.cairo(
+                                                                                    color: Colors.orange,
+                                                                                    fontSize: 14,
+                                                                                    fontWeight: FontWeight.bold,
+                                                                                  )
+                                                                                : GoogleFonts.spaceGrotesk(
+                                                                                    color: Colors.orange,
+                                                                                    fontSize: 14,
+                                                                                    fontWeight: FontWeight.bold,
+                                                                                  ),
                                                                           ),
                                                                         ),
                                                                       ],
@@ -1169,22 +1418,33 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                                   ),
                                                                                   const SizedBox(width: 6),
                                                                                   Text(
-                                                                                    "Production Date",
-                                                                                    style: GoogleFonts.spaceGrotesk(
-                                                                                      color: Colors.grey[400],
-                                                                                      fontSize: 12,
-                                                                                    ),
+                                                                                    l10n.customerHistoryProductionDate,
+                                                                                    style: isArabic
+                                                                                        ? GoogleFonts.cairo(
+                                                                                            color: Colors.grey[400],
+                                                                                            fontSize: 12,
+                                                                                          )
+                                                                                        : GoogleFonts.spaceGrotesk(
+                                                                                            color: Colors.grey[400],
+                                                                                            fontSize: 12,
+                                                                                          ),
                                                                                   ),
                                                                                 ],
                                                                               ),
                                                                               const SizedBox(height: 4),
                                                                               Text(
-                                                                                batch['prodDate'] != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(batch['prodDate'])) : "Unknown",
-                                                                                style: GoogleFonts.spaceGrotesk(
-                                                                                  color: Colors.green,
-                                                                                  fontSize: 14,
-                                                                                  fontWeight: FontWeight.bold,
-                                                                                ),
+                                                                                batch['prodDate'] != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(batch['prodDate'])) : l10n.customerHistoryUnknownDate,
+                                                                                style: isArabic
+                                                                                    ? GoogleFonts.cairo(
+                                                                                        color: Colors.green,
+                                                                                        fontSize: 14,
+                                                                                        fontWeight: FontWeight.bold,
+                                                                                      )
+                                                                                    : GoogleFonts.spaceGrotesk(
+                                                                                        color: Colors.green,
+                                                                                        fontSize: 14,
+                                                                                        fontWeight: FontWeight.bold,
+                                                                                      ),
                                                                               ),
                                                                             ],
                                                                           ),
@@ -1207,22 +1467,33 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                                   ),
                                                                                   const SizedBox(width: 6),
                                                                                   Text(
-                                                                                    "Expiration Date",
-                                                                                    style: GoogleFonts.spaceGrotesk(
-                                                                                      color: Colors.grey[400],
-                                                                                      fontSize: 12,
-                                                                                    ),
+                                                                                    l10n.customerHistoryExpirationDate,
+                                                                                    style: isArabic
+                                                                                        ? GoogleFonts.cairo(
+                                                                                            color: Colors.grey[400],
+                                                                                            fontSize: 12,
+                                                                                          )
+                                                                                        : GoogleFonts.spaceGrotesk(
+                                                                                            color: Colors.grey[400],
+                                                                                            fontSize: 12,
+                                                                                          ),
                                                                                   ),
                                                                                 ],
                                                                               ),
                                                                               const SizedBox(height: 4),
                                                                               Text(
-                                                                                batch['expDate'] != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(batch['expDate'])) : "Unknown",
-                                                                                style: GoogleFonts.spaceGrotesk(
-                                                                                  color: Colors.red,
-                                                                                  fontSize: 14,
-                                                                                  fontWeight: FontWeight.bold,
-                                                                                ),
+                                                                                batch['expDate'] != null ? DateFormat('dd MMM yyyy').format(DateTime.parse(batch['expDate'])) : l10n.customerHistoryUnknownDate,
+                                                                                style: isArabic
+                                                                                    ? GoogleFonts.cairo(
+                                                                                        color: Colors.red,
+                                                                                        fontSize: 14,
+                                                                                        fontWeight: FontWeight.bold,
+                                                                                      )
+                                                                                    : GoogleFonts.spaceGrotesk(
+                                                                                        color: Colors.red,
+                                                                                        fontSize: 14,
+                                                                                        fontWeight: FontWeight.bold,
+                                                                                      ),
                                                                               ),
                                                                             ],
                                                                           ),
@@ -1253,39 +1524,46 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                         width:
                                                                             8),
                                                                     Text(
-                                                                      "Batch information not found",
-                                                                      style: GoogleFonts
-                                                                          .spaceGrotesk(
-                                                                        color: Colors
-                                                                            .orange,
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
-                                                                      ),
+                                                                      l10n.customerHistoryNoBatchInfo,
+                                                                      style: isArabic
+                                                                          ? GoogleFonts.cairo(
+                                                                              color: Colors.orange,
+                                                                              fontSize: 14,
+                                                                              fontWeight: FontWeight.bold,
+                                                                            )
+                                                                          : GoogleFonts.spaceGrotesk(
+                                                                              color: Colors.orange,
+                                                                              fontSize: 14,
+                                                                              fontWeight: FontWeight.bold,
+                                                                            ),
                                                                     ),
                                                                   ],
                                                                 ),
                                                                 const SizedBox(
                                                                     height: 8),
                                                                 Text(
-                                                                  "Check console logs for debugging information.",
-                                                                  style: GoogleFonts
-                                                                      .spaceGrotesk(
-                                                                    color: Colors
-                                                                            .grey[
-                                                                        400],
-                                                                    fontSize:
-                                                                        12,
-                                                                  ),
+                                                                  l10n.customerHistoryCheckLogs,
+                                                                  style: isArabic
+                                                                      ? GoogleFonts.cairo(
+                                                                          color:
+                                                                              Colors.grey[400],
+                                                                          fontSize:
+                                                                              12,
+                                                                        )
+                                                                      : GoogleFonts.spaceGrotesk(
+                                                                          color:
+                                                                              Colors.grey[400],
+                                                                          fontSize:
+                                                                              12,
+                                                                        ),
                                                                 ),
                                                                 const SizedBox(
                                                                     height: 8),
                                                                 Container(
                                                                   padding:
-                                                                      const EdgeInsets
+                                                                      EdgeInsetsDirectional
                                                                           .all(
-                                                                          8),
+                                                                              8),
                                                                   decoration:
                                                                       BoxDecoration(
                                                                     color: const Color(
@@ -1295,15 +1573,22 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                                             .circular(4),
                                                                   ),
                                                                   child: Text(
-                                                                    "Raw data: ${item['batchDetails']}",
-                                                                    style: GoogleFonts
-                                                                        .spaceGrotesk(
-                                                                      color: Colors
-                                                                              .grey[
-                                                                          500],
-                                                                      fontSize:
-                                                                          10,
-                                                                    ),
+                                                                    l10n.customerHistoryRawData(
+                                                                        item['batchDetails']?.toString() ??
+                                                                            'null'),
+                                                                    style: isArabic
+                                                                        ? GoogleFonts.cairo(
+                                                                            color:
+                                                                                Colors.grey[500],
+                                                                            fontSize:
+                                                                                10,
+                                                                          )
+                                                                        : GoogleFonts.spaceGrotesk(
+                                                                            color:
+                                                                                Colors.grey[500],
+                                                                            fontSize:
+                                                                                10,
+                                                                          ),
                                                                   ),
                                                                 ),
                                                               ],
@@ -1321,7 +1606,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                           // Order summary
                                           const SizedBox(height: 20),
                                           Container(
-                                            padding: const EdgeInsets.all(16),
+                                            padding:
+                                                EdgeInsetsDirectional.all(16),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFF1D2939),
                                               borderRadius:
@@ -1335,18 +1621,30 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                           .spaceBetween,
                                                   children: [
                                                     Text(
-                                                      "Subtotal",
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        color: Colors.grey[300],
-                                                      ),
+                                                      l10n.customerHistorySubtotal,
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color: Colors
+                                                                  .grey[300],
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color: Colors
+                                                                  .grey[300],
+                                                            ),
                                                     ),
                                                     Text(
                                                       "\$${_calculateSubtotal(_selectedOrder!['items']).toStringAsFixed(2)}",
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        color: Colors.white,
-                                                      ),
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color:
+                                                                  Colors.white,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
                                                     ),
                                                   ],
                                                 ),
@@ -1360,19 +1658,30 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        "Discount",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color:
-                                                              Colors.grey[300],
-                                                        ),
+                                                        l10n.customerHistoryDiscount,
+                                                        style: isArabic
+                                                            ? GoogleFonts.cairo(
+                                                                color: Colors
+                                                                    .grey[300],
+                                                              )
+                                                            : GoogleFonts
+                                                                .spaceGrotesk(
+                                                                color: Colors
+                                                                    .grey[300],
+                                                              ),
                                                       ),
                                                       Text(
                                                         "\$${_selectedOrder!['discount'].toStringAsFixed(2)}",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.white,
-                                                        ),
+                                                        style: isArabic
+                                                            ? GoogleFonts.cairo(
+                                                                color: Colors
+                                                                    .white,
+                                                              )
+                                                            : GoogleFonts
+                                                                .spaceGrotesk(
+                                                                color: Colors
+                                                                    .white,
+                                                              ),
                                                       ),
                                                     ],
                                                   ),
@@ -1387,24 +1696,46 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                           .spaceBetween,
                                                   children: [
                                                     Text(
-                                                      "Total",
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16,
-                                                      ),
+                                                      l10n.customerHistoryTotal,
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            ),
                                                     ),
                                                     Text(
                                                       "\$${_selectedOrder!['totalCost'].toStringAsFixed(2)}",
-                                                      style: GoogleFonts
-                                                          .spaceGrotesk(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16,
-                                                      ),
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                            ),
                                                     ),
                                                   ],
                                                 ),
@@ -1418,21 +1749,36 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        "Amount Paid",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color:
-                                                              Colors.grey[300],
-                                                        ),
+                                                        l10n.customerHistoryAmountPaid,
+                                                        style: isArabic
+                                                            ? GoogleFonts.cairo(
+                                                                color: Colors
+                                                                    .grey[300],
+                                                              )
+                                                            : GoogleFonts
+                                                                .spaceGrotesk(
+                                                                color: Colors
+                                                                    .grey[300],
+                                                              ),
                                                       ),
                                                       Text(
                                                         "\$${_selectedOrder!['amountPaid'].toStringAsFixed(2)}",
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          color: Colors.green,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
+                                                        style: isArabic
+                                                            ? GoogleFonts.cairo(
+                                                                color: Colors
+                                                                    .green,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              )
+                                                            : GoogleFonts
+                                                                .spaceGrotesk(
+                                                                color: Colors
+                                                                    .green,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
                                                       ),
                                                     ],
                                                   ),
@@ -1447,7 +1793,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     // Payment Method
                                     const SizedBox(height: 30),
                                     Container(
-                                      padding: const EdgeInsets.all(24),
+                                      padding: EdgeInsetsDirectional.all(24),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF283548),
                                         borderRadius: BorderRadius.circular(16),
@@ -1456,19 +1802,19 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                         children: [
                                           Expanded(
                                             child: _infoItem(
-                                              "Payment Method",
+                                              l10n.customerHistoryPaymentMethod,
                                               _selectedOrder![
                                                       'paymentMethod'] ??
-                                                  "Not specified",
+                                                  l10n.customerHistoryNotSpecified,
                                               icon: Icons.payment,
                                             ),
                                           ),
                                           Expanded(
                                             child: _infoItem(
-                                              "Payment Status",
+                                              l10n.customerHistoryPaymentStatus,
                                               _selectedOrder!['amountPaid'] > 0
-                                                  ? "Paid"
-                                                  : "Pending",
+                                                  ? l10n.customerHistoryPaid
+                                                  : l10n.customerHistoryPending,
                                               icon: Icons.check_circle,
                                             ),
                                           ),
@@ -1480,7 +1826,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                     if (_selectedOrder!['note'] != null) ...[
                                       const SizedBox(height: 30),
                                       Container(
-                                        padding: const EdgeInsets.all(24),
+                                        padding: EdgeInsetsDirectional.all(24),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF283548),
                                           borderRadius:
@@ -1491,19 +1837,31 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              "Order Note",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                              l10n.customerHistoryOrderNote,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white,
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white,
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                             ),
                                             const SizedBox(height: 12),
                                             Text(
                                               _selectedOrder!['note'],
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white,
-                                              ),
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white,
+                                                    ),
                                             ),
                                           ],
                                         ),
@@ -1522,6 +1880,8 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
   }
 
   Widget _detailItem(String label, String value, {IconData? icon}) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Card(
       color: const Color(0xFF283548),
       elevation: 0,
@@ -1529,7 +1889,7 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsetsDirectional.all(16.0),
         child: Row(
           children: [
             if (icon != null) ...[
@@ -1545,19 +1905,30 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                 ),
               ],
             ),
@@ -1568,8 +1939,10 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
   }
 
   Widget _infoItem(String label, String value, {IconData? icon}) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8, right: 8),
+      margin: EdgeInsetsDirectional.only(bottom: 8, end: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1587,18 +1960,28 @@ class _HistoryScreenCustomerState extends State<HistoryScreenCustomer> {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 14,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                 ),
               ],
             ),

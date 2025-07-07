@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/supplier/widgets/orderwidgets/OrderDetails_Model.dart';
 import 'package:storify/supplier/widgets/orderwidgets/apiService.dart';
 import 'package:storify/utilis/notification_service.dart';
@@ -52,48 +54,58 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(top: 20.h),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 36, 50, 69),
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(
-          color: const Color.fromARGB(255, 34, 53, 62),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with close button
-          _buildHeader(),
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
 
-          // Order info sections
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 16.h),
-                _buildOrderInfo(),
-                SizedBox(height: 24.h),
-                _buildProductsList(),
-                SizedBox(height: 24.h),
-                _buildPricingSummary(),
-                SizedBox(height: 16.h),
-                if (widget.orderDetails.note != null) _buildNotes(),
-                SizedBox(height: 24.h),
-                _buildActionButtons(context),
-                SizedBox(height: 24.h),
-              ],
-            ),
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
+        margin: EdgeInsets.only(top: 20.h),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 36, 50, 69),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: const Color.fromARGB(255, 34, 53, 62),
+            width: 1.5,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with close button
+            _buildHeader(),
+
+            // Order info sections
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 16.h),
+                  _buildOrderInfo(),
+                  SizedBox(height: 24.h),
+                  _buildProductsList(),
+                  SizedBox(height: 24.h),
+                  _buildPricingSummary(),
+                  SizedBox(height: 16.h),
+                  if (widget.orderDetails.note != null) _buildNotes(),
+                  SizedBox(height: 24.h),
+                  _buildActionButtons(context),
+                  SizedBox(height: 24.h),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
       decoration: BoxDecoration(
@@ -107,12 +119,18 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "Order Details",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            l10n.orderDetails,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
           ),
           IconButton(
             onPressed: widget.onClose,
@@ -128,16 +146,25 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   }
 
   Widget _buildOrderInfo() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Order Information",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          l10n.orderInformation,
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 16.h),
         Row(
@@ -147,11 +174,12 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoItem("Order ID", widget.orderDetails.orderId),
+                  _buildInfoItem(
+                      l10n.orderIdLabel, widget.orderDetails.orderId),
                   SizedBox(height: 12.h),
-                  _buildInfoItem("Date", widget.orderDetails.orderDate),
+                  _buildInfoItem(l10n.dateLabel, widget.orderDetails.orderDate),
                   SizedBox(height: 12.h),
-                  _buildInfoItem("Status", widget.orderDetails.status,
+                  _buildInfoItem(l10n.statusLabel, widget.orderDetails.status,
                       isStatus: true),
                 ],
               ),
@@ -163,7 +191,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   SizedBox(height: 12.h),
                   if (widget.orderDetails.paymentMethod != null)
                     _buildInfoItem(
-                        "Payment", widget.orderDetails.paymentMethod!),
+                        l10n.paymentLabel, widget.orderDetails.paymentMethod!),
                 ],
               ),
             ),
@@ -172,23 +200,31 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         if (widget.orderDetails.deliveryAddress != null) ...[
           SizedBox(height: 12.h),
           _buildInfoItem(
-              "Delivery Address", widget.orderDetails.deliveryAddress!),
+              l10n.deliveryAddressLabel, widget.orderDetails.deliveryAddress!),
         ],
       ],
     );
   }
 
   Widget _buildInfoItem(String label, String value, {bool isStatus = false}) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
         ),
         SizedBox(height: 4.h),
         if (isStatus)
@@ -196,17 +232,48 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         else
           Text(
             value,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
           ),
       ],
     );
   }
 
   Widget _buildStatusPill(String status) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    // Get localized status text
+    String displayStatus;
+    switch (status) {
+      case "Accepted":
+        displayStatus = l10n.acceptedStatus;
+        break;
+      case "Pending":
+        displayStatus = l10n.pendingStatus;
+        break;
+      case "Delivered":
+        displayStatus = l10n.deliveredStatus;
+        break;
+      case "Declined":
+        displayStatus = l10n.declinedStatus;
+        break;
+      case "PartiallyAccepted":
+        displayStatus = l10n.partiallyAcceptedStatus;
+        break;
+      default:
+        displayStatus = status;
+    }
+
     Color textColor;
     Color borderColor;
     if (status == "Accepted") {
@@ -228,6 +295,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       textColor = Colors.white70;
       borderColor = Colors.white54;
     }
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
@@ -236,17 +304,27 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         border: Border.all(color: borderColor),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
+        displayStatus,
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
       ),
     );
   }
 
   Widget _buildProductsList() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     bool showSelectionControls = widget.orderDetails.status == "Pending";
     bool canEditPrices = widget.orderDetails.status == "Pending";
 
@@ -257,35 +335,56 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Products",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              l10n.productsLabel,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
             ),
             if (showSelectionControls)
               Row(
                 children: [
                   if (canEditPrices)
                     Padding(
-                      padding: EdgeInsets.only(right: 16.w),
+                      padding: EdgeInsets.only(
+                        left: isRtl ? 16.w : 0,
+                        right: isRtl ? 0 : 16.w,
+                      ),
                       child: Text(
-                        "Tap to edit details",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.white70,
-                        ),
+                        l10n.tapToEditDetails,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white70,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white70,
+                              ),
                       ),
                     ),
                   Text(
-                    "Select products to decline",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white70,
-                    ),
+                    l10n.selectProductsToDecline,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white70,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white70,
+                          ),
                   ),
                 ],
               ),
@@ -323,7 +422,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   widget.orderDetails.status == "PartiallyAccepted" &&
                       product.status != null;
 
-              // Check if this product has custom dates or notes (from API or local editing)
+              // Check if this product has custom data (from API or local editing)
               final bool hasCustomData =
                   _productionDates.containsKey(product.id) ||
                       _expiryDates.containsKey(product.id) ||
@@ -340,7 +439,10 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                         // Checkbox for selection (only shown for pending orders)
                         if (showSelectionControls)
                           Padding(
-                            padding: EdgeInsets.only(right: 8.w),
+                            padding: EdgeInsets.only(
+                              left: isRtl ? 8.w : 0,
+                              right: isRtl ? 0 : 8.w,
+                            ),
                             child: Checkbox(
                               value: isSelected,
                               onChanged: (bool? value) {
@@ -385,21 +487,32 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                             children: [
                               Text(
                                 product.name,
-                                style: GoogleFonts.spaceGrotesk(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
                               ),
                               SizedBox(height: 4.h),
                               Row(
                                 children: [
                                   Text(
-                                    "ID: ${product.productId}",
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 14.sp,
-                                      color: Colors.white70,
-                                    ),
+                                    "${l10n.idPrefix}${product.productId}",
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            fontSize: 14.sp,
+                                            color: Colors.white70,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            fontSize: 14.sp,
+                                            color: Colors.white70,
+                                          ),
                                   ),
                                   if (showProductStatus) ...[
                                     SizedBox(width: 8.w),
@@ -426,33 +539,57 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                             // Total price display
                             Text(
                               "\$${currentTotalPrice.toStringAsFixed(2)}",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
                             ),
                             SizedBox(height: 4.h),
                             // Price per unit
                             Text(
                               "${product.quantity} × \$${currentPrice.toStringAsFixed(2)}",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14.sp,
-                                color: _editedPrices.containsKey(product.id)
-                                    ? const Color.fromARGB(255, 105, 65, 198)
-                                    : Colors.white70,
-                                fontWeight:
-                                    _editedPrices.containsKey(product.id)
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 14.sp,
+                                      color:
+                                          _editedPrices.containsKey(product.id)
+                                              ? const Color.fromARGB(
+                                                  255, 105, 65, 198)
+                                              : Colors.white70,
+                                      fontWeight:
+                                          _editedPrices.containsKey(product.id)
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 14.sp,
+                                      color:
+                                          _editedPrices.containsKey(product.id)
+                                              ? const Color.fromARGB(
+                                                  255, 105, 65, 198)
+                                              : Colors.white70,
+                                      fontWeight:
+                                          _editedPrices.containsKey(product.id)
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                    ),
                             ),
                           ],
                         ),
                         // Edit button for pending orders
                         if (canEditPrices)
                           Padding(
-                            padding: EdgeInsets.only(left: 8.w),
+                            padding: EdgeInsets.only(
+                              left: isRtl ? 0 : 8.w,
+                              right: isRtl ? 8.w : 0,
+                            ),
                             child: IconButton(
                               onPressed: () =>
                                   _showProductEditDialog(context, product),
@@ -471,7 +608,13 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     if (hasCustomData)
                       Padding(
                         padding: EdgeInsets.only(
-                            top: 8.h, left: showSelectionControls ? 40.w : 0.w),
+                            top: 8.h,
+                            left: showSelectionControls
+                                ? (isRtl ? 0 : 40.w)
+                                : 0.w,
+                            right: showSelectionControls
+                                ? (isRtl ? 40.w : 0)
+                                : 0.w),
                         child: _buildProductCustomInfo(product),
                       ),
                   ],
@@ -485,6 +628,9 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   }
 
   Widget _buildProductCustomInfo(OrderProduct product) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     List<Widget> infoChips = [];
 
     // Check for production date (local editing takes priority over API data)
@@ -497,7 +643,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
     if (displayProdDate != null) {
       infoChips.add(_buildInfoChip(
-        "Prod: ${displayProdDate.day}/${displayProdDate.month}/${displayProdDate.year}",
+        "${l10n.prodDatePrefix}${displayProdDate.day}/${displayProdDate.month}/${displayProdDate.year}",
         Colors.blue,
         icon: Icons.production_quantity_limits,
       ));
@@ -513,7 +659,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
     if (displayExpDate != null) {
       infoChips.add(_buildInfoChip(
-        "Exp: ${displayExpDate.day}/${displayExpDate.month}/${displayExpDate.year}",
+        "${l10n.expDatePrefix}${displayExpDate.day}/${displayExpDate.month}/${displayExpDate.year}",
         Colors.orange,
         icon: Icons.schedule,
       ));
@@ -539,7 +685,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     // Show price modification indicator if price was edited
     if (_editedPrices.containsKey(product.id)) {
       infoChips.add(_buildInfoChip(
-        "Price Modified",
+        l10n.priceModified,
         const Color.fromARGB(255, 105, 65, 198),
         icon: Icons.attach_money,
       ));
@@ -557,6 +703,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   }
 
   Widget _buildInfoChip(String text, Color color, {IconData? icon}) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
@@ -577,11 +725,17 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           ],
           Text(
             text,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: color,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: color,
+                  ),
           ),
         ],
       ),
@@ -590,6 +744,10 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
   // Method to show product edit dialog (combines price, dates, and notes)
   void _showProductEditDialog(BuildContext context, OrderProduct product) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     // Current values (either edited, from API, or default)
     final double currentPrice = _editedPrices[product.id] ?? product.price;
 
@@ -619,115 +777,66 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-          ),
-          title: Text(
-            "Edit Product Details",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+      builder: (context) => Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.r),
             ),
-          ),
-          content: Container(
-            width: 400.w,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Product: ${product.name}",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
+            title: Text(
+              l10n.editProductDetails,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Price section
-                  Text(
-                    "Price per unit:",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 29, 41, 57),
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(
-                        color: const Color.fromARGB(255, 34, 53, 62),
-                        width: 1,
-                      ),
-                    ),
-                    child: TextField(
-                      controller: priceController,
-                      keyboardType:
-                          TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d{0,2}')),
-                      ],
-                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                      decoration: InputDecoration(
-                        prefixText: '\$ ',
-                        prefixStyle:
-                            GoogleFonts.spaceGrotesk(color: Colors.white70),
-                        hintText: "0.00",
-                        hintStyle:
-                            GoogleFonts.spaceGrotesk(color: Colors.white30),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(12.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Production Date section
-                  Text(
-                    "Production Date:",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  GestureDetector(
-                    onTap: () async {
-                      final DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: selectedProdDate,
-                        firstDate: DateTime.now().subtract(Duration(days: 365)),
-                        lastDate: DateTime.now().add(Duration(days: 30)),
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: ColorScheme.dark(
-                                primary:
-                                    const Color.fromARGB(255, 105, 65, 198),
-                                surface: const Color.fromARGB(255, 36, 50, 69),
-                              ),
+            ),
+            content: Container(
+              width: 400.w,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${l10n.productPrefix}${product.name}",
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (pickedDate != null) {
-                        setDialogState(() {
-                          selectedProdDate = pickedDate;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(12.r),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Price section
+                    Text(
+                      l10n.pricePerUnit,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 29, 41, 57),
                         borderRadius: BorderRadius.circular(8.r),
@@ -736,130 +845,82 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                           width: 1,
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "${selectedProdDate.day}/${selectedProdDate.month}/${selectedProdDate.year}",
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
-                          ),
-                          Icon(Icons.calendar_today,
-                              color: Colors.white70, size: 20.sp),
+                      child: TextField(
+                        controller: priceController,
+                        keyboardType:
+                            TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}')),
                         ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Expiry Date section
-                  Text(
-                    "Expiry Date:",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  GestureDetector(
-                    onTap: () async {
-                      final DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: selectedExpDate,
-                        firstDate: selectedProdDate,
-                        lastDate:
-                            DateTime.now().add(Duration(days: 1095)), // 3 years
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: ColorScheme.dark(
-                                primary:
-                                    const Color.fromARGB(255, 105, 65, 198),
-                                surface: const Color.fromARGB(255, 36, 50, 69),
-                              ),
-                            ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (pickedDate != null) {
-                        setDialogState(() {
-                          selectedExpDate = pickedDate;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(12.r),
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 29, 41, 57),
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 34, 53, 62),
-                          width: 1,
+                        textDirection:
+                            isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        style: isArabic
+                            ? GoogleFonts.cairo(color: Colors.white)
+                            : GoogleFonts.spaceGrotesk(color: Colors.white),
+                        decoration: InputDecoration(
+                          prefixText: '\$ ',
+                          prefixStyle: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white70)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white70),
+                          hintText: "0.00",
+                          hintStyle: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white30)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white30),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.all(12.r),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "${selectedExpDate.day}/${selectedExpDate.month}/${selectedExpDate.year}",
-                            style:
-                                GoogleFonts.spaceGrotesk(color: Colors.white),
-                          ),
-                          Icon(Icons.calendar_today,
-                              color: Colors.white70, size: 20.sp),
-                        ],
-                      ),
                     ),
-                  ),
-                  SizedBox(height: 16.h),
+                    SizedBox(height: 16.h),
 
-                  // Notes section
-                  Text(
-                    "Notes (optional):",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      color: Colors.white70,
+                    // Production Date section
+                    Text(
+                      l10n.productionDate,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            ),
                     ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 29, 41, 57),
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(
-                        color: const Color.fromARGB(255, 34, 53, 62),
-                        width: 1,
-                      ),
-                    ),
-                    child: TextField(
-                      controller: notesController,
-                      maxLines: 3,
-                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText:
-                            "e.g., Fresh dairy batch, Organic certified...",
-                        hintStyle:
-                            GoogleFonts.spaceGrotesk(color: Colors.white30),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(12.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  // Calculate new total
-                  StatefulBuilder(
-                    builder: (context, setState) {
-                      double newPrice = 0.0;
-                      try {
-                        newPrice = double.parse(priceController.text);
-                      } catch (e) {
-                        newPrice = 0.0;
-                      }
-                      final double newTotal = newPrice * product.quantity;
-
-                      return Container(
+                    SizedBox(height: 8.h),
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedProdDate,
+                          firstDate:
+                              DateTime.now().subtract(Duration(days: 365)),
+                          lastDate: DateTime.now().add(Duration(days: 30)),
+                          builder: (context, child) {
+                            return Directionality(
+                              textDirection:
+                                  isRtl ? TextDirection.rtl : TextDirection.ltr,
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: ColorScheme.dark(
+                                    primary:
+                                        const Color.fromARGB(255, 105, 65, 198),
+                                    surface:
+                                        const Color.fromARGB(255, 36, 50, 69),
+                                  ),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                          },
+                        );
+                        if (pickedDate != null) {
+                          setDialogState(() {
+                            selectedProdDate = pickedDate;
+                          });
+                        }
+                      },
+                      child: Container(
                         padding: EdgeInsets.all(12.r),
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(255, 29, 41, 57),
@@ -873,126 +934,329 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "New Total:",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white70,
-                              ),
+                              "${selectedProdDate.day}/${selectedProdDate.month}/${selectedProdDate.year}",
+                              style: isArabic
+                                  ? GoogleFonts.cairo(color: Colors.white)
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white),
                             ),
-                            Text(
-                              "\$${newTotal.toStringAsFixed(2)}",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                                color: const Color.fromARGB(255, 105, 65, 198),
-                              ),
-                            ),
+                            Icon(Icons.calendar_today,
+                                color: Colors.white70, size: 20.sp),
                           ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Expiry Date section
+                    Text(
+                      l10n.expiryDate,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedExpDate,
+                          firstDate: selectedProdDate,
+                          lastDate: DateTime.now()
+                              .add(Duration(days: 1095)), // 3 years
+                          builder: (context, child) {
+                            return Directionality(
+                              textDirection:
+                                  isRtl ? TextDirection.rtl : TextDirection.ltr,
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: ColorScheme.dark(
+                                    primary:
+                                        const Color.fromARGB(255, 105, 65, 198),
+                                    surface:
+                                        const Color.fromARGB(255, 36, 50, 69),
+                                  ),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                          },
+                        );
+                        if (pickedDate != null) {
+                          setDialogState(() {
+                            selectedExpDate = pickedDate;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 29, 41, 57),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 34, 53, 62),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "${selectedExpDate.day}/${selectedExpDate.month}/${selectedExpDate.year}",
+                              style: isArabic
+                                  ? GoogleFonts.cairo(color: Colors.white)
+                                  : GoogleFonts.spaceGrotesk(
+                                      color: Colors.white),
+                            ),
+                            Icon(Icons.calendar_today,
+                                color: Colors.white70, size: 20.sp),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Notes section
+                    Text(
+                      l10n.notesOptional,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 29, 41, 57),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 34, 53, 62),
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: notesController,
+                        maxLines: 3,
+                        textDirection:
+                            isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        style: isArabic
+                            ? GoogleFonts.cairo(color: Colors.white)
+                            : GoogleFonts.spaceGrotesk(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: l10n.notesHint,
+                          hintStyle: isArabic
+                              ? GoogleFonts.cairo(color: Colors.white30)
+                              : GoogleFonts.spaceGrotesk(color: Colors.white30),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.all(12.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Calculate new total
+                    StatefulBuilder(
+                      builder: (context, setState) {
+                        double newPrice = 0.0;
+                        try {
+                          newPrice = double.parse(priceController.text);
+                        } catch (e) {
+                          newPrice = 0.0;
+                        }
+                        final double newTotal = newPrice * product.quantity;
+
+                        return Container(
+                          padding: EdgeInsets.all(12.r),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 29, 41, 57),
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 34, 53, 62),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.newTotal,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white70,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white70,
+                                      ),
+                              ),
+                              Text(
+                                "\$${newTotal.toStringAsFixed(2)}",
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color.fromARGB(
+                                            255, 105, 65, 198),
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color.fromARGB(
+                                            255, 105, 65, 198),
+                                      ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              // Reset button
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    // Remove local editing data (this will revert to API data if available)
+                    _editedPrices.remove(product.id);
+                    _productionDates.remove(product.id);
+                    _expiryDates.remove(product.id);
+                    _productNotes.remove(product.id);
+                  });
+                },
+                child: Text(
+                  "${l10n.resetTo} ${product.hasCustomData ? l10n.originalData : l10n.defaultData}",
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  l10n.cancelButton,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 105, 65, 198),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            // Reset button
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  // Remove local editing data (this will revert to API data if available)
-                  _editedPrices.remove(product.id);
-                  _productionDates.remove(product.id);
-                  _expiryDates.remove(product.id);
-                  _productNotes.remove(product.id);
-                });
-              },
-              child: Text(
-                "Reset to ${product.hasCustomData ? 'Original' : 'Default'}",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w600,
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Cancel",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 105, 65, 198),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              ),
-              onPressed: () {
-                try {
-                  final double newPrice = double.parse(priceController.text);
-                  if (newPrice <= 0) {
+                onPressed: () {
+                  try {
+                    final double newPrice = double.parse(priceController.text);
+                    if (newPrice <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.priceValidationError),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.pop(context);
+                    setState(() {
+                      // Update price only if different from original
+                      if (newPrice != product.price) {
+                        _editedPrices[product.id] = newPrice;
+                      } else {
+                        _editedPrices.remove(product.id);
+                      }
+
+                      // Update dates
+                      _productionDates[product.id] = selectedProdDate;
+                      _expiryDates[product.id] = selectedExpDate;
+
+                      // Update notes
+                      if (notesController.text.trim().isNotEmpty) {
+                        _productNotes[product.id] = notesController.text.trim();
+                      } else {
+                        _productNotes.remove(product.id);
+                      }
+                    });
+                  } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Price must be greater than zero'),
+                        content: Text(l10n.validPriceError),
                         backgroundColor: Colors.red,
                       ),
                     );
-                    return;
                   }
-
-                  Navigator.pop(context);
-                  setState(() {
-                    // Update price only if different from original
-                    if (newPrice != product.price) {
-                      _editedPrices[product.id] = newPrice;
-                    } else {
-                      _editedPrices.remove(product.id);
-                    }
-
-                    // Update dates
-                    _productionDates[product.id] = selectedProdDate;
-                    _expiryDates[product.id] = selectedExpDate;
-
-                    // Update notes
-                    if (notesController.text.trim().isNotEmpty) {
-                      _productNotes[product.id] = notesController.text.trim();
-                    } else {
-                      _productNotes.remove(product.id);
-                    }
-                  });
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Please enter a valid price'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: Text(
-                "Update Details",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                },
+                child: Text(
+                  l10n.updateDetails,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildProductStatusPill(String status) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    // Get localized status text
+    String displayStatus;
+    switch (status) {
+      case "Accepted":
+        displayStatus = l10n.acceptedStatus;
+        break;
+      case "Declined":
+        displayStatus = l10n.declinedStatus;
+        break;
+      default:
+        displayStatus = status;
+    }
+
     Color color;
 
     if (status == "Accepted") {
@@ -1011,17 +1275,25 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         border: Border.all(color: color),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 10.sp,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+        displayStatus,
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w600,
+                color: color,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
       ),
     );
   }
 
   Widget _buildPricingSummary() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     // Calculate the new total if there are price edits
     double calculatedTotal = 0.0;
 
@@ -1048,7 +1320,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       child: Column(
         children: [
           _buildPriceRow(
-            "Total",
+            l10n.totalLabel,
             "\$${calculatedTotal.toStringAsFixed(2)}",
             isTotal: true,
             isEdited: _hasPriceEdits,
@@ -1060,22 +1332,34 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
   Widget _buildPriceRow(String label, String amount,
       {bool isTotal = false, bool isEdited = false}) {
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: isTotal ? 16.sp : 14.sp,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-            color: isTotal ? Colors.white : Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: isTotal ? 16.sp : 14.sp,
+                  fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+                  color: isTotal ? Colors.white : Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: isTotal ? 16.sp : 14.sp,
+                  fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+                  color: isTotal ? Colors.white : Colors.white70,
+                ),
         ),
         Row(
           children: [
             if (isEdited)
               Padding(
-                padding: EdgeInsets.only(right: 6.w),
+                padding: EdgeInsets.only(
+                  left: isRtl ? 6.w : 0,
+                  right: isRtl ? 0 : 6.w,
+                ),
                 child: Icon(
                   Icons.edit,
                   size: 14.sp,
@@ -1084,13 +1368,21 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
               ),
             Text(
               amount,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: isTotal ? 18.sp : 14.sp,
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-                color: isTotal
-                    ? const Color.fromARGB(255, 105, 65, 198)
-                    : Colors.white,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: isTotal ? 18.sp : 14.sp,
+                      fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+                      color: isTotal
+                          ? const Color.fromARGB(255, 105, 65, 198)
+                          : Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: isTotal ? 18.sp : 14.sp,
+                      fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+                      color: isTotal
+                          ? const Color.fromARGB(255, 105, 65, 198)
+                          : Colors.white,
+                    ),
             ),
           ],
         ),
@@ -1099,16 +1391,25 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   }
 
   Widget _buildNotes() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Notes",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          l10n.notesLabel,
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -1124,10 +1425,15 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           ),
           child: Text(
             widget.orderDetails.note!,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 14.sp,
-              color: Colors.white70,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 14.sp,
+                    color: Colors.white70,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    color: Colors.white70,
+                  ),
           ),
         ),
       ],
@@ -1135,6 +1441,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     // Actions depend on the current status
     List<Widget> actions = [];
 
@@ -1144,8 +1452,10 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         actions = [
           Expanded(
             child: _buildActionButton(
-              "Accept Partially" +
-                  (_hasPriceEdits || _hasDateEdits ? " with Changes" : ""),
+              l10n.acceptPartially +
+                  (_hasPriceEdits || _hasDateEdits
+                      ? " ${l10n.withChanges}"
+                      : ""),
               const Color.fromARGB(255, 255, 136, 0), // orange
               () => _showPartialAcceptanceDialog(context),
               isPrimary: true,
@@ -1157,7 +1467,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         actions = [
           Expanded(
             child: _buildActionButton(
-              "Decline",
+              l10n.declineButton,
               const Color.fromARGB(255, 229, 62, 62),
               () => _showDeclineDialog(context),
             ),
@@ -1165,8 +1475,10 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           SizedBox(width: 16.w),
           Expanded(
             child: _buildActionButton(
-              "Accept" +
-                  (_hasPriceEdits || _hasDateEdits ? " with Changes" : ""),
+              l10n.acceptButton +
+                  (_hasPriceEdits || _hasDateEdits
+                      ? " ${l10n.withChanges}"
+                      : ""),
               const Color.fromARGB(255, 105, 65, 198),
               () => _updateOrderStatus(context, "Accepted"),
               isPrimary: true,
@@ -1179,7 +1491,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       actions = [
         Expanded(
           child: _buildActionButton(
-            "Print Invoice",
+            l10n.printInvoice,
             const Color.fromARGB(255, 105, 65, 198),
             () {},
             isPrimary: true,
@@ -1197,6 +1509,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     VoidCallback onPressed, {
     bool isPrimary = false,
   }) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -1214,16 +1528,25 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       ),
       child: Text(
         text,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 16.sp,
-          fontWeight: FontWeight.bold,
-        ),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+              ),
       ),
     );
   }
 
   // Show dialog for partial acceptance
   void _showPartialAcceptanceDialog(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     String note = '';
     final int declinedCount =
         _selectedProducts.values.where((selected) => selected).length;
@@ -1231,144 +1554,191 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        title: Text(
-          "Partially Accept Order",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      builder: (context) => Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "You are about to accept this order partially.",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              "$declinedCount out of $totalProducts products will be declined.",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            if (_hasPriceEdits) ...[
-              SizedBox(height: 8.h),
-              Text(
-                "${_editedPrices.length} product prices have been modified.",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: const Color.fromARGB(255, 105, 65, 198),
-                ),
-              ),
-            ],
-            if (_hasDateEdits) ...[
-              SizedBox(height: 8.h),
-              Text(
-                "Production and expiry dates have been set for products.",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: const Color.fromARGB(255, 105, 65, 198),
-                ),
-              ),
-            ],
-            SizedBox(height: 16.h),
-            Text(
-              "Please provide a reason for partial acceptance:",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 29, 41, 57),
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 34, 53, 62),
-                  width: 1,
-                ),
-              ),
-              child: TextField(
-                maxLines: 3,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                ),
-                decoration: InputDecoration(
-                  hintText:
-                      "e.g., Some products are out of stock, dates updated for freshness",
-                  hintStyle: GoogleFonts.spaceGrotesk(
-                    color: Colors.white30,
+          title: Text(
+            l10n.partiallyAcceptOrder,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(12.r),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.partialAcceptanceDescription,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                l10n.productsWillBeDeclined(declinedCount, totalProducts),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+              ),
+              if (_hasPriceEdits) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  l10n.pricesModified(_editedPrices.length),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        ),
                 ),
-                onChanged: (value) {
-                  note = value;
-                },
+              ],
+              if (_hasDateEdits) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  l10n.datesHaveBeenSet,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        ),
+                ),
+              ],
+              SizedBox(height: 16.h),
+              Text(
+                l10n.providePartialReason,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      ),
+              ),
+              SizedBox(height: 8.h),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 29, 41, 57),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(
+                    color: const Color.fromARGB(255, 34, 53, 62),
+                    width: 1,
+                  ),
+                ),
+                child: TextField(
+                  maxLines: 3,
+                  textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: l10n.partialReasonHint,
+                    hintStyle: isArabic
+                        ? GoogleFonts.cairo(color: Colors.white30)
+                        : GoogleFonts.spaceGrotesk(color: Colors.white30),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(12.r),
+                  ),
+                  onChanged: (value) {
+                    note = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                l10n.cancelButton,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    const Color.fromARGB(255, 255, 136, 0), // orange
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              ),
+              onPressed: () {
+                if (note.trim().isEmpty) {
+                  // Show validation error if note is empty
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l10n.partialReasonRequired),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(context);
+                _acceptPartially(context, note);
+              },
+              child: Text(
+                l10n.confirmButton,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 255, 136, 0), // orange
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            ),
-            onPressed: () {
-              if (note.trim().isEmpty) {
-                // Show validation error if note is empty
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content:
-                        Text('Please provide a reason for partial acceptance'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              Navigator.pop(context);
-              _acceptPartially(context, note);
-            },
-            child: Text(
-              "Confirm",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1443,6 +1813,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     String? note,
     List<Map<String, dynamic>>? declinedItems,
   }) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     BuildContext? dialogContext;
 
     try {
@@ -1535,17 +1906,17 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
               declinedItems.isNotEmpty &&
               declinedItems.any((item) =>
                   item.containsKey("status") && item["status"] == "Declined")) {
-            statusMessage = "partially accepted";
+            statusMessage = l10n.partiallyAcceptedMessage;
           } else if (_hasPriceEdits || _hasDateEdits) {
-            statusMessage = "accepted with changes";
+            statusMessage = l10n.acceptedWithChangesMessage;
           }
         }
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Order ${widget.orderDetails.orderId} has been $statusMessage'),
+              content: Text(l10n.orderStatusUpdated(
+                  widget.orderDetails.orderId, statusMessage)),
               backgroundColor: Colors.green,
             ),
           );
@@ -1565,7 +1936,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to update order status'),
+              content: Text(l10n.failedToUpdateOrderStatus),
               backgroundColor: Colors.red,
             ),
           );
@@ -1583,7 +1954,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating order status: $e'),
+            content: Text(l10n.errorUpdatingOrderStatus(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1594,35 +1965,37 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   // Method to send notification to admin about order status update
   Future<void> _sendStatusUpdateNotification(String status, String? note,
       {bool isPartial = false}) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     String title = '';
     String message = '';
 
     if (status == "Accepted") {
       if (isPartial) {
-        title = "Order Partially Accepted";
-        message =
-            "Order ${widget.orderDetails.orderId} has been partially accepted by supplier.";
+        title = l10n.orderPartiallyAcceptedNotificationTitle;
+        message = l10n.orderPartiallyAcceptedNotificationMessage(
+            widget.orderDetails.orderId);
       } else if (_hasPriceEdits || _hasDateEdits) {
-        title = "Order Accepted with Changes";
-        message =
-            "Order ${widget.orderDetails.orderId} has been accepted by supplier with changes.";
+        title = l10n.orderAcceptedWithChangesNotificationTitle;
+        message = l10n.orderAcceptedWithChangesNotificationMessage(
+            widget.orderDetails.orderId);
       } else {
-        title = "Order Accepted";
+        title = l10n.orderAcceptedNotificationTitle;
         message =
-            "Order ${widget.orderDetails.orderId} has been accepted by supplier.";
+            l10n.orderAcceptedNotificationMessage(widget.orderDetails.orderId);
       }
     } else if (status == "Declined") {
-      title = "Order Declined";
+      title = l10n.orderDeclinedNotificationTitle;
       message =
-          "Order ${widget.orderDetails.orderId} has been declined by supplier.";
+          l10n.orderDeclinedNotificationMessage(widget.orderDetails.orderId);
     } else if (status == "Delivered") {
-      title = "Order Delivered";
+      title = l10n.orderDeliveredNotificationTitle;
       message =
-          "Order ${widget.orderDetails.orderId} has been marked as delivered.";
+          l10n.orderDeliveredNotificationMessage(widget.orderDetails.orderId);
     }
 
     if (note != null && note.isNotEmpty) {
-      message += " Reason: $note";
+      message += " ${l10n.reasonPrefix}$note";
     }
 
     // Create additional data to include with notification
@@ -1641,106 +2014,135 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
   // Method to show decline dialog with note field
   void _showDeclineDialog(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     String note = '';
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color.fromARGB(255, 36, 50, 69),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        title: Text(
-          "Decline Order",
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      builder: (context) => Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 36, 50, 69),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Please provide a reason for declining this order:",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white70,
+          title: Text(
+            l10n.declineOrderTitle,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.provideDeclineReason,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      ),
+              ),
+              SizedBox(height: 16.h),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 29, 41, 57),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(
+                    color: const Color.fromARGB(255, 34, 53, 62),
+                    width: 1,
+                  ),
+                ),
+                child: TextField(
+                  maxLines: 4,
+                  textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: l10n.enterReasonHint,
+                    hintStyle: isArabic
+                        ? GoogleFonts.cairo(color: Colors.white30)
+                        : GoogleFonts.spaceGrotesk(color: Colors.white30),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(12.r),
+                  ),
+                  onChanged: (value) {
+                    note = value;
+                  },
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                l10n.cancelButton,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
             ),
-            SizedBox(height: 16.h),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 29, 41, 57),
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 34, 53, 62),
-                  width: 1,
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 229, 62, 62),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               ),
-              child: TextField(
-                maxLines: 4,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Enter reason...",
-                  hintStyle: GoogleFonts.spaceGrotesk(
-                    color: Colors.white30,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(12.r),
-                ),
-                onChanged: (value) {
-                  note = value;
-                },
+              onPressed: () {
+                if (note.trim().isEmpty) {
+                  // Show validation error if note is empty
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l10n.declineReasonRequired),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context);
+                _updateOrderStatus(context, "Declined", note: note);
+              },
+              child: Text(
+                l10n.declineButton,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancel",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 229, 62, 62),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            ),
-            onPressed: () {
-              if (note.trim().isEmpty) {
-                // Show validation error if note is empty
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Please provide a reason for declining'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(context);
-              _updateOrderStatus(context, "Declined", note: note);
-            },
-            child: Text(
-              "Decline",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

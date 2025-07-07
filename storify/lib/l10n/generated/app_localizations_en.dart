@@ -548,10 +548,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get totalProducts => 'Total Products';
 
   @override
-  String get activeProducts => 'Active Products';
+  String get activeProducts => 'Active';
 
   @override
-  String get inactiveProducts => 'UnActive Products';
+  String get inactiveProducts => 'Not Active';
 
   @override
   String get totalCategories => 'Total Categories';
@@ -801,10 +801,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notSet => 'Not set';
 
   @override
-  String get productionDate => 'Production Date';
+  String get productionDate => 'Production Date:';
 
   @override
-  String get expiryDate => 'Expiry Date';
+  String get expiryDate => 'Expiry Date:';
 
   @override
   String get dropOrImport => 'Drop or Import';
@@ -1157,16 +1157,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerHistory => 'Customer History';
 
   @override
-  String get totalOrders => 'Total Orders';
+  String get totalOrders => 'Total';
 
   @override
-  String get activeOrders => 'Active Orders';
+  String get activeOrders => 'Active';
 
   @override
-  String get completedOrders => 'Completed Orders';
+  String get completedOrders => 'Completed';
 
   @override
-  String get cancelledOrders => 'Cancelled Orders';
+  String get cancelledOrders => 'Cancelled';
 
   @override
   String get allStatus => 'All Status';
@@ -1417,7 +1417,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterMinutes => 'Enter minutes';
 
   @override
-  String get notesOptional => 'Notes (Optional)';
+  String get notesOptional => 'Notes (optional):';
 
   @override
   String get addDeliveryNotes => 'Add delivery notes...';
@@ -2067,7 +2067,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deliveryAddress => 'Delivery Address';
 
   @override
-  String get itemsCount => 'Items Count';
+  String get itemsCountt => 'Items Count';
 
   @override
   String get followRoute => 'Follow Route';
@@ -2217,4 +2217,741 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qty => 'Qty';
+
+  @override
+  String get orderManagement => 'Order Management';
+
+  @override
+  String get ordersList => 'Orders list';
+
+  @override
+  String get searchOrderId => 'Search ID';
+
+  @override
+  String get authenticationError =>
+      'Authentication failed. Please log in again.';
+
+  @override
+  String get loginButton => 'Login';
+
+  @override
+  String get failedToRefreshOrders => 'Failed to refresh orders';
+
+  @override
+  String get productManagement => 'Product Management';
+
+  @override
+  String get productsList => 'Products list';
+
+  @override
+  String get allProducts => 'All';
+
+  @override
+  String get allRequests => 'All';
+
+  @override
+  String get pendingRequests => 'Pending';
+
+  @override
+  String get acceptedRequests => 'Accepted';
+
+  @override
+  String get declinedRequests => 'Declined';
+
+  @override
+  String get searchProductByNameOrId => 'Search Product by name or id';
+
+  @override
+  String get requestedProductsList => 'Requested products';
+
+  @override
+  String get searchRequestByNameOrId => 'Search request by name or id';
+
+  @override
+  String get orderInformation => 'Order Information';
+
+  @override
+  String get orderIdLabel => 'Order ID';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get paymentLabel => 'Payment';
+
+  @override
+  String get deliveryAddressLabel => 'Delivery Address';
+
+  @override
+  String get productsLabel => 'Products';
+
+  @override
+  String get tapToEditDetails => 'Tap to edit details';
+
+  @override
+  String get selectProductsToDecline => 'Select products to decline';
+
+  @override
+  String get idPrefix => 'ID: ';
+
+  @override
+  String get totalLabel => 'Total';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get acceptedStatus => 'Accepted';
+
+  @override
+  String get pendingStatus => 'Pending';
+
+  @override
+  String get deliveredStatus => 'Delivered';
+
+  @override
+  String get declinedStatus => 'Declined';
+
+  @override
+  String get partiallyAcceptedStatus => 'Partially Accepted';
+
+  @override
+  String get editProductDetails => 'Edit Product Details';
+
+  @override
+  String get productPrefix => 'Product: ';
+
+  @override
+  String get pricePerUnit => 'Price per unit:';
+
+  @override
+  String get notesHint => 'e.g., Fresh dairy batch, Organic certified...';
+
+  @override
+  String get newTotal => 'New Total:';
+
+  @override
+  String get resetTo => 'Reset to';
+
+  @override
+  String get originalData => 'Original';
+
+  @override
+  String get defaultData => 'Default';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get updateDetails => 'Update Details';
+
+  @override
+  String get priceValidationError => 'Price must be greater than zero';
+
+  @override
+  String get validPriceError => 'Please enter a valid price';
+
+  @override
+  String get prodDatePrefix => 'Prod: ';
+
+  @override
+  String get expDatePrefix => 'Exp: ';
+
+  @override
+  String get priceModified => 'Price Modified';
+
+  @override
+  String get acceptPartially => 'Accept Partially';
+
+  @override
+  String get withChanges => 'with Changes';
+
+  @override
+  String get declineButton => 'Decline';
+
+  @override
+  String get acceptButton => 'Accept';
+
+  @override
+  String get partiallyAcceptOrder => 'Partially Accept Order';
+
+  @override
+  String get partialAcceptanceDescription =>
+      'You are about to accept this order partially.';
+
+  @override
+  String productsWillBeDeclined(Object declinedCount, Object totalProducts) {
+    return '$declinedCount out of $totalProducts products will be declined.';
+  }
+
+  @override
+  String pricesModified(Object count) {
+    return '$count product prices have been modified.';
+  }
+
+  @override
+  String get datesHaveBeenSet =>
+      'Production and expiry dates have been set for products.';
+
+  @override
+  String get providePartialReason =>
+      'Please provide a reason for partial acceptance:';
+
+  @override
+  String get partialReasonHint =>
+      'e.g., Some products are out of stock, dates updated for freshness';
+
+  @override
+  String get confirmButton => 'Confirm';
+
+  @override
+  String get partialReasonRequired =>
+      'Please provide a reason for partial acceptance';
+
+  @override
+  String get declineOrderTitle => 'Decline Order';
+
+  @override
+  String get provideDeclineReason =>
+      'Please provide a reason for declining this order:';
+
+  @override
+  String get enterReasonHint => 'Enter reason...';
+
+  @override
+  String get declineReasonRequired => 'Please provide a reason for declining';
+
+  @override
+  String get partiallyAcceptedMessage => 'partially accepted';
+
+  @override
+  String get acceptedWithChangesMessage => 'accepted with changes';
+
+  @override
+  String orderStatusUpdated(Object orderId, Object status) {
+    return 'Order $orderId has been $status';
+  }
+
+  @override
+  String get failedToUpdateOrderStatus => 'Failed to update order status';
+
+  @override
+  String errorUpdatingOrderStatus(Object error) {
+    return 'Error updating order status: $error';
+  }
+
+  @override
+  String get orderPartiallyAcceptedNotificationTitle =>
+      'Order Partially Accepted';
+
+  @override
+  String orderPartiallyAcceptedNotificationMessage(Object orderId) {
+    return 'Order $orderId has been partially accepted by supplier.';
+  }
+
+  @override
+  String get orderAcceptedWithChangesNotificationTitle =>
+      'Order Accepted with Changes';
+
+  @override
+  String orderAcceptedWithChangesNotificationMessage(Object orderId) {
+    return 'Order $orderId has been accepted by supplier with changes.';
+  }
+
+  @override
+  String get orderAcceptedNotificationTitle => 'Order Accepted';
+
+  @override
+  String orderAcceptedNotificationMessage(Object orderId) {
+    return 'Order $orderId has been accepted by supplier.';
+  }
+
+  @override
+  String get orderDeclinedNotificationTitle => 'Order Declined';
+
+  @override
+  String orderDeclinedNotificationMessage(Object orderId) {
+    return 'Order $orderId has been declined by supplier.';
+  }
+
+  @override
+  String get orderDeliveredNotificationTitle => 'Order Delivered';
+
+  @override
+  String orderDeliveredNotificationMessage(Object orderId) {
+    return 'Order $orderId has been marked as delivered.';
+  }
+
+  @override
+  String get reasonPrefix => 'Reason: ';
+
+  @override
+  String get orderDateHeader => 'Order Date';
+
+  @override
+  String get totalProductsHeader => 'Total Products';
+
+  @override
+  String get totalAmountHeader => 'Total Amount';
+
+  @override
+  String get statusHeader => 'Status';
+
+  @override
+  String get loadingText => 'Loading...';
+
+  @override
+  String get errorLoadingCategoriesTitle => 'Error Loading Categories';
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get categoryLabel => 'Category';
+
+  @override
+  String get barcodeLabel => 'Barcode';
+
+  @override
+  String get pleaseEnterBarcode => 'Please enter barcode';
+
+  @override
+  String get descriptionOptional => 'Description (Optional)';
+
+  @override
+  String get selectImage => 'Select Image';
+
+  @override
+  String get addProductButton => 'Add Product';
+
+  @override
+  String enterFieldHint(Object field) {
+    return 'Enter $field';
+  }
+
+  @override
+  String get pleaseSelectImage => 'Please select an image for the product';
+
+  @override
+  String get invalidCategoriesData => 'Invalid categories data structure';
+
+  @override
+  String get errorLoadingCategories => 'Error loading categories';
+
+  @override
+  String get failedToSubmitProductRequest => 'Failed to submit product request';
+
+  @override
+  String get errorSubmittingProductRequest =>
+      'Error submitting product request';
+
+  @override
+  String get errorPrefix => 'Error: ';
+
+  @override
+  String get supplierPrice => 'Supplier Price';
+
+  @override
+  String get editProduct => 'Edit Product';
+
+  @override
+  String get currentSupplierPrice => 'Current Supplier Price';
+
+  @override
+  String get enterNewPrice => 'Enter new price';
+
+  @override
+  String get productStatus => 'Product Status';
+
+  @override
+  String get currentStatus => 'Current Status';
+
+  @override
+  String get setProductActive => 'Set Product Active:';
+
+  @override
+  String get productWillBeVisible => 'Product will be visible to customers';
+
+  @override
+  String get productWillBeHidden => 'Product will be hidden from customers';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get noChangesWereMade => 'No changes were made';
+
+  @override
+  String get priceUpdatedSuccessfully => 'Price updated successfully';
+
+  @override
+  String get errorUpdatingPrice => 'Error updating price';
+
+  @override
+  String get errorProductNotFound => 'Error: Product not found';
+
+  @override
+  String get statusUpdatedFrom => 'Status updated from';
+
+  @override
+  String get to => 'to';
+
+  @override
+  String get warningStatusMayNotBeSaved =>
+      'Warning: Status may not be saved on server';
+
+  @override
+  String productAddedToCart(Object productName) {
+    return '$productName added to cart';
+  }
+
+  @override
+  String get customerOrdersNewOrderTitle => 'New Order';
+
+  @override
+  String get customerOrdersRefreshTooltip => 'Refresh';
+
+  @override
+  String get customerOrdersSearchPlaceholder => 'Search products';
+
+  @override
+  String get customerOrdersCategoriesTitle => 'Categories';
+
+  @override
+  String get customerOrdersProductsTitle => 'Products';
+
+  @override
+  String customerOrdersItemsCount(Object count) {
+    return '$count items';
+  }
+
+  @override
+  String get customerOrdersNoProductsMessage =>
+      'No products in this Category\navailable';
+
+  @override
+  String get customerOrdersAddToCartButton => 'Add to Cart';
+
+  @override
+  String customerOrdersItemAddedToCart(Object productName) {
+    return '$productName added to cart';
+  }
+
+  @override
+  String get customerOrdersCartEmpty => 'Your cart is empty';
+
+  @override
+  String get customerOrdersOrderPlacedSuccess => 'Order placed successfully!';
+
+  @override
+  String get customerOrdersPlaceOrderError => 'Failed to place order: ';
+
+  @override
+  String get customerOrdersLoadCategoriesError => 'Failed to load categories: ';
+
+  @override
+  String get customerOrdersLoadProductsError => 'Failed to load products: ';
+
+  @override
+  String get customerOrdersInsufficientStockTitle => 'Insufficient Stock';
+
+  @override
+  String customerOrdersStockDialogProduct(Object productName) {
+    return 'Product: $productName';
+  }
+
+  @override
+  String customerOrdersStockDialogAvailable(Object available) {
+    return 'Available: $available';
+  }
+
+  @override
+  String customerOrdersStockDialogRequested(Object requested) {
+    return 'Requested: $requested';
+  }
+
+  @override
+  String get customerOrdersStockDialogUpdateQuestion =>
+      'Would you like to update the quantity to the maximum available?';
+
+  @override
+  String get customerOrdersStockDialogCancel => 'Cancel';
+
+  @override
+  String get customerOrdersStockDialogUpdateQuantity => 'Update Quantity';
+
+  @override
+  String get customerHistoryTitle => 'Order History';
+
+  @override
+  String get customerHistoryRefreshTooltip => 'Refresh';
+
+  @override
+  String get customerHistoryFilterTitle => 'Filter by Date Range';
+
+  @override
+  String get customerHistoryStartDate => 'Start Date';
+
+  @override
+  String get customerHistoryEndDate => 'End Date';
+
+  @override
+  String get customerHistoryApplyFilter => 'Apply Filter';
+
+  @override
+  String get customerHistoryClearFilter => 'Clear';
+
+  @override
+  String get customerHistoryNoOrdersFound => 'No orders found';
+
+  @override
+  String get customerHistoryAdjustFilter =>
+      'Try adjusting your filter criteria';
+
+  @override
+  String customerHistoryOrderNumber(Object orderId) {
+    return 'Order #$orderId';
+  }
+
+  @override
+  String customerHistoryOrderDate(Object date) {
+    return 'Date: $date';
+  }
+
+  @override
+  String customerHistoryItemsCount(Object count) {
+    return '$count items';
+  }
+
+  @override
+  String get customerHistorySelectOrderMessage =>
+      'Select an order to view details';
+
+  @override
+  String get customerHistoryOrderDetailsTitle => 'Order Details';
+
+  @override
+  String get customerHistoryPrintInvoice => 'Print Invoice';
+
+  @override
+  String get customerHistoryOrderIdLabel => 'Order ID';
+
+  @override
+  String get customerHistoryOrderDateLabel => 'Order Date';
+
+  @override
+  String get customerHistoryPreparationStarted => 'Preparation Started';
+
+  @override
+  String get customerHistoryPreparationCompleted => 'Preparation Completed';
+
+  @override
+  String get customerHistoryOrderItemsTitle => 'Order Items';
+
+  @override
+  String customerHistoryUnitPrice(Object price) {
+    return 'Unit Price: $price';
+  }
+
+  @override
+  String customerHistoryTotalQuantity(Object quantity) {
+    return 'Total Qty: $quantity';
+  }
+
+  @override
+  String get customerHistoryBatchInfoTitle => 'Product Batch Information';
+
+  @override
+  String customerHistoryBatchDescription(Object count) {
+    return 'This order contains products from $count different batch(es):';
+  }
+
+  @override
+  String customerHistoryBatchNumber(Object batchId) {
+    return 'Batch #$batchId';
+  }
+
+  @override
+  String customerHistoryBatchQuantity(Object quantity) {
+    return 'Qty: $quantity';
+  }
+
+  @override
+  String get customerHistoryProductionDate => 'Production Date';
+
+  @override
+  String get customerHistoryExpirationDate => 'Expiration Date';
+
+  @override
+  String get customerHistoryUnknownDate => 'Unknown';
+
+  @override
+  String get customerHistoryNoBatchInfo => 'Batch information not found';
+
+  @override
+  String get customerHistoryCheckLogs =>
+      'Check console logs for debugging information.';
+
+  @override
+  String customerHistoryRawData(Object data) {
+    return 'Raw data: $data';
+  }
+
+  @override
+  String get customerHistorySubtotal => 'Subtotal';
+
+  @override
+  String get customerHistoryDiscount => 'Discount';
+
+  @override
+  String get customerHistoryTotal => 'Total';
+
+  @override
+  String get customerHistoryAmountPaid => 'Amount Paid';
+
+  @override
+  String get customerHistoryPaymentMethod => 'Payment Method';
+
+  @override
+  String get customerHistoryPaymentStatus => 'Payment Status';
+
+  @override
+  String get customerHistoryNotSpecified => 'Not specified';
+
+  @override
+  String get customerHistoryPaid => 'Paid';
+
+  @override
+  String get customerHistoryPending => 'Pending';
+
+  @override
+  String get customerHistoryOrderNote => 'Order Note';
+
+  @override
+  String get customerHistoryLoadOrdersError => 'Failed to load order history: ';
+
+  @override
+  String get customerHistoryStatusDelivered => 'Delivered';
+
+  @override
+  String get customerHistoryStatusPending => 'Pending';
+
+  @override
+  String get customerHistoryStatusPrepared => 'Prepared';
+
+  @override
+  String get customerHistoryStatusCancelled => 'Cancelled';
+
+  @override
+  String get customerHistoryStatusRejected => 'Rejected';
+
+  @override
+  String get customerHistoryStatusAccepted => 'Accepted';
+
+  @override
+  String get locationPopupTitle => 'Set Your Location';
+
+  @override
+  String get locationPopupSubtitle =>
+      'Select your location on the map or use your current location';
+
+  @override
+  String get locationPopupUseCurrentLocation => 'Use my current location';
+
+  @override
+  String get locationPopupUseCurrentLocationTooltip => 'Use current location';
+
+  @override
+  String get locationPopupSaveButton => 'Save Location';
+
+  @override
+  String get locationPopupServicesDisabled => 'Location services are disabled';
+
+  @override
+  String get locationPopupPermissionsDenied =>
+      'Location permissions are denied';
+
+  @override
+  String get locationPopupPermissionsPermanentlyDenied =>
+      'Location permissions are permanently denied';
+
+  @override
+  String locationPopupErrorGettingLocation(Object error) {
+    return 'Error getting location: $error';
+  }
+
+  @override
+  String get locationPopupSelectLocationFirst =>
+      'Please select a location first';
+
+  @override
+  String get locationPopupAuthError =>
+      'Authentication error. Please login again.';
+
+  @override
+  String get locationPopupSavedSuccessfully => 'Location saved successfully';
+
+  @override
+  String locationPopupErrorSaving(Object statusCode) {
+    return 'Error saving location: $statusCode';
+  }
+
+  @override
+  String locationPopupErrorSavingLocation(Object error) {
+    return 'Error saving location: $error';
+  }
+
+  @override
+  String get categoryWidgetsNoProductsAvailable =>
+      'No products available in this category';
+
+  @override
+  String get categoryWidgetsAddToCart => 'Add to Cart';
+
+  @override
+  String get categoryWidgetsYourCart => 'Your Cart';
+
+  @override
+  String categoryWidgetsCartItemCount(Object count) {
+    return '$count items';
+  }
+
+  @override
+  String get categoryWidgetsCartEmpty => 'Your cart is empty';
+
+  @override
+  String get categoryWidgetsAddItemsToStart => 'Add items to get started';
+
+  @override
+  String categoryWidgetsPriceEach(Object price) {
+    return '\$$price each';
+  }
+
+  @override
+  String categoryWidgetsQuantityMultiplier(Object quantity) {
+    return '× $quantity';
+  }
+
+  @override
+  String categoryWidgetsSubtotalItems(Object count) {
+    return 'Subtotal ($count items)';
+  }
+
+  @override
+  String get categoryWidgetsTotal => 'Total';
+
+  @override
+  String get categoryWidgetsPlaceOrder => 'Place Order';
+
+  @override
+  String get navbarAppName => 'Storify';
+
+  @override
+  String get navbarOrders => 'Orders';
+
+  @override
+  String get navbarHistory => 'History';
 }

@@ -37,6 +37,7 @@ class _TrackScreenState extends State<Track> {
   String _orderStatusFilter = 'all';
   int _currentPage = 1;
   final int _ordersPerPage = 10;
+  bool _hasInitialized = false;
 
   // ADD THIS: Key to force map refresh
   GlobalKey _mapKey = GlobalKey();
@@ -45,8 +46,19 @@ class _TrackScreenState extends State<Track> {
   void initState() {
     super.initState();
     _loadProfilePicture();
-    _fetchTrackingData();
-    _fetchAllOrders();
+    // _fetchTrackingData();
+    // _fetchAllOrders();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only run once and only after the localization context is available
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _fetchTrackingData();
+      _fetchAllOrders();
+    }
   }
 
   Future<void> _loadProfilePicture() async {

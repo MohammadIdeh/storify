@@ -204,13 +204,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get history => 'السجل';
 
   @override
-  String get admin => 'المشرف';
+  String get admin => 'المدير';
 
   @override
   String get customer => 'العميل';
 
   @override
-  String get supplier => 'مورد';
+  String get supplier => 'المورد';
 
   @override
   String get deliveryEmployee => 'موظف التوصيل';
@@ -219,7 +219,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get warehouseEmployee => 'موظف المستودع';
 
   @override
-  String get loading => 'جارٍ التحميل...';
+  String get loading => 'جاري التحميل...';
 
   @override
   String get loggingOut => 'جاري تسجيل الخروج...';
@@ -331,7 +331,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orderCount => 'عدد الطلبات';
 
   @override
-  String get total => 'الإجمالي';
+  String get total => 'المجموع';
 
   @override
   String get customers => 'العملاء';
@@ -385,7 +385,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get stock => 'المخزون';
 
   @override
-  String get page => 'الصفحة';
+  String get page => 'صفحة';
 
   @override
   String get totalItems => 'إجمالي العناصر';
@@ -421,7 +421,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noProfitDataAvailable => 'لا توجد بيانات أرباح متاحة';
 
   @override
-  String get items => 'أصناف';
+  String get items => 'عناصر';
 
   @override
   String get offf => 'من';
@@ -523,7 +523,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get unknown => 'غير معروف';
 
   @override
-  String get noEmail => 'لا يوجد بريد إلكتروني';
+  String get noEmail => 'لا يوجد إيميل';
 
   @override
   String get noPhone => 'لا يوجد هاتف';
@@ -543,10 +543,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get totalProducts => 'إجمالي المنتجات';
 
   @override
-  String get activeProducts => 'المنتجات النشطة';
+  String get activeProducts => 'نشط';
 
   @override
-  String get inactiveProducts => 'المنتجات غير النشطة';
+  String get inactiveProducts => 'غير نشط';
 
   @override
   String get totalCategories => 'إجمالي الفئات';
@@ -566,7 +566,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inactive => 'غير نشط';
 
   @override
-  String get pending => 'معلق';
+  String get pending => 'في الانتظار';
 
   @override
   String get accepted => 'مقبول';
@@ -796,7 +796,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get productionDate => 'تاريخ الإنتاج';
 
   @override
-  String get expiryDate => 'تاريخ انتهاء الصلاحية';
+  String get expiryDate => 'تاريخ الانتهاء:';
 
   @override
   String get dropOrImport => 'إسقاط أو استيراد';
@@ -953,7 +953,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get warranty => 'الضمان';
 
   @override
-  String get adminNote => 'ملاحظة المشرف';
+  String get adminNote => 'ملاحظة الإدارة';
 
   @override
   String get actions => 'الإجراءات';
@@ -996,7 +996,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String failedToLoadProducts(String error) {
-    return 'فشل في تحميل المنتجات: $error';
+    return 'فشل في تحميل المنتجات';
   }
 
   @override
@@ -1078,7 +1078,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errorUpdatingCategory => 'خطأ في تحديث الفئة';
 
   @override
-  String get noProductsInCategory => 'لا توجد منتجات في هذه الفئة';
+  String get noProductsInCategory => 'لا توجد منتجات في هذه الفئة\nمتاحة';
 
   @override
   String get productsAddedWillAppearHere =>
@@ -1147,16 +1147,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customerHistory => 'سجل العملاء';
 
   @override
-  String get totalOrders => 'إجمالي الطلبات';
+  String get totalOrders => 'الإجمالي';
 
   @override
-  String get activeOrders => 'الطلبات النشطة';
+  String get activeOrders => 'نشط';
 
   @override
-  String get completedOrders => 'الطلبات المكتملة';
+  String get completedOrders => 'مكتمل';
 
   @override
-  String get cancelledOrders => 'الطلبات الملغية';
+  String get cancelledOrders => 'ملغي';
 
   @override
   String get allStatus => 'جميع الحالات';
@@ -1171,7 +1171,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusPreparing => 'قيد التحضير';
 
   @override
-  String get statusPrepared => 'جاهز';
+  String get statusPrepared => 'تم التحضير';
 
   @override
   String get statusOnTheWay => 'في الطريق';
@@ -1180,7 +1180,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusPending => 'في الانتظار';
 
   @override
-  String get statusDelivered => 'تم التسليم';
+  String get statusDelivered => 'تم التوصيل';
 
   @override
   String get statusShipped => 'تم الشحن';
@@ -1260,7 +1260,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get product => 'المنتج';
 
   @override
-  String get grandTotal => 'الإجمالي الكلي';
+  String get grandTotal => 'الإجمالي الكبير';
 
   @override
   String get orderInfo => 'معلومات الطلب';
@@ -1406,7 +1406,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get enterMinutes => 'أدخل الدقائق';
 
   @override
-  String get notesOptional => 'ملاحظات (اختيارية)';
+  String get notesOptional => 'الملاحظات (اختيارية):';
 
   @override
   String get addDeliveryNotes => 'أضف ملاحظات التوصيل...';
@@ -1470,7 +1470,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noCustomersFound => 'لم يتم العثور على عملاء';
 
   @override
-  String get orderHistory => 'سجل الطلبات';
+  String get orderHistory => 'تاريخ الطلبات';
 
   @override
   String get customerOrderHistory => ' سجل طلبات';
@@ -1725,7 +1725,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get addToCart => 'إضافة للسلة';
+  String get addToCart => 'إضافة إلى السلة';
 
   @override
   String get betterPriceAvailable => 'يتوفر سعر أفضل!';
@@ -1770,12 +1770,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String orderPlacedSuccessfully(String supplierName) {
-    return 'تم إنشاء الطلب بنجاح لـ $supplierName';
+    return 'تم تقديم الطلب بنجاح!';
   }
 
   @override
   String failedToPlaceOrder(String error) {
-    return 'فشل في إنشاء الطلب: $error';
+    return 'فشل في تقديم الطلب';
   }
 
   @override
@@ -2047,7 +2047,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deliveryAddress => 'عنوان التوصيل';
 
   @override
-  String get itemsCount => 'عدد الأصناف';
+  String get itemsCountt => 'عدد الأصناف';
 
   @override
   String get followRoute => 'متابعة المسار';
@@ -2195,4 +2195,732 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get qty => 'الكمية';
+
+  @override
+  String get orderManagement => 'إدارة الطلبات';
+
+  @override
+  String get ordersList => 'قائمة الطلبات';
+
+  @override
+  String get searchOrderId => 'البحث بالرقم';
+
+  @override
+  String get authenticationError =>
+      'فشل في المصادقة. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get loginButton => 'تسجيل الدخول';
+
+  @override
+  String get failedToRefreshOrders => 'فشل في تحديث الطلبات';
+
+  @override
+  String get productManagement => 'إدارة المنتجات';
+
+  @override
+  String get productsList => 'قائمة المنتجات';
+
+  @override
+  String get allProducts => 'الكل';
+
+  @override
+  String get allRequests => 'الكل';
+
+  @override
+  String get pendingRequests => 'قيد الانتظار';
+
+  @override
+  String get acceptedRequests => 'مقبول';
+
+  @override
+  String get declinedRequests => 'مرفوض';
+
+  @override
+  String get searchProductByNameOrId => 'البحث عن منتج بالاسم أو الرقم';
+
+  @override
+  String get requestedProductsList => 'المنتجات المطلوبة';
+
+  @override
+  String get searchRequestByNameOrId => 'البحث في الطلبات بالاسم أو الرقم';
+
+  @override
+  String get orderInformation => 'معلومات الطلب';
+
+  @override
+  String get orderIdLabel => 'رقم الطلب';
+
+  @override
+  String get dateLabel => 'التاريخ';
+
+  @override
+  String get statusLabel => 'الحالة';
+
+  @override
+  String get paymentLabel => 'الدفع';
+
+  @override
+  String get deliveryAddressLabel => 'عنوان التسليم';
+
+  @override
+  String get productsLabel => 'المنتجات';
+
+  @override
+  String get tapToEditDetails => 'اضغط لتعديل التفاصيل';
+
+  @override
+  String get selectProductsToDecline => 'اختر المنتجات المرفوضة';
+
+  @override
+  String get idPrefix => 'الرقم: ';
+
+  @override
+  String get totalLabel => 'الإجمالي';
+
+  @override
+  String get notesLabel => 'الملاحظات';
+
+  @override
+  String get acceptedStatus => 'مقبول';
+
+  @override
+  String get pendingStatus => 'قيد الانتظار';
+
+  @override
+  String get deliveredStatus => 'تم التسليم';
+
+  @override
+  String get declinedStatus => 'مرفوض';
+
+  @override
+  String get partiallyAcceptedStatus => 'مقبول جزئياً';
+
+  @override
+  String get editProductDetails => 'تعديل تفاصيل المنتج';
+
+  @override
+  String get productPrefix => 'المنتج: ';
+
+  @override
+  String get pricePerUnit => 'سعر الوحدة:';
+
+  @override
+  String get notesHint => 'مثل: دفعة ألبان طازجة، معتمد عضوياً...';
+
+  @override
+  String get newTotal => 'الإجمالي الجديد:';
+
+  @override
+  String get resetTo => 'إعادة تعيين إلى';
+
+  @override
+  String get originalData => 'الأصلي';
+
+  @override
+  String get defaultData => 'الافتراضي';
+
+  @override
+  String get cancelButton => 'إلغاء';
+
+  @override
+  String get updateDetails => 'تحديث التفاصيل';
+
+  @override
+  String get priceValidationError => 'يجب أن يكون السعر أكبر من الصفر';
+
+  @override
+  String get validPriceError => 'يرجى إدخال سعر صحيح';
+
+  @override
+  String get prodDatePrefix => 'الإنتاج: ';
+
+  @override
+  String get expDatePrefix => 'الانتهاء: ';
+
+  @override
+  String get priceModified => 'تم تعديل السعر';
+
+  @override
+  String get acceptPartially => 'قبول جزئي';
+
+  @override
+  String get withChanges => 'مع تغييرات';
+
+  @override
+  String get declineButton => 'رفض';
+
+  @override
+  String get acceptButton => 'قبول';
+
+  @override
+  String get partiallyAcceptOrder => 'قبول جزئي للطلب';
+
+  @override
+  String get partialAcceptanceDescription =>
+      'أنت على وشك قبول هذا الطلب جزئياً.';
+
+  @override
+  String productsWillBeDeclined(Object declinedCount, Object totalProducts) {
+    return 'سيتم رفض $declinedCount من أصل $totalProducts منتجات.';
+  }
+
+  @override
+  String pricesModified(Object count) {
+    return 'تم تعديل أسعار $count من المنتجات.';
+  }
+
+  @override
+  String get datesHaveBeenSet => 'تم تحديد تواريخ الإنتاج والانتهاء للمنتجات.';
+
+  @override
+  String get providePartialReason => 'يرجى تقديم سبب القبول الجزئي:';
+
+  @override
+  String get partialReasonHint =>
+      'مثل: بعض المنتجات غير متوفرة، تم تحديث التواريخ للطازجية';
+
+  @override
+  String get confirmButton => 'تأكيد';
+
+  @override
+  String get partialReasonRequired => 'يرجى تقديم سبب للقبول الجزئي';
+
+  @override
+  String get declineOrderTitle => 'رفض الطلب';
+
+  @override
+  String get provideDeclineReason => 'يرجى تقديم سبب رفض هذا الطلب:';
+
+  @override
+  String get enterReasonHint => 'أدخل السبب...';
+
+  @override
+  String get declineReasonRequired => 'يرجى تقديم سبب للرفض';
+
+  @override
+  String get partiallyAcceptedMessage => 'تم قبوله جزئياً';
+
+  @override
+  String get acceptedWithChangesMessage => 'تم قبوله مع تغييرات';
+
+  @override
+  String orderStatusUpdated(Object orderId, Object status) {
+    return 'تم $status الطلب $orderId';
+  }
+
+  @override
+  String get failedToUpdateOrderStatus => 'فشل في تحديث حالة الطلب';
+
+  @override
+  String errorUpdatingOrderStatus(Object error) {
+    return 'خطأ في تحديث حالة الطلب: $error';
+  }
+
+  @override
+  String get orderPartiallyAcceptedNotificationTitle =>
+      'تم القبول الجزئي للطلب';
+
+  @override
+  String orderPartiallyAcceptedNotificationMessage(Object orderId) {
+    return 'تم قبول الطلب $orderId جزئياً من قبل المورد.';
+  }
+
+  @override
+  String get orderAcceptedWithChangesNotificationTitle =>
+      'تم قبول الطلب مع تغييرات';
+
+  @override
+  String orderAcceptedWithChangesNotificationMessage(Object orderId) {
+    return 'تم قبول الطلب $orderId من قبل المورد مع تغييرات.';
+  }
+
+  @override
+  String get orderAcceptedNotificationTitle => 'تم قبول الطلب';
+
+  @override
+  String orderAcceptedNotificationMessage(Object orderId) {
+    return 'تم قبول الطلب $orderId من قبل المورد.';
+  }
+
+  @override
+  String get orderDeclinedNotificationTitle => 'تم رفض الطلب';
+
+  @override
+  String orderDeclinedNotificationMessage(Object orderId) {
+    return 'تم رفض الطلب $orderId من قبل المورد.';
+  }
+
+  @override
+  String get orderDeliveredNotificationTitle => 'تم تسليم الطلب';
+
+  @override
+  String orderDeliveredNotificationMessage(Object orderId) {
+    return 'تم تسليم الطلب $orderId.';
+  }
+
+  @override
+  String get reasonPrefix => 'السبب: ';
+
+  @override
+  String get orderDateHeader => 'تاريخ الطلب';
+
+  @override
+  String get totalProductsHeader => 'إجمالي المنتجات';
+
+  @override
+  String get totalAmountHeader => 'المبلغ الإجمالي';
+
+  @override
+  String get statusHeader => 'الحالة';
+
+  @override
+  String get loadingText => 'جاري التحميل...';
+
+  @override
+  String get errorLoadingCategoriesTitle => 'خطأ في تحميل الفئات';
+
+  @override
+  String get closeButton => 'إغلاق';
+
+  @override
+  String get categoryLabel => 'الفئة';
+
+  @override
+  String get barcodeLabel => 'الرمز الشريطي';
+
+  @override
+  String get pleaseEnterBarcode => 'يرجى إدخال الرمز الشريطي';
+
+  @override
+  String get descriptionOptional => 'الوصف (اختياري)';
+
+  @override
+  String get selectImage => 'اختر صورة';
+
+  @override
+  String get addProductButton => 'إضافة منتج';
+
+  @override
+  String enterFieldHint(Object field) {
+    return 'أدخل $field';
+  }
+
+  @override
+  String get pleaseSelectImage => 'يرجى اختيار صورة للمنتج';
+
+  @override
+  String get invalidCategoriesData => 'هيكل بيانات الفئات غير صحيح';
+
+  @override
+  String get errorLoadingCategories => 'خطأ في تحميل الفئات';
+
+  @override
+  String get failedToSubmitProductRequest => 'فشل في إرسال طلب المنتج';
+
+  @override
+  String get errorSubmittingProductRequest => 'خطأ في إرسال طلب المنتج';
+
+  @override
+  String get errorPrefix => 'خطأ: ';
+
+  @override
+  String get supplierPrice => 'سعر المورد';
+
+  @override
+  String get editProduct => 'تعديل المنتج';
+
+  @override
+  String get currentSupplierPrice => 'سعر المورد الحالي';
+
+  @override
+  String get enterNewPrice => 'أدخل السعر الجديد';
+
+  @override
+  String get productStatus => 'حالة المنتج';
+
+  @override
+  String get currentStatus => 'الحالة الحالية';
+
+  @override
+  String get setProductActive => 'تفعيل المنتج:';
+
+  @override
+  String get productWillBeVisible => 'سيكون المنتج مرئياً للعملاء';
+
+  @override
+  String get productWillBeHidden => 'سيكون المنتج مخفياً عن العملاء';
+
+  @override
+  String get saveChanges => 'حفظ التغييرات';
+
+  @override
+  String get noChangesWereMade => 'لم يتم إجراء أي تغييرات';
+
+  @override
+  String get priceUpdatedSuccessfully => 'تم تحديث السعر بنجاح';
+
+  @override
+  String get errorUpdatingPrice => 'خطأ في تحديث السعر';
+
+  @override
+  String get errorProductNotFound => 'خطأ: المنتج غير موجود';
+
+  @override
+  String get statusUpdatedFrom => 'تم تحديث الحالة من';
+
+  @override
+  String get to => 'إلى';
+
+  @override
+  String get warningStatusMayNotBeSaved =>
+      'تحذير: قد لا يتم حفظ الحالة على الخادم';
+
+  @override
+  String productAddedToCart(Object productName) {
+    return 'تم إضافة $productName إلى السلة';
+  }
+
+  @override
+  String get customerOrdersNewOrderTitle => 'طلب جديد';
+
+  @override
+  String get customerOrdersRefreshTooltip => 'تحديث';
+
+  @override
+  String get customerOrdersSearchPlaceholder => 'البحث في المنتجات';
+
+  @override
+  String get customerOrdersCategoriesTitle => 'الفئات';
+
+  @override
+  String get customerOrdersProductsTitle => 'المنتجات';
+
+  @override
+  String customerOrdersItemsCount(Object count) {
+    return '$count عنصر';
+  }
+
+  @override
+  String get customerOrdersNoProductsMessage =>
+      'لا توجد منتجات في هذه الفئة\nمتاحة';
+
+  @override
+  String get customerOrdersAddToCartButton => 'إضافة إلى السلة';
+
+  @override
+  String customerOrdersItemAddedToCart(Object productName) {
+    return 'تمت إضافة $productName إلى السلة';
+  }
+
+  @override
+  String get customerOrdersCartEmpty => 'سلة التسوق فارغة';
+
+  @override
+  String get customerOrdersOrderPlacedSuccess => 'تم تقديم الطلب بنجاح!';
+
+  @override
+  String get customerOrdersPlaceOrderError => 'فشل في تقديم الطلب: ';
+
+  @override
+  String get customerOrdersLoadCategoriesError => 'فشل في تحميل الفئات: ';
+
+  @override
+  String get customerOrdersLoadProductsError => 'فشل في تحميل المنتجات: ';
+
+  @override
+  String get customerOrdersInsufficientStockTitle => 'مخزون غير كافي';
+
+  @override
+  String customerOrdersStockDialogProduct(Object productName) {
+    return 'المنتج: $productName';
+  }
+
+  @override
+  String customerOrdersStockDialogAvailable(Object available) {
+    return 'المتاح: $available';
+  }
+
+  @override
+  String customerOrdersStockDialogRequested(Object requested) {
+    return 'المطلوب: $requested';
+  }
+
+  @override
+  String get customerOrdersStockDialogUpdateQuestion =>
+      'هل تريد تحديث الكمية إلى الحد الأقصى المتاح؟';
+
+  @override
+  String get customerOrdersStockDialogCancel => 'إلغاء';
+
+  @override
+  String get customerOrdersStockDialogUpdateQuantity => 'تحديث الكمية';
+
+  @override
+  String get customerHistoryTitle => 'سجل الطلبات';
+
+  @override
+  String get customerHistoryRefreshTooltip => 'تحديث';
+
+  @override
+  String get customerHistoryFilterTitle => 'فلترة حسب نطاق التاريخ';
+
+  @override
+  String get customerHistoryStartDate => 'تاريخ البداية';
+
+  @override
+  String get customerHistoryEndDate => 'تاريخ النهاية';
+
+  @override
+  String get customerHistoryApplyFilter => 'تطبيق الفلتر';
+
+  @override
+  String get customerHistoryClearFilter => 'مسح';
+
+  @override
+  String get customerHistoryNoOrdersFound => 'لم يتم العثور على طلبات';
+
+  @override
+  String get customerHistoryAdjustFilter => 'حاول تعديل معايير الفلتر';
+
+  @override
+  String customerHistoryOrderNumber(Object orderId) {
+    return 'طلب رقم $orderId';
+  }
+
+  @override
+  String customerHistoryOrderDate(Object date) {
+    return 'التاريخ: $date';
+  }
+
+  @override
+  String customerHistoryItemsCount(Object count) {
+    return '$count عنصر';
+  }
+
+  @override
+  String get customerHistorySelectOrderMessage => 'اختر طلباً لعرض التفاصيل';
+
+  @override
+  String get customerHistoryOrderDetailsTitle => 'تفاصيل الطلب';
+
+  @override
+  String get customerHistoryPrintInvoice => 'طباعة الفاتورة';
+
+  @override
+  String get customerHistoryOrderIdLabel => 'رقم الطلب';
+
+  @override
+  String get customerHistoryOrderDateLabel => 'تاريخ الطلب';
+
+  @override
+  String get customerHistoryPreparationStarted => 'بدء التحضير';
+
+  @override
+  String get customerHistoryPreparationCompleted => 'اكتمال التحضير';
+
+  @override
+  String get customerHistoryOrderItemsTitle => 'عناصر الطلب';
+
+  @override
+  String customerHistoryUnitPrice(Object price) {
+    return 'سعر الوحدة: $price';
+  }
+
+  @override
+  String customerHistoryTotalQuantity(Object quantity) {
+    return 'الكمية الإجمالية: $quantity';
+  }
+
+  @override
+  String get customerHistoryBatchInfoTitle => 'معلومات دفعة المنتج';
+
+  @override
+  String customerHistoryBatchDescription(Object count) {
+    return 'يحتوي هذا الطلب على منتجات من $count دفعة مختلفة:';
+  }
+
+  @override
+  String customerHistoryBatchNumber(Object batchId) {
+    return 'دفعة رقم $batchId';
+  }
+
+  @override
+  String customerHistoryBatchQuantity(Object quantity) {
+    return 'الكمية: $quantity';
+  }
+
+  @override
+  String get customerHistoryProductionDate => 'تاريخ الإنتاج';
+
+  @override
+  String get customerHistoryExpirationDate => 'تاريخ انتهاء الصلاحية';
+
+  @override
+  String get customerHistoryUnknownDate => 'غير معروف';
+
+  @override
+  String get customerHistoryNoBatchInfo => 'لم يتم العثور على معلومات الدفعة';
+
+  @override
+  String get customerHistoryCheckLogs =>
+      'تحقق من سجلات وحدة التحكم للحصول على معلومات التصحيح.';
+
+  @override
+  String customerHistoryRawData(Object data) {
+    return 'البيانات الخام: $data';
+  }
+
+  @override
+  String get customerHistorySubtotal => 'المجموع الفرعي';
+
+  @override
+  String get customerHistoryDiscount => 'الخصم';
+
+  @override
+  String get customerHistoryTotal => 'المجموع';
+
+  @override
+  String get customerHistoryAmountPaid => 'المبلغ المدفوع';
+
+  @override
+  String get customerHistoryPaymentMethod => 'طريقة الدفع';
+
+  @override
+  String get customerHistoryPaymentStatus => 'حالة الدفع';
+
+  @override
+  String get customerHistoryNotSpecified => 'غير محدد';
+
+  @override
+  String get customerHistoryPaid => 'مدفوع';
+
+  @override
+  String get customerHistoryPending => 'معلق';
+
+  @override
+  String get customerHistoryOrderNote => 'ملاحظة الطلب';
+
+  @override
+  String get customerHistoryLoadOrdersError => 'فشل في تحميل سجل الطلبات: ';
+
+  @override
+  String get customerHistoryStatusDelivered => 'تم التسليم';
+
+  @override
+  String get customerHistoryStatusPending => 'معلق';
+
+  @override
+  String get customerHistoryStatusPrepared => 'محضر';
+
+  @override
+  String get customerHistoryStatusCancelled => 'ملغي';
+
+  @override
+  String get customerHistoryStatusRejected => 'مرفوض';
+
+  @override
+  String get customerHistoryStatusAccepted => 'مقبول';
+
+  @override
+  String get locationPopupTitle => 'تحديد موقعك';
+
+  @override
+  String get locationPopupSubtitle =>
+      'حدد موقعك على الخريطة أو استخدم موقعك الحالي';
+
+  @override
+  String get locationPopupUseCurrentLocation => 'استخدام موقعي الحالي';
+
+  @override
+  String get locationPopupUseCurrentLocationTooltip => 'استخدام الموقع الحالي';
+
+  @override
+  String get locationPopupSaveButton => 'حفظ الموقع';
+
+  @override
+  String get locationPopupServicesDisabled => 'خدمات الموقع معطلة';
+
+  @override
+  String get locationPopupPermissionsDenied => 'تم رفض صلاحيات الموقع';
+
+  @override
+  String get locationPopupPermissionsPermanentlyDenied =>
+      'تم رفض صلاحيات الموقع نهائياً';
+
+  @override
+  String locationPopupErrorGettingLocation(Object error) {
+    return 'خطأ في الحصول على الموقع: $error';
+  }
+
+  @override
+  String get locationPopupSelectLocationFirst => 'يرجى تحديد موقع أولاً';
+
+  @override
+  String get locationPopupAuthError =>
+      'خطأ في المصادقة. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get locationPopupSavedSuccessfully => 'تم حفظ الموقع بنجاح';
+
+  @override
+  String locationPopupErrorSaving(Object statusCode) {
+    return 'خطأ في حفظ الموقع: $statusCode';
+  }
+
+  @override
+  String locationPopupErrorSavingLocation(Object error) {
+    return 'خطأ في حفظ الموقع: $error';
+  }
+
+  @override
+  String get categoryWidgetsNoProductsAvailable =>
+      'لا توجد منتجات متاحة في هذه الفئة';
+
+  @override
+  String get categoryWidgetsAddToCart => 'إضافة للسلة';
+
+  @override
+  String get categoryWidgetsYourCart => 'سلتك';
+
+  @override
+  String categoryWidgetsCartItemCount(Object count) {
+    return '$count عنصر';
+  }
+
+  @override
+  String get categoryWidgetsCartEmpty => 'سلتك فارغة';
+
+  @override
+  String get categoryWidgetsAddItemsToStart => 'أضف عناصر للبدء';
+
+  @override
+  String categoryWidgetsPriceEach(Object price) {
+    return '$price\$ لكل واحد';
+  }
+
+  @override
+  String categoryWidgetsQuantityMultiplier(Object quantity) {
+    return '× $quantity';
+  }
+
+  @override
+  String categoryWidgetsSubtotalItems(Object count) {
+    return 'المجموع الفرعي ($count عنصر)';
+  }
+
+  @override
+  String get categoryWidgetsTotal => 'المجموع';
+
+  @override
+  String get categoryWidgetsPlaceOrder => 'تقديم الطلب';
+
+  @override
+  String get navbarAppName => 'ستوريفاي';
+
+  @override
+  String get navbarOrders => 'الطلبات';
+
+  @override
+  String get navbarHistory => 'السجل';
 }

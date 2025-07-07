@@ -1,11 +1,12 @@
 // lib/customer/widgets/navbarCus.dart
-// Fixed version with simplified logout and proper role separation
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/GeneralWidgets/NotificationPopup.dart';
 import 'package:storify/utilis/notification_service.dart';
@@ -44,10 +45,13 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
-    NotificationService()
-        .registerNotificationsListChangedCallback(_onNotificationsChanged);
-    NotificationService().registerNewNotificationCallback(_onNewNotification);
+    // Use post frame callback to avoid initState issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadNotifications();
+      NotificationService()
+          .registerNotificationsListChangedCallback(_onNotificationsChanged);
+      NotificationService().registerNewNotificationCallback(_onNewNotification);
+    });
   }
 
   @override
@@ -77,9 +81,11 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
   }
 
   void _loadNotifications() {
-    _notifications = NotificationService().getNotifications();
-    _unreadCount = NotificationService().getUnreadCount();
-    if (mounted) setState(() {});
+    if (mounted) {
+      _notifications = NotificationService().getNotifications();
+      _unreadCount = NotificationService().getUnreadCount();
+      setState(() {});
+    }
   }
 
   void _onNotificationsChanged(List<NotificationItem> notifications) {
@@ -117,6 +123,8 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
       _closeNotificationMenu();
     }
 
+    final isRtl = LocalizationHelper.isRTL(context);
+
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         return Stack(
@@ -130,8 +138,8 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                 height: MediaQuery.of(context).size.height,
               ),
             ),
-            Positioned(
-              right: 40,
+            PositionedDirectional(
+              end: 40,
               top: 100,
               child: Material(
                 color: Colors.transparent,
@@ -230,6 +238,8 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
       _closeMenu();
     }
 
+    final isRtl = LocalizationHelper.isRTL(context);
+
     _notificationOverlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         return Stack(
@@ -243,8 +253,8 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                 height: MediaQuery.of(context).size.height,
               ),
             ),
-            Positioned(
-              right: 100,
+            PositionedDirectional(
+              end: 100,
               top: 100,
               child: Material(
                 color: Colors.transparent,
@@ -286,6 +296,10 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isDisposed) {
       return Container(
         height: 90.h,
@@ -298,137 +312,149 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
       );
     }
 
-    return Container(
-      margin: EdgeInsets.only(top: 10.h),
-      width: double.infinity,
-      height: 90.h,
-      color: const Color.fromARGB(255, 29, 41, 57),
-      padding: EdgeInsets.only(left: 45, right: 30),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left side: Logo + Title
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/images/logo.svg',
-                width: 35.w,
-                height: 35.h,
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                'Storify',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
+        margin: EdgeInsets.only(top: 10.h),
+        width: double.infinity,
+        height: 90.h,
+        color: const Color.fromARGB(255, 29, 41, 57),
+        padding: EdgeInsetsDirectional.only(start: 45, end: 30),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Left side: Logo + Title
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/logo.svg',
+                  width: 35.w,
+                  height: 35.h,
                 ),
-              ),
-            ],
-          ),
-
-          // Middle: Navigation Items
-          Row(
-            children: _buildNavItems(),
-          ),
-
-          // Right side: Notifications and Profile
-          Row(
-            children: [
-              // Notifications
-              InkWell(
-                onTap: _isDisposed ? null : _toggleNotificationMenu,
-                child: Container(
-                  width: 52.w,
-                  height: 52.h,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: SvgPicture.asset(
-                          'assets/images/noti.svg',
-                          color: _isNotificationMenuOpen
-                              ? const Color.fromARGB(255, 105, 65, 198)
-                              : const Color.fromARGB(255, 105, 123, 123),
+                SizedBox(width: 12.w),
+                Text(
+                  l10n.navbarAppName,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
-                      ),
-                      if (_unreadCount > 0)
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            width: 10.w,
-                            height: 10.h,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
+                ),
+              ],
+            ),
+
+            // Middle: Navigation Items
+            Row(
+              children: _buildNavItems(),
+            ),
+
+            // Right side: Notifications and Profile
+            Row(
+              children: [
+                // Notifications
+                InkWell(
+                  onTap: _isDisposed ? null : _toggleNotificationMenu,
+                  child: Container(
+                    width: 52.w,
+                    height: 52.h,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 36, 50, 69),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: SvgPicture.asset(
+                            'assets/images/noti.svg',
+                            color: _isNotificationMenuOpen
+                                ? const Color.fromARGB(255, 105, 65, 198)
+                                : const Color.fromARGB(255, 105, 123, 123),
                           ),
                         ),
-                    ],
+                        if (_unreadCount > 0)
+                          PositionedDirectional(
+                            top: 10,
+                            end: 10,
+                            child: Container(
+                              width: 10.w,
+                              height: 10.h,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 14.w),
+                SizedBox(width: 14.w),
 
-              // Profile + Arrow
-              InkWell(
-                onTap: _isDisposed ? null : _toggleProfileMenu,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: widget.profilePictureUrl != null &&
-                                widget.profilePictureUrl!.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: widget.profilePictureUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: const Color.fromARGB(255, 36, 50, 69),
-                                  child: Center(
-                                    child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: const Color.fromARGB(
-                                            255, 105, 65, 198),
+                // Profile + Arrow
+                InkWell(
+                  onTap: _isDisposed ? null : _toggleProfileMenu,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(25),
+                          child: widget.profilePictureUrl != null &&
+                                  widget.profilePictureUrl!.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: widget.profilePictureUrl!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color:
+                                        const Color.fromARGB(255, 36, 50, 69),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: const Color.fromARGB(
+                                              255, 105, 65, 198),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                errorWidget: (context, url, error) {
-                                  debugPrint(
-                                      'Error loading profile image: $error from URL: $url');
-                                  return Image.asset('assets/images/me.png',
-                                      fit: BoxFit.cover);
-                                },
-                              )
-                            : Image.asset('assets/images/me.png',
-                                fit: BoxFit.cover),
+                                  errorWidget: (context, url, error) {
+                                    debugPrint(
+                                        'Error loading profile image: $error from URL: $url');
+                                    return Image.asset('assets/images/me.png',
+                                        fit: BoxFit.cover);
+                                  },
+                                )
+                              : Image.asset('assets/images/me.png',
+                                  fit: BoxFit.cover),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      _isMenuOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                      size: 35,
-                      color: const Color.fromARGB(255, 105, 123, 123),
-                    ),
-                  ],
+                      const SizedBox(width: 2),
+                      Icon(
+                        _isMenuOpen
+                            ? Icons.arrow_drop_up
+                            : Icons.arrow_drop_down,
+                        size: 35,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -436,7 +462,13 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
   List<Widget> _buildNavItems() {
     if (_isDisposed) return [];
 
-    final List<String> navItems = ['Orders', 'History'];
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    final List<String> navItems = [
+      l10n.navbarOrders,
+      l10n.navbarHistory,
+    ];
     final List<String?> navIcons = [
       'assets/images/orders.svg',
       'assets/images/history.svg'
@@ -452,8 +484,9 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
         child: GestureDetector(
           onTap: _isDisposed ? null : () => widget.onTap(index),
           child: Container(
-            margin: EdgeInsets.only(left: 24.w),
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            margin: EdgeInsetsDirectional.only(start: 24.w),
+            padding: EdgeInsetsDirectional.symmetric(
+                horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: isSelected
                   ? const Color.fromARGB(255, 105, 65, 198)
@@ -482,13 +515,23 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                   SizedBox(width: 9.w),
                 Text(
                   text,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 15.sp,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w700,
-                    color: isSelected
-                        ? Colors.white
-                        : const Color.fromARGB(255, 105, 123, 123),
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 15.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 15.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        ),
                 ),
               ],
             ),

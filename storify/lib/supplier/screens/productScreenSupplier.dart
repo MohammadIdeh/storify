@@ -1,8 +1,10 @@
-// lib/supplier/widgets/SupplierProducts.dart
+// lib/supplier/screens/productScreenSupplier.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/supplier/screens/ordersScreensSupplier.dart';
 import 'package:storify/supplier/widgets/navbar.dart';
 import 'package:storify/supplier/widgets/productwidgets/addNewProductWidget.dart';
@@ -34,18 +36,44 @@ class _SupplierProductsState extends State<SupplierProducts> {
   // Show products or requested products
   bool _showRequestedProducts = false;
 
-  final List<String> _filterOptions = ["All", "Active", "Not Active"];
-  final List<String> _requestedFilterOptions = [
-    "All",
-    "Pending",
-    "Accepted",
-    "Declined"
-  ];
+  // Filter options - will be localized in build method
+  List<String> _filterOptions = [];
+  List<String> _requestedFilterOptions = [];
+
+  // Flag to prevent multiple calls
+  bool _hasInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProfileAndSupplierId();
+    _loadProfileAndSupplierId(); // Safe to call in initState as it doesn't use localization
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only run once and only after the localization context is available
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      _initializeFilterOptions();
+    }
+  }
+
+  void _initializeFilterOptions() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
+    _filterOptions = [
+      l10n.allProducts,
+      l10n.activeProducts,
+      l10n.inactiveProducts
+    ];
+
+    _requestedFilterOptions = [
+      l10n.allRequests,
+      l10n.pendingRequests,
+      l10n.acceptedRequests,
+      l10n.declinedRequests
+    ];
   }
 
   Future<void> _loadProfileAndSupplierId() async {
@@ -84,6 +112,8 @@ class _SupplierProductsState extends State<SupplierProducts> {
   }
 
   void _onProductAdded(Map<String, dynamic> newProduct) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     setState(() {
       _showAddProductForm = false;
     });
@@ -112,7 +142,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Product added successfully'),
+        content: Text(l10n.productAddedSuccessfully),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 3), // Increase duration
       ),
@@ -121,77 +151,90 @@ class _SupplierProductsState extends State<SupplierProducts> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(250),
-        child: NavigationBarSupplier(
-          currentIndex: _currentIndex,
-          onTap: _onNavItemTap,
-          profilePictureUrl: profilePictureUrl,
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(250),
+          child: NavigationBarSupplier(
+            currentIndex: _currentIndex,
+            onTap: _onNavItemTap,
+            profilePictureUrl: profilePictureUrl,
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(30.r),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Product Management",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 34.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(30.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.productManagement,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 34.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 34.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                 ),
-              ),
-              SizedBox(height: 24.h),
+                SizedBox(height: 24.h),
 
-              // Tab selection
-              Row(
-                children: [
-                  _buildTabButton(
-                    label: "Products",
-                    isSelected: !_showRequestedProducts,
-                    onPressed: () {
+                // Tab selection
+                Row(
+                  children: [
+                    _buildTabButton(
+                      label: l10n.products,
+                      isSelected: !_showRequestedProducts,
+                      onPressed: () {
+                        setState(() {
+                          _showRequestedProducts = false;
+                        });
+                      },
+                    ),
+                    SizedBox(width: 16.w),
+                    _buildTabButton(
+                      label: l10n.requestedProducts,
+                      isSelected: _showRequestedProducts,
+                      onPressed: () {
+                        setState(() {
+                          _showRequestedProducts = true;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 24.h),
+
+                // Show either Products or Requested Products UI
+                if (_showRequestedProducts)
+                  _buildRequestedProductsUI()
+                else
+                  _buildProductsUI(),
+
+                // Show Add Product Form if enabled
+                if (_showAddProductForm)
+                  Addnewproductwidget(
+                    onCancel: () {
                       setState(() {
-                        _showRequestedProducts = false;
+                        _showAddProductForm = false;
                       });
                     },
+                    onAddProduct: _onProductAdded,
+                    supplierId: supplierId ?? 0,
                   ),
-                  SizedBox(width: 16.w),
-                  _buildTabButton(
-                    label: "Requested Products",
-                    isSelected: _showRequestedProducts,
-                    onPressed: () {
-                      setState(() {
-                        _showRequestedProducts = true;
-                      });
-                    },
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 24.h),
-
-              // Show either Products or Requested Products UI
-              if (_showRequestedProducts)
-                _buildRequestedProductsUI()
-              else
-                _buildProductsUI(),
-
-              // Show Add Product Form if enabled
-              if (_showAddProductForm)
-                Addnewproductwidget(
-                  onCancel: () {
-                    setState(() {
-                      _showAddProductForm = false;
-                    });
-                  },
-                  onAddProduct: _onProductAdded,
-                  supplierId: supplierId ?? 0,
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -204,6 +247,8 @@ class _SupplierProductsState extends State<SupplierProducts> {
     required bool isSelected,
     required VoidCallback onPressed,
   }) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected
@@ -218,19 +263,31 @@ class _SupplierProductsState extends State<SupplierProducts> {
       onPressed: onPressed,
       child: Text(
         label,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 17.sp,
-          fontWeight: FontWeight.w700,
-          color: isSelected
-              ? Colors.white
-              : const Color.fromARGB(255, 105, 123, 123),
-        ),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+                color: isSelected
+                    ? Colors.white
+                    : const Color.fromARGB(255, 105, 123, 123),
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+                color: isSelected
+                    ? Colors.white
+                    : const Color.fromARGB(255, 105, 123, 123),
+              ),
       ),
     );
   }
 
   // Products UI with filter, search and table
   Widget _buildProductsUI() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -238,16 +295,20 @@ class _SupplierProductsState extends State<SupplierProducts> {
         Row(
           children: [
             Text(
-              "Products list",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 25.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              l10n.productsList,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
             ),
-            SizedBox(
-              width: 10.w,
-            ),
+            SizedBox(width: 10.w),
             Container(
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 36, 50, 69),
@@ -258,14 +319,17 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 children: List.generate(
                   _filterOptions.length,
                   (index) => Padding(
-                    padding: EdgeInsets.only(right: 8.w),
+                    padding: EdgeInsets.only(
+                      left: isRtl ? 8.w : 0,
+                      right: isRtl ? 0 : 8.w,
+                    ),
                     child: _buildFilterChip(_filterOptions[index], index,
                         isRequestedProducts: false),
                   ),
                 ),
               ),
             ),
-            Spacer(),
+            const Spacer(),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 36, 50, 69),
@@ -290,19 +354,23 @@ class _SupplierProductsState extends State<SupplierProducts> {
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    'Add Product',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color.fromARGB(255, 105, 123, 123),
-                    ),
+                    l10n.addProduct,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 105, 123, 123),
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color.fromARGB(255, 105, 123, 123),
+                          ),
                   ),
                 ],
               ),
             ),
-            SizedBox(
-              width: 15.w,
-            ),
+            SizedBox(width: 15.w),
             Container(
               width: 300.w,
               decoration: BoxDecoration(
@@ -310,14 +378,15 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: TextField(
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(color: Colors.white70)
+                    : GoogleFonts.spaceGrotesk(color: Colors.white70),
+                textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
                 decoration: InputDecoration(
-                  hintText: "Search Product by name or id",
-                  hintStyle: GoogleFonts.spaceGrotesk(
-                    color: Colors.white30,
-                  ),
+                  hintText: l10n.searchProductByNameOrId,
+                  hintStyle: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white30)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white30),
                   prefixIcon: Icon(
                     Icons.search,
                     color: Colors.white30,
@@ -345,6 +414,10 @@ class _SupplierProductsState extends State<SupplierProducts> {
 
   // Requested Products UI with filter, search and table
   Widget _buildRequestedProductsUI() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -352,16 +425,20 @@ class _SupplierProductsState extends State<SupplierProducts> {
         Row(
           children: [
             Text(
-              "Requested products",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 25.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              l10n.requestedProductsList,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 25.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
             ),
-            SizedBox(
-              width: 10.w,
-            ),
+            SizedBox(width: 10.w),
             Container(
               decoration: BoxDecoration(
                 color: const Color.fromARGB(255, 36, 50, 69),
@@ -372,7 +449,10 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 children: List.generate(
                   _requestedFilterOptions.length,
                   (index) => Padding(
-                    padding: EdgeInsets.only(right: 8.w),
+                    padding: EdgeInsets.only(
+                      left: isRtl ? 8.w : 0,
+                      right: isRtl ? 0 : 8.w,
+                    ),
                     child: _buildFilterChip(
                         _requestedFilterOptions[index], index,
                         isRequestedProducts: true),
@@ -380,7 +460,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 ),
               ),
             ),
-            Spacer(),
+            const Spacer(),
             Container(
               width: 300.w,
               decoration: BoxDecoration(
@@ -388,14 +468,15 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: TextField(
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white70,
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(color: Colors.white70)
+                    : GoogleFonts.spaceGrotesk(color: Colors.white70),
+                textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
                 decoration: InputDecoration(
-                  hintText: "Search request by name or id",
-                  hintStyle: GoogleFonts.spaceGrotesk(
-                    color: Colors.white30,
-                  ),
+                  hintText: l10n.searchRequestByNameOrId,
+                  hintStyle: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white30)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white30),
                   prefixIcon: Icon(
                     Icons.search,
                     color: Colors.white30,
@@ -426,6 +507,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
     final bool isSelected = isRequestedProducts
         ? _selectedRequestedFilterIndex == index
         : _selectedFilterIndex == index;
+    final isArabic = LocalizationHelper.isArabic(context);
 
     return InkWell(
       onTap: () {
@@ -447,13 +529,21 @@ class _SupplierProductsState extends State<SupplierProducts> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : const Color.fromARGB(255, 230, 230, 230),
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : const Color.fromARGB(255, 230, 230, 230),
+                ),
         ),
       ),
     );

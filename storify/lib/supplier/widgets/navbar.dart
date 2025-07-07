@@ -1,5 +1,5 @@
 // lib/supplier/widgets/navbar.dart
-// Fixed version with simplified logout and proper role separation
+// Localized version with RTL support for popups
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,6 +7,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/GeneralWidgets/NotificationPopup.dart';
 import 'package:storify/GeneralWidgets/profilePopUp.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 import 'package:storify/utilis/notificationModel.dart';
 import 'package:storify/utilis/notification_service.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
@@ -117,6 +119,8 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
       _closeNotificationMenu();
     }
 
+    final isRtl = LocalizationHelper.isRTL(context);
+
     _overlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         return Stack(
@@ -131,7 +135,9 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
               ),
             ),
             Positioned(
-              right: 40,
+              // RTL support: position from left or right based on direction
+              right: isRtl ? null : 40,
+              left: isRtl ? 40 : null,
               top: 100,
               child: Material(
                 color: Colors.transparent,
@@ -226,6 +232,8 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
       _closeMenu();
     }
 
+    final isRtl = LocalizationHelper.isRTL(context);
+
     _notificationOverlayEntry = OverlayEntry(
       builder: (BuildContext context) {
         return Stack(
@@ -240,7 +248,9 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
               ),
             ),
             Positioned(
-              right: 100,
+              // RTL support: position from left or right based on direction
+              right: isRtl ? null : 100,
+              left: isRtl ? 100 : null,
               top: 100,
               child: Material(
                 color: Colors.transparent,
@@ -282,6 +292,10 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     if (_isDisposed) {
       return Container(
         height: 90.h,
@@ -294,145 +308,168 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
       );
     }
 
-    return Container(
-      margin: EdgeInsets.only(top: 10.h),
-      width: double.infinity,
-      height: 90.h,
-      color: const Color.fromARGB(255, 29, 41, 57),
-      padding: EdgeInsets.only(left: 45, right: 30),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left side: Logo + Title
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/images/logo.svg',
-                width: 35.w,
-                height: 35.h,
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                'Storify',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Container(
+        margin: EdgeInsets.only(top: 10.h),
+        width: double.infinity,
+        height: 90.h,
+        color: const Color.fromARGB(255, 29, 41, 57),
+        padding: EdgeInsets.only(
+          left: isRtl ? 30 : 45,
+          right: isRtl ? 45 : 30,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Left side: Logo + Title
+            Row(
+              textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+              children: [
+                SvgPicture.asset(
+                  'assets/images/logo.svg',
+                  width: 35.w,
+                  height: 35.h,
                 ),
-              ),
-            ],
-          ),
-
-          // Middle: Navigation Items
-          Row(
-            children: _buildNavItems(),
-          ),
-
-          // Right side: Notifications and Profile
-          Row(
-            children: [
-              // Notifications
-              InkWell(
-                onTap: _isDisposed ? null : _toggleNotificationMenu,
-                child: Container(
-                  width: 52.w,
-                  height: 52.h,
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 36, 50, 69),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: SvgPicture.asset(
-                          'assets/images/noti.svg',
-                          color: _isNotificationMenuOpen
-                              ? const Color.fromARGB(255, 105, 65, 198)
-                              : const Color.fromARGB(255, 105, 123, 123),
+                SizedBox(width: 12.w),
+                Text(
+                  l10n.appTitle,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
-                      ),
-                      if (_unreadCount > 0)
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            width: 10.w,
-                            height: 10.h,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
+                ),
+              ],
+            ),
+
+            // Middle: Navigation Items
+            Row(
+              textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+              children: _buildNavItems(l10n, isArabic, isRtl),
+            ),
+
+            // Right side: Notifications and Profile
+            Row(
+              textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+              children: [
+                // Notifications
+                InkWell(
+                  onTap: _isDisposed ? null : _toggleNotificationMenu,
+                  child: Container(
+                    width: 52.w,
+                    height: 52.h,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 36, 50, 69),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: SvgPicture.asset(
+                            'assets/images/noti.svg',
+                            color: _isNotificationMenuOpen
+                                ? const Color.fromARGB(255, 105, 65, 198)
+                                : const Color.fromARGB(255, 105, 123, 123),
                           ),
                         ),
-                    ],
+                        if (_unreadCount > 0)
+                          Positioned(
+                            top: 10,
+                            right: isRtl ? null : 10,
+                            left: isRtl ? 10 : null,
+                            child: Container(
+                              width: 10.w,
+                              height: 10.h,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 14.w),
+                SizedBox(width: 14.w),
 
-              // Profile + Arrow
-              InkWell(
-                onTap: _isDisposed ? null : _toggleProfileMenu,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: widget.profilePictureUrl != null &&
-                                widget.profilePictureUrl!.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: widget.profilePictureUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: const Color.fromARGB(255, 36, 50, 69),
-                                  child: Center(
-                                    child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: const Color.fromARGB(
-                                            255, 105, 65, 198),
+                // Profile + Arrow
+                InkWell(
+                  onTap: _isDisposed ? null : _toggleProfileMenu,
+                  child: Row(
+                    textDirection:
+                        isRtl ? TextDirection.rtl : TextDirection.ltr,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(25),
+                          child: widget.profilePictureUrl != null &&
+                                  widget.profilePictureUrl!.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: widget.profilePictureUrl!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color:
+                                        const Color.fromARGB(255, 36, 50, 69),
+                                    child: Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: const Color.fromARGB(
+                                              255, 105, 65, 198),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                errorWidget: (context, url, error) {
-                                  debugPrint(
-                                      'Error loading profile image: $error from URL: $url');
-                                  return Image.asset('assets/images/me.png',
-                                      fit: BoxFit.cover);
-                                },
-                              )
-                            : Image.asset('assets/images/me.png',
-                                fit: BoxFit.cover),
+                                  errorWidget: (context, url, error) {
+                                    debugPrint(
+                                        'Error loading profile image: $error from URL: $url');
+                                    return Image.asset('assets/images/me.png',
+                                        fit: BoxFit.cover);
+                                  },
+                                )
+                              : Image.asset('assets/images/me.png',
+                                  fit: BoxFit.cover),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      _isMenuOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                      size: 35,
-                      color: const Color.fromARGB(255, 105, 123, 123),
-                    ),
-                  ],
+                      const SizedBox(width: 2),
+                      Icon(
+                        _isMenuOpen
+                            ? Icons.arrow_drop_up
+                            : Icons.arrow_drop_down,
+                        size: 35,
+                        color: const Color.fromARGB(255, 105, 123, 123),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  List<Widget> _buildNavItems() {
+  List<Widget> _buildNavItems(
+      AppLocalizations l10n, bool isArabic, bool isRtl) {
     if (_isDisposed) return [];
 
-    final List<String> navItems = ['Orders', 'Products'];
+    // Localized navigation items
+    final List<String> navItems = [l10n.orders, l10n.products];
     final List<String?> navIcons = [
       'assets/images/orders.svg',
       'assets/images/products.svg'
@@ -448,7 +485,10 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
         child: GestureDetector(
           onTap: _isDisposed ? null : () => widget.onTap(index),
           child: Container(
-            margin: EdgeInsets.only(left: 24.w),
+            margin: EdgeInsets.only(
+              left: isRtl ? 0 : 24.w,
+              right: isRtl ? 24.w : 0,
+            ),
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: isSelected
@@ -463,6 +503,7 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
               borderRadius: BorderRadius.circular(30.r),
             ),
             child: Row(
+              textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
               children: [
                 if (navIcons[index] != null && navIcons[index]!.isNotEmpty)
                   SvgPicture.asset(
@@ -478,13 +519,23 @@ class _NavigationBarSupplierState extends State<NavigationBarSupplier> {
                   SizedBox(width: 9.w),
                 Text(
                   text,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 15.sp,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w700,
-                    color: isSelected
-                        ? Colors.white
-                        : const Color.fromARGB(255, 105, 123, 123),
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 15.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 15.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color.fromARGB(255, 105, 123, 123),
+                        ),
                 ),
               ],
             ),

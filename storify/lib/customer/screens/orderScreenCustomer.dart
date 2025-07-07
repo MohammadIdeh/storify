@@ -5,8 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:storify/Registration/Widgets/auth_service.dart';
-import 'package:storify/customer/screens/historyScreenCustomer.dart';
 import 'package:storify/customer/widgets/CustomerOrderService.dart';
 import 'package:storify/customer/widgets/mapPopUp.dart';
 import 'package:storify/customer/widgets/modelCustomer.dart'
@@ -14,6 +12,8 @@ import 'package:storify/customer/widgets/modelCustomer.dart'
 import 'package:storify/customer/widgets/navbarCus.dart';
 import 'package:storify/customer/widgets/uiWidgets.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 class CustomerOrders extends StatefulWidget {
   const CustomerOrders({Key? key}) : super(key: key);
@@ -41,64 +41,87 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   @override
   void initState() {
     super.initState();
-    _loadProfilePicture();
-    _loadData();
+    // Use post frame callback to avoid initState issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfilePicture();
+      _loadData();
+    });
   }
 
   Future<void> _loadProfilePicture() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      profilePictureUrl = prefs.getString('profilePicture');
-    });
+    if (mounted) {
+      setState(() {
+        profilePictureUrl = prefs.getString('profilePicture');
+      });
+    }
   }
 
   Future<void> _loadData() async {
     await _loadCategories();
-    if (_categories.isNotEmpty) {
+    if (_categories.isNotEmpty && mounted) {
       await _loadProductsByCategory(_categories[0].id);
-      setState(() {
-        _selectedCategoryId = _categories[0].id.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _selectedCategoryId = _categories[0].id.toString();
+        });
+      }
     }
   }
 
   Future<void> _loadCategories() async {
-    setState(() {
-      _isLoadingCategories = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingCategories = true;
+      });
+    }
 
     try {
       final categories = await CustomerOrderService.getAllCategories();
-      setState(() {
-        _categories = categories;
-        _isLoadingCategories = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isLoadingCategories = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoadingCategories = false;
-      });
-      _showErrorSnackbar("Failed to load categories: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+        final l10n =
+            Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+        _showErrorSnackbar("${l10n.customerOrdersLoadCategoriesError}$e");
+      }
     }
   }
 
   Future<void> _loadProductsByCategory(int categoryId) async {
-    setState(() {
-      _isLoadingProducts = true;
-      _products = [];
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingProducts = true;
+        _products = [];
+      });
+    }
 
     try {
       final products =
           await CustomerOrderService.getProductsByCategory(categoryId);
-      setState(() {
-        _products = products;
-        _isLoadingProducts = false;
-      });
+      if (mounted) {
+        setState(() {
+          _products = products;
+          _isLoadingProducts = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoadingProducts = false;
-      });
-      _showErrorSnackbar("Failed to load products: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingProducts = false;
+        });
+        final l10n =
+            Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+        _showErrorSnackbar("${l10n.customerOrdersLoadProductsError}$e");
+      }
     }
   }
 
@@ -138,11 +161,14 @@ class _CustomerOrdersState extends State<CustomerOrders> {
       }
     });
 
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${item.product.name} added to cart',
-          style: GoogleFonts.spaceGrotesk(),
+          l10n.customerOrdersItemAddedToCart(item.product.name),
+          style: isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
         ),
         duration: const Duration(seconds: 1),
         backgroundColor: const Color(0xFF7B5CFA),
@@ -165,8 +191,10 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   }
 
   Future<void> _placeOrder() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_cartItems.isEmpty) {
-      _showErrorSnackbar("Your cart is empty");
+      _showErrorSnackbar(l10n.customerOrdersCartEmpty);
       return;
     }
 
@@ -193,9 +221,14 @@ class _CustomerOrdersState extends State<CustomerOrders> {
         _isPlacingOrder = false;
       });
 
+      final isArabic = LocalizationHelper.isArabic(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order placed successfully!'),
+          content: Text(
+            l10n.customerOrdersOrderPlacedSuccess,
+            style: isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
+          ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -212,7 +245,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
       if (e is InsufficientStockException) {
         _showStockLimitDialog(e);
       } else {
-        _showErrorSnackbar("Failed to place order: $e");
+        _showErrorSnackbar("${l10n.customerOrdersPlaceOrderError}$e");
       }
     }
   }
@@ -234,101 +267,119 @@ class _CustomerOrdersState extends State<CustomerOrders> {
   }
 
   void _showStockLimitDialog(InsufficientStockException exception) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF283548),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            "Insufficient Stock",
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF283548),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Product: ${exception.productName}",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
+            title: Text(
+              l10n.customerOrdersInsufficientStockTitle,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.customerOrdersStockDialogProduct(exception.productName),
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.customerOrdersStockDialogAvailable(
+                      exception.available.toString()),
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
+                ),
+                Text(
+                  l10n.customerOrdersStockDialogRequested(
+                      exception.requested.toString()),
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.customerOrdersStockDialogUpdateQuestion,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  l10n.customerOrdersStockDialogCancel,
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.white)
+                      : GoogleFonts.spaceGrotesk(color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                "Available: ${exception.available}",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7B5CFA),
+                  foregroundColor: Colors.white,
                 ),
-              ),
-              Text(
-                "Requested: ${exception.requested}",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "Would you like to update the quantity to the maximum available?",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
+                onPressed: () {
+                  // Update the cart item quantity to maximum available
+                  final index = _cartItems.indexWhere(
+                    (item) => item.product.name == exception.productName,
+                  );
+
+                  if (index != -1) {
+                    setState(() {
+                      _cartItems[index].quantity = exception.available;
+                    });
+                  }
+
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  l10n.customerOrdersStockDialogUpdateQuantity,
+                  style: isArabic
+                      ? GoogleFonts.cairo()
+                      : GoogleFonts.spaceGrotesk(),
                 ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                "Cancel",
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B5CFA),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                // Update the cart item quantity to maximum available
-                final index = _cartItems.indexWhere(
-                  (item) => item.product.name == exception.productName,
-                );
-
-                if (index != -1) {
-                  setState(() {
-                    _cartItems[index].quantity = exception.available;
-                  });
-                }
-
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                "Update Quantity",
-                style: GoogleFonts.spaceGrotesk(),
-              ),
-            ),
-          ],
         );
       },
     );
   }
 
   void _showErrorSnackbar(String message) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.spaceGrotesk(),
+          style: isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
         ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
@@ -353,233 +404,285 @@ class _CustomerOrdersState extends State<CustomerOrders> {
 
   @override
   Widget build(BuildContext context) {
-    // Build method implementation remains unchanged
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(100),
-        child: NavigationBarCustomer(
-          currentIndex: _currentIndex,
-          onTap: _onNavItemTap,
-          profilePictureUrl: profilePictureUrl,
-        ),
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left side - Categories and Products
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // New Order Title
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "New Order",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _loadData,
-                        icon: Icon(
-                          Icons.refresh,
-                          color: Colors.white70,
-                          size: 28,
-                        ),
-                        tooltip: "Refresh",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
 
-                  // Search bar
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF283548),
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(100),
+          child: NavigationBarCustomer(
+            currentIndex: _currentIndex,
+            onTap: _onNavItemTap,
+            profilePictureUrl: profilePictureUrl,
+          ),
+        ),
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left side - Categories and Products
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: EdgeInsetsDirectional.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // New Order Title
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.customerOrdersNewOrderTitle,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                        ),
+                        IconButton(
+                          onPressed: _loadData,
+                          icon: Icon(
+                            Icons.refresh,
+                            color: Colors.white70,
+                            size: 28,
+                          ),
+                          tooltip: l10n.customerOrdersRefreshTooltip,
                         ),
                       ],
                     ),
-                    child: TextField(
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                      style: GoogleFonts.spaceGrotesk(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: "Search products",
-                        hintStyle:
-                            GoogleFonts.spaceGrotesk(color: Colors.grey[400]),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                        border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+                    const SizedBox(height: 24),
 
-                  // Categories section
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Categories",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                    // Search bar
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF283548),
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 5,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                        style: isArabic
+                            ? GoogleFonts.cairo(color: Colors.white)
+                            : GoogleFonts.spaceGrotesk(color: Colors.white),
+                        textDirection:
+                            isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        decoration: InputDecoration(
+                          hintText: l10n.customerOrdersSearchPlaceholder,
+                          hintStyle: isArabic
+                              ? GoogleFonts.cairo(color: Colors.grey[400])
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.grey[400]),
+                          prefixIcon: isRtl
+                              ? null
+                              : Icon(Icons.search, color: Colors.grey[400]),
+                          suffixIcon: isRtl
+                              ? Icon(Icons.search, color: Colors.grey[400])
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 15),
                         ),
                       ),
-                      const SizedBox(height: 15),
+                    ),
+                    const SizedBox(height: 30),
 
-                      // Horizontal scrollable categories
-                      _isLoadingCategories
-                          ? Center(
-                              child: CircularProgressIndicator(
-                                color: const Color(0xFF7B5CFA),
-                              ),
-                            )
-                          : Container(
-                              height: 120,
-                              child: CategoryList(
-                                categories: _categories,
-                                selectedCategoryId: _selectedCategoryId,
-                                onCategorySelected: _selectCategory,
-                              ),
-                            ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Products section
-                  Expanded(
-                    child: Column(
+                    // Categories section
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Products header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Products",
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (_products.isNotEmpty)
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF283548),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  "${_getFilteredProducts().length} items",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.grey[300],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Products grid
-                        Expanded(
-                          child: _isLoadingProducts
-                              ? Center(
-                                  child: CircularProgressIndicator(
-                                    color: const Color(0xFF7B5CFA),
-                                  ),
+                        Text(
+                          l10n.customerOrdersCategoriesTitle,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
                                 )
-                              : _getFilteredProducts().isEmpty
-                                  ? Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.inventory_2_outlined,
-                                            size: 64,
-                                            color: Colors.grey[400],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            textAlign: TextAlign.center,
-                                            "No products in this Category\navailbile",
-                                            style: GoogleFonts.spaceGrotesk(
-                                              color: Colors.grey[400],
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : GridView.builder(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        childAspectRatio: 0.9,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 16,
-                                      ),
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      itemCount: _getFilteredProducts().length,
-                                      itemBuilder: (context, index) {
-                                        final product =
-                                            _getFilteredProducts()[index];
-                                        return _buildProductItem(product);
-                                      },
-                                    ),
+                              : GoogleFonts.spaceGrotesk(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                         ),
+                        const SizedBox(height: 15),
+
+                        // Horizontal scrollable categories
+                        _isLoadingCategories
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                  color: const Color(0xFF7B5CFA),
+                                ),
+                              )
+                            : Container(
+                                height: 120,
+                                child: CategoryList(
+                                  categories: _categories,
+                                  selectedCategoryId: _selectedCategoryId,
+                                  onCategorySelected: _selectCategory,
+                                ),
+                              ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                    const SizedBox(height: 20),
 
-          // Right side - Cart
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding:
-                  const EdgeInsets.only(top: 24.0, right: 24.0, bottom: 24.0),
-              child: CartWidget(
-                cartItems: _cartItems,
-                updateQuantity: _updateCartItemQuantity,
-                placeOrder: _placeOrder,
-                isPlacingOrder: _isPlacingOrder,
+                    // Products section
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Products header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                l10n.customerOrdersProductsTitle,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                              ),
+                              if (_products.isNotEmpty)
+                                Container(
+                                  padding: EdgeInsetsDirectional.symmetric(
+                                      horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF283548),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    l10n.customerOrdersItemsCount(
+                                        _getFilteredProducts()
+                                            .length
+                                            .toString()),
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            color: Colors.grey[300],
+                                            fontSize: 14,
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            color: Colors.grey[300],
+                                            fontSize: 14,
+                                          ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Products grid
+                          Expanded(
+                            child: _isLoadingProducts
+                                ? Center(
+                                    child: CircularProgressIndicator(
+                                      color: const Color(0xFF7B5CFA),
+                                    ),
+                                  )
+                                : _getFilteredProducts().isEmpty
+                                    ? Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.inventory_2_outlined,
+                                              size: 64,
+                                              color: Colors.grey[400],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              l10n.customerOrdersNoProductsMessage,
+                                              textAlign: TextAlign.center,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.grey[400],
+                                                      fontSize: 16,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.grey[400],
+                                                      fontSize: 16,
+                                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : GridView.builder(
+                                        gridDelegate:
+                                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 4,
+                                          childAspectRatio: 0.9,
+                                          crossAxisSpacing: 12,
+                                          mainAxisSpacing: 16,
+                                        ),
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        itemCount:
+                                            _getFilteredProducts().length,
+                                        itemBuilder: (context, index) {
+                                          final product =
+                                              _getFilteredProducts()[index];
+                                          return _buildProductItem(product);
+                                        },
+                                      ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+
+            // Right side - Cart
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(
+                    top: 24.0, end: 24.0, bottom: 24.0),
+                child: CartWidget(
+                  cartItems: _cartItems,
+                  updateQuantity: _updateCartItemQuantity,
+                  placeOrder: _placeOrder,
+                  isPlacingOrder: _isPlacingOrder,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildProductItem(Product product) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF283548),
@@ -626,7 +729,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
           Expanded(
             flex: 3,
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: EdgeInsetsDirectional.all(12.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -637,21 +740,32 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                     children: [
                       Text(
                         product.name,
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "\$${product.sellPrice.toStringAsFixed(2)}",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: 14,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                       ),
                     ],
                   ),
@@ -678,11 +792,16 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                         ),
                       ),
                       child: Text(
-                        "Add to Cart",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        l10n.customerOrdersAddToCartButton,
+                        style: isArabic
+                            ? GoogleFonts.cairo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              )
+                            : GoogleFonts.spaceGrotesk(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
                       ),
                     ),
                   ),
