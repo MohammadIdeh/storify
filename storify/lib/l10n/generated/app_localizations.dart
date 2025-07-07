@@ -5575,6 +5575,828 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'History'**
   String get navbarHistory;
+
+  /// No description provided for @orderHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order History'**
+  String get orderHistoryTitle;
+
+  /// No description provided for @orderHistoryRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get orderHistoryRetryButton;
+
+  /// No description provided for @orderHistoryTotalActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Activity'**
+  String get orderHistoryTotalActivity;
+
+  /// No description provided for @orderHistorySupplierOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Orders'**
+  String get orderHistorySupplierOrders;
+
+  /// No description provided for @orderHistoryCustomerOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Orders'**
+  String get orderHistoryCustomerOrders;
+
+  /// No description provided for @orderHistoryViewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewed'**
+  String get orderHistoryViewed;
+
+  /// No description provided for @orderHistoryUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get orderHistoryUpdated;
+
+  /// No description provided for @orderHistoryOrderType.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Type:'**
+  String get orderHistoryOrderType;
+
+  /// No description provided for @orderHistoryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action:'**
+  String get orderHistoryAction;
+
+  /// No description provided for @orderHistoryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get orderHistoryFilterAll;
+
+  /// No description provided for @orderHistoryFilterSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get orderHistoryFilterSupplier;
+
+  /// No description provided for @orderHistoryFilterCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get orderHistoryFilterCustomer;
+
+  /// No description provided for @orderHistoryFilterViewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewed'**
+  String get orderHistoryFilterViewed;
+
+  /// No description provided for @orderHistoryFilterUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get orderHistoryFilterUpdated;
+
+  /// No description provided for @orderHistorySearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Order ID'**
+  String get orderHistorySearchPlaceholder;
+
+  /// No description provided for @orderHistoryNoHistoryFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No order history found'**
+  String get orderHistoryNoHistoryFound;
+
+  /// No description provided for @orderHistoryNoHistoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no processed orders to display'**
+  String get orderHistoryNoHistoryDescription;
+
+  /// No description provided for @orderHistoryTableTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get orderHistoryTableTime;
+
+  /// No description provided for @orderHistoryTableOrderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get orderHistoryTableOrderId;
+
+  /// No description provided for @orderHistoryTableType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get orderHistoryTableType;
+
+  /// No description provided for @orderHistoryTableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get orderHistoryTableAction;
+
+  /// No description provided for @orderHistoryTableBeforeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Before Status'**
+  String get orderHistoryTableBeforeStatus;
+
+  /// No description provided for @orderHistoryTableAfterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'After Status'**
+  String get orderHistoryTableAfterStatus;
+
+  /// No description provided for @orderHistoryTableEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee'**
+  String get orderHistoryTableEmployee;
+
+  /// No description provided for @orderHistoryTableNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get orderHistoryTableNote;
+
+  /// No description provided for @orderHistoryTypeSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get orderHistoryTypeSupplier;
+
+  /// No description provided for @orderHistoryTypeCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get orderHistoryTypeCustomer;
+
+  /// No description provided for @orderHistoryTotalRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {totalItems} Records'**
+  String orderHistoryTotalRecords(Object totalItems);
+
+  /// No description provided for @orderHistoryStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get orderHistoryStatusAccepted;
+
+  /// No description provided for @orderHistoryStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get orderHistoryStatusPending;
+
+  /// No description provided for @orderHistoryStatusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get orderHistoryStatusDelivered;
+
+  /// No description provided for @orderHistoryStatusShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get orderHistoryStatusShipped;
+
+  /// No description provided for @orderHistoryStatusPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared'**
+  String get orderHistoryStatusPrepared;
+
+  /// No description provided for @orderHistoryStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get orderHistoryStatusRejected;
+
+  /// No description provided for @orderHistoryStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get orderHistoryStatusDeclined;
+
+  /// No description provided for @orderHistoryStatusPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get orderHistoryStatusPreparing;
+
+  /// No description provided for @orderHistoryActionViewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewed'**
+  String get orderHistoryActionViewed;
+
+  /// No description provided for @orderHistoryActionUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get orderHistoryActionUpdated;
+
+  /// No description provided for @ordersSupplierOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Orders'**
+  String get ordersSupplierOrdersTitle;
+
+  /// No description provided for @ordersCustomerOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Orders'**
+  String get ordersCustomerOrdersTitle;
+
+  /// No description provided for @ordersSuppliersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get ordersSuppliersTab;
+
+  /// No description provided for @ordersCustomersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers'**
+  String get ordersCustomersTab;
+
+  /// No description provided for @ordersLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load orders: {error}'**
+  String ordersLoadErrorMessage(Object error);
+
+  /// No description provided for @ordersRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get ordersRetryButton;
+
+  /// No description provided for @ordersTotalOrdersCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Orders'**
+  String get ordersTotalOrdersCard;
+
+  /// No description provided for @ordersActiveOrdersCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Orders'**
+  String get ordersActiveOrdersCard;
+
+  /// No description provided for @ordersCompletedOrdersCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Orders'**
+  String get ordersCompletedOrdersCard;
+
+  /// No description provided for @ordersAllOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All Orders'**
+  String get ordersAllOrdersTitle;
+
+  /// No description provided for @ordersActiveOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Orders'**
+  String get ordersActiveOrdersTitle;
+
+  /// No description provided for @ordersCompletedOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Orders'**
+  String get ordersCompletedOrdersTitle;
+
+  /// No description provided for @ordersSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ID'**
+  String get ordersSearchPlaceholder;
+
+  /// No description provided for @ordersNoOrdersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders found'**
+  String get ordersNoOrdersFound;
+
+  /// No description provided for @ordersNoOrdersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no orders to display'**
+  String get ordersNoOrdersDescription;
+
+  /// No description provided for @ordersTableOrderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get ordersTableOrderId;
+
+  /// No description provided for @ordersTableSupplierName.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Name'**
+  String get ordersTableSupplierName;
+
+  /// No description provided for @ordersTableCustomerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Name'**
+  String get ordersTableCustomerName;
+
+  /// No description provided for @ordersTablePhoneNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone No'**
+  String get ordersTablePhoneNo;
+
+  /// No description provided for @ordersTableOrderDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Date'**
+  String get ordersTableOrderDate;
+
+  /// No description provided for @ordersTableTotalProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Products'**
+  String get ordersTableTotalProducts;
+
+  /// No description provided for @ordersTableTotalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Amount'**
+  String get ordersTableTotalAmount;
+
+  /// No description provided for @ordersTableStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get ordersTableStatus;
+
+  /// No description provided for @ordersTotalOrdersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {count} Orders'**
+  String ordersTotalOrdersCount(Object count);
+
+  /// No description provided for @ordersStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get ordersStatusAccepted;
+
+  /// No description provided for @ordersStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get ordersStatusPending;
+
+  /// No description provided for @ordersStatusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get ordersStatusDelivered;
+
+  /// No description provided for @ordersStatusShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get ordersStatusShipped;
+
+  /// No description provided for @ordersStatusPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared'**
+  String get ordersStatusPrepared;
+
+  /// No description provided for @ordersStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get ordersStatusRejected;
+
+  /// No description provided for @ordersStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get ordersStatusDeclined;
+
+  /// No description provided for @ordersStatusPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get ordersStatusPreparing;
+
+  /// No description provided for @viewOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get viewOrderTitle;
+
+  /// No description provided for @viewOrderBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get viewOrderBackButton;
+
+  /// No description provided for @viewOrderPrintInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Invoice'**
+  String get viewOrderPrintInvoice;
+
+  /// No description provided for @viewOrderPrintingInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing invoice...'**
+  String get viewOrderPrintingInvoice;
+
+  /// No description provided for @viewOrderRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get viewOrderRetryButton;
+
+  /// No description provided for @viewOrderGoBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get viewOrderGoBackButton;
+
+  /// No description provided for @viewOrderDataRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Order data refreshed'**
+  String get viewOrderDataRefreshed;
+
+  /// No description provided for @viewOrderMustBeAcceptedToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Order must be in Accepted status to start preparation'**
+  String get viewOrderMustBeAcceptedToStart;
+
+  /// No description provided for @viewOrderPreparationStartedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Order preparation started successfully'**
+  String get viewOrderPreparationStartedSuccess;
+
+  /// No description provided for @viewOrderPreparationStartedCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Order preparation started successfully - Critical alerts detected!'**
+  String get viewOrderPreparationStartedCritical;
+
+  /// No description provided for @viewOrderPreparationStartedAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Order preparation started successfully - {count} alerts to review'**
+  String viewOrderPreparationStartedAlerts(Object count);
+
+  /// No description provided for @viewOrderMustBePreparingToComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Order must be in Preparing status to complete'**
+  String get viewOrderMustBePreparingToComplete;
+
+  /// No description provided for @viewOrderCompletedManualBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'with manual batch selection'**
+  String get viewOrderCompletedManualBatch;
+
+  /// No description provided for @viewOrderCompletedAutoFifo.
+  ///
+  /// In en, this message translates to:
+  /// **'using auto FIFO'**
+  String get viewOrderCompletedAutoFifo;
+
+  /// No description provided for @viewOrderCompletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Order completed successfully {mode}'**
+  String viewOrderCompletedSuccess(Object mode);
+
+  /// No description provided for @viewOrderAlreadyInStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Order is already in {status} status'**
+  String viewOrderAlreadyInStatus(Object status);
+
+  /// No description provided for @viewOrderUpdatedToStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Order updated to {status} successfully'**
+  String viewOrderUpdatedToStatus(Object status);
+
+  /// No description provided for @viewOrderBatchManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Management'**
+  String get viewOrderBatchManagement;
+
+  /// No description provided for @viewOrderBatchSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{totalItems} items, {alertCount} alerts'**
+  String viewOrderBatchSummary(Object alertCount, Object totalItems);
+
+  /// No description provided for @viewOrderHideDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Details'**
+  String get viewOrderHideDetails;
+
+  /// No description provided for @viewOrderShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Details'**
+  String get viewOrderShowDetails;
+
+  /// No description provided for @viewOrderMoreAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'... and {count} more alerts'**
+  String viewOrderMoreAlerts(Object count);
+
+  /// No description provided for @viewOrderManualBatchMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual batch selection mode'**
+  String get viewOrderManualBatchMode;
+
+  /// No description provided for @viewOrderAutoFifoMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto FIFO mode (recommended)'**
+  String get viewOrderAutoFifoMode;
+
+  /// No description provided for @viewOrderBatchSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Selection:'**
+  String get viewOrderBatchSelection;
+
+  /// No description provided for @viewOrderBatchRequiredAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Required: {required} | Available: {available}'**
+  String viewOrderBatchRequiredAvailable(Object available, Object required);
+
+  /// No description provided for @viewOrderFifoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'FIFO'**
+  String get viewOrderFifoLabel;
+
+  /// No description provided for @viewOrderBatchDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Prod: {prodDate} | Exp: {expDate} | Available: {available}'**
+  String viewOrderBatchDates(Object available, Object expDate, Object prodDate);
+
+  /// No description provided for @viewOrderNoItemsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No items found'**
+  String get viewOrderNoItemsFound;
+
+  /// No description provided for @viewOrderNoItemsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This order doesn\'t contain any items'**
+  String get viewOrderNoItemsDescription;
+
+  /// No description provided for @viewOrderUnitPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get viewOrderUnitPriceLabel;
+
+  /// No description provided for @viewOrderQuantityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get viewOrderQuantityLabel;
+
+  /// No description provided for @viewOrderPageInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {current} of {total}'**
+  String viewOrderPageInfo(Object current, Object total);
+
+  /// No description provided for @viewOrderSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal:'**
+  String get viewOrderSubtotal;
+
+  /// No description provided for @viewOrderGrandTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total:'**
+  String get viewOrderGrandTotal;
+
+  /// No description provided for @viewOrderQuantityChangesDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity Changes Detected'**
+  String get viewOrderQuantityChangesDetected;
+
+  /// No description provided for @viewOrderChangesWillBeApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes will be applied when updating the order status.'**
+  String get viewOrderChangesWillBeApplied;
+
+  /// No description provided for @viewOrderItemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Items'**
+  String get viewOrderItemsTitle;
+
+  /// No description provided for @viewOrderItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String viewOrderItemsCount(Object count);
+
+  /// No description provided for @viewOrderInformationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Information'**
+  String get viewOrderInformationTitle;
+
+  /// No description provided for @viewOrderIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get viewOrderIdLabel;
+
+  /// No description provided for @viewOrderDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Date'**
+  String get viewOrderDateLabel;
+
+  /// No description provided for @viewOrderTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Type'**
+  String get viewOrderTypeLabel;
+
+  /// No description provided for @viewOrderPaymentStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Status'**
+  String get viewOrderPaymentStatusLabel;
+
+  /// No description provided for @viewOrderPaymentPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get viewOrderPaymentPaid;
+
+  /// No description provided for @viewOrderPaymentPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get viewOrderPaymentPending;
+
+  /// No description provided for @viewOrderStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status:'**
+  String get viewOrderStatusLabel;
+
+  /// No description provided for @viewOrderActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Actions:'**
+  String get viewOrderActionsTitle;
+
+  /// No description provided for @viewOrderNotePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note about this action (optional)...'**
+  String get viewOrderNotePlaceholder;
+
+  /// No description provided for @viewOrderStartPreparingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Preparing'**
+  String get viewOrderStartPreparingButton;
+
+  /// No description provided for @viewOrderCompletePreparationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Preparation'**
+  String get viewOrderCompletePreparationButton;
+
+  /// No description provided for @viewOrderMarkAsDeliveredButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Delivered'**
+  String get viewOrderMarkAsDeliveredButton;
+
+  /// No description provided for @viewOrderSupplierInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Info'**
+  String get viewOrderSupplierInfoTitle;
+
+  /// No description provided for @viewOrderCustomerInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Info'**
+  String get viewOrderCustomerInfoTitle;
+
+  /// No description provided for @viewOrderNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get viewOrderNameLabel;
+
+  /// No description provided for @viewOrderPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get viewOrderPhoneLabel;
+
+  /// No description provided for @viewOrderErrorDisplaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Error displaying order details: {error}'**
+  String viewOrderErrorDisplaying(Object error);
+
+  /// No description provided for @viewOrderStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get viewOrderStatusAccepted;
+
+  /// No description provided for @viewOrderStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get viewOrderStatusPending;
+
+  /// No description provided for @viewOrderStatusDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get viewOrderStatusDelivered;
+
+  /// No description provided for @viewOrderStatusShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get viewOrderStatusShipped;
+
+  /// No description provided for @viewOrderStatusPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared'**
+  String get viewOrderStatusPrepared;
+
+  /// No description provided for @viewOrderStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get viewOrderStatusRejected;
+
+  /// No description provided for @viewOrderStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get viewOrderStatusDeclined;
+
+  /// No description provided for @viewOrderStatusPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get viewOrderStatusPreparing;
+
+  /// No description provided for @navBarOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get navBarOrders;
+
+  /// No description provided for @navBarHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get navBarHistory;
 }
 
 class _AppLocalizationsDelegate

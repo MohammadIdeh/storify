@@ -2923,4 +2923,449 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navbarHistory => 'السجل';
+
+  @override
+  String get orderHistoryTitle => 'سجل الطلبات';
+
+  @override
+  String get orderHistoryRetryButton => 'إعادة المحاولة';
+
+  @override
+  String get orderHistoryTotalActivity => 'إجمالي النشاط';
+
+  @override
+  String get orderHistorySupplierOrders => 'طلبات الموردين';
+
+  @override
+  String get orderHistoryCustomerOrders => 'طلبات العملاء';
+
+  @override
+  String get orderHistoryViewed => 'تم العرض';
+
+  @override
+  String get orderHistoryUpdated => 'تم التحديث';
+
+  @override
+  String get orderHistoryOrderType => 'نوع الطلب:';
+
+  @override
+  String get orderHistoryAction => 'الإجراء:';
+
+  @override
+  String get orderHistoryFilterAll => 'الكل';
+
+  @override
+  String get orderHistoryFilterSupplier => 'مورد';
+
+  @override
+  String get orderHistoryFilterCustomer => 'عميل';
+
+  @override
+  String get orderHistoryFilterViewed => 'تم العرض';
+
+  @override
+  String get orderHistoryFilterUpdated => 'تم التحديث';
+
+  @override
+  String get orderHistorySearchPlaceholder => 'البحث برقم الطلب';
+
+  @override
+  String get orderHistoryNoHistoryFound => 'لم يتم العثور على سجل طلبات';
+
+  @override
+  String get orderHistoryNoHistoryDescription => 'لا توجد طلبات معالجة للعرض';
+
+  @override
+  String get orderHistoryTableTime => 'الوقت';
+
+  @override
+  String get orderHistoryTableOrderId => 'رقم الطلب';
+
+  @override
+  String get orderHistoryTableType => 'النوع';
+
+  @override
+  String get orderHistoryTableAction => 'الإجراء';
+
+  @override
+  String get orderHistoryTableBeforeStatus => 'الحالة السابقة';
+
+  @override
+  String get orderHistoryTableAfterStatus => 'الحالة اللاحقة';
+
+  @override
+  String get orderHistoryTableEmployee => 'الموظف';
+
+  @override
+  String get orderHistoryTableNote => 'ملاحظة';
+
+  @override
+  String get orderHistoryTypeSupplier => 'مورد';
+
+  @override
+  String get orderHistoryTypeCustomer => 'عميل';
+
+  @override
+  String orderHistoryTotalRecords(Object totalItems) {
+    return 'إجمالي $totalItems سجل';
+  }
+
+  @override
+  String get orderHistoryStatusAccepted => 'مقبول';
+
+  @override
+  String get orderHistoryStatusPending => 'في الانتظار';
+
+  @override
+  String get orderHistoryStatusDelivered => 'تم التسليم';
+
+  @override
+  String get orderHistoryStatusShipped => 'تم الشحن';
+
+  @override
+  String get orderHistoryStatusPrepared => 'تم التحضير';
+
+  @override
+  String get orderHistoryStatusRejected => 'مرفوض';
+
+  @override
+  String get orderHistoryStatusDeclined => 'مرفوض';
+
+  @override
+  String get orderHistoryStatusPreparing => 'قيد التحضير';
+
+  @override
+  String get orderHistoryActionViewed => 'تم العرض';
+
+  @override
+  String get orderHistoryActionUpdated => 'تم التحديث';
+
+  @override
+  String get ordersSupplierOrdersTitle => 'طلبات الموردين';
+
+  @override
+  String get ordersCustomerOrdersTitle => 'طلبات العملاء';
+
+  @override
+  String get ordersSuppliersTab => 'الموردين';
+
+  @override
+  String get ordersCustomersTab => 'العملاء';
+
+  @override
+  String ordersLoadErrorMessage(Object error) {
+    return 'فشل في تحميل الطلبات: $error';
+  }
+
+  @override
+  String get ordersRetryButton => 'إعادة المحاولة';
+
+  @override
+  String get ordersTotalOrdersCard => 'إجمالي الطلبات';
+
+  @override
+  String get ordersActiveOrdersCard => 'الطلبات النشطة';
+
+  @override
+  String get ordersCompletedOrdersCard => 'الطلبات المكتملة';
+
+  @override
+  String get ordersAllOrdersTitle => 'جميع الطلبات';
+
+  @override
+  String get ordersActiveOrdersTitle => 'الطلبات النشطة';
+
+  @override
+  String get ordersCompletedOrdersTitle => 'الطلبات المكتملة';
+
+  @override
+  String get ordersSearchPlaceholder => 'البحث بالرقم';
+
+  @override
+  String get ordersNoOrdersFound => 'لم يتم العثور على طلبات';
+
+  @override
+  String get ordersNoOrdersDescription => 'لا توجد طلبات للعرض';
+
+  @override
+  String get ordersTableOrderId => 'رقم الطلب';
+
+  @override
+  String get ordersTableSupplierName => 'اسم المورد';
+
+  @override
+  String get ordersTableCustomerName => 'اسم العميل';
+
+  @override
+  String get ordersTablePhoneNo => 'رقم الهاتف';
+
+  @override
+  String get ordersTableOrderDate => 'تاريخ الطلب';
+
+  @override
+  String get ordersTableTotalProducts => 'إجمالي المنتجات';
+
+  @override
+  String get ordersTableTotalAmount => 'المبلغ الإجمالي';
+
+  @override
+  String get ordersTableStatus => 'الحالة';
+
+  @override
+  String ordersTotalOrdersCount(Object count) {
+    return 'إجمالي $count طلب';
+  }
+
+  @override
+  String get ordersStatusAccepted => 'مقبول';
+
+  @override
+  String get ordersStatusPending => 'في الانتظار';
+
+  @override
+  String get ordersStatusDelivered => 'تم التسليم';
+
+  @override
+  String get ordersStatusShipped => 'تم الشحن';
+
+  @override
+  String get ordersStatusPrepared => 'تم التحضير';
+
+  @override
+  String get ordersStatusRejected => 'مرفوض';
+
+  @override
+  String get ordersStatusDeclined => 'مرفوض';
+
+  @override
+  String get ordersStatusPreparing => 'قيد التحضير';
+
+  @override
+  String get viewOrderTitle => 'تفاصيل الطلب';
+
+  @override
+  String get viewOrderBackButton => 'رجوع';
+
+  @override
+  String get viewOrderPrintInvoice => 'طباعة الفاتورة';
+
+  @override
+  String get viewOrderPrintingInvoice => 'جاري طباعة الفاتورة...';
+
+  @override
+  String get viewOrderRetryButton => 'إعادة المحاولة';
+
+  @override
+  String get viewOrderGoBackButton => 'العودة';
+
+  @override
+  String get viewOrderDataRefreshed => 'تم تحديث بيانات الطلب';
+
+  @override
+  String get viewOrderMustBeAcceptedToStart =>
+      'يجب أن يكون الطلب في حالة مقبول لبدء التحضير';
+
+  @override
+  String get viewOrderPreparationStartedSuccess => 'تم بدء تحضير الطلب بنجاح';
+
+  @override
+  String get viewOrderPreparationStartedCritical =>
+      'تم بدء تحضير الطلب بنجاح - تم اكتشاف تنبيهات حرجة!';
+
+  @override
+  String viewOrderPreparationStartedAlerts(Object count) {
+    return 'تم بدء تحضير الطلب بنجاح - $count تنبيهات للمراجعة';
+  }
+
+  @override
+  String get viewOrderMustBePreparingToComplete =>
+      'يجب أن يكون الطلب في حالة التحضير لإكماله';
+
+  @override
+  String get viewOrderCompletedManualBatch => 'مع اختيار دفعة يدوي';
+
+  @override
+  String get viewOrderCompletedAutoFifo => 'باستخدام FIFO التلقائي';
+
+  @override
+  String viewOrderCompletedSuccess(Object mode) {
+    return 'تم إكمال الطلب بنجاح $mode';
+  }
+
+  @override
+  String viewOrderAlreadyInStatus(Object status) {
+    return 'الطلب موجود بالفعل في حالة $status';
+  }
+
+  @override
+  String viewOrderUpdatedToStatus(Object status) {
+    return 'تم تحديث الطلب إلى $status بنجاح';
+  }
+
+  @override
+  String get viewOrderBatchManagement => 'إدارة الدفعات';
+
+  @override
+  String viewOrderBatchSummary(Object alertCount, Object totalItems) {
+    return '$totalItems عنصر، $alertCount تنبيه';
+  }
+
+  @override
+  String get viewOrderHideDetails => 'إخفاء التفاصيل';
+
+  @override
+  String get viewOrderShowDetails => 'عرض التفاصيل';
+
+  @override
+  String viewOrderMoreAlerts(Object count) {
+    return '... و $count تنبيهات أخرى';
+  }
+
+  @override
+  String get viewOrderManualBatchMode => 'وضع اختيار الدفعة اليدوي';
+
+  @override
+  String get viewOrderAutoFifoMode => 'وضع FIFO التلقائي (موصى به)';
+
+  @override
+  String get viewOrderBatchSelection => 'اختيار الدفعة:';
+
+  @override
+  String viewOrderBatchRequiredAvailable(Object available, Object required) {
+    return 'مطلوب: $required | متاح: $available';
+  }
+
+  @override
+  String get viewOrderFifoLabel => 'FIFO';
+
+  @override
+  String viewOrderBatchDates(
+      Object available, Object expDate, Object prodDate) {
+    return 'الإنتاج: $prodDate | الانتهاء: $expDate | المتاح: $available';
+  }
+
+  @override
+  String get viewOrderNoItemsFound => 'لم يتم العثور على عناصر';
+
+  @override
+  String get viewOrderNoItemsDescription => 'هذا الطلب لا يحتوي على أي عناصر';
+
+  @override
+  String get viewOrderUnitPriceLabel => 'سعر الوحدة';
+
+  @override
+  String get viewOrderQuantityLabel => 'الكمية';
+
+  @override
+  String viewOrderPageInfo(Object current, Object total) {
+    return 'صفحة $current من $total';
+  }
+
+  @override
+  String get viewOrderSubtotal => 'المجموع الفرعي:';
+
+  @override
+  String get viewOrderGrandTotal => 'المجموع الإجمالي:';
+
+  @override
+  String get viewOrderQuantityChangesDetected => 'تم اكتشاف تغييرات في الكمية';
+
+  @override
+  String get viewOrderChangesWillBeApplied =>
+      'سيتم تطبيق التغييرات عند تحديث حالة الطلب.';
+
+  @override
+  String get viewOrderItemsTitle => 'عناصر الطلب';
+
+  @override
+  String viewOrderItemsCount(Object count) {
+    return '$count عنصر';
+  }
+
+  @override
+  String get viewOrderInformationTitle => 'معلومات الطلب';
+
+  @override
+  String get viewOrderIdLabel => 'رقم الطلب';
+
+  @override
+  String get viewOrderDateLabel => 'تاريخ الطلب';
+
+  @override
+  String get viewOrderTypeLabel => 'نوع الطلب';
+
+  @override
+  String get viewOrderPaymentStatusLabel => 'حالة الدفع';
+
+  @override
+  String get viewOrderPaymentPaid => 'مدفوع';
+
+  @override
+  String get viewOrderPaymentPending => 'في الانتظار';
+
+  @override
+  String get viewOrderStatusLabel => 'الحالة:';
+
+  @override
+  String get viewOrderActionsTitle => 'إجراءات الطلب:';
+
+  @override
+  String get viewOrderNotePlaceholder =>
+      'أضف ملاحظة حول هذا الإجراء (اختياري)...';
+
+  @override
+  String get viewOrderStartPreparingButton => 'بدء التحضير';
+
+  @override
+  String get viewOrderCompletePreparationButton => 'إكمال التحضير';
+
+  @override
+  String get viewOrderMarkAsDeliveredButton => 'وضع علامة كمسلّم';
+
+  @override
+  String get viewOrderSupplierInfoTitle => 'معلومات المورد';
+
+  @override
+  String get viewOrderCustomerInfoTitle => 'معلومات العميل';
+
+  @override
+  String get viewOrderNameLabel => 'الاسم';
+
+  @override
+  String get viewOrderPhoneLabel => 'الهاتف';
+
+  @override
+  String viewOrderErrorDisplaying(Object error) {
+    return 'خطأ في عرض تفاصيل الطلب: $error';
+  }
+
+  @override
+  String get viewOrderStatusAccepted => 'مقبول';
+
+  @override
+  String get viewOrderStatusPending => 'في الانتظار';
+
+  @override
+  String get viewOrderStatusDelivered => 'تم التسليم';
+
+  @override
+  String get viewOrderStatusShipped => 'تم الشحن';
+
+  @override
+  String get viewOrderStatusPrepared => 'تم التحضير';
+
+  @override
+  String get viewOrderStatusRejected => 'مرفوض';
+
+  @override
+  String get viewOrderStatusDeclined => 'مرفوض';
+
+  @override
+  String get viewOrderStatusPreparing => 'قيد التحضير';
+
+  @override
+  String get navBarOrders => 'الطلبات';
+
+  @override
+  String get navBarHistory => 'السجل';
 }

@@ -2954,4 +2954,452 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navbarHistory => 'History';
+
+  @override
+  String get orderHistoryTitle => 'Order History';
+
+  @override
+  String get orderHistoryRetryButton => 'Retry';
+
+  @override
+  String get orderHistoryTotalActivity => 'Total Activity';
+
+  @override
+  String get orderHistorySupplierOrders => 'Supplier Orders';
+
+  @override
+  String get orderHistoryCustomerOrders => 'Customer Orders';
+
+  @override
+  String get orderHistoryViewed => 'Viewed';
+
+  @override
+  String get orderHistoryUpdated => 'Updated';
+
+  @override
+  String get orderHistoryOrderType => 'Order Type:';
+
+  @override
+  String get orderHistoryAction => 'Action:';
+
+  @override
+  String get orderHistoryFilterAll => 'All';
+
+  @override
+  String get orderHistoryFilterSupplier => 'Supplier';
+
+  @override
+  String get orderHistoryFilterCustomer => 'Customer';
+
+  @override
+  String get orderHistoryFilterViewed => 'Viewed';
+
+  @override
+  String get orderHistoryFilterUpdated => 'Updated';
+
+  @override
+  String get orderHistorySearchPlaceholder => 'Search Order ID';
+
+  @override
+  String get orderHistoryNoHistoryFound => 'No order history found';
+
+  @override
+  String get orderHistoryNoHistoryDescription =>
+      'There are no processed orders to display';
+
+  @override
+  String get orderHistoryTableTime => 'Time';
+
+  @override
+  String get orderHistoryTableOrderId => 'Order ID';
+
+  @override
+  String get orderHistoryTableType => 'Type';
+
+  @override
+  String get orderHistoryTableAction => 'Action';
+
+  @override
+  String get orderHistoryTableBeforeStatus => 'Before Status';
+
+  @override
+  String get orderHistoryTableAfterStatus => 'After Status';
+
+  @override
+  String get orderHistoryTableEmployee => 'Employee';
+
+  @override
+  String get orderHistoryTableNote => 'Note';
+
+  @override
+  String get orderHistoryTypeSupplier => 'Supplier';
+
+  @override
+  String get orderHistoryTypeCustomer => 'Customer';
+
+  @override
+  String orderHistoryTotalRecords(Object totalItems) {
+    return 'Total $totalItems Records';
+  }
+
+  @override
+  String get orderHistoryStatusAccepted => 'Accepted';
+
+  @override
+  String get orderHistoryStatusPending => 'Pending';
+
+  @override
+  String get orderHistoryStatusDelivered => 'Delivered';
+
+  @override
+  String get orderHistoryStatusShipped => 'Shipped';
+
+  @override
+  String get orderHistoryStatusPrepared => 'Prepared';
+
+  @override
+  String get orderHistoryStatusRejected => 'Rejected';
+
+  @override
+  String get orderHistoryStatusDeclined => 'Declined';
+
+  @override
+  String get orderHistoryStatusPreparing => 'Preparing';
+
+  @override
+  String get orderHistoryActionViewed => 'Viewed';
+
+  @override
+  String get orderHistoryActionUpdated => 'Updated';
+
+  @override
+  String get ordersSupplierOrdersTitle => 'Supplier Orders';
+
+  @override
+  String get ordersCustomerOrdersTitle => 'Customer Orders';
+
+  @override
+  String get ordersSuppliersTab => 'Suppliers';
+
+  @override
+  String get ordersCustomersTab => 'Customers';
+
+  @override
+  String ordersLoadErrorMessage(Object error) {
+    return 'Failed to load orders: $error';
+  }
+
+  @override
+  String get ordersRetryButton => 'Retry';
+
+  @override
+  String get ordersTotalOrdersCard => 'Total Orders';
+
+  @override
+  String get ordersActiveOrdersCard => 'Active Orders';
+
+  @override
+  String get ordersCompletedOrdersCard => 'Completed Orders';
+
+  @override
+  String get ordersAllOrdersTitle => 'All Orders';
+
+  @override
+  String get ordersActiveOrdersTitle => 'Active Orders';
+
+  @override
+  String get ordersCompletedOrdersTitle => 'Completed Orders';
+
+  @override
+  String get ordersSearchPlaceholder => 'Search ID';
+
+  @override
+  String get ordersNoOrdersFound => 'No orders found';
+
+  @override
+  String get ordersNoOrdersDescription => 'There are no orders to display';
+
+  @override
+  String get ordersTableOrderId => 'Order ID';
+
+  @override
+  String get ordersTableSupplierName => 'Supplier Name';
+
+  @override
+  String get ordersTableCustomerName => 'Customer Name';
+
+  @override
+  String get ordersTablePhoneNo => 'Phone No';
+
+  @override
+  String get ordersTableOrderDate => 'Order Date';
+
+  @override
+  String get ordersTableTotalProducts => 'Total Products';
+
+  @override
+  String get ordersTableTotalAmount => 'Total Amount';
+
+  @override
+  String get ordersTableStatus => 'Status';
+
+  @override
+  String ordersTotalOrdersCount(Object count) {
+    return 'Total $count Orders';
+  }
+
+  @override
+  String get ordersStatusAccepted => 'Accepted';
+
+  @override
+  String get ordersStatusPending => 'Pending';
+
+  @override
+  String get ordersStatusDelivered => 'Delivered';
+
+  @override
+  String get ordersStatusShipped => 'Shipped';
+
+  @override
+  String get ordersStatusPrepared => 'Prepared';
+
+  @override
+  String get ordersStatusRejected => 'Rejected';
+
+  @override
+  String get ordersStatusDeclined => 'Declined';
+
+  @override
+  String get ordersStatusPreparing => 'Preparing';
+
+  @override
+  String get viewOrderTitle => 'Order Details';
+
+  @override
+  String get viewOrderBackButton => 'Back';
+
+  @override
+  String get viewOrderPrintInvoice => 'Print Invoice';
+
+  @override
+  String get viewOrderPrintingInvoice => 'Printing invoice...';
+
+  @override
+  String get viewOrderRetryButton => 'Retry';
+
+  @override
+  String get viewOrderGoBackButton => 'Go Back';
+
+  @override
+  String get viewOrderDataRefreshed => 'Order data refreshed';
+
+  @override
+  String get viewOrderMustBeAcceptedToStart =>
+      'Order must be in Accepted status to start preparation';
+
+  @override
+  String get viewOrderPreparationStartedSuccess =>
+      'Order preparation started successfully';
+
+  @override
+  String get viewOrderPreparationStartedCritical =>
+      'Order preparation started successfully - Critical alerts detected!';
+
+  @override
+  String viewOrderPreparationStartedAlerts(Object count) {
+    return 'Order preparation started successfully - $count alerts to review';
+  }
+
+  @override
+  String get viewOrderMustBePreparingToComplete =>
+      'Order must be in Preparing status to complete';
+
+  @override
+  String get viewOrderCompletedManualBatch => 'with manual batch selection';
+
+  @override
+  String get viewOrderCompletedAutoFifo => 'using auto FIFO';
+
+  @override
+  String viewOrderCompletedSuccess(Object mode) {
+    return 'Order completed successfully $mode';
+  }
+
+  @override
+  String viewOrderAlreadyInStatus(Object status) {
+    return 'Order is already in $status status';
+  }
+
+  @override
+  String viewOrderUpdatedToStatus(Object status) {
+    return 'Order updated to $status successfully';
+  }
+
+  @override
+  String get viewOrderBatchManagement => 'Batch Management';
+
+  @override
+  String viewOrderBatchSummary(Object alertCount, Object totalItems) {
+    return '$totalItems items, $alertCount alerts';
+  }
+
+  @override
+  String get viewOrderHideDetails => 'Hide Details';
+
+  @override
+  String get viewOrderShowDetails => 'Show Details';
+
+  @override
+  String viewOrderMoreAlerts(Object count) {
+    return '... and $count more alerts';
+  }
+
+  @override
+  String get viewOrderManualBatchMode => 'Manual batch selection mode';
+
+  @override
+  String get viewOrderAutoFifoMode => 'Auto FIFO mode (recommended)';
+
+  @override
+  String get viewOrderBatchSelection => 'Batch Selection:';
+
+  @override
+  String viewOrderBatchRequiredAvailable(Object available, Object required) {
+    return 'Required: $required | Available: $available';
+  }
+
+  @override
+  String get viewOrderFifoLabel => 'FIFO';
+
+  @override
+  String viewOrderBatchDates(
+      Object available, Object expDate, Object prodDate) {
+    return 'Prod: $prodDate | Exp: $expDate | Available: $available';
+  }
+
+  @override
+  String get viewOrderNoItemsFound => 'No items found';
+
+  @override
+  String get viewOrderNoItemsDescription =>
+      'This order doesn\'t contain any items';
+
+  @override
+  String get viewOrderUnitPriceLabel => 'Unit Price';
+
+  @override
+  String get viewOrderQuantityLabel => 'Qty';
+
+  @override
+  String viewOrderPageInfo(Object current, Object total) {
+    return 'Page $current of $total';
+  }
+
+  @override
+  String get viewOrderSubtotal => 'Subtotal:';
+
+  @override
+  String get viewOrderGrandTotal => 'Grand Total:';
+
+  @override
+  String get viewOrderQuantityChangesDetected => 'Quantity Changes Detected';
+
+  @override
+  String get viewOrderChangesWillBeApplied =>
+      'Your changes will be applied when updating the order status.';
+
+  @override
+  String get viewOrderItemsTitle => 'Order Items';
+
+  @override
+  String viewOrderItemsCount(Object count) {
+    return '$count items';
+  }
+
+  @override
+  String get viewOrderInformationTitle => 'Order Information';
+
+  @override
+  String get viewOrderIdLabel => 'Order ID';
+
+  @override
+  String get viewOrderDateLabel => 'Order Date';
+
+  @override
+  String get viewOrderTypeLabel => 'Order Type';
+
+  @override
+  String get viewOrderPaymentStatusLabel => 'Payment Status';
+
+  @override
+  String get viewOrderPaymentPaid => 'Paid';
+
+  @override
+  String get viewOrderPaymentPending => 'Pending';
+
+  @override
+  String get viewOrderStatusLabel => 'Status:';
+
+  @override
+  String get viewOrderActionsTitle => 'Order Actions:';
+
+  @override
+  String get viewOrderNotePlaceholder =>
+      'Add a note about this action (optional)...';
+
+  @override
+  String get viewOrderStartPreparingButton => 'Start Preparing';
+
+  @override
+  String get viewOrderCompletePreparationButton => 'Complete Preparation';
+
+  @override
+  String get viewOrderMarkAsDeliveredButton => 'Mark as Delivered';
+
+  @override
+  String get viewOrderSupplierInfoTitle => 'Supplier Info';
+
+  @override
+  String get viewOrderCustomerInfoTitle => 'Customer Info';
+
+  @override
+  String get viewOrderNameLabel => 'Name';
+
+  @override
+  String get viewOrderPhoneLabel => 'Phone';
+
+  @override
+  String viewOrderErrorDisplaying(Object error) {
+    return 'Error displaying order details: $error';
+  }
+
+  @override
+  String get viewOrderStatusAccepted => 'Accepted';
+
+  @override
+  String get viewOrderStatusPending => 'Pending';
+
+  @override
+  String get viewOrderStatusDelivered => 'Delivered';
+
+  @override
+  String get viewOrderStatusShipped => 'Shipped';
+
+  @override
+  String get viewOrderStatusPrepared => 'Prepared';
+
+  @override
+  String get viewOrderStatusRejected => 'Rejected';
+
+  @override
+  String get viewOrderStatusDeclined => 'Declined';
+
+  @override
+  String get viewOrderStatusPreparing => 'Preparing';
+
+  @override
+  String get navBarOrders => 'Orders';
+
+  @override
+  String get navBarHistory => 'History';
 }

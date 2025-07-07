@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/employee/widgets/navbar_employee.dart';
 import 'package:storify/employee/widgets/orderServiceEmp.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 // OrderHistory model updated to match API response
 class OrderHistory {
@@ -100,8 +102,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProfilePicture();
-    _fetchOrderHistory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfilePicture();
+      _fetchOrderHistory();
+    });
   }
 
   // Fetch order history from API
@@ -201,8 +205,48 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     _fetchOrderHistory();
   }
 
+  // Get localized status text
+  String _getLocalizedStatus(BuildContext context, String status) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    switch (status.toLowerCase()) {
+      case "accepted":
+        return l10n.orderHistoryStatusAccepted;
+      case "pending":
+        return l10n.orderHistoryStatusPending;
+      case "delivered":
+        return l10n.orderHistoryStatusDelivered;
+      case "shipped":
+        return l10n.orderHistoryStatusShipped;
+      case "prepared":
+        return l10n.orderHistoryStatusPrepared;
+      case "rejected":
+        return l10n.orderHistoryStatusRejected;
+      case "declined":
+        return l10n.orderHistoryStatusDeclined;
+      case "preparing":
+        return l10n.orderHistoryStatusPreparing;
+      default:
+        return status;
+    }
+  }
+
+  // Get localized action text
+  String _getLocalizedAction(BuildContext context, String action) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    if (action.toLowerCase().contains("viewed")) {
+      return l10n.orderHistoryActionViewed;
+    } else if (action.toLowerCase().contains("updated")) {
+      return l10n.orderHistoryActionUpdated;
+    }
+    return action;
+  }
+
   // Build a status pill widget
   Widget _buildStatusPill(String status) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     Color textColor;
     Color borderColor;
 
@@ -244,12 +288,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         border: Border.all(color: borderColor),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
+        _getLocalizedStatus(context, status),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
       ),
     );
   }
@@ -260,6 +310,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -278,11 +330,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : Colors.white70,
-          ),
+          style: isArabic
+              ? GoogleFonts.cairo(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.white70,
+                )
+              : GoogleFonts.spaceGrotesk(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : Colors.white70,
+                ),
         ),
       ),
     );
@@ -290,6 +348,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     // Calculate statistics for summary cards
     int supplierCount =
         _orderHistory.where((item) => item.orderType == "supplier").length;
@@ -302,563 +364,707 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     int updatedCount =
         _orderHistory.where((item) => item.action.contains("Updated")).length;
 
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(200),
-        child: NavigationBarEmployee(
-          currentIndex: _currentIndex,
-          onTap: _onNavItemTap,
-          profilePictureUrl: profilePictureUrl,
+    return Directionality(
+      textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(200),
+          child: NavigationBarEmployee(
+            currentIndex: _currentIndex,
+            onTap: _onNavItemTap,
+            profilePictureUrl: profilePictureUrl,
+          ),
         ),
-      ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: const Color.fromARGB(255, 105, 65, 198),
-              ),
-            )
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Colors.redAccent,
-                        size: 48.sp,
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        _errorMessage!,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 16.sp,
-                          color: Colors.white,
+        body: _isLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: const Color.fromARGB(255, 105, 65, 198),
+                ),
+              )
+            : _errorMessage != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.redAccent,
+                          size: 48.sp,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 16.h),
-                      ElevatedButton(
-                        onPressed: _fetchOrderHistory,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 105, 65, 198),
+                        SizedBox(height: 16.h),
+                        Text(
+                          _errorMessage!,
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 16.sp,
+                                  color: Colors.white,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 16.sp,
+                                  color: Colors.white,
+                                ),
+                          textAlign: TextAlign.center,
                         ),
-                        child: Text(
-                          'Retry',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
+                        SizedBox(height: 16.h),
+                        ElevatedButton(
+                          onPressed: _fetchOrderHistory,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 105, 65, 198),
+                          ),
+                          child: Text(
+                            l10n.orderHistoryRetryButton,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.white,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                  ),
                           ),
                         ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: isRtl ? 45.w : 45.w,
+                        top: 20.h,
+                        right: isRtl ? 45.w : 45.w,
                       ),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  child: Padding(
-                    padding:
-                        EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Top header with title
-                        Row(
-                          children: [
-                            Text(
-                              "Order History",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 35.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const Spacer(),
-                            // Refresh button
-                            IconButton(
-                              icon: Icon(
-                                Icons.refresh,
-                                color: Colors.white,
-                                size: 24.sp,
-                              ),
-                              onPressed: _fetchOrderHistory,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 25.h),
-
-                        // Summary cards
-                        Row(
-                          children: [
-                            // Total Processed card
-                            Expanded(
-                              child: _buildSummaryCard(
-                                title: "Total Activity",
-                                count: _totalItems.toString(),
-                                iconData: Icons.history,
-                                color: const Color.fromARGB(255, 0, 196, 255),
-                              ),
-                            ),
-                            SizedBox(width: 20.w),
-                            // Supplier Orders card
-                            Expanded(
-                              child: _buildSummaryCard(
-                                title: "Supplier Orders",
-                                count: supplierCount.toString(),
-                                iconData: Icons.inventory_2,
-                                color: const Color.fromARGB(255, 255, 150, 30),
-                              ),
-                            ),
-                            SizedBox(width: 20.w),
-                            // Customer Orders card
-                            Expanded(
-                              child: _buildSummaryCard(
-                                title: "Customer Orders",
-                                count: customerCount.toString(),
-                                iconData: Icons.people,
-                                color: const Color.fromARGB(255, 130, 80, 223),
-                              ),
-                            ),
-                            SizedBox(width: 20.w),
-                            // Viewed Actions card
-                            Expanded(
-                              child: _buildSummaryCard(
-                                title: "Viewed",
-                                count: viewedCount.toString(),
-                                iconData: Icons.visibility,
-                                color: const Color.fromARGB(178, 0, 224, 116),
-                              ),
-                            ),
-                            SizedBox(width: 20.w),
-                            // Updated Actions card
-                            Expanded(
-                              child: _buildSummaryCard(
-                                title: "Updated",
-                                count: updatedCount.toString(),
-                                iconData: Icons.update,
-                                color: const Color.fromARGB(255, 229, 62, 62),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 30.h),
-
-                        // Filters and search
-                        Row(
-                          children: [
-                            Text(
-                              "Order Type:",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            SizedBox(width: 15.w),
-                            // Type filter chips
-                            _buildFilterChip(
-                              label: "All",
-                              isSelected: _selectedTypeFilter == "All",
-                              onTap: () {
-                                setState(() {
-                                  _selectedTypeFilter = "All";
-                                });
-                              },
-                            ),
-                            SizedBox(width: 10.w),
-                            _buildFilterChip(
-                              label: "Supplier",
-                              isSelected: _selectedTypeFilter == "supplier",
-                              onTap: () {
-                                setState(() {
-                                  _selectedTypeFilter = "supplier";
-                                });
-                              },
-                            ),
-                            SizedBox(width: 10.w),
-                            _buildFilterChip(
-                              label: "Customer",
-                              isSelected: _selectedTypeFilter == "customer",
-                              onTap: () {
-                                setState(() {
-                                  _selectedTypeFilter = "customer";
-                                });
-                              },
-                            ),
-                            SizedBox(width: 30.w),
-                            Text(
-                              "Action:",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            SizedBox(width: 15.w),
-                            // Action filter chips
-                            _buildFilterChip(
-                              label: "All",
-                              isSelected: _selectedActionFilter == "All",
-                              onTap: () {
-                                setState(() {
-                                  _selectedActionFilter = "All";
-                                });
-                              },
-                            ),
-                            SizedBox(width: 10.w),
-                            _buildFilterChip(
-                              label: "Viewed",
-                              isSelected: _selectedActionFilter == "Viewed",
-                              onTap: () {
-                                setState(() {
-                                  _selectedActionFilter = "Viewed";
-                                });
-                              },
-                            ),
-                            SizedBox(width: 10.w),
-                            _buildFilterChip(
-                              label: "Updated",
-                              isSelected: _selectedActionFilter == "Updated",
-                              onTap: () {
-                                setState(() {
-                                  _selectedActionFilter = "Updated";
-                                });
-                              },
-                            ),
-
-                            const Spacer(),
-
-                            // Search box
-                            Container(
-                              width: 300.w,
-                              height: 55.h,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 36, 50, 69),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 20.w, vertical: 8.h),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 120.w,
-                                    child: TextField(
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _searchQuery = value;
-                                        });
-                                      },
-                                      style: GoogleFonts.spaceGrotesk(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top header with title
+                          Row(
+                            children: [
+                              Text(
+                                l10n.orderHistoryTitle,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 35.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 35.sp,
+                                        fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Search Order ID',
-                                        hintStyle: GoogleFonts.spaceGrotesk(
-                                          color: Colors.white70,
-                                        ),
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  // Search icon
-                                  Icon(
-                                    Icons.search,
-                                    color: Colors.white70,
-                                    size: 20.sp,
-                                  ),
-                                ],
                               ),
-                            ),
-                          ],
-                        ),
+                              const Spacer(),
+                              // Refresh button
+                              IconButton(
+                                icon: Icon(
+                                  Icons.refresh,
+                                  color: Colors.white,
+                                  size: 24.sp,
+                                ),
+                                onPressed: _fetchOrderHistory,
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 25.h),
 
-                        SizedBox(height: 25.h),
-
-                        // History table and pagination
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Table container
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 36, 50, 69),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(30.r),
-                                  topRight: Radius.circular(30.r),
-                                  bottomLeft: Radius.circular(30.r),
-                                  bottomRight: Radius.circular(30.r),
+                          // Summary cards
+                          Row(
+                            children: [
+                              // Total Processed card
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  title: l10n.orderHistoryTotalActivity,
+                                  count: _totalItems.toString(),
+                                  iconData: Icons.history,
+                                  color: const Color.fromARGB(255, 0, 196, 255),
                                 ),
                               ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Empty state for no history
-                                  if (_filteredHistory.isEmpty)
-                                    Container(
-                                      height: 300.h,
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
+                              SizedBox(width: 20.w),
+                              // Supplier Orders card
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  title: l10n.orderHistorySupplierOrders,
+                                  count: supplierCount.toString(),
+                                  iconData: Icons.inventory_2,
+                                  color:
+                                      const Color.fromARGB(255, 255, 150, 30),
+                                ),
+                              ),
+                              SizedBox(width: 20.w),
+                              // Customer Orders card
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  title: l10n.orderHistoryCustomerOrders,
+                                  count: customerCount.toString(),
+                                  iconData: Icons.people,
+                                  color:
+                                      const Color.fromARGB(255, 130, 80, 223),
+                                ),
+                              ),
+                              SizedBox(width: 20.w),
+                              // Viewed Actions card
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  title: l10n.orderHistoryViewed,
+                                  count: viewedCount.toString(),
+                                  iconData: Icons.visibility,
+                                  color: const Color.fromARGB(178, 0, 224, 116),
+                                ),
+                              ),
+                              SizedBox(width: 20.w),
+                              // Updated Actions card
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  title: l10n.orderHistoryUpdated,
+                                  count: updatedCount.toString(),
+                                  iconData: Icons.update,
+                                  color: const Color.fromARGB(255, 229, 62, 62),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 30.h),
+
+                          // Filters and search
+                          Row(
+                            children: [
+                              Text(
+                                l10n.orderHistoryOrderType,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                              SizedBox(width: 15.w),
+                              // Type filter chips
+                              _buildFilterChip(
+                                label: l10n.orderHistoryFilterAll,
+                                isSelected: _selectedTypeFilter == "All",
+                                onTap: () {
+                                  setState(() {
+                                    _selectedTypeFilter = "All";
+                                  });
+                                },
+                              ),
+                              SizedBox(width: 10.w),
+                              _buildFilterChip(
+                                label: l10n.orderHistoryFilterSupplier,
+                                isSelected: _selectedTypeFilter == "supplier",
+                                onTap: () {
+                                  setState(() {
+                                    _selectedTypeFilter = "supplier";
+                                  });
+                                },
+                              ),
+                              SizedBox(width: 10.w),
+                              _buildFilterChip(
+                                label: l10n.orderHistoryFilterCustomer,
+                                isSelected: _selectedTypeFilter == "customer",
+                                onTap: () {
+                                  setState(() {
+                                    _selectedTypeFilter = "customer";
+                                  });
+                                },
+                              ),
+                              SizedBox(width: 30.w),
+                              Text(
+                                l10n.orderHistoryAction,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                              SizedBox(width: 15.w),
+                              // Action filter chips
+                              _buildFilterChip(
+                                label: l10n.orderHistoryFilterAll,
+                                isSelected: _selectedActionFilter == "All",
+                                onTap: () {
+                                  setState(() {
+                                    _selectedActionFilter = "All";
+                                  });
+                                },
+                              ),
+                              SizedBox(width: 10.w),
+                              _buildFilterChip(
+                                label: l10n.orderHistoryFilterViewed,
+                                isSelected: _selectedActionFilter == "Viewed",
+                                onTap: () {
+                                  setState(() {
+                                    _selectedActionFilter = "Viewed";
+                                  });
+                                },
+                              ),
+                              SizedBox(width: 10.w),
+                              _buildFilterChip(
+                                label: l10n.orderHistoryFilterUpdated,
+                                isSelected: _selectedActionFilter == "Updated",
+                                onTap: () {
+                                  setState(() {
+                                    _selectedActionFilter = "Updated";
+                                  });
+                                },
+                              ),
+
+                              const Spacer(),
+
+                              // Search box
+                              Container(
+                                width: 300.w,
+                                height: 55.h,
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 36, 50, 69),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 20.w, vertical: 8.h),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 120.w,
+                                      child: TextField(
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _searchQuery = value;
+                                          });
+                                        },
+                                        textDirection: isRtl
+                                            ? TextDirection.rtl
+                                            : TextDirection.ltr,
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.white,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.white,
+                                              ),
+                                        decoration: InputDecoration(
+                                          hintText: l10n
+                                              .orderHistorySearchPlaceholder,
+                                          hintStyle: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  color: Colors.white70,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  color: Colors.white70,
+                                                ),
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    // Search icon
+                                    Icon(
+                                      Icons.search,
+                                      color: Colors.white70,
+                                      size: 20.sp,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 25.h),
+
+                          // History table and pagination
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Table container
+                              Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 36, 50, 69),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(30.r),
+                                    topRight: Radius.circular(30.r),
+                                    bottomLeft: Radius.circular(30.r),
+                                    bottomRight: Radius.circular(30.r),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Empty state for no history
+                                    if (_filteredHistory.isEmpty)
+                                      Container(
+                                        height: 300.h,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: const Color.fromARGB(
+                                              255, 36, 50, 69),
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(30.r),
+                                            topRight: Radius.circular(30.r),
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.history_outlined,
+                                                size: 64.sp,
+                                                color: Colors.white
+                                                    .withOpacity(0.3),
+                                              ),
+                                              SizedBox(height: 16.h),
+                                              Text(
+                                                l10n.orderHistoryNoHistoryFound,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        fontSize: 18.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white70,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        fontSize: 18.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white70,
+                                                      ),
+                                              ),
+                                              SizedBox(height: 8.h),
+                                              Text(
+                                                l10n.orderHistoryNoHistoryDescription,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        fontSize: 14.sp,
+                                                        color: Colors.white38,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        fontSize: 14.sp,
+                                                        color: Colors.white38,
+                                                      ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      // Table with horizontal scrolling
+                                      Container(
+                                        width: double.infinity,
                                         color: const Color.fromARGB(
                                             255, 36, 50, 69),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(30.r),
-                                          topRight: Radius.circular(30.r),
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.history_outlined,
-                                              size: 64.sp,
-                                              color:
-                                                  Colors.white.withOpacity(0.3),
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minWidth: MediaQuery.of(context)
+                                                      .size
+                                                      .width -
+                                                  90.w, // Full width minus padding
                                             ),
-                                            SizedBox(height: 16.h),
-                                            Text(
-                                              'No order history found',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 18.sp,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white70,
+                                            child: DataTable(
+                                              dataRowColor:
+                                                  MaterialStateProperty
+                                                      .resolveWith<Color?>(
+                                                (Set<MaterialState> states) =>
+                                                    Colors.transparent,
                                               ),
-                                            ),
-                                            SizedBox(height: 8.h),
-                                            Text(
-                                              'There are no processed orders to display',
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 14.sp,
-                                                color: Colors.white38,
+                                              showCheckboxColumn: false,
+                                              headingRowColor:
+                                                  MaterialStateProperty.all<
+                                                          Color>(
+                                                      const Color.fromARGB(
+                                                          255, 36, 50, 69)),
+                                              border: TableBorder(
+                                                top: BorderSide(
+                                                    color: const Color.fromARGB(
+                                                        255, 34, 53, 62),
+                                                    width: 1),
+                                                bottom: BorderSide(
+                                                    color: const Color.fromARGB(
+                                                        255, 34, 53, 62),
+                                                    width: 1),
+                                                left: BorderSide(
+                                                    color: const Color.fromARGB(
+                                                        255, 34, 53, 62),
+                                                    width: 1),
+                                                right: BorderSide(
+                                                    color: const Color.fromARGB(
+                                                        255, 34, 53, 62),
+                                                    width: 1),
+                                                horizontalInside: BorderSide(
+                                                    color: const Color.fromARGB(
+                                                        255, 36, 50, 69),
+                                                    width: 2),
+                                                verticalInside: BorderSide(
+                                                    color: const Color.fromARGB(
+                                                        255, 36, 50, 69),
+                                                    width: 2),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    // Table with horizontal scrolling
-                                    Container(
-                                      width: double.infinity,
-                                      color:
-                                          const Color.fromARGB(255, 36, 50, 69),
-                                      child: SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minWidth: MediaQuery.of(context)
-                                                    .size
-                                                    .width -
-                                                90.w, // Full width minus padding
-                                          ),
-                                          child: DataTable(
-                                            dataRowColor: MaterialStateProperty
-                                                .resolveWith<Color?>(
-                                              (Set<MaterialState> states) =>
-                                                  Colors.transparent,
-                                            ),
-                                            showCheckboxColumn: false,
-                                            headingRowColor:
-                                                MaterialStateProperty.all<
-                                                        Color>(
-                                                    const Color.fromARGB(
-                                                        255, 36, 50, 69)),
-                                            border: TableBorder(
-                                              top: BorderSide(
-                                                  color: const Color.fromARGB(
-                                                      255, 34, 53, 62),
-                                                  width: 1),
-                                              bottom: BorderSide(
-                                                  color: const Color.fromARGB(
-                                                      255, 34, 53, 62),
-                                                  width: 1),
-                                              left: BorderSide(
-                                                  color: const Color.fromARGB(
-                                                      255, 34, 53, 62),
-                                                  width: 1),
-                                              right: BorderSide(
-                                                  color: const Color.fromARGB(
-                                                      255, 34, 53, 62),
-                                                  width: 1),
-                                              horizontalInside: BorderSide(
-                                                  color: const Color.fromARGB(
-                                                      255, 36, 50, 69),
-                                                  width: 2),
-                                              verticalInside: BorderSide(
-                                                  color: const Color.fromARGB(
-                                                      255, 36, 50, 69),
-                                                  width: 2),
-                                            ),
-                                            columnSpacing: 20.w,
-                                            dividerThickness: 0,
-                                            headingTextStyle:
-                                                GoogleFonts.spaceGrotesk(
-                                              color:
-                                                  Colors.white.withOpacity(0.9),
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            dataTextStyle:
-                                                GoogleFonts.spaceGrotesk(
-                                              color:
-                                                  Colors.white.withOpacity(0.8),
-                                              fontSize: 13.sp,
-                                            ),
-                                            columns: [
-                                              const DataColumn(
-                                                  label: Text("Time")),
-                                              const DataColumn(
-                                                  label: Text("Order ID")),
-                                              const DataColumn(
-                                                  label: Text("Type")),
-                                              const DataColumn(
-                                                  label: Text("Action")),
-                                              const DataColumn(
-                                                  label: Text("Before Status")),
-                                              const DataColumn(
-                                                  label: Text("After Status")),
-                                              const DataColumn(
-                                                  label: Text("Employee")),
-                                              const DataColumn(
-                                                  label: Text("Note")),
-                                            ],
-                                            rows: _filteredHistory.map((item) {
-                                              return DataRow(
-                                                cells: [
-                                                  DataCell(
-                                                      Text(item.createdAt)),
-                                                  DataCell(Text(
-                                                      item.orderId.toString())),
-                                                  DataCell(
-                                                    Container(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 10.w,
-                                                              vertical: 4.h),
-                                                      decoration: BoxDecoration(
-                                                        color: item.orderType ==
-                                                                "supplier"
-                                                            ? const Color
-                                                                    .fromARGB(
-                                                                    255,
-                                                                    255,
-                                                                    150,
-                                                                    30)
-                                                                .withOpacity(
-                                                                    0.15)
-                                                            : const Color
-                                                                    .fromARGB(
-                                                                    255,
-                                                                    130,
-                                                                    80,
-                                                                    223)
-                                                                .withOpacity(
-                                                                    0.15),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12.r),
-                                                      ),
-                                                      child: Text(
-                                                        item.orderType
-                                                            .capitalize(),
-                                                        style: GoogleFonts
-                                                            .spaceGrotesk(
-                                                          fontSize: 12.sp,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color:
-                                                              item.orderType ==
-                                                                      "supplier"
-                                                                  ? const Color
+                                              columnSpacing: 20.w,
+                                              dividerThickness: 0,
+                                              headingTextStyle: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white
+                                                          .withOpacity(0.9),
+                                                      fontSize: 14.sp,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white
+                                                          .withOpacity(0.9),
+                                                      fontSize: 14.sp,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                              dataTextStyle: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white
+                                                          .withOpacity(0.8),
+                                                      fontSize: 13.sp,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white
+                                                          .withOpacity(0.8),
+                                                      fontSize: 13.sp,
+                                                    ),
+                                              columns: [
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableTime)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableOrderId)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableType)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableAction)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableBeforeStatus)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableAfterStatus)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableEmployee)),
+                                                DataColumn(
+                                                    label: Text(l10n
+                                                        .orderHistoryTableNote)),
+                                              ],
+                                              rows:
+                                                  _filteredHistory.map((item) {
+                                                return DataRow(
+                                                  cells: [
+                                                    DataCell(
+                                                        Text(item.createdAt)),
+                                                    DataCell(Text(item.orderId
+                                                        .toString())),
+                                                    DataCell(
+                                                      Container(
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal:
+                                                                    10.w,
+                                                                vertical: 4.h),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: item.orderType ==
+                                                                  "supplier"
+                                                              ? const Color
                                                                       .fromARGB(
                                                                       255,
                                                                       255,
                                                                       150,
                                                                       30)
-                                                                  : const Color
+                                                                  .withOpacity(
+                                                                      0.15)
+                                                              : const Color
                                                                       .fromARGB(
                                                                       255,
                                                                       130,
                                                                       80,
-                                                                      223),
+                                                                      223)
+                                                                  .withOpacity(
+                                                                      0.15),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      12.r),
+                                                        ),
+                                                        child: Text(
+                                                          item.orderType ==
+                                                                  "supplier"
+                                                              ? l10n
+                                                                  .orderHistoryTypeSupplier
+                                                              : l10n
+                                                                  .orderHistoryTypeCustomer,
+                                                          style: isArabic
+                                                              ? GoogleFonts
+                                                                  .cairo(
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: item.orderType ==
+                                                                          "supplier"
+                                                                      ? const Color
+                                                                          .fromARGB(
+                                                                          255,
+                                                                          255,
+                                                                          150,
+                                                                          30)
+                                                                      : const Color
+                                                                          .fromARGB(
+                                                                          255,
+                                                                          130,
+                                                                          80,
+                                                                          223),
+                                                                )
+                                                              : GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                  fontSize:
+                                                                      12.sp,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: item.orderType ==
+                                                                          "supplier"
+                                                                      ? const Color
+                                                                          .fromARGB(
+                                                                          255,
+                                                                          255,
+                                                                          150,
+                                                                          30)
+                                                                      : const Color
+                                                                          .fromARGB(
+                                                                          255,
+                                                                          130,
+                                                                          80,
+                                                                          223),
+                                                                ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  DataCell(Text(item.action)),
-                                                  DataCell(_buildStatusPill(
-                                                      item.previousStatus)),
-                                                  DataCell(_buildStatusPill(
-                                                      item.newStatus)),
-                                                  DataCell(Text(item.name)),
-                                                  DataCell(
-                                                      Text(item.note ?? "-")),
-                                                ],
-                                              );
-                                            }).toList(),
+                                                    DataCell(Text(
+                                                        _getLocalizedAction(
+                                                            context,
+                                                            item.action))),
+                                                    DataCell(_buildStatusPill(
+                                                        item.previousStatus)),
+                                                    DataCell(_buildStatusPill(
+                                                        item.newStatus)),
+                                                    DataCell(Text(item.name)),
+                                                    DataCell(
+                                                        Text(item.note ?? "-")),
+                                                  ],
+                                                );
+                                              }).toList(),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                ],
-                              ),
-                            ),
-
-                            // Pagination Row
-                            if (_filteredHistory.isNotEmpty)
-                              Padding(
-                                padding: EdgeInsets.only(top: 16.h, right: 8.w),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      "Total $_totalItems Records",
-                                      style: GoogleFonts.spaceGrotesk(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10.w),
-                                    // Left arrow button
-                                    IconButton(
-                                      icon: Icon(Icons.arrow_back,
-                                          size: 20.sp, color: Colors.white70),
-                                      onPressed: _currentPage > 1
-                                          ? () => _changePage(_currentPage - 1)
-                                          : null,
-                                    ),
-                                    // Page buttons - limited to 5 pages max shown
-                                    Row(
-                                      children: _buildPageButtons(),
-                                    ),
-                                    // Right arrow button
-                                    IconButton(
-                                      icon: Icon(Icons.arrow_forward,
-                                          size: 20.sp, color: Colors.white70),
-                                      onPressed: _currentPage < _totalPages
-                                          ? () => _changePage(_currentPage + 1)
-                                          : null,
-                                    ),
                                   ],
                                 ),
                               ),
-                          ],
-                        ),
-                      ],
+
+                              // Pagination Row
+                              if (_filteredHistory.isNotEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    top: 16.h,
+                                    left: isRtl ? 8.w : 0,
+                                    right: isRtl ? 0 : 8.w,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: isRtl
+                                        ? MainAxisAlignment.start
+                                        : MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        l10n.orderHistoryTotalRecords(
+                                            _totalItems),
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                fontSize: 16.sp,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white70,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                fontSize: 16.sp,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white70,
+                                              ),
+                                      ),
+                                      SizedBox(width: 10.w),
+                                      // Left arrow button
+                                      IconButton(
+                                        icon: Icon(
+                                            isRtl
+                                                ? Icons.arrow_forward
+                                                : Icons.arrow_back,
+                                            size: 20.sp,
+                                            color: Colors.white70),
+                                        onPressed: _currentPage > 1
+                                            ? () =>
+                                                _changePage(_currentPage - 1)
+                                            : null,
+                                      ),
+                                      // Page buttons - limited to 5 pages max shown
+                                      Row(
+                                        children: _buildPageButtons(),
+                                      ),
+                                      // Right arrow button
+                                      IconButton(
+                                        icon: Icon(
+                                            isRtl
+                                                ? Icons.arrow_back
+                                                : Icons.arrow_forward,
+                                            size: 20.sp,
+                                            color: Colors.white70),
+                                        onPressed: _currentPage < _totalPages
+                                            ? () =>
+                                                _changePage(_currentPage + 1)
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+      ),
     );
   }
 
   // Build pagination buttons
   List<Widget> _buildPageButtons() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     // Limit the number of visible buttons to 5
     int startPage = 1;
     int endPage = _totalPages;
@@ -896,11 +1102,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             onPressed: () => _changePage(1),
             child: Text(
               "1...",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
           ),
         ),
@@ -930,11 +1142,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             onPressed: () => _changePage(i),
             child: Text(
               "$i",
-              style: GoogleFonts.spaceGrotesk(
-                color: isSelected ? Colors.white : Colors.white70,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
           ),
         ),
@@ -961,11 +1179,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             onPressed: () => _changePage(_totalPages),
             child: Text(
               "...$_totalPages",
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white70,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
           ),
         ),
@@ -982,6 +1206,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     required IconData iconData,
     required Color color,
   }) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 20.w),
       decoration: BoxDecoration(
@@ -1019,20 +1245,32 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white70,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                        ),
                 ),
                 SizedBox(height: 6.h),
                 Text(
                   count,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                 ),
               ],
             ),

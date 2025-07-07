@@ -1,4 +1,4 @@
-// lib/employee/screens/viewOrderScreenEmp.dart - Updated with enhanced start preparation handling
+// lib/employee/screens/viewOrderScreenEmp.dart - Updated with enhanced start preparation handling and localization
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:storify/employee/screens/orders_screen.dart';
 import 'package:storify/employee/widgets/orderServiceEmp.dart';
+import 'package:storify/l10n/generated/app_localizations.dart';
+import 'package:storify/providers/LocalizationHelper.dart';
 
 // Batch Selection model for UI (unchanged)
 class BatchSelection {
@@ -173,7 +175,34 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   void initState() {
     super.initState();
     _localOrder = widget.order;
-    _fetchOrderDetails();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchOrderDetails();
+    });
+  }
+
+  // Get localized status text
+  String _getLocalizedStatus(BuildContext context, String status) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    switch (status.toLowerCase()) {
+      case "accepted":
+        return l10n.viewOrderStatusAccepted;
+      case "pending":
+        return l10n.viewOrderStatusPending;
+      case "delivered":
+        return l10n.viewOrderStatusDelivered;
+      case "shipped":
+        return l10n.viewOrderStatusShipped;
+      case "prepared":
+        return l10n.viewOrderStatusPrepared;
+      case "rejected":
+        return l10n.viewOrderStatusRejected;
+      case "declined":
+        return l10n.viewOrderStatusDeclined;
+      case "preparing":
+        return l10n.viewOrderStatusPreparing;
+      default:
+        return status;
+    }
   }
 
   // Fetch order details from API
@@ -509,22 +538,27 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   Future<void> _refreshOrderData() async {
     await _fetchOrderDetails();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Order data refreshed'),
-        duration: const Duration(seconds: 1),
-        backgroundColor: const Color.fromARGB(255, 0, 196, 255),
-      ),
-    );
+    if (mounted) {
+      final l10n =
+          Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.viewOrderDataRefreshed),
+          duration: const Duration(seconds: 1),
+          backgroundColor: const Color.fromARGB(255, 0, 196, 255),
+        ),
+      );
+    }
   }
 
   // UPDATED: Start customer order preparation with enhanced response handling
   Future<void> _startCustomerOrderPreparation() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_localOrder.status != "Accepted") {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('Order must be in Accepted status to start preparation'),
+          content: Text(l10n.viewOrderMustBeAcceptedToStart),
           backgroundColor: Colors.orange,
         ),
       );
@@ -556,11 +590,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
               .any((alert) => alert.severity == 'critical') ??
           false;
 
-      String message = 'Order preparation started successfully';
+      String message = l10n.viewOrderPreparationStartedSuccess;
       if (hasCriticalAlerts) {
-        message += ' - Critical alerts detected!';
+        message = l10n.viewOrderPreparationStartedCritical;
       } else if (alertCount > 0) {
-        message += ' - $alertCount alerts to review';
+        message = l10n.viewOrderPreparationStartedAlerts(alertCount);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -584,10 +618,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   // Complete customer order preparation (unchanged logic, but enhanced with preparation info awareness)
   Future<void> _completeCustomerOrderPreparation() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_localOrder.status != "Preparing") {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order must be in Preparing status to complete'),
+          content: Text(l10n.viewOrderMustBePreparingToComplete),
           backgroundColor: Colors.orange,
         ),
       );
@@ -671,11 +707,13 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       );
 
       // Show success message with mode indication
-      final modeText =
-          hasManualChanges ? "with manual batch selection" : "using auto FIFO";
+      final modeText = hasManualChanges
+          ? l10n.viewOrderCompletedManualBatch
+          : l10n.viewOrderCompletedAutoFifo;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order completed successfully $modeText'),
+          content: Text(l10n.viewOrderCompletedSuccess(modeText)),
           backgroundColor: const Color.fromARGB(178, 0, 224, 116),
         ),
       );
@@ -696,10 +734,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   // Update supplier order status (unchanged)
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
     if (_localOrder.status == newStatus) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order is already in $newStatus status'),
+          content: Text(l10n.viewOrderAlreadyInStatus(newStatus)),
           backgroundColor: Colors.orange,
         ),
       );
@@ -740,7 +780,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order updated to $newStatus successfully'),
+          content: Text(l10n.viewOrderUpdatedToStatus(newStatus)),
           backgroundColor: const Color.fromARGB(178, 0, 224, 116),
         ),
       );
@@ -845,6 +885,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   // ENHANCED: Build batch management section with preparation info awareness
   Widget _buildBatchManagementSection() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     if (_localOrder.type != "Customer" ||
         _localOrder.status != "Preparing" ||
         (_batchInfoResponse == null && _preparationInfo == null)) {
@@ -895,12 +938,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
               ),
               SizedBox(width: 8.w),
               Text(
-                "Batch Management",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                l10n.viewOrderBatchManagement,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
               ),
               Spacer(),
               // Show preparation info summary
@@ -913,12 +962,19 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                     border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
                   child: Text(
-                    "${_preparationInfo!.totalItems} items, ${_preparationInfo!.batchAlerts.length} alerts",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 10.sp,
-                      color: Colors.blue,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    l10n.viewOrderBatchSummary(_preparationInfo!.totalItems,
+                        _preparationInfo!.batchAlerts.length),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 10.sp,
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 10.sp,
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                          ),
                   ),
                 ),
                 SizedBox(width: 8.w),
@@ -931,11 +987,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                   });
                 },
                 child: Text(
-                  _showBatchDetails ? "Hide Details" : "Show Details",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    color: const Color.fromARGB(255, 105, 65, 198),
-                  ),
+                  _showBatchDetails
+                      ? l10n.viewOrderHideDetails
+                      : l10n.viewOrderShowDetails,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        ),
                 ),
               ),
             ],
@@ -956,23 +1019,36 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                 ),
                 child: Text(
                   alert.message,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: alert.severity == 'critical'
-                        ? Colors.red
-                        : Colors.amber,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 12.sp,
+                          color: alert.severity == 'critical'
+                              ? Colors.red
+                              : Colors.amber,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 12.sp,
+                          color: alert.severity == 'critical'
+                              ? Colors.red
+                              : Colors.amber,
+                        ),
                 ),
               ),
             ],
             if (_alertsToShow.length > 3) ...[
               Text(
-                "... and ${_alertsToShow.length - 3} more alerts",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 11.sp,
-                  color: Colors.white60,
-                  fontStyle: FontStyle.italic,
-                ),
+                l10n.viewOrderMoreAlerts(_alertsToShow.length - 3),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 11.sp,
+                        color: Colors.white60,
+                        fontStyle: FontStyle.italic,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 11.sp,
+                        color: Colors.white60,
+                        fontStyle: FontStyle.italic,
+                      ),
               ),
             ],
           ],
@@ -1008,15 +1084,23 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                   SizedBox(width: 8.w),
                   Text(
                     _hasManualBatchChanges
-                        ? "Manual batch selection mode"
-                        : "Auto FIFO mode (recommended)",
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: _hasManualBatchChanges
-                          ? const Color.fromARGB(255, 105, 65, 198)
-                          : Colors.green,
-                    ),
+                        ? l10n.viewOrderManualBatchMode
+                        : l10n.viewOrderAutoFifoMode,
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: _hasManualBatchChanges
+                                ? const Color.fromARGB(255, 105, 65, 198)
+                                : Colors.green,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: _hasManualBatchChanges
+                                ? const Color.fromARGB(255, 105, 65, 198)
+                                : Colors.green,
+                          ),
                   ),
                 ],
               ),
@@ -1024,12 +1108,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             SizedBox(height: 12.h),
 
             Text(
-              "Batch Selection:",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white70,
-              ),
+              l10n.viewOrderBatchSelection,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
             ),
             SizedBox(height: 8.h),
 
@@ -1044,6 +1134,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   Widget _buildProductBatchSelection(BatchInfo batchInfo) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
     final selections = _batchSelections[batchInfo.productId] ?? [];
 
     return Container(
@@ -1060,19 +1152,31 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         children: [
           Text(
             batchInfo.productName,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
           ),
           SizedBox(height: 4.h),
           Text(
-            "Required: ${batchInfo.requiredQuantity} | Available: ${batchInfo.availableQuantity}",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 12.sp,
-              color: Colors.white70,
-            ),
+            l10n.viewOrderBatchRequiredAvailable(
+                batchInfo.requiredQuantity, batchInfo.availableQuantity),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 12.sp,
+                    color: Colors.white70,
+                  ),
           ),
           SizedBox(height: 8.h),
 
@@ -1103,13 +1207,21 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                             Text(
                               selection.batchNumber ??
                                   'Batch #${selection.batchId}',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w600,
-                                color: selection.isRecommended
-                                    ? Colors.green
-                                    : Colors.white,
-                              ),
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: selection.isRecommended
+                                          ? Colors.green
+                                          : Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: selection.isRecommended
+                                          ? Colors.green
+                                          : Colors.white,
+                                    ),
                             ),
                             if (selection.isRecommended) ...[
                               SizedBox(width: 8.w),
@@ -1121,12 +1233,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                   borderRadius: BorderRadius.circular(4.r),
                                 ),
                                 child: Text(
-                                  "FIFO",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 10.sp,
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  l10n.viewOrderFifoLabel,
+                                  style: isArabic
+                                      ? GoogleFonts.cairo(
+                                          fontSize: 10.sp,
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : GoogleFonts.spaceGrotesk(
+                                          fontSize: 10.sp,
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                 ),
                               ),
                             ],
@@ -1134,11 +1252,19 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          "Prod: ${selection.prodDate ?? 'N/A'} | Exp: ${selection.expDate ?? 'N/A'} | Available: ${selection.availableQuantity}",
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 10.sp,
-                            color: Colors.white60,
-                          ),
+                          l10n.viewOrderBatchDates(
+                              selection.prodDate ?? 'N/A',
+                              selection.expDate ?? 'N/A',
+                              selection.availableQuantity),
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 10.sp,
+                                  color: Colors.white60,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 10.sp,
+                                  color: Colors.white60,
+                                ),
                         ),
                       ],
                     ),
@@ -1167,11 +1293,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                           child: Text(
                             "${selection.selectedQuantity}",
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 12.sp,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize: 12.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize: 12.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                           ),
                         ),
                         IconButton(
@@ -1201,8 +1333,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
-  // Build empty state (keeping existing implementation)
+  // Build empty state
   Widget _buildEmptyState() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       height: 200.h,
       width: double.infinity,
@@ -1225,20 +1360,31 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             ),
             SizedBox(height: 12.h),
             Text(
-              "No items found",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white70,
-              ),
+              l10n.viewOrderNoItemsFound,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
             ),
             SizedBox(height: 6.h),
             Text(
-              "This order doesn't contain any items",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                color: Colors.white38,
-              ),
+              l10n.viewOrderNoItemsDescription,
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 14.sp,
+                      color: Colors.white38,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      color: Colors.white38,
+                    ),
             ),
           ],
         ),
@@ -1246,8 +1392,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
-  // Build modern item card (keeping existing implementation)
+  // Build modern item card
   Widget _buildModernItemCard(OrderLineItem item, int index) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),
@@ -1303,11 +1453,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
               children: [
                 Text(
                   item.name,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1315,13 +1471,13 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                 Row(
                   children: [
                     _buildInfoChip(
-                      "Unit Price",
+                      l10n.viewOrderUnitPriceLabel,
                       "\$${item.unitPrice.toStringAsFixed(2)}",
                       const Color.fromARGB(255, 0, 196, 255),
                     ),
                     SizedBox(width: 8.w),
                     _buildInfoChip(
-                      "Qty",
+                      l10n.viewOrderQuantityLabel,
                       item.quantity.toString(),
                       const Color.fromARGB(255, 255, 150, 30),
                     ),
@@ -1355,11 +1511,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                   SizedBox(width: 12.w),
                   Text(
                     item.quantity.toString(),
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                   ),
                   SizedBox(width: 12.w),
                   _buildQuantityButton(
@@ -1388,11 +1550,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             ),
             child: Text(
               "\$${item.total.toStringAsFixed(2)}",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w700,
-                color: const Color.fromARGB(178, 0, 224, 116),
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color.fromARGB(178, 0, 224, 116),
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color.fromARGB(178, 0, 224, 116),
+                    ),
             ),
           ),
         ],
@@ -1401,6 +1569,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   Widget _buildInfoChip(String label, String value, Color color) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
@@ -1413,19 +1583,31 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           children: [
             TextSpan(
               text: "$label: ",
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 11.sp,
-                color: color.withOpacity(0.8),
-                fontWeight: FontWeight.w500,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 11.sp,
+                      color: color.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 11.sp,
+                      color: color.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
             ),
             TextSpan(
               text: value,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 11.sp,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 11.sp,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 11.sp,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
             ),
           ],
         ),
@@ -1458,6 +1640,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   Widget _buildPaginationControls() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
     final totalPages = (_lineItems.length / _lineItemsPerPage).ceil();
 
     return Container(
@@ -1489,12 +1673,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           ),
           SizedBox(width: 12.w),
           Text(
-            "Page $_lineItemsCurrentPage of $totalPages",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+            l10n.viewOrderPageInfo(_lineItemsCurrentPage, totalPages),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
           ),
           SizedBox(width: 12.w),
           IconButton(
@@ -1519,6 +1709,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   Widget _buildTotalSection() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16.w),
@@ -1536,18 +1729,28 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Subtotal:",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  color: Colors.white70,
-                ),
+                l10n.viewOrderSubtotal,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      ),
               ),
               Text(
                 "\$${_calculatedTotal.toStringAsFixed(2)}",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14.sp,
-                  color: Colors.white70,
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                      ),
               ),
             ],
           ),
@@ -1558,20 +1761,32 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Grand Total:",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+                l10n.viewOrderGrandTotal,
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
               ),
               Text(
                 "\$${_calculatedTotal.toStringAsFixed(2)}",
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color.fromARGB(255, 105, 65, 198),
-                ),
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                      ),
               ),
             ],
           ),
@@ -1581,6 +1796,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   }
 
   Widget _buildChangesWarning() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(12.w),
@@ -1602,20 +1820,31 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Quantity Changes Detected",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.amber,
-                  ),
+                  l10n.viewOrderQuantityChangesDetected,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.amber,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.amber,
+                        ),
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  "Your changes will be applied when updating the order status.",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 11.sp,
-                    color: Colors.amber.withOpacity(0.9),
-                  ),
+                  l10n.viewOrderChangesWillBeApplied,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 11.sp,
+                          color: Colors.amber.withOpacity(0.9),
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 11.sp,
+                          color: Colors.amber.withOpacity(0.9),
+                        ),
                 ),
               ],
             ),
@@ -1627,601 +1856,780 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+    final isRtl = LocalizationHelper.isRTL(context);
+
     try {
-      return Scaffold(
-        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-        body: SafeArea(
-          child: _isLoading
-              ? Center(
-                  child: CircularProgressIndicator(
-                    color: const Color.fromARGB(255, 105, 65, 198),
-                  ),
-                )
-              : _errorMessage != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Colors.redAccent,
-                            size: 48.sp,
-                          ),
-                          SizedBox(height: 16.h),
-                          Text(
-                            _errorMessage!,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 16.sp,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 16.h),
-                          ElevatedButton(
-                            onPressed: _refreshOrderData,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color.fromARGB(255, 105, 65, 198),
-                            ),
-                            child: Text(
-                              'Retry',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 16.h),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey,
-                            ),
-                            child: Text(
-                              'Go Back',
-                              style: GoogleFonts.spaceGrotesk(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      child: Padding(
-                        padding:
-                            EdgeInsets.only(left: 45.w, top: 20.h, right: 45.w),
+      return Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: Scaffold(
+          backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+          body: SafeArea(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: const Color.fromARGB(255, 105, 65, 198),
+                    ),
+                  )
+                : _errorMessage != null
+                    ? Center(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Top row: "Back" button and "Order Details" with buttons
-                            Row(
-                              children: [
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromARGB(255, 29, 41, 57),
-                                    shape: RoundedRectangleBorder(
-                                      side: const BorderSide(
-                                        width: 1.5,
-                                        color: Color.fromARGB(255, 47, 71, 82),
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    fixedSize: Size(120.w, 50.h),
-                                    elevation: 1,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.pop(context, _localOrder);
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.arrow_back,
-                                        color: const Color.fromARGB(
-                                            255, 105, 123, 123),
-                                        size: 18.sp,
-                                      ),
-                                      SizedBox(width: 12.w),
-                                      Text(
-                                        'Back',
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 17.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color.fromARGB(
-                                              255, 105, 123, 123),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: 20.w),
-                                Text(
-                                  "Order Details",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 28.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color.fromARGB(
-                                        255, 246, 246, 246),
-                                  ),
-                                ),
-                                const Spacer(),
-                                // Print Invoice button
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromARGB(255, 36, 50, 69),
-                                    shape: RoundedRectangleBorder(
-                                      side: const BorderSide(
-                                        width: 1.5,
-                                        color: Color.fromARGB(255, 47, 71, 82),
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    fixedSize: Size(220.w, 50.h),
-                                    elevation: 1,
-                                  ),
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Printing invoice...'),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    'Print Invoice',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 17.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color.fromARGB(
-                                          255, 105, 123, 123),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.redAccent,
+                              size: 48.sp,
                             ),
-                            SizedBox(height: 30.h),
-
-                            // Batch Management Section (enhanced with preparation info)
-                            _buildBatchManagementSection(),
-
-                            // Modern Full-width Items Section
-                            Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.all(20.w),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 36, 50, 69),
-                                borderRadius: BorderRadius.circular(20.r),
-                                border: Border.all(
-                                  color: const Color.fromARGB(255, 47, 71, 82),
-                                  width: 1,
-                                ),
+                            SizedBox(height: 16.h),
+                            Text(
+                              _errorMessage!,
+                              style: isArabic
+                                  ? GoogleFonts.cairo(
+                                      fontSize: 16.sp,
+                                      color: Colors.white,
+                                    )
+                                  : GoogleFonts.spaceGrotesk(
+                                      fontSize: 16.sp,
+                                      color: Colors.white,
+                                    ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 16.h),
+                            ElevatedButton(
+                              onPressed: _refreshOrderData,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromARGB(255, 105, 65, 198),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Header with title and item count
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        "Order Items",
-                                        style: GoogleFonts.spaceGrotesk(
-                                          fontSize: 22.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
+                              child: Text(
+                                l10n.viewOrderRetryButton,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
                                       ),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 12.w, vertical: 6.h),
-                                        decoration: BoxDecoration(
-                                          color: const Color.fromARGB(
-                                                  255, 105, 65, 198)
-                                              .withOpacity(0.15),
-                                          borderRadius:
-                                              BorderRadius.circular(20.r),
-                                          border: Border.all(
-                                            color: const Color.fromARGB(
-                                                255, 105, 65, 198),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          "${_lineItems.length} items",
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color.fromARGB(
-                                                255, 105, 65, 198),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 20.h),
-
-                                  // Items list
-                                  _lineItems.isEmpty
-                                      ? _buildEmptyState()
-                                      : Column(
-                                          children: [
-                                            // Items cards
-                                            ...(_visibleLineItems
-                                                .asMap()
-                                                .entries
-                                                .map((entry) {
-                                              final index = entry.key;
-                                              final item = entry.value;
-                                              return _buildModernItemCard(
-                                                  item, index);
-                                            }).toList()),
-
-                                            // Pagination if needed
-                                            if (_lineItems.length >
-                                                _lineItemsPerPage) ...[
-                                              SizedBox(height: 20.h),
-                                              _buildPaginationControls(),
-                                            ],
-
-                                            SizedBox(height: 24.h),
-
-                                            // Total section
-                                            _buildTotalSection(),
-
-                                            // Changes warning if quantities were edited
-                                            if (_hasQuantityChanges) ...[
-                                              SizedBox(height: 16.h),
-                                              _buildChangesWarning(),
-                                            ],
-                                          ],
-                                        ),
-                                ],
                               ),
                             ),
-
-                            SizedBox(height: 24.h),
-
-                            // Order Info Section
-                            Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.all(20.w),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 36, 50, 69),
-                                borderRadius: BorderRadius.circular(16.r),
-                                border: Border.all(
-                                  color: const Color.fromARGB(255, 47, 71, 82),
-                                  width: 1,
-                                ),
+                            SizedBox(height: 16.h),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey,
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Order Info (Left)
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Order Information",
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 18.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        SizedBox(height: 10.h),
-                                        _buildInfoRow("Order ID",
-                                            _localOrder.orderId.toString()),
-                                        _buildInfoRow("Order Date",
-                                            _localOrder.orderDate),
-                                        _buildInfoRow(
-                                            "Order Type", _localOrder.type),
-                                        SizedBox(height: 6.h),
-                                        if (_localOrder.type == "Customer" &&
-                                            _orderDetails != null)
-                                          _buildInfoRow(
-                                              "Payment Status",
-                                              (_orderDetails!['amountPaid'] !=
-                                                          null &&
-                                                      (_orderDetails![
-                                                                  'amountPaid']
-                                                              as num) >
-                                                          0)
-                                                  ? "Paid"
-                                                  : "Pending"),
-
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "Status:",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 15.sp,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white54,
-                                              ),
-                                            ),
-                                            SizedBox(width: 10.w),
-                                            _buildStatusPill(
-                                                _localOrder.status),
-                                          ],
-                                        ),
-
-                                        // Show order action buttons based on type and status
-                                        if (_localOrder.type == "Customer" &&
-                                            _localOrder.status ==
-                                                "Accepted") ...[
-                                          SizedBox(height: 20.h),
-                                          Text(
-                                            "Order Actions:",
-                                            style: GoogleFonts.spaceGrotesk(
-                                              fontSize: 15.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                          SizedBox(height: 10.h),
-                                          // Add note field for actions
-                                          TextField(
-                                            controller: _noteController,
-                                            maxLines: 3,
-                                            style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white),
-                                            decoration: InputDecoration(
-                                              hintText:
-                                                  'Add a note about this action (optional)...',
-                                              hintStyle:
-                                                  GoogleFonts.spaceGrotesk(
-                                                      color: Colors.white38),
-                                              filled: true,
-                                              fillColor: Colors.white
-                                                  .withOpacity(0.05),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8.r),
-                                                borderSide: BorderSide.none,
-                                              ),
-                                              contentPadding:
-                                                  EdgeInsets.all(12.w),
-                                            ),
-                                          ),
-                                          SizedBox(height: 16.h),
-                                          // Start Preparing button
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  const Color.fromARGB(
-                                                      255, 255, 150, 30),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12.r),
-                                              ),
-                                              padding: EdgeInsets.symmetric(
-                                                  vertical: 12.h),
-                                              minimumSize:
-                                                  Size(double.infinity, 45.h),
-                                            ),
-                                            onPressed:
-                                                _startCustomerOrderPreparation,
-                                            child: Text(
-                                              "Start Preparing",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-
-                                        // For Customer Preparing status, show completion buttons
-                                        if (_localOrder.type == "Customer" &&
-                                            _localOrder.status ==
-                                                "Preparing") ...[
-                                          SizedBox(height: 20.h),
-                                          Text(
-                                            "Order Actions:",
-                                            style: GoogleFonts.spaceGrotesk(
-                                              fontSize: 15.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                          SizedBox(height: 10.h),
-                                          // Add note field for actions
-                                          TextField(
-                                            controller: _noteController,
-                                            maxLines: 3,
-                                            style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white),
-                                            decoration: InputDecoration(
-                                              hintText:
-                                                  'Add a note about this action (optional)...',
-                                              hintStyle:
-                                                  GoogleFonts.spaceGrotesk(
-                                                      color: Colors.white38),
-                                              filled: true,
-                                              fillColor: Colors.white
-                                                  .withOpacity(0.05),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8.r),
-                                                borderSide: BorderSide.none,
-                                              ),
-                                              contentPadding:
-                                                  EdgeInsets.all(12.w),
-                                            ),
-                                          ),
-                                          SizedBox(height: 16.h),
-
-                                          // Complete preparation button
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  const Color.fromARGB(
-                                                      178, 0, 224, 116),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12.r),
-                                              ),
-                                              padding: EdgeInsets.symmetric(
-                                                  vertical: 12.h),
-                                              minimumSize:
-                                                  Size(double.infinity, 45.h),
-                                            ),
-                                            onPressed:
-                                                _completeCustomerOrderPreparation,
-                                            child: Text(
-                                              "Complete Preparation",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-
-                                        // For Supplier Accepted status, show Mark as Delivered button
-                                        if (_localOrder.type == "Supplier" &&
-                                            _localOrder.status ==
-                                                "Accepted") ...[
-                                          SizedBox(height: 20.h),
-                                          Text(
-                                            "Order Actions:",
-                                            style: GoogleFonts.spaceGrotesk(
-                                              fontSize: 15.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                          SizedBox(height: 10.h),
-                                          // Add note field for actions
-                                          TextField(
-                                            controller: _noteController,
-                                            maxLines: 3,
-                                            style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white),
-                                            decoration: InputDecoration(
-                                              hintText:
-                                                  'Add a note about this action (optional)...',
-                                              hintStyle:
-                                                  GoogleFonts.spaceGrotesk(
-                                                      color: Colors.white38),
-                                              filled: true,
-                                              fillColor: Colors.white
-                                                  .withOpacity(0.05),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8.r),
-                                                borderSide: BorderSide.none,
-                                              ),
-                                              contentPadding:
-                                                  EdgeInsets.all(12.w),
-                                            ),
-                                          ),
-                                          SizedBox(height: 16.h),
-                                          // Mark as Delivered button
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  const Color.fromARGB(
-                                                      178, 0, 224, 116),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12.r),
-                                              ),
-                                              padding: EdgeInsets.symmetric(
-                                                  vertical: 12.h),
-                                              minimumSize:
-                                                  Size(double.infinity, 45.h),
-                                            ),
-                                            onPressed: () =>
-                                                _updateSupplierOrderStatus(
-                                                    "Delivered"),
-                                            child: Text(
-                                              "Mark as Delivered",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(width: 32.w),
-
-                                  // Customer/Supplier Info (Right)
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _localOrder.type == "Supplier"
-                                              ? "Supplier Info"
-                                              : "Customer Info",
-                                          style: GoogleFonts.spaceGrotesk(
-                                            fontSize: 18.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        SizedBox(height: 10.h),
-                                        _buildInfoRow("Name", _localOrder.name),
-                                        _buildInfoRow(
-                                            "Phone", _localOrder.phoneNo),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                l10n.viewOrderGoBackButton,
+                                style: isArabic
+                                    ? GoogleFonts.cairo(
+                                        color: Colors.white,
+                                      )
+                                    : GoogleFonts.spaceGrotesk(
+                                        color: Colors.white,
+                                      ),
                               ),
                             ),
-                            SizedBox(height: 40.h),
                           ],
                         ),
+                      )
+                    : SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: isRtl ? 45.w : 45.w,
+                            top: 20.h,
+                            right: isRtl ? 45.w : 45.w,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Top row: "Back" button and "Order Details" with buttons
+                              Row(
+                                children: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          const Color.fromARGB(255, 29, 41, 57),
+                                      shape: RoundedRectangleBorder(
+                                        side: const BorderSide(
+                                          width: 1.5,
+                                          color:
+                                              Color.fromARGB(255, 47, 71, 82),
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      fixedSize: Size(120.w, 50.h),
+                                      elevation: 1,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context, _localOrder);
+                                    },
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isRtl
+                                              ? Icons.arrow_forward
+                                              : Icons.arrow_back,
+                                          color: const Color.fromARGB(
+                                              255, 105, 123, 123),
+                                          size: 18.sp,
+                                        ),
+                                        SizedBox(width: 12.w),
+                                        Text(
+                                          l10n.viewOrderBackButton,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  fontSize: 17.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color.fromARGB(
+                                                      255, 105, 123, 123),
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  fontSize: 17.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color.fromARGB(
+                                                      255, 105, 123, 123),
+                                                ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 20.w),
+                                  Text(
+                                    l10n.viewOrderTitle,
+                                    style: isArabic
+                                        ? GoogleFonts.cairo(
+                                            fontSize: 28.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color.fromARGB(
+                                                255, 246, 246, 246),
+                                          )
+                                        : GoogleFonts.spaceGrotesk(
+                                            fontSize: 28.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color.fromARGB(
+                                                255, 246, 246, 246),
+                                          ),
+                                  ),
+                                  const Spacer(),
+                                  // Print Invoice button
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          const Color.fromARGB(255, 36, 50, 69),
+                                      shape: RoundedRectangleBorder(
+                                        side: const BorderSide(
+                                          width: 1.5,
+                                          color:
+                                              Color.fromARGB(255, 47, 71, 82),
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      fixedSize: Size(220.w, 50.h),
+                                      elevation: 1,
+                                    ),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              l10n.viewOrderPrintingInvoice),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      l10n.viewOrderPrintInvoice,
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              fontSize: 17.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color.fromARGB(
+                                                  255, 105, 123, 123),
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              fontSize: 17.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color.fromARGB(
+                                                  255, 105, 123, 123),
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 30.h),
+
+                              // Batch Management Section (enhanced with preparation info)
+                              _buildBatchManagementSection(),
+
+                              // Modern Full-width Items Section
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(20.w),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 36, 50, 69),
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  border: Border.all(
+                                    color:
+                                        const Color.fromARGB(255, 47, 71, 82),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Header with title and item count
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          l10n.viewOrderItemsTitle,
+                                          style: isArabic
+                                              ? GoogleFonts.cairo(
+                                                  fontSize: 22.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                )
+                                              : GoogleFonts.spaceGrotesk(
+                                                  fontSize: 22.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                ),
+                                        ),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 12.w, vertical: 6.h),
+                                          decoration: BoxDecoration(
+                                            color: const Color.fromARGB(
+                                                    255, 105, 65, 198)
+                                                .withOpacity(0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(20.r),
+                                            border: Border.all(
+                                              color: const Color.fromARGB(
+                                                  255, 105, 65, 198),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            l10n.viewOrderItemsCount(
+                                                _lineItems.length),
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    fontSize: 12.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: const Color.fromARGB(
+                                                        255, 105, 65, 198),
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    fontSize: 12.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: const Color.fromARGB(
+                                                        255, 105, 65, 198),
+                                                  ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 20.h),
+
+                                    // Items list
+                                    _lineItems.isEmpty
+                                        ? _buildEmptyState()
+                                        : Column(
+                                            children: [
+                                              // Items cards
+                                              ...(_visibleLineItems
+                                                  .asMap()
+                                                  .entries
+                                                  .map((entry) {
+                                                final index = entry.key;
+                                                final item = entry.value;
+                                                return _buildModernItemCard(
+                                                    item, index);
+                                              }).toList()),
+
+                                              // Pagination if needed
+                                              if (_lineItems.length >
+                                                  _lineItemsPerPage) ...[
+                                                SizedBox(height: 20.h),
+                                                _buildPaginationControls(),
+                                              ],
+
+                                              SizedBox(height: 24.h),
+
+                                              // Total section
+                                              _buildTotalSection(),
+
+                                              // Changes warning if quantities were edited
+                                              if (_hasQuantityChanges) ...[
+                                                SizedBox(height: 16.h),
+                                                _buildChangesWarning(),
+                                              ],
+                                            ],
+                                          ),
+                                  ],
+                                ),
+                              ),
+
+                              SizedBox(height: 24.h),
+
+                              // Order Info Section
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(20.w),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 36, 50, 69),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  border: Border.all(
+                                    color:
+                                        const Color.fromARGB(255, 47, 71, 82),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Order Info (Left)
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.viewOrderInformationTitle,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
+                                                  ),
+                                          ),
+                                          SizedBox(height: 10.h),
+                                          _buildInfoRow(l10n.viewOrderIdLabel,
+                                              _localOrder.orderId.toString()),
+                                          _buildInfoRow(l10n.viewOrderDateLabel,
+                                              _localOrder.orderDate),
+                                          _buildInfoRow(l10n.viewOrderTypeLabel,
+                                              _localOrder.type),
+                                          SizedBox(height: 6.h),
+                                          if (_localOrder.type == "Customer" &&
+                                              _orderDetails != null)
+                                            _buildInfoRow(
+                                                l10n
+                                                    .viewOrderPaymentStatusLabel,
+                                                (_orderDetails!['amountPaid'] !=
+                                                            null &&
+                                                        (_orderDetails![
+                                                                    'amountPaid']
+                                                                as num) >
+                                                            0)
+                                                    ? l10n.viewOrderPaymentPaid
+                                                    : l10n
+                                                        .viewOrderPaymentPending),
+
+                                          Row(
+                                            children: [
+                                              Text(
+                                                l10n.viewOrderStatusLabel,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        fontSize: 15.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white54,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        fontSize: 15.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white54,
+                                                      ),
+                                              ),
+                                              SizedBox(width: 10.w),
+                                              _buildStatusPill(
+                                                  _localOrder.status),
+                                            ],
+                                          ),
+
+                                          // Show order action buttons based on type and status
+                                          if (_localOrder.type == "Customer" &&
+                                              _localOrder.status ==
+                                                  "Accepted") ...[
+                                            SizedBox(height: 20.h),
+                                            Text(
+                                              l10n.viewOrderActionsTitle,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white54,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white54,
+                                                    ),
+                                            ),
+                                            SizedBox(height: 10.h),
+                                            // Add note field for actions
+                                            TextField(
+                                              controller: _noteController,
+                                              maxLines: 3,
+                                              textDirection: isRtl
+                                                  ? TextDirection.rtl
+                                                  : TextDirection.ltr,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white)
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white),
+                                              decoration: InputDecoration(
+                                                hintText: l10n
+                                                    .viewOrderNotePlaceholder,
+                                                hintStyle: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        color: Colors.white38)
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        color: Colors.white38),
+                                                filled: true,
+                                                fillColor: Colors.white
+                                                    .withOpacity(0.05),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8.r),
+                                                  borderSide: BorderSide.none,
+                                                ),
+                                                contentPadding:
+                                                    EdgeInsets.all(12.w),
+                                              ),
+                                            ),
+                                            SizedBox(height: 16.h),
+                                            // Start Preparing button
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                        255, 255, 150, 30),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                ),
+                                                padding: EdgeInsets.symmetric(
+                                                    vertical: 12.h),
+                                                minimumSize:
+                                                    Size(double.infinity, 45.h),
+                                              ),
+                                              onPressed:
+                                                  _startCustomerOrderPreparation,
+                                              child: Text(
+                                                l10n.viewOrderStartPreparingButton,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                              ),
+                                            ),
+                                          ],
+
+                                          // For Customer Preparing status, show completion buttons
+                                          if (_localOrder.type == "Customer" &&
+                                              _localOrder.status ==
+                                                  "Preparing") ...[
+                                            SizedBox(height: 20.h),
+                                            Text(
+                                              l10n.viewOrderActionsTitle,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white54,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white54,
+                                                    ),
+                                            ),
+                                            SizedBox(height: 10.h),
+                                            // Add note field for actions
+                                            TextField(
+                                              controller: _noteController,
+                                              maxLines: 3,
+                                              textDirection: isRtl
+                                                  ? TextDirection.rtl
+                                                  : TextDirection.ltr,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white)
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white),
+                                              decoration: InputDecoration(
+                                                hintText: l10n
+                                                    .viewOrderNotePlaceholder,
+                                                hintStyle: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        color: Colors.white38)
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        color: Colors.white38),
+                                                filled: true,
+                                                fillColor: Colors.white
+                                                    .withOpacity(0.05),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8.r),
+                                                  borderSide: BorderSide.none,
+                                                ),
+                                                contentPadding:
+                                                    EdgeInsets.all(12.w),
+                                              ),
+                                            ),
+                                            SizedBox(height: 16.h),
+
+                                            // Complete preparation button
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                        178, 0, 224, 116),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                ),
+                                                padding: EdgeInsets.symmetric(
+                                                    vertical: 12.h),
+                                                minimumSize:
+                                                    Size(double.infinity, 45.h),
+                                              ),
+                                              onPressed:
+                                                  _completeCustomerOrderPreparation,
+                                              child: Text(
+                                                l10n.viewOrderCompletePreparationButton,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                              ),
+                                            ),
+                                          ],
+
+                                          // For Supplier Accepted status, show Mark as Delivered button
+                                          if (_localOrder.type == "Supplier" &&
+                                              _localOrder.status ==
+                                                  "Accepted") ...[
+                                            SizedBox(height: 20.h),
+                                            Text(
+                                              l10n.viewOrderActionsTitle,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white54,
+                                                    )
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white54,
+                                                    ),
+                                            ),
+                                            SizedBox(height: 10.h),
+                                            // Add note field for actions
+                                            TextField(
+                                              controller: _noteController,
+                                              maxLines: 3,
+                                              textDirection: isRtl
+                                                  ? TextDirection.rtl
+                                                  : TextDirection.ltr,
+                                              style: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white)
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white),
+                                              decoration: InputDecoration(
+                                                hintText: l10n
+                                                    .viewOrderNotePlaceholder,
+                                                hintStyle: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        color: Colors.white38)
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        color: Colors.white38),
+                                                filled: true,
+                                                fillColor: Colors.white
+                                                    .withOpacity(0.05),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8.r),
+                                                  borderSide: BorderSide.none,
+                                                ),
+                                                contentPadding:
+                                                    EdgeInsets.all(12.w),
+                                              ),
+                                            ),
+                                            SizedBox(height: 16.h),
+                                            // Mark as Delivered button
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                        178, 0, 224, 116),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                ),
+                                                padding: EdgeInsets.symmetric(
+                                                    vertical: 12.h),
+                                                minimumSize:
+                                                    Size(double.infinity, 45.h),
+                                              ),
+                                              onPressed: () =>
+                                                  _updateSupplierOrderStatus(
+                                                      "Delivered"),
+                                              child: Text(
+                                                l10n.viewOrderMarkAsDeliveredButton,
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      )
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: 32.w),
+
+                                    // Customer/Supplier Info (Right)
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _localOrder.type == "Supplier"
+                                                ? l10n
+                                                    .viewOrderSupplierInfoTitle
+                                                : l10n
+                                                    .viewOrderCustomerInfoTitle,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
+                                                  ),
+                                          ),
+                                          SizedBox(height: 10.h),
+                                          _buildInfoRow(l10n.viewOrderNameLabel,
+                                              _localOrder.name),
+                                          _buildInfoRow(
+                                              l10n.viewOrderPhoneLabel,
+                                              _localOrder.phoneNo),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 40.h),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+          ),
         ),
       );
     } catch (e) {
       debugPrint('Error in view order screen build: $e');
-      return Scaffold(
-        backgroundColor: const Color.fromARGB(255, 29, 41, 57),
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.redAccent,
-                  size: 48,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Error displaying order details: $e',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 16,
-                    color: Colors.white,
+      return Directionality(
+        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: Scaffold(
+          backgroundColor: const Color.fromARGB(255, 29, 41, 57),
+          body: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.redAccent,
+                    size: 48.sp,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
+                  SizedBox(height: 16.h),
+                  Text(
+                    l10n.viewOrderErrorDisplaying(e.toString()),
+                    style: isArabic
+                        ? GoogleFonts.cairo(
+                            fontSize: 16.sp,
+                            color: Colors.white,
+                          )
+                        : GoogleFonts.spaceGrotesk(
+                            fontSize: 16.sp,
+                            color: Colors.white,
+                          ),
+                    textAlign: TextAlign.center,
                   ),
-                  child: Text(
-                    'Go Back',
-                    style: GoogleFonts.spaceGrotesk(
-                      color: Colors.white,
+                  SizedBox(height: 16.h),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
+                    child: Text(
+                      l10n.viewOrderGoBackButton,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              color: Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              color: Colors.white,
+                            ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -2231,26 +2639,40 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   // Helper method to build info rows
   Widget _buildInfoRow(String label, String value) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     return Padding(
       padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         children: [
           Text(
             "$label: ",
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w600,
-              color: Colors.white54,
-            ),
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white54,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white54,
+                  ),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w500,
-                color: Colors.white70,
-              ),
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                    ),
             ),
           ),
         ],
@@ -2260,6 +2682,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 
   // Helper method to build status pills
   Widget _buildStatusPill(String status) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
     Color textColor;
     Color borderColor;
 
@@ -2304,12 +2728,18 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         border: Border.all(color: borderColor),
       ),
       child: Text(
-        status,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
+        _getLocalizedStatus(context, status),
+        style: isArabic
+            ? GoogleFonts.cairo(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              )
+            : GoogleFonts.spaceGrotesk(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
       ),
     );
   }
