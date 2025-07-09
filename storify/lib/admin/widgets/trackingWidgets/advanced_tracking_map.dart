@@ -1511,9 +1511,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                       SizedBox(width: 4.w),
                       GestureDetector(
                         onTap: () async {
-                          print(
-                              '🔧 DEBUG: Cancel icon clicked on route card for order $orderId');
-
                           // Show immediate visual feedback
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -1764,9 +1761,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () async {
-                        print(
-                            '🔧 DEBUG: Cancel Order button clicked in details panel for order ${order['orderId']}');
-
                         // Show immediate visual feedback
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -1973,9 +1967,6 @@ class _AdvancedTrackingMapState extends State<AdvancedTrackingMap> {
                     SizedBox(width: 8.w),
                     GestureDetector(
                       onTap: () async {
-                        print(
-                            '🔧 DEBUG: Cancel button clicked in order card for order $orderId');
-
                         // Show immediate visual feedback
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

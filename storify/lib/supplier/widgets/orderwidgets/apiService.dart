@@ -59,7 +59,7 @@ class ApiService {
       if (declinedItems != null && declinedItems.isNotEmpty) {
         body['items'] = declinedItems;
 
-        // Debug print to verify the structure
+        // Debug debugprint to verify the structure
         debugPrint('Sending items to API: ${json.encode(declinedItems)}');
 
         // Validate that each item has the required structure

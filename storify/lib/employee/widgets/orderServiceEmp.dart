@@ -780,27 +780,123 @@ class OrderService {
     }
   }
 
-  // Update supplier order status (unchanged)
+// FIXED OrderService method - replace in orderServiceEmp.dart
+
+// Enhanced OrderService method with comprehensive ID debugging
+// Replace the updateSupplierOrderStatus method in orderServiceEmp.dart
+
   static Future<Map<String, dynamic>> updateSupplierOrderStatus(
       int orderId,
       String status,
       String? note,
       List<Map<String, dynamic>>? updatedItems) async {
     try {
+      if (updatedItems != null) {
+        for (int i = 0; i < updatedItems.length; i++) {
+          final item = updatedItems[i];
+
+          item.forEach((key, value) {});
+        }
+      }
+
       final Map<String, dynamic> body = {'status': status};
+
       if (note != null && note.isNotEmpty) {
         body['note'] = note;
       }
+
       if (updatedItems != null && updatedItems.isNotEmpty) {
-        body['items'] = updatedItems;
+        // Clean the items to only include allowed fields
+        final cleanedItems = updatedItems.map((item) {
+          final cleanedItem = {
+            'id': item['id'],
+            'receivedQuantity': item['receivedQuantity'],
+          };
+          return cleanedItem;
+        }).toList();
+
+        body['items'] = cleanedItems;
       }
 
       final response = await _makeRequest(
           'PUT', '$baseUrl/worker/supplier-orders/$orderId',
           body: body);
-      return await _handleResponse(response, 'Update supplier order status');
+
+      final result =
+          await _handleResponse(response, 'Update supplier order status');
+
+      result.forEach((key, value) {
+        if (value is Map || value is List) {
+        } else {}
+      });
+
+      // Check if the response contains updated order data
+      if (result.containsKey('order')) {
+        final updatedOrder = result['order'];
+
+        if (updatedOrder['items'] != null) {
+          final items = updatedOrder['items'] as List;
+          for (int i = 0; i < items.length; i++) {
+            final item = items[i];
+          }
+        }
+      }
+
+      return result;
     } catch (e) {
-      debugPrint('Error updating supplier order: $e');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateSupplierOrderStatusAlt(
+      int orderId,
+      String status,
+      String? note,
+      List<Map<String, dynamic>>? updatedItems) async {
+    try {
+      // Try a different endpoint structure similar to customer orders
+      final Map<String, dynamic> body = {'status': status};
+      if (note != null && note.isNotEmpty) {
+        body['notes'] = note; // Try 'notes' instead of 'note'
+      }
+      if (updatedItems != null && updatedItems.isNotEmpty) {
+        body['receivedItems'] =
+            updatedItems; // Try 'receivedItems' instead of 'items'
+      }
+
+      debugPrint('=== ALTERNATIVE API CALL ===');
+      debugPrint(
+          'Trying endpoint: $baseUrl/supplier-order/$orderId/update-status');
+      debugPrint('Body: ${jsonEncode(body)}');
+
+      final response = await _makeRequest('PUT',
+          '$baseUrl/supplier-order/$orderId/update-status', // Different endpoint
+          body: body);
+
+      return await _handleResponse(
+          response, 'Update supplier order status (alt)');
+    } catch (e) {
+      debugPrint('Alternative endpoint failed: $e');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyOrderUpdate(int orderId) async {
+    try {
+      debugPrint('=== VERIFYING ORDER UPDATE ===');
+      debugPrint('Fetching order details for ID: $orderId');
+
+      final response =
+          await _makeRequest('GET', '$baseUrl/worker/supplier-orders/$orderId');
+      final result = await _handleResponse(response, 'Verify order update');
+
+      debugPrint('=== VERIFICATION RESULT ===');
+      debugPrint('Order Status: ${result['order']?['status']}');
+      debugPrint('Items: ${jsonEncode(result['order']?['items'])}');
+
+      return result;
+    } catch (e) {
+      debugPrint('Error verifying order update: $e');
       rethrow;
     }
   }

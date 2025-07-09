@@ -148,7 +148,7 @@ class LocalizationHelper {
     return isArabic(context) ? 'Cairo' : 'SpaceGrotesk';
   }
 
-  /// Debug method to print current localization state
+  /// Debug method to debugprint current localization state
   static void debugLocalizationState(BuildContext context) {
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     debugPrint('🌐 === LOCALIZATION DEBUG ===');

@@ -732,7 +732,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     }
   }
 
-  // Update supplier order status (unchanged)
+// FIXED: Send Product ID instead of Item ID
+// Replace the _updateSupplierOrderStatus method in viewOrderScreenEmp.dart
+
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -758,19 +760,46 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       List<Map<String, dynamic>>? updatedItems;
       if (_hasQuantityChanges) {
         updatedItems = _editedQuantities.entries.map((entry) {
-          return {
-            'id': entry.key,
-            'receivedQuantity': entry.value,
+          final itemId = entry.key; // This is the item ID from the UI
+          final newQuantity = entry.value;
+
+          // Find the original item to get the PRODUCT ID
+          final originalItem = _lineItems.firstWhere(
+            (item) => item.id == itemId,
+            orElse: () => _lineItems.first,
+          );
+
+          // 🔧 FIX: Send PRODUCT ID instead of ITEM ID
+          final itemData = {
+            'id': originalItem.productId, // ✅ Changed from itemId to productId
+            'receivedQuantity': newQuantity,
           };
+
+          return itemData;
         }).toList();
       }
 
-      // Update order status
-      await OrderService.updateSupplierOrderStatus(_localOrder.orderId,
-          newStatus, note.isNotEmpty ? note : null, updatedItems);
+      final requestBody = {
+        'status': newStatus,
+        if (note.isNotEmpty) 'note': note,
+        if (updatedItems != null && updatedItems.isNotEmpty)
+          'items': updatedItems,
+      };
 
-      // Refresh order data
+      // Make the API call with corrected data
+      await OrderService.updateSupplierOrderStatus(
+        _localOrder.orderId,
+        newStatus,
+        note.isNotEmpty ? note : null,
+        updatedItems,
+      );
+
+      // Refresh order data to see the changes
       await _fetchOrderDetails();
+
+      for (int i = 0; i < _lineItems.length; i++) {
+        final item = _lineItems[i];
+      }
 
       // Reset edited quantities
       setState(() {

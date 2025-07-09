@@ -222,9 +222,7 @@ class _TrackScreenState extends State<Track> {
           try {
             // Use dynamic to call the method
             await (mapState as dynamic).refreshMapData();
-          } catch (e) {
-            print('Failed to refresh map: $e');
-          }
+          } catch (e) {}
         }
       } else {
         final errorData =
@@ -515,9 +513,7 @@ class _TrackScreenState extends State<Track> {
       try {
         // Use dynamic to call the method
         await (mapState as dynamic).refreshMapData();
-      } catch (e) {
-        print('Failed to refresh map: $e');
-      }
+      } catch (e) {}
     }
   }
 

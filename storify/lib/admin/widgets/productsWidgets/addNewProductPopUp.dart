@@ -19,7 +19,7 @@ class Supplier {
   Supplier({required this.id, required this.name});
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
-    // Debug print the JSON structure
+    // Debug debugprint the JSON structure
     debugPrint('Parsing supplier JSON: $json');
 
     return Supplier(
@@ -180,7 +180,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
                 .map((category) => Category.fromJson(category))
                 .toList();
             debugPrint(
-                "Loaded ${_categories.length} categories"); // Debug print
+                "Loaded ${_categories.length} categories"); // Debug debugprint
           });
         }
       } else if (response.statusCode == 401 || response.statusCode == 403) {
@@ -291,7 +291,7 @@ class _AddProductPopUpState extends State<AddProductPopUp> {
         request.fields['supplierIds[$i]'] = supplierIdsList[i].toString();
       }
 
-      // Debug print all fields
+      // Debug debugprint all fields
       debugPrint('All request fields: ${request.fields}');
       debugPrint(
           'All request files: ${request.files.map((f) => '${f.field}: ${f.length} bytes').toList()}');

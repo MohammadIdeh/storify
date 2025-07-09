@@ -1487,7 +1487,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         ];
       }
     } else {
-      // For other statuses, just show a print invoice button
+      // For other statuses, just show a debugprint invoice button
       actions = [
         Expanded(
           child: _buildActionButton(
