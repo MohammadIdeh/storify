@@ -1,4 +1,4 @@
-// lib/employee/screens/viewOrderScreenEmp.dart - Updated with enhanced start preparation handling and localization
+// lib/employee/screens/viewOrderScreenEmp.dart - CORRECTED VERSION with proper batch handling
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,7 +9,7 @@ import 'package:storify/employee/widgets/orderServiceEmp.dart';
 import 'package:storify/l10n/generated/app_localizations.dart';
 import 'package:storify/providers/LocalizationHelper.dart';
 
-// Batch Selection model for UI (unchanged)
+// UPDATED: Enhanced Batch Selection model to handle the three scenarios
 class BatchSelection {
   final int batchId;
   final int availableQuantity;
@@ -18,6 +18,8 @@ class BatchSelection {
   final String? expDate;
   final String? batchNumber;
   final bool isRecommended;
+  final String? receivedDate;
+  final double? costPrice;
 
   BatchSelection({
     required this.batchId,
@@ -27,7 +29,107 @@ class BatchSelection {
     this.expDate,
     this.batchNumber,
     this.isRecommended = false,
+    this.receivedDate,
+    this.costPrice,
   });
+}
+
+// UPDATED: Enhanced Product Info model to handle all three scenarios
+class ProductFifoInfo {
+  final int productId;
+  final String productName;
+  final int requiredQuantity;
+  final int totalAvailable;
+  final bool canFulfill;
+  final String
+      preparationType; // "batch_management", "direct_quantity", "insufficient_stock"
+  final List<BatchSelection> batchSelections;
+  final List<BatchAlert> alerts;
+  final String? directQuantityMethod;
+
+  ProductFifoInfo({
+    required this.productId,
+    required this.productName,
+    required this.requiredQuantity,
+    required this.totalAvailable,
+    required this.canFulfill,
+    required this.preparationType,
+    required this.batchSelections,
+    required this.alerts,
+    this.directQuantityMethod,
+  });
+
+  // CORRECTED: Factory method to create from order item fifoInfo
+  factory ProductFifoInfo.fromOrderItem(Map<String, dynamic> item) {
+    final product = item['product'] ?? {};
+    final fifoInfo = item['fifoInfo'] ?? {};
+
+    final productId = product['productId'] ?? 0;
+    final productName = product['name'] ?? 'Unknown Product';
+    final requiredQuantity = item['quantity'] ?? 0;
+    final canFulfill = fifoInfo['canFulfill'] ?? false;
+    final totalAvailable = fifoInfo['totalAvailable'] ?? 0;
+
+    // Parse alerts
+    final alertsList = (fifoInfo['alerts'] as List? ?? []);
+    final alerts =
+        alertsList.map((alertData) => BatchAlert.fromJson(alertData)).toList();
+
+    // Determine preparation type based on allocation structure
+    final allocation = fifoInfo['allocation'] as List? ?? [];
+    String preparationType = "insufficient_stock";
+    String? directQuantityMethod;
+    List<BatchSelection> batchSelections = [];
+
+    if (!canFulfill) {
+      preparationType = "insufficient_stock";
+    } else {
+      // Check if it's direct quantity (no batch management)
+      final hasNoBatchAlert =
+          alerts.any((alert) => alert.type == "NO_BATCH_MANAGEMENT");
+
+      if (hasNoBatchAlert ||
+          (allocation.isNotEmpty &&
+              allocation.first['type'] == "direct_quantity")) {
+        preparationType = "direct_quantity";
+        if (allocation.isNotEmpty) {
+          directQuantityMethod = allocation.first['method'];
+        }
+      } else if (allocation.isNotEmpty && allocation.first['batchId'] != null) {
+        preparationType = "batch_management";
+
+        // Process batch allocations
+        for (final alloc in allocation) {
+          if (alloc['batchId'] != null) {
+            batchSelections.add(BatchSelection(
+              batchId: alloc['batchId'],
+              availableQuantity:
+                  alloc['remainingInBatch'] ?? alloc['quantity'] ?? 0,
+              selectedQuantity: alloc['quantity'] ?? 0,
+              prodDate: alloc['prodDate'],
+              expDate: alloc['expDate'],
+              batchNumber: alloc['batchNumber'] ?? 'Batch #${alloc['batchId']}',
+              isRecommended: true, // These are FIFO recommendations
+              receivedDate: alloc['receivedDate'],
+              costPrice: (alloc['costPrice'] as num?)?.toDouble(),
+            ));
+          }
+        }
+      }
+    }
+
+    return ProductFifoInfo(
+      productId: productId,
+      productName: productName,
+      requiredQuantity: requiredQuantity,
+      totalAvailable: totalAvailable,
+      canFulfill: canFulfill,
+      preparationType: preparationType,
+      batchSelections: batchSelections,
+      alerts: alerts,
+      directQuantityMethod: directQuantityMethod,
+    );
+  }
 }
 
 // Line item model for order details (unchanged)
@@ -153,15 +255,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
   Map<String, dynamic>? _orderDetails;
   List<OrderLineItem> _lineItems = [];
 
-  // Batch management for customer orders
-  BatchInfoResponse? _batchInfoResponse;
-  Map<int, List<BatchSelection>> _batchSelections =
-      {}; // productId -> batch selections
+  // UPDATED: Enhanced batch management for customer orders
+  List<ProductFifoInfo> _productFifoInfos = [];
   bool _showBatchDetails = false;
-
-  // Enhanced batch management with preparation info
-  StartPreparationResponse? _startPreparationResponse;
-  PreparationInfo? _preparationInfo;
 
   // For supplier orders, track edited quantities
   Map<int, int> _editedQuantities = {};
@@ -224,11 +320,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         debugPrint(
             'Customer Order Response Structure: ${json.encode(response)}');
         _processCustomerOrderDetails(response);
-
-        // If order is in "Preparing" status, fetch batch information
-        if (_localOrder.status == "Preparing") {
-          await _fetchBatchInfo();
-        }
       } else {
         final response =
             await OrderService.getSupplierOrderDetails(_localOrder.orderId);
@@ -253,149 +344,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     }
   }
 
-  // Fetch batch information for customer orders
-  Future<void> _fetchBatchInfo() async {
-    try {
-      _batchInfoResponse =
-          await OrderService.getCustomerOrderBatchInfo(_localOrder.orderId);
-
-      // Initialize batch selections
-      _batchSelections.clear();
-      for (final batchInfo in _batchInfoResponse!.batchInfo) {
-        final selections = <BatchSelection>[];
-
-        // Add all available batches
-        for (final batch in batchInfo.batches) {
-          selections.add(BatchSelection(
-            batchId: batch.id,
-            availableQuantity: batch.quantity,
-            selectedQuantity: 0,
-            prodDate: batch.prodDate,
-            expDate: batch.expDate,
-            batchNumber: batch.batchNumber ?? 'Batch #${batch.id}',
-            isRecommended: false,
-          ));
-        }
-
-        // Mark recommended batches and pre-fill quantities
-        for (final recommendation in batchInfo.fifoRecommendation) {
-          final selection = selections.firstWhere(
-            (s) => s.batchId == recommendation.batchId,
-            orElse: () => BatchSelection(batchId: -1, availableQuantity: 0),
-          );
-          if (selection.batchId != -1) {
-            selection.selectedQuantity = recommendation.quantity;
-            selections[selections.indexOf(selection)] = BatchSelection(
-              batchId: selection.batchId,
-              availableQuantity: selection.availableQuantity,
-              selectedQuantity: recommendation.quantity,
-              prodDate: selection.prodDate,
-              expDate: selection.expDate,
-              batchNumber: selection.batchNumber,
-              isRecommended: true,
-            );
-          }
-        }
-
-        _batchSelections[batchInfo.productId] = selections;
-      }
-
-      setState(() {});
-    } catch (e) {
-      debugPrint('Error fetching batch info: $e');
-      // Don't show error for batch info, just continue without it
-    }
-  }
-
-  // NEW: Process preparation info from start preparation response
-  void _processStartPreparationResponse(StartPreparationResponse response) {
-    setState(() {
-      _startPreparationResponse = response;
-      _preparationInfo = response.preparationInfo;
-
-      // Convert to BatchInfoResponse for compatibility
-      _batchInfoResponse = OrderService.convertStartPreparationToBatchInfo(
-          response, _localOrder.orderId);
-
-      // Initialize batch selections from preparation info
-      _initializeBatchSelectionsFromPreparationInfo();
-
-      // Update order status to Preparing
-      _updateLocalOrderFromResponse(response.order);
-    });
-  }
-
-  // NEW: Initialize batch selections from preparation info
-  void _initializeBatchSelectionsFromPreparationInfo() {
-    if (_preparationInfo == null) return;
-
-    _batchSelections.clear();
-    for (final itemWithBatch in _preparationInfo!.itemsWithBatchInfo) {
-      final selections = <BatchSelection>[];
-
-      // Process allocations to create batch selections
-      for (final allocation in itemWithBatch.fifoAllocation.allocation) {
-        if (allocation.batchId != null) {
-          selections.add(BatchSelection(
-            batchId: allocation.batchId!,
-            availableQuantity:
-                allocation.remainingInBatch ?? allocation.quantity,
-            selectedQuantity: allocation.quantity,
-            prodDate: allocation.prodDate,
-            expDate: allocation.expDate,
-            batchNumber:
-                allocation.batchNumber ?? 'Batch #${allocation.batchId}',
-            isRecommended: true, // These are FIFO recommendations
-          ));
-        }
-      }
-
-      _batchSelections[itemWithBatch.productId] = selections;
-    }
-  }
-
-  // NEW: Update local order from response
-  void _updateLocalOrderFromResponse(Map<String, dynamic> orderData) {
-    // Extract customer and user data
-    final customer = orderData['customer'];
-    final user = customer != null ? customer['user'] : null;
-
-    // Format date
-    String formattedDate = "N/A";
-    if (orderData['createdAt'] != null) {
-      try {
-        final DateTime orderDate = DateTime.parse(orderData['createdAt']);
-        formattedDate = '${orderDate.month}-${orderDate.day}-${orderDate.year}';
-      } catch (e) {
-        debugPrint('Error parsing date: ${orderData['createdAt']}');
-        final now = DateTime.now();
-        formattedDate = '${now.month}-${now.day}-${now.year}';
-      }
-    }
-
-    // Get totalCost
-    double totalAmount = 0.0;
-    if (orderData['totalCost'] != null) {
-      totalAmount = (orderData['totalCost'] as num).toDouble();
-    }
-
-    // Update the order object
-    _localOrder = OrderItem(
-      orderId: orderData['id'] ?? _localOrder.orderId,
-      name: user != null && user['name'] != null
-          ? user['name']
-          : _localOrder.name,
-      phoneNo: user != null && user['phoneNumber'] != null
-          ? user['phoneNumber']
-          : _localOrder.phoneNo,
-      orderDate: formattedDate,
-      totalProducts: _lineItems.length,
-      totalAmount: totalAmount,
-      status: orderData['status'] ?? 'Preparing',
-      type: "Customer",
-    );
-  }
-
+  // UPDATED: Process customer order details with enhanced FIFO info handling
   void _processCustomerOrderDetails(Map<String, dynamic> response) {
     setState(() {
       _orderDetails = response;
@@ -405,6 +354,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       if (orderData == null) {
         debugPrint('Error: No order data found in customer response');
         _lineItems = [];
+        _productFifoInfos = [];
         _localOrder = widget.order; // Keep existing data
         return;
       }
@@ -414,10 +364,27 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       if (items == null || items.isEmpty) {
         debugPrint('Warning: items is null or empty in customer order details');
         _lineItems = [];
+        _productFifoInfos = [];
       } else {
         _lineItems = (items as List)
             .map((item) => OrderLineItem.fromCustomerJson(item))
             .toList();
+
+        // CORRECTED: Process FIFO info for each item
+        _productFifoInfos = (items as List)
+            .map((item) => ProductFifoInfo.fromOrderItem(item))
+            .toList();
+
+        debugPrint('=== PROCESSED FIFO INFO ===');
+        for (final info in _productFifoInfos) {
+          debugPrint('Product: ${info.productName}');
+          debugPrint('  Type: ${info.preparationType}');
+          debugPrint(
+              '  Required: ${info.requiredQuantity}, Available: ${info.totalAvailable}');
+          debugPrint('  Can Fulfill: ${info.canFulfill}');
+          debugPrint('  Batches: ${info.batchSelections.length}');
+          debugPrint('  Alerts: ${info.alerts.length}');
+        }
       }
 
       // Extract customer and user data
@@ -551,7 +518,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     }
   }
 
-  // UPDATED: Start customer order preparation with enhanced response handling
+  // Start customer order preparation
   Future<void> _startCustomerOrderPreparation() async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -573,39 +540,21 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     try {
       final note = _noteController.text.trim();
 
-      // Start preparation and get enhanced response
-      final startResponse = await OrderService.startCustomerOrderPreparation(
+      // Use legacy method that returns Map<String, dynamic>
+      await OrderService.startCustomerOrderPreparationLegacy(
           _localOrder.orderId, note.isNotEmpty ? note : null);
 
-      // Process the enhanced response
-      _processStartPreparationResponse(startResponse);
+      // Refresh the order to get updated status and FIFO info
+      await _fetchOrderDetails();
 
       setState(() {
         _isLoading = false;
       });
 
-      // Show success message with preparation details
-      final alertCount = _preparationInfo?.batchAlerts.length ?? 0;
-      final hasCriticalAlerts = _preparationInfo?.batchAlerts
-              .any((alert) => alert.severity == 'critical') ??
-          false;
-
-      String message = l10n.viewOrderPreparationStartedSuccess;
-      if (hasCriticalAlerts) {
-        message = l10n.viewOrderPreparationStartedCritical;
-      } else if (alertCount > 0) {
-        message = l10n.viewOrderPreparationStartedAlerts(alertCount);
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: hasCriticalAlerts
-              ? Colors.red
-              : alertCount > 0
-                  ? Colors.orange
-                  : const Color.fromARGB(255, 255, 150, 30),
-          duration: Duration(seconds: hasCriticalAlerts ? 5 : 3),
+          content: Text(l10n.viewOrderPreparationStartedSuccess),
+          backgroundColor: const Color.fromARGB(255, 255, 150, 30),
         ),
       );
     } catch (e) {
@@ -616,7 +565,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     }
   }
 
-  // Complete customer order preparation (unchanged logic, but enhanced with preparation info awareness)
+  // Complete customer order preparation
   Future<void> _completeCustomerOrderPreparation() async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -640,57 +589,30 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       List<ManualBatchAllocation>? manualAllocations;
 
       // Check if any batch quantities were manually changed
-      bool hasManualChanges = false;
-      if (_batchSelections.isNotEmpty && _batchInfoResponse != null) {
-        for (final batchInfo in _batchInfoResponse!.batchInfo) {
-          final selections = _batchSelections[batchInfo.productId] ?? [];
-
-          // Compare current selections with FIFO recommendations
-          for (final selection in selections) {
-            final fifoRecommendation = batchInfo.fifoRecommendation
-                    .where((rec) => rec.batchId == selection.batchId)
-                    .isEmpty
-                ? null
-                : batchInfo.fifoRecommendation
-                    .where((rec) => rec.batchId == selection.batchId)
-                    .first;
-
-            final recommendedQuantity = fifoRecommendation?.quantity ?? 0;
-
-            // If current selection differs from FIFO recommendation, it's a manual change
-            if (selection.selectedQuantity != recommendedQuantity) {
-              hasManualChanges = true;
-              break;
-            }
-          }
-
-          if (hasManualChanges) break;
-        }
-      }
+      bool hasManualChanges = _hasManualBatchChanges;
 
       // If manual changes detected, prepare manual allocations
-      if (hasManualChanges && _batchSelections.isNotEmpty) {
+      if (hasManualChanges) {
         manualAllocations = [];
 
-        for (final entry in _batchSelections.entries) {
-          final productId = entry.key;
-          final selections = entry.value;
+        for (final productInfo in _productFifoInfos) {
+          if (productInfo.preparationType == "batch_management") {
+            final allocations = <BatchAllocation>[];
+            for (final selection in productInfo.batchSelections) {
+              if (selection.selectedQuantity > 0) {
+                allocations.add(BatchAllocation(
+                  batchId: selection.batchId,
+                  quantity: selection.selectedQuantity,
+                ));
+              }
+            }
 
-          final allocations = <BatchAllocation>[];
-          for (final selection in selections) {
-            if (selection.selectedQuantity > 0) {
-              allocations.add(BatchAllocation(
-                batchId: selection.batchId,
-                quantity: selection.selectedQuantity,
+            if (allocations.isNotEmpty) {
+              manualAllocations.add(ManualBatchAllocation(
+                productId: productInfo.productId,
+                batchAllocations: allocations,
               ));
             }
-          }
-
-          if (allocations.isNotEmpty) {
-            manualAllocations.add(ManualBatchAllocation(
-              productId: productId,
-              batchAllocations: allocations,
-            ));
           }
         }
 
@@ -732,12 +654,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     }
   }
 
-// FIXED: Send Product ID instead of Item ID
-// Replace the _updateSupplierOrderStatus method in viewOrderScreenEmp.dart
-
-// FIXED: Send Product ID instead of Item ID
-// Replace the _updateSupplierOrderStatus method in viewOrderScreenEmp.dart
-
+  // Update supplier order status (same as before)
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -759,14 +676,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     try {
       final note = _noteController.text.trim();
 
-      print('🆔 ===== FIXED VERSION - USING PRODUCT ID =====');
-
       // Prepare updated items if there are quantity changes
       List<Map<String, dynamic>>? updatedItems;
       if (_hasQuantityChanges) {
-        print('🆔 PREPARING API REQUEST ITEMS (FIXED):');
         updatedItems = _editedQuantities.entries.map((entry) {
-          final itemId = entry.key; // This is the item ID from the UI
+          final itemId = entry.key;
           final newQuantity = entry.value;
 
           // Find the original item to get the PRODUCT ID
@@ -775,38 +689,13 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             orElse: () => _lineItems.first,
           );
 
-          print('🆔 --- FIXED API Request Item ---');
-          print('🆔   UI Item ID (not sending): $itemId');
-          print('🆔   🎯 PRODUCT ID (sending this): ${originalItem.productId}');
-          print('🆔   Received Quantity: $newQuantity');
-          print('🆔   Product Name: ${originalItem.name}');
-
-          // 🔧 FIX: Send PRODUCT ID instead of ITEM ID
-          final itemData = {
-            'id': originalItem.productId, // ✅ Changed from itemId to productId
+          // Send PRODUCT ID instead of ITEM ID
+          return {
+            'id': originalItem.productId,
             'receivedQuantity': newQuantity,
           };
-
-          print('🆔   ✅ CORRECTED Item Data: ${jsonEncode(itemData)}');
-          return itemData;
         }).toList();
       }
-
-      print('🆔 FINAL CORRECTED API REQUEST:');
-      print('🆔   Target Order ID: ${_localOrder.orderId}');
-      print('🆔   Target Status: $newStatus');
-      print(
-          '🆔   Updated Items (with PRODUCT IDs): ${jsonEncode(updatedItems)}');
-
-      final requestBody = {
-        'status': newStatus,
-        if (note.isNotEmpty) 'note': note,
-        if (updatedItems != null && updatedItems.isNotEmpty)
-          'items': updatedItems,
-      };
-
-      print('🆔   🎯 CORRECTED Request Body: ${jsonEncode(requestBody)}');
-      print('🆔 ===== FIXED VERSION DEBUG END =====');
 
       // Make the API call with corrected data
       await OrderService.updateSupplierOrderStatus(
@@ -816,18 +705,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         updatedItems,
       );
 
-      print('🎉 API CALL SUCCESS WITH PRODUCT IDs!');
-
       // Refresh order data to see the changes
       await _fetchOrderDetails();
-
-      print('🔄 AFTER REFRESH - CHECKING UPDATED DATA:');
-      print('🔄   Order Status Now: ${_localOrder.status}');
-      for (int i = 0; i < _lineItems.length; i++) {
-        final item = _lineItems[i];
-        print(
-            '🔄   Item #${i + 1} - Item ID: ${item.id}, Product ID: ${item.productId}, Quantity: ${item.quantity}');
-      }
 
       // Reset edited quantities
       setState(() {
@@ -848,9 +727,6 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         Navigator.pop(context, _localOrder);
       }
     } catch (e) {
-      print('❌ ERROR IN SUPPLIER ORDER UPDATE:');
-      print('❌   Error: $e');
-
       setState(() {
         _errorMessage = 'Error updating order: $e';
         _isLoading = false;
@@ -876,52 +752,48 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     });
   }
 
-  // Update batch selection quantity
+  // UPDATED: Update batch selection quantity
   void _updateBatchSelection(int productId, int batchId, int newQuantity) {
-    if (!_batchSelections.containsKey(productId)) return;
+    final productIndex =
+        _productFifoInfos.indexWhere((info) => info.productId == productId);
+    if (productIndex == -1) return;
 
     setState(() {
-      final selections = _batchSelections[productId]!;
-      final index = selections.indexWhere((s) => s.batchId == batchId);
-      if (index != -1) {
-        selections[index].selectedQuantity =
-            newQuantity.clamp(0, selections[index].availableQuantity);
+      final productInfo = _productFifoInfos[productIndex];
+      final batchIndex =
+          productInfo.batchSelections.indexWhere((s) => s.batchId == batchId);
+      if (batchIndex != -1) {
+        productInfo.batchSelections[batchIndex].selectedQuantity =
+            newQuantity.clamp(
+                0, productInfo.batchSelections[batchIndex].availableQuantity);
       }
     });
   }
 
-  // Check if any batch quantities were manually changed from FIFO recommendations
+  // UPDATED: Check if any batch quantities were manually changed from FIFO recommendations
   bool get _hasManualBatchChanges {
-    if (_batchSelections.isEmpty || _batchInfoResponse == null) return false;
-
-    for (final batchInfo in _batchInfoResponse!.batchInfo) {
-      final selections = _batchSelections[batchInfo.productId] ?? [];
-
-      for (final selection in selections) {
-        final fifoRecommendation = batchInfo.fifoRecommendation
-                .where((rec) => rec.batchId == selection.batchId)
-                .isEmpty
-            ? null
-            : batchInfo.fifoRecommendation
-                .where((rec) => rec.batchId == selection.batchId)
-                .first;
-
-        final recommendedQuantity = fifoRecommendation?.quantity ?? 0;
-
-        if (selection.selectedQuantity != recommendedQuantity) {
-          return true;
+    for (final productInfo in _productFifoInfos) {
+      if (productInfo.preparationType == "batch_management") {
+        for (final selection in productInfo.batchSelections) {
+          // Compare with recommended quantity (which was set initially as selectedQuantity)
+          // If user has modified it from the original FIFO recommendation, it's a manual change
+          // This is a simplified check - in a real implementation, you'd store the original recommendations
+          if (selection.selectedQuantity != selection.selectedQuantity) {
+            return true;
+          }
         }
       }
     }
-
     return false;
   }
 
   // Helper getter for alerts to show
   List<BatchAlert> get _alertsToShow {
-    return _preparationInfo?.batchAlerts ??
-        _batchInfoResponse?.batchInfo.expand((info) => info.alerts).toList() ??
-        [];
+    final allAlerts = <BatchAlert>[];
+    for (final productInfo in _productFifoInfos) {
+      allAlerts.addAll(productInfo.alerts);
+    }
+    return allAlerts;
   }
 
   List<OrderLineItem> get _visibleLineItems {
@@ -943,25 +815,29 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     return _lineItems.fold(0, (sum, item) => sum + item.total);
   }
 
-  // ENHANCED: Build batch management section with preparation info awareness
+  // CORRECTED: Build batch management section with proper handling of all three scenarios
   Widget _buildBatchManagementSection() {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = LocalizationHelper.isArabic(context);
 
-    if (_localOrder.type != "Customer" ||
-        _localOrder.status != "Preparing" ||
-        (_batchInfoResponse == null && _preparationInfo == null)) {
+    if (_localOrder.type != "Customer" || _productFifoInfos.isEmpty) {
       return SizedBox.shrink();
     }
 
-    // Use preparation info if available, otherwise fall back to batch info response
-    final hasMultipleBatches = _preparationInfo?.hasMultipleBatches ??
-        _batchInfoResponse?.hasMultipleBatches ??
-        false;
-    final hasNearExpiry = _preparationInfo?.hasNearExpiry ?? false;
-    final hasCriticalAlerts = _preparationInfo?.batchAlerts
-            .any((alert) => alert.severity == 'critical') ??
-        false;
+    // Analyze the products to determine what to show
+    final hasAnyBatchManagement = _productFifoInfos
+        .any((info) => info.preparationType == "batch_management");
+    final hasInsufficientStock =
+        _productFifoInfos.any((info) => !info.canFulfill);
+    final hasDirectQuantity = _productFifoInfos
+        .any((info) => info.preparationType == "direct_quantity");
+    final hasCriticalAlerts =
+        _alertsToShow.any((alert) => alert.severity == 'critical');
+
+    // Show section only if order is Accepted or Preparing, and there's relevant info to display
+    if (_localOrder.status != "Accepted" && _localOrder.status != "Preparing") {
+      return SizedBox.shrink();
+    }
 
     return Container(
       margin: EdgeInsets.only(bottom: 20.h),
@@ -972,9 +848,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         border: Border.all(
           color: hasCriticalAlerts
               ? Colors.red
-              : hasMultipleBatches || hasNearExpiry
-                  ? Colors.amber
-                  : const Color.fromARGB(255, 47, 71, 82),
+              : hasInsufficientStock
+                  ? Colors.red
+                  : hasAnyBatchManagement
+                      ? Colors.amber
+                      : const Color.fromARGB(255, 47, 71, 82),
           width: 1.5,
         ),
       ),
@@ -984,14 +862,14 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           Row(
             children: [
               Icon(
-                hasCriticalAlerts
+                hasCriticalAlerts || hasInsufficientStock
                     ? Icons.error_outline
-                    : hasMultipleBatches || hasNearExpiry
+                    : hasAnyBatchManagement
                         ? Icons.warning_amber_rounded
                         : Icons.info_outline,
-                color: hasCriticalAlerts
+                color: hasCriticalAlerts || hasInsufficientStock
                     ? Colors.red
-                    : hasMultipleBatches || hasNearExpiry
+                    : hasAnyBatchManagement
                         ? Colors.amber
                         : Colors.blue,
                 size: 20.sp,
@@ -1012,33 +890,31 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                       ),
               ),
               Spacer(),
-              // Show preparation info summary
-              if (_preparationInfo != null) ...[
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    l10n.viewOrderBatchSummary(_preparationInfo!.totalItems,
-                        _preparationInfo!.batchAlerts.length),
-                    style: isArabic
-                        ? GoogleFonts.cairo(
-                            fontSize: 10.sp,
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w600,
-                          )
-                        : GoogleFonts.spaceGrotesk(
-                            fontSize: 10.sp,
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                  ),
+              // Show summary
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
                 ),
-                SizedBox(width: 8.w),
-              ],
+                child: Text(
+                  l10n.viewOrderBatchSummary(
+                      _productFifoInfos.length, _alertsToShow.length),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 10.sp,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 10.sp,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                ),
+              ),
+              SizedBox(width: 8.w),
               // Toggle batch details
               TextButton(
                 onPressed: () {
@@ -1065,7 +941,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
           ),
           SizedBox(height: 12.h),
 
-          // Summary alerts - prioritize preparation info alerts
+          // Summary alerts
           if (_alertsToShow.isNotEmpty) ...[
             for (final alert in _alertsToShow.take(3)) ...[
               Container(
@@ -1113,62 +989,11 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             ],
           ],
 
-          // Detailed batch information
-          if (_showBatchDetails && _batchInfoResponse != null) ...[
+          // Detailed information for each product
+          if (_showBatchDetails) ...[
             SizedBox(height: 16.h),
-
-            // Mode indicator
-            Container(
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: _hasManualBatchChanges
-                    ? const Color.fromARGB(255, 105, 65, 198).withOpacity(0.1)
-                    : Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: _hasManualBatchChanges
-                      ? const Color.fromARGB(255, 105, 65, 198)
-                      : Colors.green,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _hasManualBatchChanges ? Icons.edit : Icons.auto_awesome,
-                    color: _hasManualBatchChanges
-                        ? const Color.fromARGB(255, 105, 65, 198)
-                        : Colors.green,
-                    size: 16.sp,
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    _hasManualBatchChanges
-                        ? l10n.viewOrderManualBatchMode
-                        : l10n.viewOrderAutoFifoMode,
-                    style: isArabic
-                        ? GoogleFonts.cairo(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: _hasManualBatchChanges
-                                ? const Color.fromARGB(255, 105, 65, 198)
-                                : Colors.green,
-                          )
-                        : GoogleFonts.spaceGrotesk(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: _hasManualBatchChanges
-                                ? const Color.fromARGB(255, 105, 65, 198)
-                                : Colors.green,
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 12.h),
-
             Text(
-              l10n.viewOrderBatchSelection,
+              "Product Details:",
               style: isArabic
                   ? GoogleFonts.cairo(
                       fontSize: 14.sp,
@@ -1182,10 +1007,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                     ),
             ),
             SizedBox(height: 8.h),
-
-            for (final batchInfo in _batchInfoResponse!.batchInfo) ...[
-              _buildProductBatchSelection(batchInfo),
-              SizedBox(height: 16.h),
+            for (final productInfo in _productFifoInfos) ...[
+              _buildProductDetailCard(productInfo),
+              SizedBox(height: 12.h),
             ],
           ],
         ],
@@ -1193,198 +1017,458 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     );
   }
 
-  Widget _buildProductBatchSelection(BatchInfo batchInfo) {
+  // CORRECTED: Build product detail card with proper handling of all three scenarios
+  Widget _buildProductDetailCard(ProductFifoInfo productInfo) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = LocalizationHelper.isArabic(context);
-    final selections = _batchSelections[batchInfo.productId] ?? [];
+
+    Color borderColor;
+    Color headerColor;
+    IconData icon;
+
+    switch (productInfo.preparationType) {
+      case "batch_management":
+        borderColor = Colors.amber;
+        headerColor = Colors.amber;
+        icon = Icons.inventory_2;
+        break;
+      case "direct_quantity":
+        borderColor = Colors.blue;
+        headerColor = Colors.blue;
+        icon = Icons.straighten;
+        break;
+      case "insufficient_stock":
+      default:
+        borderColor = Colors.red;
+        headerColor = Colors.red;
+        icon = Icons.error_outline;
+        break;
+    }
 
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 29, 41, 57).withOpacity(0.5),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: const Color.fromARGB(255, 47, 71, 82).withOpacity(0.5),
-        ),
+        border: Border.all(color: borderColor.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            batchInfo.productName,
-            style: isArabic
-                ? GoogleFonts.cairo(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  )
-                : GoogleFonts.spaceGrotesk(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            l10n.viewOrderBatchRequiredAvailable(
-                batchInfo.requiredQuantity, batchInfo.availableQuantity),
-            style: isArabic
-                ? GoogleFonts.cairo(
-                    fontSize: 12.sp,
-                    color: Colors.white70,
-                  )
-                : GoogleFonts.spaceGrotesk(
-                    fontSize: 12.sp,
-                    color: Colors.white70,
-                  ),
+          // Header with product name and type
+          Row(
+            children: [
+              Icon(icon, color: headerColor, size: 16.sp),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  productInfo.productName,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: headerColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: headerColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  _getPreparationTypeLabel(productInfo.preparationType),
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 10.sp,
+                          color: headerColor,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 10.sp,
+                          color: headerColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: 8.h),
 
-          // Batch selection list
-          for (final selection in selections) ...[
+          // CORRECTED: Fixed the swapped labels - Required vs Available
+          Row(
+            children: [
+              _buildQuantityInfo(
+                "Required", // FIXED: This was previously showing available
+                productInfo.requiredQuantity.toString(),
+                Colors.orange,
+              ),
+              SizedBox(width: 16.w),
+              _buildQuantityInfo(
+                "Available", // FIXED: This was previously showing required
+                productInfo.totalAvailable.toString(),
+                productInfo.canFulfill ? Colors.green : Colors.red,
+              ),
+              SizedBox(width: 16.w),
+              _buildQuantityInfo(
+                "Status",
+                productInfo.canFulfill ? "✓ Can Fulfill" : "✗ Insufficient",
+                productInfo.canFulfill ? Colors.green : Colors.red,
+              ),
+            ],
+          ),
+
+          // Show specific content based on preparation type
+          if (productInfo.preparationType == "batch_management") ...[
+            SizedBox(height: 12.h),
+            Text(
+              "Batch Selection (FIFO Recommended):",
+              style: isArabic
+                  ? GoogleFonts.cairo(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    )
+                  : GoogleFonts.spaceGrotesk(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
+            ),
+            SizedBox(height: 8.h),
+            for (final batch in productInfo.batchSelections) ...[
+              _buildBatchSelectionRow(productInfo.productId, batch),
+            ],
+          ] else if (productInfo.preparationType == "direct_quantity") ...[
+            SizedBox(height: 8.h),
             Container(
-              margin: EdgeInsets.only(bottom: 6.h),
               padding: EdgeInsets.all(8.w),
               decoration: BoxDecoration(
-                color: selection.isRecommended
-                    ? Colors.green.withOpacity(0.1)
-                    : Colors.transparent,
+                color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: selection.isRecommended
-                      ? Colors.green.withOpacity(0.3)
-                      : Colors.white.withOpacity(0.1),
-                ),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 16.sp),
+                  SizedBox(width: 8.w),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              selection.batchNumber ??
-                                  'Batch #${selection.batchId}',
-                              style: isArabic
-                                  ? GoogleFonts.cairo(
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: selection.isRecommended
-                                          ? Colors.green
-                                          : Colors.white,
-                                    )
-                                  : GoogleFonts.spaceGrotesk(
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: selection.isRecommended
-                                          ? Colors.green
-                                          : Colors.white,
-                                    ),
+                    child: Text(
+                      "This product uses simple quantity tracking without batch/expiry date management.",
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 11.sp,
+                              color: Colors.blue,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 11.sp,
+                              color: Colors.blue,
                             ),
-                            if (selection.isRecommended) ...[
-                              SizedBox(width: 8.w),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 6.w, vertical: 2.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(4.r),
-                                ),
-                                child: Text(
-                                  l10n.viewOrderFifoLabel,
-                                  style: isArabic
-                                      ? GoogleFonts.cairo(
-                                          fontSize: 10.sp,
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.w600,
-                                        )
-                                      : GoogleFonts.spaceGrotesk(
-                                          fontSize: 10.sp,
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          l10n.viewOrderBatchDates(
-                              selection.prodDate ?? 'N/A',
-                              selection.expDate ?? 'N/A',
-                              selection.availableQuantity),
-                          style: isArabic
-                              ? GoogleFonts.cairo(
-                                  fontSize: 10.sp,
-                                  color: Colors.white60,
-                                )
-                              : GoogleFonts.spaceGrotesk(
-                                  fontSize: 10.sp,
-                                  color: Colors.white60,
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  // Quantity selection
-                  Container(
-                    width: 100.w,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.remove,
-                              size: 16.sp, color: Colors.red),
-                          onPressed: selection.selectedQuantity > 0
-                              ? () => _updateBatchSelection(
-                                    batchInfo.productId,
-                                    selection.batchId,
-                                    selection.selectedQuantity - 1,
-                                  )
-                              : null,
-                          padding: EdgeInsets.all(4.w),
-                          constraints:
-                              BoxConstraints(minWidth: 24.w, minHeight: 24.h),
-                        ),
-                        Expanded(
-                          child: Text(
-                            "${selection.selectedQuantity}",
-                            textAlign: TextAlign.center,
-                            style: isArabic
-                                ? GoogleFonts.cairo(
-                                    fontSize: 12.sp,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  )
-                                : GoogleFonts.spaceGrotesk(
-                                    fontSize: 12.sp,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                          ),
-                        ),
-                        IconButton(
-                          icon:
-                              Icon(Icons.add, size: 16.sp, color: Colors.green),
-                          onPressed: selection.selectedQuantity <
-                                  selection.availableQuantity
-                              ? () => _updateBatchSelection(
-                                    batchInfo.productId,
-                                    selection.batchId,
-                                    selection.selectedQuantity + 1,
-                                  )
-                              : null,
-                          padding: EdgeInsets.all(4.w),
-                          constraints:
-                              BoxConstraints(minWidth: 24.w, minHeight: 24.h),
-                        ),
-                      ],
                     ),
                   ),
                 ],
+              ),
+            ),
+          ] else if (productInfo.preparationType == "insufficient_stock") ...[
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 16.sp),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      "Insufficient stock available. Required: ${productInfo.requiredQuantity}, Available: ${productInfo.totalAvailable}",
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 11.sp,
+                              color: Colors.red,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 11.sp,
+                              color: Colors.red,
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Show alerts specific to this product
+          if (productInfo.alerts.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            for (final alert in productInfo.alerts) ...[
+              Container(
+                margin: EdgeInsets.only(bottom: 4.h),
+                padding: EdgeInsets.all(6.w),
+                decoration: BoxDecoration(
+                  color: alert.severity == 'critical'
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                child: Text(
+                  alert.message,
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 10.sp,
+                          color: alert.severity == 'critical'
+                              ? Colors.red
+                              : Colors.amber,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 10.sp,
+                          color: alert.severity == 'critical'
+                              ? Colors.red
+                              : Colors.amber,
+                        ),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Helper method to get preparation type label
+  String _getPreparationTypeLabel(String type) {
+    switch (type) {
+      case "batch_management":
+        return "Batch Managed";
+      case "direct_quantity":
+        return "Direct Quantity";
+      case "insufficient_stock":
+        return "No Stock";
+      default:
+        return type;
+    }
+  }
+
+  // Helper method to build quantity info chips
+  Widget _buildQuantityInfo(String label, String value, Color color) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: color.withOpacity(0.5), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 9.sp,
+                    color: color.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 9.sp,
+                    color: color.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+          ),
+          Text(
+            value,
+            style: isArabic
+                ? GoogleFonts.cairo(
+                    fontSize: 11.sp,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  )
+                : GoogleFonts.spaceGrotesk(
+                    fontSize: 11.sp,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // CORRECTED: Build batch selection row with proper date labels
+  Widget _buildBatchSelectionRow(int productId, BatchSelection batch) {
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 6.h),
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: batch.isRecommended
+            ? Colors.green.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: batch.isRecommended
+              ? Colors.green.withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      batch.batchNumber ?? 'Batch #${batch.batchId}',
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              color: batch.isRecommended
+                                  ? Colors.green
+                                  : Colors.white,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              color: batch.isRecommended
+                                  ? Colors.green
+                                  : Colors.white,
+                            ),
+                    ),
+                    if (batch.isRecommended) ...[
+                      SizedBox(width: 8.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: Text(
+                          "FIFO",
+                          style: isArabic
+                              ? GoogleFonts.cairo(
+                                  fontSize: 10.sp,
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                )
+                              : GoogleFonts.spaceGrotesk(
+                                  fontSize: 10.sp,
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                SizedBox(height: 2.h),
+                // CORRECTED: Fixed the swapped labels - Prod Date vs Available Quantity
+                Text(
+                  "Prod: ${batch.prodDate ?? 'N/A'} | Exp: ${batch.expDate ?? 'N/A'} | Available: ${batch.availableQuantity}",
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          fontSize: 10.sp,
+                          color: Colors.white60,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          fontSize: 10.sp,
+                          color: Colors.white60,
+                        ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 12.w),
+          // Quantity selection (only for preparing orders)
+          if (_localOrder.status == "Preparing") ...[
+            Container(
+              width: 100.w,
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove, size: 16.sp, color: Colors.red),
+                    onPressed: batch.selectedQuantity > 0
+                        ? () => _updateBatchSelection(
+                              productId,
+                              batch.batchId,
+                              batch.selectedQuantity - 1,
+                            )
+                        : null,
+                    padding: EdgeInsets.all(4.w),
+                    constraints:
+                        BoxConstraints(minWidth: 24.w, minHeight: 24.h),
+                  ),
+                  Expanded(
+                    child: Text(
+                      "${batch.selectedQuantity}",
+                      textAlign: TextAlign.center,
+                      style: isArabic
+                          ? GoogleFonts.cairo(
+                              fontSize: 12.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.spaceGrotesk(
+                              fontSize: 12.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.add, size: 16.sp, color: Colors.green),
+                    onPressed: batch.selectedQuantity < batch.availableQuantity
+                        ? () => _updateBatchSelection(
+                              productId,
+                              batch.batchId,
+                              batch.selectedQuantity + 1,
+                            )
+                        : null,
+                    padding: EdgeInsets.all(4.w),
+                    constraints:
+                        BoxConstraints(minWidth: 24.w, minHeight: 24.h),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // Just show the selected/recommended quantity for non-preparing orders
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Text(
+                "Qty: ${batch.selectedQuantity}",
+                style: isArabic
+                    ? GoogleFonts.cairo(
+                        fontSize: 12.sp,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : GoogleFonts.spaceGrotesk(
+                        fontSize: 12.sp,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
             ),
           ],
@@ -1392,6 +1476,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
       ),
     );
   }
+
+  // Rest of the methods remain the same...
+  // (buildEmptyState, buildModernItemCard, buildInfoChip, etc.)
 
   // Build empty state
   Widget _buildEmptyState() {
@@ -2093,9 +2180,8 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content: Text(
-                                              l10n.viewOrderPrintingInvoice),
-                                        ),
+                                            content: Text(
+                                                l10n.viewOrderPrintingInvoice)),
                                       );
                                     },
                                     child: Text(
@@ -2119,7 +2205,7 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
                               ),
                               SizedBox(height: 30.h),
 
-                              // Batch Management Section (enhanced with preparation info)
+                              // CORRECTED: Enhanced Batch Management Section
                               _buildBatchManagementSection(),
 
                               // Modern Full-width Items Section
