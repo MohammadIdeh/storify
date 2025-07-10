@@ -337,18 +337,27 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     // Localization setup
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = LocalizationHelper.isArabic(context);
     final isRtl = LocalizationHelper.isRTL(context);
 
+    // Get screen dimensions for responsive layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Calculate responsive dialog dimensions
+    final dialogWidth = (screenWidth * 0.85).clamp(600.0, 1000.0);
+    final dialogHeight = (screenHeight * 0.85).clamp(500.0, 800.0);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(20.w),
       child: Container(
-        width: 900.w,
-        height: 720.h,
+        width: dialogWidth,
+        height: dialogHeight,
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 29, 41, 57),
           borderRadius: BorderRadius.circular(20.r),
@@ -400,8 +409,8 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
               ),
             ),
 
-            // Body
-            Expanded(
+            // Body - Using Flexible instead of Expanded to prevent overflow
+            Flexible(
               child: Padding(
                 padding: EdgeInsets.all(24.w),
                 child: _isLoadingOrders || _isLoadingEmployees
@@ -552,8 +561,8 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                     ),
                                     SizedBox(height: 16.h),
 
-                                    // Orders list
-                                    Expanded(
+                                    // Orders list - Using Flexible instead of Expanded
+                                    Flexible(
                                       child: _preparedOrders.isEmpty
                                           ? Center(
                                               child: Column(
@@ -585,6 +594,7 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                                               ),
                                             )
                                           : ListView.builder(
+                                              shrinkWrap: true, // Add this
                                               itemCount: _preparedOrders.length,
                                               itemBuilder: (context, index) {
                                                 final order =
@@ -785,438 +795,463 @@ class _AssignOrderPopupState extends State<AssignOrderPopup> {
                               // Right side - Assignment form
                               Expanded(
                                 flex: 1,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.assignmentDetails,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(
-                                              color: Colors.white,
-                                              fontSize: 18.sp,
-                                              fontWeight: FontWeight.w600,
-                                            )
-                                          : GoogleFonts.spaceGrotesk(
-                                              color: Colors.white,
-                                              fontSize: 18.sp,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                child: SingleChildScrollView(
+                                  // Wrap the entire right side in SingleChildScrollView
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight: dialogHeight -
+                                          200, // Ensure minimum height
                                     ),
-                                    SizedBox(height: 20.h),
-
-                                    // Delivery employee dropdown
-                                    Text(
-                                      l10n.deliveryEmployee,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(
-                                              color: Colors.white70,
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w500,
-                                            )
-                                          : GoogleFonts.spaceGrotesk(
-                                              color: Colors.white70,
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 16.w),
-                                      decoration: BoxDecoration(
-                                        color: const Color.fromARGB(
-                                            255, 36, 50, 69),
-                                        borderRadius:
-                                            BorderRadius.circular(12.r),
-                                        border: Border.all(
-                                          color: const Color.fromARGB(
-                                              255, 60, 75, 95),
-                                        ),
-                                      ),
-                                      child: DropdownButtonHideUnderline(
-                                        child: DropdownButton<DeliveryEmployee>(
-                                          value: _selectedEmployee,
-                                          hint: Text(
-                                            l10n.selectEmployee,
+                                    child: IntrinsicHeight(
+                                      // Use IntrinsicHeight for proper layout
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.assignmentDetails,
                                             style: isArabic
                                                 ? GoogleFonts.cairo(
-                                                    color: Colors.white54,
+                                                    color: Colors.white,
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w600,
                                                   )
                                                 : GoogleFonts.spaceGrotesk(
-                                                    color: Colors.white54,
+                                                    color: Colors.white,
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                           ),
-                                          dropdownColor: const Color.fromARGB(
-                                              255, 36, 50, 69),
-                                          style: isArabic
-                                              ? GoogleFonts.cairo(
-                                                  color: Colors.white,
-                                                )
-                                              : GoogleFonts.spaceGrotesk(
-                                                  color: Colors.white,
-                                                ),
-                                          icon: Transform.flip(
-                                            flipX: isRtl,
-                                            child: const Icon(
-                                              Icons.arrow_drop_down,
-                                              color: Colors.white70,
+                                          SizedBox(height: 20.h),
+
+                                          // Delivery employee dropdown
+                                          Text(
+                                            l10n.deliveryEmployee,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w500,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                          ),
+                                          SizedBox(height: 8.h),
+                                          Container(
+                                            width: double.infinity,
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 16.w),
+                                            decoration: BoxDecoration(
+                                              color: const Color.fromARGB(
+                                                  255, 36, 50, 69),
+                                              borderRadius:
+                                                  BorderRadius.circular(12.r),
+                                              border: Border.all(
+                                                color: const Color.fromARGB(
+                                                    255, 60, 75, 95),
+                                              ),
                                             ),
-                                          ),
-                                          isExpanded: true,
-                                          items: _deliveryEmployees
-                                              .map((employee) {
-                                            return DropdownMenuItem<
-                                                DeliveryEmployee>(
-                                              value: employee,
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    employee.isAvailable
-                                                        ? Icons.circle
-                                                        : Icons.circle_outlined,
-                                                    color: employee.isAvailable
-                                                        ? Colors.green
-                                                        : Colors.red,
-                                                    size: 12.sp,
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<
+                                                  DeliveryEmployee>(
+                                                value: _selectedEmployee,
+                                                hint: Text(
+                                                  l10n.selectEmployee,
+                                                  style: isArabic
+                                                      ? GoogleFonts.cairo(
+                                                          color: Colors.white54)
+                                                      : GoogleFonts
+                                                          .spaceGrotesk(
+                                                              color: Colors
+                                                                  .white54),
+                                                ),
+                                                dropdownColor:
+                                                    const Color.fromARGB(
+                                                        255, 36, 50, 69),
+                                                style: isArabic
+                                                    ? GoogleFonts.cairo(
+                                                        color: Colors.white)
+                                                    : GoogleFonts.spaceGrotesk(
+                                                        color: Colors.white),
+                                                icon: Transform.flip(
+                                                  flipX: isRtl,
+                                                  child: const Icon(
+                                                    Icons.arrow_drop_down,
+                                                    color: Colors.white70,
                                                   ),
-                                                  SizedBox(width: 8.w),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
+                                                ),
+                                                isExpanded: true,
+                                                items: _deliveryEmployees
+                                                    .map((employee) {
+                                                  return DropdownMenuItem<
+                                                      DeliveryEmployee>(
+                                                    value: employee,
+                                                    child: Row(
                                                       children: [
-                                                        Text(
-                                                          employee.user.name,
-                                                          style: isArabic
-                                                              ? GoogleFonts
-                                                                  .cairo(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize:
-                                                                      14.sp,
-                                                                )
-                                                              : GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize:
-                                                                      14.sp,
-                                                                ),
+                                                        Icon(
+                                                          employee.isAvailable
+                                                              ? Icons.circle
+                                                              : Icons
+                                                                  .circle_outlined,
+                                                          color: employee
+                                                                  .isAvailable
+                                                              ? Colors.green
+                                                              : Colors.red,
+                                                          size: 12.sp,
                                                         ),
-                                                        Text(
-                                                          employee
-                                                              .user.phoneNumber,
-                                                          style: isArabic
-                                                              ? GoogleFonts
-                                                                  .cairo(
-                                                                  color: Colors
-                                                                      .white60,
-                                                                  fontSize:
-                                                                      12.sp,
-                                                                )
-                                                              : GoogleFonts
-                                                                  .spaceGrotesk(
-                                                                  color: Colors
-                                                                      .white60,
-                                                                  fontSize:
-                                                                      12.sp,
-                                                                ),
+                                                        SizedBox(width: 8.w),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Text(
+                                                                employee
+                                                                    .user.name,
+                                                                style: isArabic
+                                                                    ? GoogleFonts
+                                                                        .cairo(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontSize:
+                                                                            14.sp,
+                                                                      )
+                                                                    : GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontSize:
+                                                                            14.sp,
+                                                                      ),
+                                                              ),
+                                                              Text(
+                                                                employee.user
+                                                                    .phoneNumber,
+                                                                style: isArabic
+                                                                    ? GoogleFonts
+                                                                        .cairo(
+                                                                        color: Colors
+                                                                            .white60,
+                                                                        fontSize:
+                                                                            12.sp,
+                                                                      )
+                                                                    : GoogleFonts
+                                                                        .spaceGrotesk(
+                                                                        color: Colors
+                                                                            .white60,
+                                                                        fontSize:
+                                                                            12.sp,
+                                                                      ),
+                                                              ),
+                                                            ],
+                                                          ),
                                                         ),
                                                       ],
                                                     ),
+                                                  );
+                                                }).toList(),
+                                                onChanged: (employee) {
+                                                  setState(() {
+                                                    _selectedEmployee =
+                                                        employee;
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(height: 20.h),
+
+                                          // Estimated time
+                                          Text(
+                                            l10n.estimatedTimeMinutes,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w500,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
-                                                ],
-                                              ),
-                                            );
-                                          }).toList(),
-                                          onChanged: (employee) {
-                                            setState(() {
-                                              _selectedEmployee = employee;
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                    ),
-
-                                    SizedBox(height: 20.h),
-
-                                    // Estimated time
-                                    Text(
-                                      l10n.estimatedTimeMinutes,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(
-                                              color: Colors.white70,
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w500,
-                                            )
-                                          : GoogleFonts.spaceGrotesk(
-                                              color: Colors.white70,
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    TextField(
-                                      controller: _estimatedTimeController,
-                                      keyboardType: TextInputType.number,
-                                      textAlign: isRtl
-                                          ? TextAlign.right
-                                          : TextAlign.left,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(
-                                              color: Colors.white,
-                                            )
-                                          : GoogleFonts.spaceGrotesk(
-                                              color: Colors.white,
-                                            ),
-                                      decoration: InputDecoration(
-                                        hintText: l10n.enterMinutes,
-                                        hintStyle: isArabic
-                                            ? GoogleFonts.cairo(
-                                                color: Colors.white54,
-                                              )
-                                            : GoogleFonts.spaceGrotesk(
-                                                color: Colors.white54,
-                                              ),
-                                        filled: true,
-                                        fillColor: const Color.fromARGB(
-                                            255, 36, 50, 69),
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          borderSide: BorderSide(
-                                            color: const Color.fromARGB(
-                                                255, 60, 75, 95),
                                           ),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          borderSide: BorderSide(
-                                            color: const Color.fromARGB(
-                                                255, 60, 75, 95),
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          borderSide: BorderSide(
-                                            color: const Color.fromARGB(
-                                                255, 105, 65, 198),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                    SizedBox(height: 20.h),
-
-                                    // Notes
-                                    Text(
-                                      l10n.notesOptional,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(
-                                              color: Colors.white70,
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w500,
-                                            )
-                                          : GoogleFonts.spaceGrotesk(
-                                              color: Colors.white70,
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    TextField(
-                                      controller: _notesController,
-                                      maxLines: 3,
-                                      textAlign: isRtl
-                                          ? TextAlign.right
-                                          : TextAlign.left,
-                                      style: isArabic
-                                          ? GoogleFonts.cairo(
-                                              color: Colors.white,
-                                            )
-                                          : GoogleFonts.spaceGrotesk(
-                                              color: Colors.white,
-                                            ),
-                                      decoration: InputDecoration(
-                                        hintText: l10n.addDeliveryNotes,
-                                        hintStyle: isArabic
-                                            ? GoogleFonts.cairo(
-                                                color: Colors.white54,
-                                              )
-                                            : GoogleFonts.spaceGrotesk(
-                                                color: Colors.white54,
-                                              ),
-                                        filled: true,
-                                        fillColor: const Color.fromARGB(
-                                            255, 36, 50, 69),
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          borderSide: BorderSide(
-                                            color: const Color.fromARGB(
-                                                255, 60, 75, 95),
-                                          ),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          borderSide: BorderSide(
-                                            color: const Color.fromARGB(
-                                                255, 60, 75, 95),
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                          borderSide: BorderSide(
-                                            color: const Color.fromARGB(
-                                                255, 105, 65, 198),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                    const Spacer(),
-
-                                    // Selected orders summary
-                                    if (_selectedOrderIds.isNotEmpty) ...[
-                                      Container(
-                                        width: double.infinity,
-                                        padding: EdgeInsets.all(16.w),
-                                        decoration: BoxDecoration(
-                                          color: const Color.fromARGB(
-                                              255, 36, 50, 69),
-                                          borderRadius:
-                                              BorderRadius.circular(12.r),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              l10n.selectedOrders,
-                                              style: isArabic
+                                          SizedBox(height: 8.h),
+                                          TextField(
+                                            controller:
+                                                _estimatedTimeController,
+                                            keyboardType: TextInputType.number,
+                                            textAlign: isRtl
+                                                ? TextAlign.right
+                                                : TextAlign.left,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white)
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white),
+                                            decoration: InputDecoration(
+                                              hintText: l10n.enterMinutes,
+                                              hintStyle: isArabic
                                                   ? GoogleFonts.cairo(
-                                                      color: Colors.white,
-                                                      fontSize: 14.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    )
+                                                      color: Colors.white54)
                                                   : GoogleFonts.spaceGrotesk(
-                                                      color: Colors.white,
-                                                      fontSize: 14.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
+                                                      color: Colors.white54),
+                                              filled: true,
+                                              fillColor: const Color.fromARGB(
+                                                  255, 36, 50, 69),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                                borderSide: BorderSide(
+                                                  color: const Color.fromARGB(
+                                                      255, 60, 75, 95),
+                                                ),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                                borderSide: BorderSide(
+                                                  color: const Color.fromARGB(
+                                                      255, 60, 75, 95),
+                                                ),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                                borderSide: BorderSide(
+                                                  color: const Color.fromARGB(
+                                                      255, 105, 65, 198),
+                                                ),
+                                              ),
                                             ),
-                                            SizedBox(height: 8.h),
-                                            Text(
-                                              '${_selectedOrderIds.length} ${l10n.ordersSelected}',
-                                              style: isArabic
-                                                  ? GoogleFonts.cairo(
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255,
-                                                              105,
-                                                              65,
-                                                              198),
-                                                      fontSize: 16.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    )
-                                                  : GoogleFonts.spaceGrotesk(
-                                                      color:
-                                                          const Color.fromARGB(
-                                                              255,
-                                                              105,
-                                                              65,
-                                                              198),
-                                                      fontSize: 16.sp,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(height: 10.h),
-                                    ],
-
-                                    // Assign button
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 48.h,
-                                      child: ElevatedButton(
-                                        onPressed:
-                                            _isAssigning ? null : _assignOrders,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color.fromARGB(
-                                              255, 105, 65, 198),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12.r),
                                           ),
-                                          elevation: 0,
-                                        ),
-                                        child: _isAssigning
-                                            ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
+
+                                          SizedBox(height: 20.h),
+
+                                          // Notes
+                                          Text(
+                                            l10n.notesOptional,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w500,
+                                                  )
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white70,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                          ),
+                                          SizedBox(height: 8.h),
+                                          TextField(
+                                            controller: _notesController,
+                                            maxLines: 3,
+                                            textAlign: isRtl
+                                                ? TextAlign.right
+                                                : TextAlign.left,
+                                            style: isArabic
+                                                ? GoogleFonts.cairo(
+                                                    color: Colors.white)
+                                                : GoogleFonts.spaceGrotesk(
+                                                    color: Colors.white),
+                                            decoration: InputDecoration(
+                                              hintText: l10n.addDeliveryNotes,
+                                              hintStyle: isArabic
+                                                  ? GoogleFonts.cairo(
+                                                      color: Colors.white54)
+                                                  : GoogleFonts.spaceGrotesk(
+                                                      color: Colors.white54),
+                                              filled: true,
+                                              fillColor: const Color.fromARGB(
+                                                  255, 36, 50, 69),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                                borderSide: BorderSide(
+                                                  color: const Color.fromARGB(
+                                                      255, 60, 75, 95),
+                                                ),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                                borderSide: BorderSide(
+                                                  color: const Color.fromARGB(
+                                                      255, 60, 75, 95),
+                                                ),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                                borderSide: BorderSide(
+                                                  color: const Color.fromARGB(
+                                                      255, 105, 65, 198),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(
+                                              height: 20
+                                                  .h), // Fixed spacing instead of Spacer
+
+                                          // Selected orders summary
+                                          if (_selectedOrderIds.isNotEmpty) ...[
+                                            Container(
+                                              width: double.infinity,
+                                              padding: EdgeInsets.all(16.w),
+                                              decoration: BoxDecoration(
+                                                color: const Color.fromARGB(
+                                                    255, 36, 50, 69),
+                                                borderRadius:
+                                                    BorderRadius.circular(12.r),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
-                                                  SizedBox(
-                                                    width: 20.w,
-                                                    height: 20.h,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      color: Colors.white,
-                                                      strokeWidth: 2,
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 12.w),
                                                   Text(
-                                                    l10n.assigning,
+                                                    l10n.selectedOrders,
                                                     style: isArabic
                                                         ? GoogleFonts.cairo(
                                                             color: Colors.white,
-                                                            fontSize: 16.sp,
+                                                            fontSize: 14.sp,
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                           )
                                                         : GoogleFonts
                                                             .spaceGrotesk(
                                                             color: Colors.white,
+                                                            fontSize: 14.sp,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                  ),
+                                                  SizedBox(height: 8.h),
+                                                  Text(
+                                                    '${_selectedOrderIds.length} ${l10n.ordersSelected}',
+                                                    style: isArabic
+                                                        ? GoogleFonts.cairo(
+                                                            color: const Color
+                                                                .fromARGB(255,
+                                                                105, 65, 198),
+                                                            fontSize: 16.sp,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          )
+                                                        : GoogleFonts
+                                                            .spaceGrotesk(
+                                                            color: const Color
+                                                                .fromARGB(255,
+                                                                105, 65, 198),
                                                             fontSize: 16.sp,
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                           ),
                                                   ),
                                                 ],
-                                              )
-                                            : Text(
-                                                l10n.assignOrders,
-                                                style: isArabic
-                                                    ? GoogleFonts.cairo(
-                                                        color: Colors.white,
-                                                        fontSize: 16.sp,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      )
-                                                    : GoogleFonts.spaceGrotesk(
-                                                        color: Colors.white,
-                                                        fontSize: 16.sp,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
                                               ),
+                                            ),
+                                            SizedBox(height: 20.h),
+                                          ],
+
+                                          // Assign button - Always at bottom
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 48.h,
+                                            child: ElevatedButton(
+                                              onPressed: _isAssigning
+                                                  ? null
+                                                  : _assignOrders,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                        255, 105, 65, 198),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          12.r),
+                                                ),
+                                                elevation: 0,
+                                              ),
+                                              child: _isAssigning
+                                                  ? Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 20.w,
+                                                          height: 20.h,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            color: Colors.white,
+                                                            strokeWidth: 2,
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 12.w),
+                                                        Text(
+                                                          l10n.assigning,
+                                                          style: isArabic
+                                                              ? GoogleFonts
+                                                                  .cairo(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize:
+                                                                      16.sp,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                )
+                                                              : GoogleFonts
+                                                                  .spaceGrotesk(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize:
+                                                                      16.sp,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                        ),
+                                                      ],
+                                                    )
+                                                  : Text(
+                                                      l10n.assignOrders,
+                                                      style: isArabic
+                                                          ? GoogleFonts.cairo(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize: 16.sp,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            )
+                                                          : GoogleFonts
+                                                              .spaceGrotesk(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize: 16.sp,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                    ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ],

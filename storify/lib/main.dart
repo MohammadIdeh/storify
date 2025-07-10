@@ -844,7 +844,7 @@ class _RoleSwitcherState extends State<RoleSwitcher> {
 
 // Test credentials (remove in production)
 // admin - hamode.sh889@gmail.com - 123123 - id: 84
-// supplier ahmad - hamode.sh334@gmail.com - yism5huFJGy6SfI- - id: 4
-// customer - momoideh.123@yahoo.com - dHaeo_HFzzUEcYFH
-// warehouse worker - mohammad.shaheen0808@gmail.com - 0S_1NPyVo-CQ5-EO
+// supplier ahmad - hamode.sh334@gmail.com - 123123 - id: 4
+// customer - momoideh.123@yahoo.com - 123123
+// warehouse worker - mohammad.shaheen0808@gmail.com - 123123
 // delivery man - m.ideh.tech@gmail.com
