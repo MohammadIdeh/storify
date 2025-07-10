@@ -735,6 +735,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
 // FIXED: Send Product ID instead of Item ID
 // Replace the _updateSupplierOrderStatus method in viewOrderScreenEmp.dart
 
+// FIXED: Send Product ID instead of Item ID
+// Replace the _updateSupplierOrderStatus method in viewOrderScreenEmp.dart
+
   Future<void> _updateSupplierOrderStatus(String newStatus) async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -756,9 +759,12 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
     try {
       final note = _noteController.text.trim();
 
+      print('🆔 ===== FIXED VERSION - USING PRODUCT ID =====');
+
       // Prepare updated items if there are quantity changes
       List<Map<String, dynamic>>? updatedItems;
       if (_hasQuantityChanges) {
+        print('🆔 PREPARING API REQUEST ITEMS (FIXED):');
         updatedItems = _editedQuantities.entries.map((entry) {
           final itemId = entry.key; // This is the item ID from the UI
           final newQuantity = entry.value;
@@ -769,15 +775,28 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
             orElse: () => _lineItems.first,
           );
 
+          print('🆔 --- FIXED API Request Item ---');
+          print('🆔   UI Item ID (not sending): $itemId');
+          print('🆔   🎯 PRODUCT ID (sending this): ${originalItem.productId}');
+          print('🆔   Received Quantity: $newQuantity');
+          print('🆔   Product Name: ${originalItem.name}');
+
           // 🔧 FIX: Send PRODUCT ID instead of ITEM ID
           final itemData = {
             'id': originalItem.productId, // ✅ Changed from itemId to productId
             'receivedQuantity': newQuantity,
           };
 
+          print('🆔   ✅ CORRECTED Item Data: ${jsonEncode(itemData)}');
           return itemData;
         }).toList();
       }
+
+      print('🆔 FINAL CORRECTED API REQUEST:');
+      print('🆔   Target Order ID: ${_localOrder.orderId}');
+      print('🆔   Target Status: $newStatus');
+      print(
+          '🆔   Updated Items (with PRODUCT IDs): ${jsonEncode(updatedItems)}');
 
       final requestBody = {
         'status': newStatus,
@@ -785,6 +804,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         if (updatedItems != null && updatedItems.isNotEmpty)
           'items': updatedItems,
       };
+
+      print('🆔   🎯 CORRECTED Request Body: ${jsonEncode(requestBody)}');
+      print('🆔 ===== FIXED VERSION DEBUG END =====');
 
       // Make the API call with corrected data
       await OrderService.updateSupplierOrderStatus(
@@ -794,11 +816,17 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         updatedItems,
       );
 
+      print('🎉 API CALL SUCCESS WITH PRODUCT IDs!');
+
       // Refresh order data to see the changes
       await _fetchOrderDetails();
 
+      print('🔄 AFTER REFRESH - CHECKING UPDATED DATA:');
+      print('🔄   Order Status Now: ${_localOrder.status}');
       for (int i = 0; i < _lineItems.length; i++) {
         final item = _lineItems[i];
+        print(
+            '🔄   Item #${i + 1} - Item ID: ${item.id}, Product ID: ${item.productId}, Quantity: ${item.quantity}');
       }
 
       // Reset edited quantities
@@ -820,6 +848,9 @@ class _ViewOrderScreenState extends State<ViewOrderScreen> {
         Navigator.pop(context, _localOrder);
       }
     } catch (e) {
+      print('❌ ERROR IN SUPPLIER ORDER UPDATE:');
+      print('❌   Error: $e');
+
       setState(() {
         _errorMessage = 'Error updating order: $e';
         _isLoading = false;
