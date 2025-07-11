@@ -1,18 +1,16 @@
 import 'dart:async';
+import 'package:deliveryman/l10n/app_localizations.dart';
 import 'package:deliveryman/services/LanguageService.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/location_service.dart';
 import 'services/order_service.dart';
 import 'services/profile_service.dart';
-import 'services/language_service.dart';
 import 'utils/theme.dart';
 
 void main() async {
