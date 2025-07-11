@@ -211,4 +211,83 @@ class AppLocalizationsAr extends AppLocalizations {
   String startBatch(int count) {
     return 'بدء $count';
   }
+
+  @override
+  String get deliveryProfile => 'ملف التوصيل الشخصي';
+
+  @override
+  String get personalInfo => 'المعلومات الشخصية';
+
+  @override
+  String get languages => 'اللغات';
+
+  @override
+  String get loadingProfile => 'جاري تحميل الملف الشخصي...';
+
+  @override
+  String get noProfileData => 'لا توجد بيانات للملف الشخصي';
+
+  @override
+  String get errorLoadingProfile => 'خطأ في تحميل الملف الشخصي';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String get profilePictureUpdated => 'تم تحديث صورة الملف الشخصي بنجاح!';
+
+  @override
+  String get available => 'متاح';
+
+  @override
+  String get unavailable => 'غير متاح';
+
+  @override
+  String get deliveryEmployee => 'موظف التوصيل';
+
+  @override
+  String get employeeId => 'رقم الموظف';
+
+  @override
+  String get locationAndStatus => 'الموقع والحالة';
+
+  @override
+  String get currentLocation => 'الموقع الحالي';
+
+  @override
+  String get availability => 'التوفر';
+
+  @override
+  String get availableForDeliveries => 'متاح للتوصيل';
+
+  @override
+  String get currentlyUnavailable => 'غير متاح حالياً';
+
+  @override
+  String get lastUpdate => 'آخر تحديث';
+
+  @override
+  String get accountInformation => 'معلومات الحساب';
+
+  @override
+  String get joined => 'تاريخ الانضمام';
+
+  @override
+  String get profileId => 'رقم الملف الشخصي';
+
+  @override
+  String get languageSettings => 'إعدادات اللغة';
+
+  @override
+  String get selectLanguageDescription =>
+      'اختر لغتك المفضلة للتطبيق. ستطبق التغييرات فوراً.';
+
+  @override
+  String get availableLanguages => 'اللغات المتاحة';
+
+  @override
+  String get currentLanguage => 'اللغة الحالية';
+
+  @override
+  String get languageChanged => 'تم تغيير اللغة بنجاح!';
 }

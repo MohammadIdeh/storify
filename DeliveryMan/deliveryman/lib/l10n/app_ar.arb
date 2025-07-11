@@ -66,5 +66,38 @@
     "selectAll": "تحديد الكل",
     "multiSelect": "تحديد متعدد",
     "exitSelection": "إنهاء التحديد",
-    "startBatch": "بدء {count}"
+    "startBatch": "بدء {count}",
+    "@startBatch": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "deliveryProfile": "ملف التوصيل الشخصي",
+    "personalInfo": "المعلومات الشخصية",
+    "languages": "اللغات",
+    "loadingProfile": "جاري تحميل الملف الشخصي...",
+    "noProfileData": "لا توجد بيانات للملف الشخصي",
+    "errorLoadingProfile": "خطأ في تحميل الملف الشخصي",
+    "close": "إغلاق",
+    "profilePictureUpdated": "تم تحديث صورة الملف الشخصي بنجاح!",
+    "available": "متاح",
+    "unavailable": "غير متاح",
+    "deliveryEmployee": "موظف التوصيل",
+    "employeeId": "رقم الموظف",
+    "locationAndStatus": "الموقع والحالة",
+    "currentLocation": "الموقع الحالي",
+    "availability": "التوفر",
+    "availableForDeliveries": "متاح للتوصيل",
+    "currentlyUnavailable": "غير متاح حالياً",
+    "lastUpdate": "آخر تحديث",
+    "accountInformation": "معلومات الحساب",
+    "joined": "تاريخ الانضمام",
+    "profileId": "رقم الملف الشخصي",
+    "languageSettings": "إعدادات اللغة",
+    "selectLanguageDescription": "اختر لغتك المفضلة للتطبيق. ستطبق التغييرات فوراً.",
+    "availableLanguages": "اللغات المتاحة",
+    "currentLanguage": "اللغة الحالية",
+    "languageChanged": "تم تغيير اللغة بنجاح!"
 }

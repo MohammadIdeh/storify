@@ -211,4 +211,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String startBatch(int count) {
     return 'Start $count';
   }
+
+  @override
+  String get deliveryProfile => 'Delivery Profile';
+
+  @override
+  String get personalInfo => 'Personal Info';
+
+  @override
+  String get languages => 'Languages';
+
+  @override
+  String get loadingProfile => 'Loading profile...';
+
+  @override
+  String get noProfileData => 'No profile data available';
+
+  @override
+  String get errorLoadingProfile => 'Error Loading Profile';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get profilePictureUpdated => 'Profile picture updated successfully!';
+
+  @override
+  String get available => 'Available';
+
+  @override
+  String get unavailable => 'Unavailable';
+
+  @override
+  String get deliveryEmployee => 'Delivery Employee';
+
+  @override
+  String get employeeId => 'Employee ID';
+
+  @override
+  String get locationAndStatus => 'Location & Status';
+
+  @override
+  String get currentLocation => 'Current Location';
+
+  @override
+  String get availability => 'Availability';
+
+  @override
+  String get availableForDeliveries => 'Available for deliveries';
+
+  @override
+  String get currentlyUnavailable => 'Currently unavailable';
+
+  @override
+  String get lastUpdate => 'Last Update';
+
+  @override
+  String get accountInformation => 'Account Information';
+
+  @override
+  String get joined => 'Joined';
+
+  @override
+  String get profileId => 'Profile ID';
+
+  @override
+  String get languageSettings => 'Language Settings';
+
+  @override
+  String get selectLanguageDescription =>
+      'Choose your preferred language for the app. Changes will take effect immediately.';
+
+  @override
+  String get availableLanguages => 'Available Languages';
+
+  @override
+  String get currentLanguage => 'Current Language';
+
+  @override
+  String get languageChanged => 'Language changed successfully!';
 }

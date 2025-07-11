@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../models/profile.dart';
 import '../services/profile_service.dart';
 import '../services/auth_service.dart';
+import '../services/LanguageService.dart';
+import '../l10n/app_localizations.dart';
 
 class EnhancedProfileDialog extends StatefulWidget {
   const EnhancedProfileDialog({Key? key}) : super(key: key);
@@ -58,7 +60,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Profile picture updated successfully!',
+              AppLocalizations.of(context)!.profilePictureUpdated,
               style: GoogleFonts.spaceGrotesk(color: Colors.white),
             ),
             backgroundColor: const Color(0xFF4CAF50),
@@ -80,6 +82,8 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16), // Wider margins
@@ -120,38 +124,39 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
         child: Consumer<ProfileService>(
           builder: (context, profileService, child) {
             if (!_isInitialized || profileService.isLoading) {
-              return _buildLoadingState();
+              return _buildLoadingState(localizations);
             }
 
             if (profileService.lastError != null) {
-              return _buildErrorState(profileService.lastError!);
+              return _buildErrorState(profileService.lastError!, localizations);
             }
 
             if (profileService.profile == null) {
-              return _buildErrorState('No profile data available');
+              return _buildErrorState(
+                  localizations.noProfileData, localizations);
             }
 
-            return _buildProfileContent(profileService.profile!);
+            return _buildProfileContent(profileService.profile!, localizations);
           },
         ),
       ),
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(AppLocalizations localizations) {
     return Container(
       height: 400,
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
+            const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6941C6)),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'Loading profile...',
-              style: TextStyle(
+              localizations.loadingProfile,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
               ),
@@ -162,7 +167,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState(String error, AppLocalizations localizations) {
     return Container(
       height: 300,
       padding: const EdgeInsets.all(24),
@@ -176,7 +181,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
           ),
           const SizedBox(height: 16),
           Text(
-            'Error Loading Profile',
+            localizations.errorLoadingProfile,
             style: GoogleFonts.spaceGrotesk(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -201,7 +206,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                   ),
-                  child: const Text('Close'),
+                  child: Text(localizations.close),
                 ),
               ),
               const SizedBox(width: 12),
@@ -211,7 +216,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6941C6),
                   ),
-                  child: const Text('Retry'),
+                  child: Text(localizations.retry),
                 ),
               ),
             ],
@@ -221,25 +226,26 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
     );
   }
 
-  Widget _buildProfileContent(DeliveryProfile profile) {
+  Widget _buildProfileContent(
+      DeliveryProfile profile, AppLocalizations localizations) {
     return Column(
       children: [
         // Header with close button
-        _buildHeader(),
+        _buildHeader(localizations),
 
         // Profile picture and basic info
-        _buildProfileHeader(profile),
+        _buildProfileHeader(profile, localizations),
 
         // Tab bar
-        _buildTabBar(),
+        _buildTabBar(localizations),
 
         // Tab content
         Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildPersonalTab(profile),
-              _buildStatsTab(profile),
+              _buildPersonalTab(profile, localizations),
+              _buildLanguagesTab(localizations),
             ],
           ),
         ),
@@ -247,7 +253,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
@@ -278,7 +284,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
           const SizedBox(width: 16),
           Expanded(
             child: Text(
-              'Delivery Profile',
+              localizations.deliveryProfile,
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -305,7 +311,8 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
     );
   }
 
-  Widget _buildProfileHeader(DeliveryProfile profile) {
+  Widget _buildProfileHeader(
+      DeliveryProfile profile, AppLocalizations localizations) {
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -393,7 +400,9 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildStatusBadge(
-                profile.isAvailable ? 'Available' : 'Unavailable',
+                profile.isAvailable
+                    ? localizations.available
+                    : localizations.unavailable,
                 profile.isAvailable
                     ? const Color(0xFF4CAF50)
                     : Colors.redAccent,
@@ -401,7 +410,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
               ),
               const SizedBox(width: 12),
               _buildStatusBadge(
-                'Delivery Employee',
+                localizations.deliveryEmployee,
                 const Color(0xFF6941C6),
                 Icons.local_shipping,
               ),
@@ -455,7 +464,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(AppLocalizations localizations) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
@@ -479,56 +488,58 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
-        tabs: const [
+        tabs: [
           Tab(
-            icon: Icon(Icons.person_outline, size: 20),
-            text: 'Personal Info',
+            icon: const Icon(Icons.person_outline, size: 20),
+            text: localizations.personalInfo,
           ),
           Tab(
-            icon: Icon(Icons.analytics_outlined, size: 20),
-            text: 'Statistics',
+            icon: const Icon(Icons.language, size: 20),
+            text: localizations.languages,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPersonalTab(DeliveryProfile profile) {
+  Widget _buildPersonalTab(
+      DeliveryProfile profile, AppLocalizations localizations) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildInfoSection(
-            'Contact Information',
+            localizations.contactInformation,
             Icons.contact_phone,
             [
-              _buildInfoItem('Email', profile.user.email, Icons.email_outlined),
-              _buildInfoItem(
-                  'Phone', profile.user.phoneNumber, Icons.phone_outlined),
-              _buildInfoItem('Employee ID', profile.userId.toString(),
-                  Icons.badge_outlined),
+              _buildInfoItem(localizations.email, profile.user.email,
+                  Icons.email_outlined),
+              _buildInfoItem(localizations.phone, profile.user.phoneNumber,
+                  Icons.phone_outlined),
+              _buildInfoItem(localizations.employeeId,
+                  profile.userId.toString(), Icons.badge_outlined),
             ],
           ),
           const SizedBox(height: 24),
           _buildInfoSection(
-            'Location & Status',
+            localizations.locationAndStatus,
             Icons.location_on,
             [
               _buildInfoItem(
-                  'Current Location',
+                  localizations.currentLocation,
                   '${double.parse(profile.currentLatitude).toStringAsFixed(6)}, ${double.parse(profile.currentLongitude).toStringAsFixed(6)}',
                   Icons.my_location),
               _buildInfoItem(
-                  'Availability',
+                  localizations.availability,
                   profile.isAvailable
-                      ? 'Available for deliveries'
-                      : 'Currently unavailable',
+                      ? localizations.availableForDeliveries
+                      : localizations.currentlyUnavailable,
                   profile.isAvailable
                       ? Icons.check_circle
                       : Icons.pause_circle),
               _buildInfoItem(
-                  'Last Update',
+                  localizations.lastUpdate,
                   DateFormat('MMM dd, yyyy • hh:mm a')
                       .format(profile.lastLocationUpdate),
                   Icons.access_time),
@@ -536,15 +547,15 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
           ),
           const SizedBox(height: 24),
           _buildInfoSection(
-            'Account Information',
+            localizations.accountInformation,
             Icons.account_circle,
             [
               _buildInfoItem(
-                  'Joined',
+                  localizations.joined,
                   DateFormat('MMM dd, yyyy').format(profile.createdAt),
                   Icons.calendar_today),
-              _buildInfoItem(
-                  'Profile ID', profile.id.toString(), Icons.fingerprint),
+              _buildInfoItem(localizations.profileId, profile.id.toString(),
+                  Icons.fingerprint),
             ],
           ),
         ],
@@ -552,109 +563,235 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
     );
   }
 
-  Widget _buildStatsTab(DeliveryProfile profile) {
-    final stats = profile.stats;
+  Widget _buildLanguagesTab(AppLocalizations localizations) {
+    return Consumer<LanguageService>(
+      builder: (context, languageService, child) {
+        final availableLanguages = languageService.getAvailableLanguages();
+        final currentLanguage = languageService.currentLanguageCode;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Performance overview
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF6941C6).withOpacity(0.1),
-                  const Color(0xFF6941C6).withOpacity(0.05),
-                ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Language selection header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF6941C6).withOpacity(0.1),
+                      const Color(0xFF6941C6).withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF6941C6).withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.language,
+                          color: Color(0xFF6941C6),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          localizations.languageSettings,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      localizations.selectLanguageDescription,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 14,
+                        color: const Color(0xAAFFFFFF),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFF6941C6).withOpacity(0.3),
+
+              const SizedBox(height: 24),
+
+              // Language options
+              Text(
+                localizations.availableLanguages,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                Row(
+              const SizedBox(height: 16),
+
+              // Language selection cards
+              ...availableLanguages.map((language) {
+                final isSelected = currentLanguage == language['code'];
+
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: InkWell(
+                    onTap: () async {
+                      if (!isSelected) {
+                        final success = await languageService
+                            .changeLanguage(language['code']!);
+                        if (success && mounted) {
+                          // Show success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                localizations.languageChanged,
+                                style: GoogleFonts.spaceGrotesk(
+                                    color: Colors.white),
+                              ),
+                              backgroundColor: const Color(0xFF4CAF50),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF6941C6).withOpacity(0.1)
+                            : const Color(0xFF1D2939),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF6941C6)
+                              : const Color(0xFF6941C6).withOpacity(0.2),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Language flag or icon
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF6941C6).withOpacity(0.1)
+                                  : const Color(0xFF6941C6).withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              language['code'] == 'ar' ? '🇸🇦' : '🇺🇸',
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  language['name']!,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  language['nativeName']!,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 14,
+                                    color: const Color(0xAAFFFFFF),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isSelected)
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6941C6),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+
+              const SizedBox(height: 24),
+
+              // Current language info
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF4CAF50).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
                   children: [
                     const Icon(
-                      Icons.analytics,
-                      color: Color(0xFF6941C6),
-                      size: 24,
+                      Icons.info_outline,
+                      color: Color(0xFF4CAF50),
+                      size: 20,
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'Performance Overview',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            localizations.currentLanguage,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 12,
+                              color: const Color(0xFF4CAF50),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            languageService.getLanguageName(currentLanguage),
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Total Deliveries',
-                        stats.totalDeliveries.toString(),
-                        Icons.local_shipping,
-                        const Color(0xFF6941C6),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Today\'s Deliveries',
-                        stats.todayDeliveries.toString(),
-                        Icons.today,
-                        const Color(0xFF4CAF50),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          const SizedBox(height: 24),
-
-          // Revenue stats
-          _buildStatsGrid([
-            _buildStatCard(
-              'Total Revenue',
-              '\$${stats.totalRevenue.toStringAsFixed(2)}',
-              Icons.attach_money,
-              const Color(0xFF4CAF50),
-            ),
-            _buildStatCard(
-              'Active Orders',
-              stats.activeOrdersCount.toString(),
-              Icons.pending_actions,
-              const Color(0xFFFF9800),
-            ),
-            _buildStatCard(
-              'Unique Customers',
-              stats.uniqueCustomers.toString(),
-              Icons.people,
-              const Color(0xFF2196F3),
-            ),
-            _buildStatCard(
-              'Avg Delivery Time',
-              '${stats.avgDeliveryTime}min',
-              Icons.timer,
-              const Color(0xFF9C27B0),
-            ),
-          ]),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -738,66 +875,6 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid(List<Widget> cards) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.2,
-      children: cards,
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D2939),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            title,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 12,
-              color: const Color(0xAAFFFFFF),
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],

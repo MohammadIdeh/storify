@@ -73,5 +73,31 @@
                 "type": "int"
             }
         }
-    }
+    },
+    "deliveryProfile": "Delivery Profile",
+    "personalInfo": "Personal Info",
+    "languages": "Languages",
+    "loadingProfile": "Loading profile...",
+    "noProfileData": "No profile data available",
+    "errorLoadingProfile": "Error Loading Profile",
+    "close": "Close",
+    "profilePictureUpdated": "Profile picture updated successfully!",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "deliveryEmployee": "Delivery Employee",
+    "employeeId": "Employee ID",
+    "locationAndStatus": "Location & Status",
+    "currentLocation": "Current Location",
+    "availability": "Availability",
+    "availableForDeliveries": "Available for deliveries",
+    "currentlyUnavailable": "Currently unavailable",
+    "lastUpdate": "Last Update",
+    "accountInformation": "Account Information",
+    "joined": "Joined",
+    "profileId": "Profile ID",
+    "languageSettings": "Language Settings",
+    "selectLanguageDescription": "Choose your preferred language for the app. Changes will take effect immediately.",
+    "availableLanguages": "Available Languages",
+    "currentLanguage": "Current Language",
+    "languageChanged": "Language changed successfully!"
 }
