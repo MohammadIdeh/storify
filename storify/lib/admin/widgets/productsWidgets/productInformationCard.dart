@@ -45,8 +45,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
 
   late String? _description;
   late String? _barcode;
-  late DateTime? _prodDate;
-  late DateTime? _expDate;
+  late DateTime? _prodDate; // Made nullable
+  late DateTime? _expDate; // Made nullable
 
   // Controllers for editable fields
   late TextEditingController _nameController;
@@ -90,13 +90,9 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _barcode = widget.product.barcode;
     _description = widget.product.description;
 
-    // Parse dates if they exist
-    _prodDate = widget.product.prodDate != null
-        ? _parseDate(widget.product.prodDate!)
-        : null;
-    _expDate = widget.product.expDate != null
-        ? _parseDate(widget.product.expDate!)
-        : null;
+    // Parse dates with improved parsing - handle null properly
+    _prodDate = _parseDate(widget.product.prodDate);
+    _expDate = _parseDate(widget.product.expDate);
 
     // Initialize controllers
     _nameController = TextEditingController(text: _productName);
@@ -156,23 +152,52 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     });
   }
 
-  DateTime _parseDate(String dateString) {
+  // Fixed date parsing method
+  DateTime? _parseDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return null;
+    }
+
     try {
-      // Try different date formats
+      // Try ISO format first (with T)
       if (dateString.contains('T')) {
         return DateTime.parse(dateString);
-      } else {
+      }
+
+      // Try yyyy-MM-dd format (what we send from add product)
+      if (dateString.contains('-') && dateString.length == 10) {
+        return DateTime.parse(dateString);
+      }
+
+      // Try MM/DD/YYYY format
+      if (dateString.contains('/')) {
         final parts = dateString.split('/');
         if (parts.length == 3) {
-          // Assuming MM/DD/YYYY format
           return DateTime(
-              int.parse(parts[2]), int.parse(parts[0]), int.parse(parts[1]));
+              int.parse(parts[2]), // year
+              int.parse(parts[0]), // month
+              int.parse(parts[1]) // day
+              );
+        }
+      }
+
+      // Try dd/MM/yyyy format
+      if (dateString.contains('/')) {
+        final parts = dateString.split('/');
+        if (parts.length == 3 && parts[2].length == 4) {
+          return DateTime(
+              int.parse(parts[2]), // year
+              int.parse(parts[1]), // month
+              int.parse(parts[0]) // day
+              );
         }
       }
     } catch (e) {
-      debugPrint("Error parsing date: $e");
+      debugPrint("Error parsing date '$dateString': $e");
     }
-    return DateTime.now(); // Default fallback
+
+    // Return null instead of DateTime.now() when parsing fails
+    return null;
   }
 
   Future<void> _selectDate(BuildContext context, bool isProdDate) async {
@@ -242,9 +267,6 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
       });
     }
   }
-
-  // Save changes to API with authentication
-// Replace the _saveChanges method in productInformationCard.dart
 
   Future<void> _saveChanges() async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
