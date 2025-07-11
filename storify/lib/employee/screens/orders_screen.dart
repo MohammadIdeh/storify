@@ -83,7 +83,7 @@ class OrderItem {
   }
 }
 
-// StatsCard widget with proper RTL support and centered circular indicator
+// Updated StatsCard widget with improved layout and larger title font
 class StatsCard extends StatelessWidget {
   final String svgIconPath;
   final String title;
@@ -130,7 +130,7 @@ class StatsCard extends StatelessWidget {
 
               return Stack(
                 children: [
-                  // Top: Icon and title with proper RTL positioning
+                  // Top: Icon and title with proper RTL positioning and bigger font
                   Positioned(
                     top: 0,
                     left: isRtl ? null : 0,
@@ -147,29 +147,38 @@ class StatsCard extends StatelessWidget {
                           height: iconSize,
                         ),
                         SizedBox(width: 12.w),
-                        Text(
-                          title,
-                          style: isArabic
-                              ? GoogleFonts.cairo(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color:
-                                      const Color.fromARGB(255, 196, 196, 196),
-                                )
-                              : GoogleFonts.spaceGrotesk(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color:
-                                      const Color.fromARGB(255, 196, 196, 196),
-                                ),
-                          textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    fontSize:
+                                        20.sp, // Increased from 16.sp to 20.sp
+                                    fontWeight: FontWeight
+                                        .w600, // Increased from w500 to w600
+                                    color: const Color.fromARGB(
+                                        255, 196, 196, 196),
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    fontSize:
+                                        20.sp, // Increased from 16.sp to 20.sp
+                                    fontWeight: FontWeight
+                                        .w600, // Increased from w500 to w600
+                                    color: const Color.fromARGB(
+                                        255, 196, 196, 196),
+                                  ),
+                            textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  // Count text positioned above the circular indicator
+                  // Count text positioned higher up - moved from cardHeight * 0.35 to 0.25
                   Positioned(
-                    top: cardHeight * 0.35,
+                    top: cardHeight *
+                        0.15, // Moved up to create space for centered circle
                     left: 0,
                     right: 0,
                     child: Center(
@@ -189,11 +198,12 @@ class StatsCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Centered circular progress indicator
+                  // Centered circular progress indicator - positioned in the middle under the number
                   Positioned(
                     top: cardHeight *
-                        0.55, // Position it in the center-bottom area
-                    left: (cardWidth - circleSize) / 2, // Center horizontally
+                        0.55, // Moved to be centered below the number
+                    left:
+                        (cardWidth - circleSize) / 1.68, // Center horizontally
                     child: CircularPercentIndicator(
                       radius: circleSize / 3,
                       lineWidth: circleSize * 0.08,
@@ -1102,7 +1112,7 @@ class _OrdersState extends State<Orders_employee> {
                                 ),
                               ),
 
-                              // Pagination Row - only show if there are orders
+                              // Updated Pagination Row with 4 icons - only show if there are orders
                               if (_filteredOrders.isNotEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(
@@ -1130,14 +1140,40 @@ class _OrdersState extends State<Orders_employee> {
                                                 color: Colors.white70,
                                               ),
                                       ),
-                                      SizedBox(width: 10.w),
-                                      // Previous page button
+                                      SizedBox(width: 16.w),
+
+                                      // First page button (double arrow)
                                       IconButton(
                                         icon: Icon(
                                           isRtl
-                                              ? Icons.arrow_forward
-                                              : Icons.arrow_back,
+                                              ? Icons
+                                                  .keyboard_double_arrow_right
+                                              : Icons
+                                                  .keyboard_double_arrow_left,
                                           size: 20.sp,
+                                          color: _currentPage > 1
+                                              ? Colors.white70
+                                              : Colors.white38,
+                                        ),
+                                        onPressed: _currentPage > 1
+                                            ? () {
+                                                setState(() {
+                                                  _currentPage = 1;
+                                                });
+                                              }
+                                            : null,
+                                        tooltip: isRtl
+                                            ? 'الصفحة الأولى'
+                                            : 'First Page',
+                                      ),
+
+                                      // Previous page button (single arrow)
+                                      IconButton(
+                                        icon: Icon(
+                                          isRtl
+                                              ? Icons.arrow_forward_ios
+                                              : Icons.arrow_back_ios,
+                                          size: 18.sp,
                                           color: _currentPage > 1
                                               ? Colors.white70
                                               : Colors.white38,
@@ -1149,7 +1185,11 @@ class _OrdersState extends State<Orders_employee> {
                                                 });
                                               }
                                             : null,
+                                        tooltip: isRtl
+                                            ? 'الصفحة السابقة'
+                                            : 'Previous Page',
                                       ),
+
                                       // Page buttons
                                       Row(
                                         children: List.generate(
@@ -1212,13 +1252,14 @@ class _OrdersState extends State<Orders_employee> {
                                           },
                                         ),
                                       ),
-                                      // Next page button
+
+                                      // Next page button (single arrow)
                                       IconButton(
                                         icon: Icon(
                                           isRtl
-                                              ? Icons.arrow_back
-                                              : Icons.arrow_forward,
-                                          size: 20.sp,
+                                              ? Icons.arrow_back_ios
+                                              : Icons.arrow_forward_ios,
+                                          size: 18.sp,
                                           color: _currentPage < totalPages
                                               ? Colors.white70
                                               : Colors.white38,
@@ -1230,6 +1271,33 @@ class _OrdersState extends State<Orders_employee> {
                                                 });
                                               }
                                             : null,
+                                        tooltip: isRtl
+                                            ? 'الصفحة التالية'
+                                            : 'Next Page',
+                                      ),
+
+                                      // Last page button (double arrow)
+                                      IconButton(
+                                        icon: Icon(
+                                          isRtl
+                                              ? Icons.keyboard_double_arrow_left
+                                              : Icons
+                                                  .keyboard_double_arrow_right,
+                                          size: 20.sp,
+                                          color: _currentPage < totalPages
+                                              ? Colors.white70
+                                              : Colors.white38,
+                                        ),
+                                        onPressed: _currentPage < totalPages
+                                            ? () {
+                                                setState(() {
+                                                  _currentPage = totalPages;
+                                                });
+                                              }
+                                            : null,
+                                        tooltip: isRtl
+                                            ? 'الصفحة الأخيرة'
+                                            : 'Last Page',
                                       ),
                                     ],
                                   ),
