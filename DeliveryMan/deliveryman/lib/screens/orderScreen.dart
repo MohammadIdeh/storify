@@ -316,10 +316,25 @@ class OrdersScreen extends StatelessWidget {
             }
 
             if (success) {
+              // 🔥 ENHANCED: Better cleanup logic
               if (orderService.activeOrders.length <= 1) {
                 locationService.stopTracking();
+                // 🔥 ADD: Force cleanup routes when no more active orders
+                orderService.forceCleanupRoutes();
+                print('🏁 Last order completed - cleaned up all routes');
               }
+
+              // 🔥 ADD: Always force refresh after completion
               onRefresh();
+
+              // 🔥 ADD: Additional cleanup to ensure map is updated
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (currentContext.mounted) {
+                  final orderService =
+                      Provider.of<OrderService>(currentContext, listen: false);
+                  orderService.forceCleanupRoutes();
+                }
+              });
 
               if (currentContext.mounted) {
                 _showMessage(
@@ -388,7 +403,15 @@ class OrdersScreen extends StatelessWidget {
   Future<void> _refreshOrders(BuildContext context) async {
     final orderService = Provider.of<OrderService>(context, listen: false);
     try {
+      print('🔄 Refreshing orders and cleaning up routes...');
+
+      // Fetch fresh orders
       await orderService.fetchAssignedOrders();
+
+      // Force cleanup any stale routes
+      orderService.forceCleanupRoutes();
+
+      print('✅ Orders refresh and cleanup complete');
     } catch (e) {
       if (context.mounted) {
         _showMessage(

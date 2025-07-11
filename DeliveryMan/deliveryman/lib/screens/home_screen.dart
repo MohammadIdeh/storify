@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:deliveryman/screens/historyScreen.dart';
 import 'package:deliveryman/screens/orderScreen.dart';
 import 'package:deliveryman/widgets/map.dart';
@@ -32,6 +33,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   final List<String> _screenTitles = ['Map', 'Orders', 'History'];
 
+  // 🔥 ADD: Timer for periodic refresh to catch cancelled orders
+  Timer? _periodicRefreshTimer;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -46,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen>
       if (mounted) {
         _initializeServices();
         _fetchData();
+        _startPeriodicRefresh(); // 🔥 ADD THIS
       }
     });
   }
@@ -68,17 +73,54 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
+    _periodicRefreshTimer?.cancel(); // 🔥 ADD THIS
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // 🔥 ENHANCED: When app resumes, force refresh to catch any external changes
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _fetchData();
+          print(
+              '📱 App resumed - refreshing data to catch external changes...');
+          _performCompleteRefresh();
+          _startPeriodicRefresh(); // Restart periodic refresh
         }
       });
+    } else if (state == AppLifecycleState.paused) {
+      // 🔥 ADD: Stop periodic refresh when app is paused
+      _stopPeriodicRefresh();
+    }
+  }
+
+  // 🔥 ADD: Periodic refresh to catch cancelled orders from admin
+  void _startPeriodicRefresh() {
+    _periodicRefreshTimer?.cancel();
+    _periodicRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) {
+        print('🔄 Periodic refresh - checking for order updates...');
+        _fetchData();
+      }
+    });
+    print('⏰ Started periodic refresh every 30 seconds');
+  }
+
+  void _stopPeriodicRefresh() {
+    _periodicRefreshTimer?.cancel();
+    _periodicRefreshTimer = null;
+    print('⏰ Stopped periodic refresh');
+  }
+
+  // 🔥 ADD: Force cleanup routes
+  void _forceCleanupRoutes() {
+    try {
+      final orderService = Provider.of<OrderService>(context, listen: false);
+      orderService.forceCleanupRoutes();
+      print('🧹 Forced cleanup of stale routes');
+    } catch (e) {
+      print('❌ Error during force cleanup: $e');
     }
   }
 
@@ -102,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  // 🔥 ENHANCED: Better data fetching with route cleanup
   Future<void> _fetchData() async {
     if (!mounted) return;
 
@@ -117,6 +160,8 @@ class _HomeScreenState extends State<HomeScreen>
         case 0: // Map tab
         case 1: // Orders tab
           await orderService.fetchAssignedOrders();
+          // 🔥 ADD: Force cleanup after fetching to remove cancelled orders
+          orderService.forceCleanupRoutes();
           break;
         case 2: // History tab
           await orderService.fetchCompletedOrders();
@@ -151,13 +196,17 @@ class _HomeScreenState extends State<HomeScreen>
     _fetchTabSpecificData(index);
   }
 
+  // 🔥 ENHANCED: Better tab switching with cleanup
   void _fetchTabSpecificData(int index) {
     final orderService = Provider.of<OrderService>(context, listen: false);
 
     switch (index) {
       case 0: // Map
       case 1: // Orders tab
-        orderService.fetchAssignedOrders();
+        orderService.fetchAssignedOrders().then((_) {
+          // Clean up routes after fetching
+          orderService.forceCleanupRoutes();
+        });
         break;
       case 2: // History tab
         orderService.fetchCompletedOrders();
@@ -170,18 +219,35 @@ class _HomeScreenState extends State<HomeScreen>
     if (_cachedScreens != null) return _cachedScreens!;
 
     _cachedScreens = [
-      MapScreen(onRefresh: _fetchData),
+      MapScreen(onRefresh: _performCompleteRefresh), // 🔥 USE ENHANCED REFRESH
       OrdersScreen(
         isLoading: _isLoading,
-        onRefresh: _fetchData,
+        onRefresh: _performCompleteRefresh, // 🔥 USE ENHANCED REFRESH
       ),
       EnhancedHistoryScreen(
         isLoading: _isLoading,
-        onRefresh: _fetchData,
+        onRefresh: _performCompleteRefresh, // 🔥 USE ENHANCED REFRESH
       ),
     ];
 
     return _cachedScreens!;
+  }
+
+  // 🔥 ADD: Enhanced refresh method for pull-to-refresh
+  Future<void> _performCompleteRefresh() async {
+    if (!mounted) return;
+
+    print('🔄 Performing complete refresh...');
+
+    final orderService = Provider.of<OrderService>(context, listen: false);
+
+    // First, clean up any stale routes
+    orderService.forceCleanupRoutes();
+
+    // Then fetch fresh data
+    await _fetchData();
+
+    print('✅ Complete refresh finished');
   }
 
   void _showProfilePopup() {
@@ -597,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
 
-          // Refresh button
+          // 🔥 ENHANCED: Better refresh button with cleanup
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
@@ -620,8 +686,10 @@ class _HomeScreenState extends State<HomeScreen>
                       size: 20,
                     ),
             ),
-            onPressed: _isLoading ? null : _fetchData,
-            tooltip: 'Refresh',
+            onPressed: _isLoading
+                ? null
+                : _performCompleteRefresh, // 🔥 USE NEW METHOD
+            tooltip: 'Refresh & Clean Routes',
           ),
 
           // Logout button

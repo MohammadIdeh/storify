@@ -484,6 +484,9 @@ class OrderService with ChangeNotifier {
           // Separate active orders (in progress) from assigned orders
           _activeOrders = _assignedOrders.where((o) => o.isInProgress).toList();
 
+          // 🔥 FIX: Clean up cancelled/completed orders from active routes
+          _cleanupActiveRoutes();
+
           print(
               'Successfully parsed ${assignedResponse.count} assigned orders');
           print('Active orders: ${_activeOrders.length}');
@@ -515,6 +518,33 @@ class OrderService with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  void _cleanupActiveRoutes() {
+    if (_activeRoutes.isEmpty) return;
+
+    // Get the current active order IDs (orders that are still in progress)
+    final activeOrderIds = _activeOrders.map((order) => order.id).toSet();
+
+    // Remove routes for orders that are no longer active
+    final originalRouteCount = _activeRoutes.length;
+    _activeRoutes
+        .removeWhere((route) => !activeOrderIds.contains(route.order.id));
+
+    final removedCount = originalRouteCount - _activeRoutes.length;
+    if (removedCount > 0) {
+      print(
+          '🧹 Cleaned up $removedCount cancelled/completed routes from active routes');
+
+      // Update batch delivery status
+      _isBatchDeliveryActive = _activeRoutes.length > 1;
+
+      if (_activeRoutes.isEmpty) {
+        print(
+            '🏁 All routes completed/cancelled - clearing batch delivery status');
+        _isBatchDeliveryActive = false;
+      }
     }
   }
 
@@ -1022,12 +1052,15 @@ class OrderService with ChangeNotifier {
       print('Update status response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        // Remove completed order from active routes
-        if (status == OrderStatus.delivered) {
+        // Remove completed/cancelled order from active routes
+        if (status == OrderStatus.delivered ||
+            status == OrderStatus.cancelled) {
           _activeRoutes.removeWhere((route) => route.order.id == orderId);
           if (_activeRoutes.length <= 1) {
             _isBatchDeliveryActive = false;
           }
+          print(
+              '🗑️ Removed order $orderId from active routes due to status: $status');
         }
 
         // Refresh orders after successful status update
@@ -1045,6 +1078,12 @@ class OrderService with ChangeNotifier {
       print("Error updating order status: $e");
       return false;
     }
+  }
+
+  void forceCleanupRoutes() {
+    print('🔄 Force cleaning up active routes...');
+    _cleanupActiveRoutes();
+    notifyListeners();
   }
 
   // Helper methods

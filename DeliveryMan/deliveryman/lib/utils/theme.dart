@@ -19,12 +19,6 @@ class AppTheme {
         foregroundColor: AppColors.text,
         elevation: 0,
       ),
-      cardTheme: CardTheme(
-        color: AppColors.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.card,

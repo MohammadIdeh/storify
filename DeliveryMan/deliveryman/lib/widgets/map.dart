@@ -188,6 +188,7 @@ class _MapScreenState extends State<MapScreen>
 
     final currentPosition = locationService.currentPosition;
     final currentOrders = orderService.assignedOrders;
+    final currentActiveRoutes = orderService.activeRoutes; // 🔥 ADD THIS
 
     bool shouldUpdate = false;
 
@@ -200,6 +201,13 @@ class _MapScreenState extends State<MapScreen>
         !_ordersEqual(currentOrders, _lastKnownOrders)) {
       shouldUpdate = true;
       _lastKnownOrders = List.from(currentOrders);
+    }
+
+    // 🔥 ADD THIS: Check if active routes changed (for cancelled orders)
+    if (currentActiveRoutes.length != _polylines.length) {
+      shouldUpdate = true;
+      print(
+          '🔄 Active routes count changed: ${currentActiveRoutes.length} vs ${_polylines.length} polylines');
     }
 
     if (shouldUpdate) {
@@ -231,12 +239,29 @@ class _MapScreenState extends State<MapScreen>
     if (mounted) {
       setState(() {
         _markers = _buildMarkers(currentPosition, orderService.assignedOrders);
+
+        // 🔥 CLEAR OLD POLYLINES FIRST before building new ones
+        _polylines.clear();
         _polylines = _buildPolylines(
             activeRoutes, currentOrder, currentPosition, orderService);
       });
 
       _updateCameraPosition(activeRoutes, currentOrder, currentPosition);
     }
+  }
+
+  Future<void> _refreshMapData() async {
+    if (!mounted) return;
+
+    final orderService = Provider.of<OrderService>(context, listen: false);
+
+    print('🔄 Refreshing map data...');
+
+    // Force cleanup routes first
+    orderService.forceCleanupRoutes();
+
+    // Then update the map
+    _updateMap();
   }
 
   Set<Marker> _buildMarkers(Position? currentPosition, List<Order> orders) {
@@ -282,10 +307,24 @@ class _MapScreenState extends State<MapScreen>
       OrderService orderService) {
     final polylines = <Polyline>{};
 
+    // 🔥 ADD LOGGING
+    print('🗺️ Building polylines for ${activeRoutes.length} active routes');
+
     if (activeRoutes.isNotEmpty) {
       // Use real Google Directions routes for batch delivery
       for (int i = 0; i < activeRoutes.length; i++) {
         final route = activeRoutes[i];
+
+        // 🔥 VERIFY route is still valid
+        final routeOrderIsActive = orderService.assignedOrders
+            .any((order) => order.id == route.order.id && order.isInProgress);
+
+        if (!routeOrderIsActive) {
+          print(
+              '⚠️ Skipping route for Order #${route.order.id} - no longer active');
+          continue;
+        }
+
         polylines.add(
           Polyline(
             polylineId: PolylineId('route_${route.order.id}'),
@@ -296,12 +335,15 @@ class _MapScreenState extends State<MapScreen>
             // NO PATTERNS = Solid line following real roads
           ),
         );
+
+        print('✅ Added route for Order #${route.order.id}');
       }
     } else if (currentOrder != null && currentPosition != null) {
       // For single orders, get real route from Google Directions
       _loadSingleOrderRoute(currentOrder, currentPosition, orderService);
     }
 
+    print('🏁 Built ${polylines.length} polylines');
     return polylines;
   }
 
