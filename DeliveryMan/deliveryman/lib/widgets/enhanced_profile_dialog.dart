@@ -445,7 +445,7 @@ class _EnhancedProfileDialogState extends State<EnhancedProfileDialog>
           Text(
             label,
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 12,
+              fontSize: 11,
               color: color,
               fontWeight: FontWeight.w600,
             ),
