@@ -1,14 +1,18 @@
 import 'dart:async';
+import 'package:deliveryman/services/LanguageService.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/location_service.dart';
 import 'services/order_service.dart';
-import 'services/profile_service.dart'; // ADD THIS
+import 'services/profile_service.dart';
+import 'services/language_service.dart';
 import 'utils/theme.dart';
 
 void main() async {
@@ -29,10 +33,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LanguageService()..initialize()),
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => LocationService()),
         ChangeNotifierProvider(create: (_) => OrderService()),
-        ChangeNotifierProvider(create: (_) => ProfileService()), // ADD THIS
+        ChangeNotifierProvider(create: (_) => ProfileService()),
       ],
       child: const AppWrapper(),
     );
@@ -90,12 +95,12 @@ class _AppWrapperState extends State<AppWrapper> {
         final locationService =
             Provider.of<LocationService>(context, listen: false);
         final profileService =
-            Provider.of<ProfileService>(context, listen: false); // ADD THIS
+            Provider.of<ProfileService>(context, listen: false);
 
         // Set token for other services
         orderService.updateToken(authService.token);
         locationService.updateToken(authService.token);
-        profileService.updateToken(authService.token); // ADD THIS
+        profileService.updateToken(authService.token);
 
         // Initialize location service with timeout
         setState(() {
@@ -206,11 +211,26 @@ class _AppWrapperState extends State<AppWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Delivery App',
-      theme: AppTheme.darkTheme,
-      home: _buildHomeWidget(),
+    return Consumer<LanguageService>(
+      builder: (context, languageService, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Storify Delivery',
+          theme: AppTheme.darkTheme,
+          locale: languageService.currentLocale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'), // English
+            Locale('ar'), // Arabic
+          ],
+          home: _buildHomeWidget(),
+        );
+      },
     );
   }
 
