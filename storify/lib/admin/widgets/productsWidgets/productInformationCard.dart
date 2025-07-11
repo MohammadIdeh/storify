@@ -10,6 +10,7 @@ import 'package:storify/admin/widgets/productsWidgets/product_item_Model.dart';
 import 'package:storify/admin/widgets/productsWidgets/supplist.dart';
 import 'package:storify/l10n/generated/app_localizations.dart';
 import 'package:storify/providers/LocalizationHelper.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ProductInformationCard extends StatefulWidget {
   final ProductItemInformation product;
@@ -243,6 +244,8 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
   }
 
   // Save changes to API with authentication
+// Replace the _saveChanges method in productInformationCard.dart
+
   Future<void> _saveChanges() async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -251,11 +254,10 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
     _costPrice = double.tryParse(_costPriceController.text) ?? _costPrice;
     _sellPrice = double.tryParse(_sellPriceController.text) ?? _sellPrice;
     _quantity = int.tryParse(_quantityController.text) ?? _quantity;
-    _unit =
-        _unitController.text.isEmpty ? null : _unitController.text; // New field
+    _unit = _unitController.text.isEmpty ? null : _unitController.text;
     _lowStock = _lowStockController.text.isEmpty
         ? null
-        : int.tryParse(_lowStockController.text); // New field
+        : int.tryParse(_lowStockController.text);
 
     _description = _descriptionController.text.isEmpty
         ? null
@@ -278,87 +280,102 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         return;
       }
 
-      // Prepare data for API
-      final Map<String, dynamic> updateData = {
-        'name': _productName,
-        'costPrice': _costPrice,
-        'sellPrice': _sellPrice,
-        'quantity': _quantity,
-        'categoryId': widget.product.categoryId, // Keep original category ID
-        'status': _isActive
-            ? 'Active'
-            : 'NotActive', // Use correct case for status values
-      };
-
-      // Include image if it was changed
-      if (_imageChanged) {
-        updateData['image'] = _imageUrl;
+      // Get the token for multipart request
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception(l10n.authenticationTokenRequired);
       }
 
-      // Add optional fields only if they have values
-      if (_unit != null && _unit!.isNotEmpty) updateData['unit'] = _unit;
-      if (_lowStock != null) updateData['lowStock'] = _lowStock;
-      if (_description != null && _description!.isNotEmpty)
-        updateData['description'] = _description;
-      if (_prodDate != null)
-        updateData['prodDate'] = DateFormat('yyyy-MM-dd').format(_prodDate!);
-      if (_expDate != null)
-        updateData['expDate'] = DateFormat('yyyy-MM-dd').format(_expDate!);
-      if (_barcode != null && _barcode!.isNotEmpty)
-        updateData['barcode'] = _barcode;
-
-      // Debug the request body
-      debugPrint('Sending update with body: ${json.encode(updateData)}');
-
-      // Make API request with authentication headers
-      final headers = await AuthService.getAuthHeaders();
-      debugPrint('Making authenticated API request with headers: $headers');
-
-      // First attempt - with all data including image if changed
-      http.Response response = await http.put(
+      // Create a multipart request for the product update
+      final request = http.MultipartRequest(
+        'PUT',
         Uri.parse(
             'https://finalproject-a5ls.onrender.com/product/${widget.product.productId}'),
-        headers: headers,
-        body: json.encode(updateData),
       );
+
+      // Add token header
+      request.headers['token'] = token;
+
+      // Add all form fields
+      request.fields['name'] = _productName;
+      request.fields['costPrice'] = _costPrice.toString();
+      request.fields['sellPrice'] = _sellPrice.toString();
+      request.fields['quantity'] = _quantity.toString();
+      request.fields['categoryId'] = widget.product.categoryId.toString();
+      request.fields['status'] = _isActive ? 'Active' : 'NotActive';
+
+      // Add optional fields only if they have values
+      if (_unit != null && _unit!.isNotEmpty) {
+        request.fields['unit'] = _unit!;
+      }
+      if (_lowStock != null) {
+        request.fields['lowStock'] = _lowStock.toString();
+      }
+      if (_description != null && _description!.isNotEmpty) {
+        request.fields['description'] = _description!;
+      }
+      if (_prodDate != null) {
+        request.fields['prodDate'] =
+            DateFormat('yyyy-MM-dd').format(_prodDate!);
+      }
+      if (_expDate != null) {
+        request.fields['expDate'] = DateFormat('yyyy-MM-dd').format(_expDate!);
+      }
+      if (_barcode != null && _barcode!.isNotEmpty) {
+        request.fields['barcode'] = _barcode!;
+      }
+
+      // Handle image upload if changed
+      if (_imageChanged && _imageUrl.startsWith('data:')) {
+        try {
+          // Convert data URL to bytes
+          final base64String = _imageUrl.split(',')[1];
+          final bytes = base64.decode(base64String);
+
+          // Get MIME type from data URL
+          final mimeType = _imageUrl.split(',')[0].split(':')[1].split(';')[0];
+
+          // Create multipart file
+          final imageFile = http.MultipartFile.fromBytes(
+            'image',
+            bytes,
+            filename: 'product_image.${mimeType.split('/')[1]}',
+            contentType: MediaType.parse(mimeType),
+          );
+
+          request.files.add(imageFile);
+          debugPrint('Added image file to request: ${bytes.length} bytes');
+        } catch (e) {
+          debugPrint('Error processing image: $e');
+          // Continue without image if there's an error
+        }
+      }
+
+      // Debug the request
+      debugPrint('Sending multipart request with fields: ${request.fields}');
+      debugPrint('Files attached: ${request.files.length}');
+
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       debugPrint('API Response status: ${response.statusCode}');
       debugPrint('API Response body: ${response.body}');
-
-      // If first attempt fails and we included the image, try again without image
-      if (response.statusCode != 200 &&
-          _imageChanged &&
-          (response.body.contains('image') || response.statusCode == 400)) {
-        debugPrint('First attempt failed. Trying without image field.');
-        // Remove image from update data
-        updateData.remove('image');
-
-        // Try API request again without image
-        response = await http.put(
-          Uri.parse(
-              'https://finalproject-a5ls.onrender.com/product/${widget.product.productId}'),
-          headers: headers,
-          body: json.encode(updateData),
-        );
-
-        debugPrint('Second attempt status: ${response.statusCode}');
-        debugPrint('Second attempt body: ${response.body}');
-      }
 
       if (response.statusCode == 200) {
         // Success - create an updated product object for the UI
         final updatedProduct = ProductItemInformation(
           productId: widget.product.productId,
-          image: _imageUrl,
+          image: _imageChanged ? _imageUrl : widget.product.image,
           name: _productName,
           costPrice: _costPrice,
           sellPrice: _sellPrice,
           qty: _quantity,
-          unit: _unit, // New field
-          lowStock: _lowStock, // New field
+          unit: _unit,
+          lowStock: _lowStock,
           categoryId: widget.product.categoryId,
           category: widget.product.category,
-          status: _isActive ? 'Active' : 'NotActive', // Match API format
+          status: _isActive ? 'Active' : 'NotActive',
           barcode: _barcode,
           prodDate: _prodDate != null
               ? DateFormat('yyyy-MM-dd').format(_prodDate!)
@@ -369,6 +386,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
           description: _description,
           suppliers: widget.product.suppliers,
         );
+
         // Call the onUpdate callback
         widget.onUpdate(updatedProduct);
 
@@ -380,9 +398,7 @@ class _ProductInformationCardState extends State<ProductInformationCard> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_imageChanged && !updateData.containsKey('image')
-                ? l10n.productUpdatedSuccessfullyWithoutImageChanges
-                : l10n.productUpdatedSuccessfully),
+            content: Text(l10n.productUpdatedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
