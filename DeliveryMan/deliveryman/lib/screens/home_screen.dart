@@ -3,6 +3,7 @@ import 'package:deliveryman/screens/historyScreen.dart';
 import 'package:deliveryman/screens/orderScreen.dart';
 import 'package:deliveryman/widgets/map.dart';
 import 'package:deliveryman/widgets/navbar.dart';
+import 'package:deliveryman/widgets/enhanced_profile_dialog.dart'; // ADD THIS
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -11,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/location_service.dart';
 import '../services/order_service.dart';
+import '../services/profile_service.dart'; // ADD THIS
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -130,11 +132,14 @@ class _HomeScreenState extends State<HomeScreen>
       final orderService = Provider.of<OrderService>(context, listen: false);
       final locationService =
           Provider.of<LocationService>(context, listen: false);
+      final profileService =
+          Provider.of<ProfileService>(context, listen: false); // ADD THIS
 
       // Set token for services
       if (authService.token != null) {
         orderService.updateToken(authService.token);
         locationService.updateToken(authService.token);
+        profileService.updateToken(authService.token); // ADD THIS
 
         // Initialize location in background
         locationService.getCurrentLocation();
@@ -250,248 +255,12 @@ class _HomeScreenState extends State<HomeScreen>
     print('✅ Complete refresh finished');
   }
 
+  // UPDATED: Use the new enhanced profile dialog
   void _showProfilePopup() {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final user = authService.currentUser;
-
-    if (user == null) return;
-
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF304050),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF6941C6).withOpacity(0.3),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6941C6).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Color(0xFF6941C6),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Profile Information',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white70,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Profile Picture
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF6941C6),
-                    width: 3,
-                  ),
-                ),
-                child: ClipOval(
-                  child: user.profilePicture != null &&
-                          user.profilePicture!.isNotEmpty
-                      ? Image.network(
-                          user.profilePicture!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            color: const Color(0xFF6941C6).withOpacity(0.1),
-                            child: const Icon(
-                              Icons.person,
-                              color: Color(0xFF6941C6),
-                              size: 40,
-                            ),
-                          ),
-                        )
-                      : Container(
-                          color: const Color(0xFF6941C6).withOpacity(0.1),
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF6941C6),
-                            size: 40,
-                          ),
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // User Information
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1D2939),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF6941C6).withOpacity(0.2),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Name
-                    _buildProfileInfoRow(
-                      Icons.person_outline,
-                      'Name',
-                      user.name,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Email
-                    _buildProfileInfoRow(
-                      Icons.email_outlined,
-                      'Email',
-                      user.email,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Role
-                    _buildProfileInfoRow(
-                      Icons.work_outline,
-                      'Role',
-                      user.roleName,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // User ID
-                    _buildProfileInfoRow(
-                      Icons.badge_outlined,
-                      'Employee ID',
-                      user.userId.toString(),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Status Badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF4CAF50).withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF4CAF50).withOpacity(0.5),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Active - On Duty',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12,
-                        color: const Color(0xFF4CAF50),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileInfoRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: const Color(0xFF6941C6),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 12,
-                  color: const Color(0xAAFFFFFF),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      barrierDismissible: true,
+      builder: (context) => const EnhancedProfileDialog(),
     );
   }
 
@@ -547,6 +316,11 @@ class _HomeScreenState extends State<HomeScreen>
               Navigator.of(ctx).pop();
               final authService =
                   Provider.of<AuthService>(context, listen: false);
+              final profileService = Provider.of<ProfileService>(context,
+                  listen: false); // ADD THIS
+
+              // Clear profile data on logout
+              profileService.clearProfile(); // ADD THIS
               authService.logout();
               Navigator.of(context).pushReplacementNamed('/');
             },
@@ -623,10 +397,9 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         actions: [
-          // Profile button
-          Consumer<AuthService>(
-            builder: (context, authService, child) {
-              final user = authService.currentUser;
+          // Profile button - UPDATED to use ProfileService
+          Consumer<ProfileService>(
+            builder: (context, profileService, child) {
               return IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(6),
@@ -634,12 +407,13 @@ class _HomeScreenState extends State<HomeScreen>
                     color: const Color(0xFF6941C6).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: user?.profilePicture != null &&
-                          user!.profilePicture!.isNotEmpty
+                  child: profileService.profile?.user.profilePicture != null &&
+                          profileService
+                              .profile!.user.profilePicture!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: Image.network(
-                            user.profilePicture!,
+                            profileService.profile!.user.profilePicture!,
                             width: 20,
                             height: 20,
                             fit: BoxFit.cover,

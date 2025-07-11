@@ -9,12 +9,12 @@ class ApiService {
   static const String baseUrl = 'https://finalproject-a5ls.onrender.com';
 
   // Fetch all orders for a supplier
+  // Add these debug prints in ApiService.fetchSupplierOrders() method
+
   Future<List<Order>> fetchSupplierOrders() async {
     try {
-      // Get auth headers for the current role
       final headers = await AuthService.getAuthHeaders();
 
-      // Using the CORRECT endpoint for supplier orders
       final response = await http.get(
         Uri.parse('$baseUrl/supplierOrders/my/orders'),
         headers: headers,
@@ -22,7 +22,28 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
+
+        // DEBUG: Print the raw response
+        debugPrint('🐛 SUPPLIER DEBUG: Raw API response: ${response.body}');
+
         final List<dynamic> ordersList = data['orders'];
+
+        // DEBUG: Print order details
+        for (var orderJson in ordersList) {
+          debugPrint('🐛 SUPPLIER DEBUG: Order ID: ${orderJson['id']}');
+          debugPrint('🐛 SUPPLIER DEBUG: Order items: ${orderJson['items']}');
+
+          if (orderJson['items'] != null) {
+            for (var item in orderJson['items']) {
+              debugPrint('🐛 SUPPLIER DEBUG: Item details:');
+              debugPrint('  - Item ID: ${item['id']}');
+              debugPrint('  - Product ID: ${item['productId']}');
+              debugPrint('  - Quantity: ${item['quantity']}');
+              debugPrint('  - Cost Price: ${item['costPrice']}');
+              debugPrint('  - Product Info: ${item['product']}');
+            }
+          }
+        }
 
         return ordersList
             .map((orderJson) => Order.fromJson(orderJson))

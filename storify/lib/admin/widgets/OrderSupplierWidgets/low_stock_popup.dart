@@ -93,6 +93,29 @@ class _LowStockPopupState extends State<LowStockPopup> {
     }
   }
 
+  void _debugIDMapping() {
+    debugPrint('🐛 ID MAPPING DEBUG: Checking all low stock items...');
+
+    for (var item in _items) {
+      debugPrint('🐛 Item: ${item.product.name}');
+      debugPrint('  - product.productId: ${item.product.productId}');
+
+      // Check if suppliers have consistent product IDs
+      for (var supplier in item.suppliers) {
+        debugPrint(
+            '  - supplier: ${supplier.supplierName} (ID: ${supplier.supplierId})');
+      }
+
+      // Check if last order has consistent product ID
+      if (item.lastOrder != null) {
+        debugPrint('  - lastOrder productId: might be different!');
+        debugPrint('  - lastOrder supplier: ${item.lastOrder!.supplierName}');
+      }
+
+      debugPrint('  ---');
+    }
+  }
+
   void _toggleSelectAll() {
     setState(() {
       _selectAll = !_selectAll;
@@ -137,6 +160,8 @@ class _LowStockPopupState extends State<LowStockPopup> {
     });
   }
 
+// Fix for low_stock_popup.dart in _generateOrders() method
+
   Future<void> _generateOrders() async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final selectedItems = _items.where((item) => item.isSelected).toList();
@@ -166,19 +191,26 @@ class _LowStockPopupState extends State<LowStockPopup> {
         globalSupplierId = _globalSupplier!.supplierId;
       }
 
-      // Collect custom quantities
+      // 🔧 FIX: Always collect custom quantities for selected items
       Map<int, int> quantities = {};
       for (var item in selectedItems) {
         final controller = _quantityControllers[item.product.productId];
         if (controller != null) {
           final quantity = int.tryParse(controller.text) ?? item.stockDeficit;
-          if (quantity != item.stockDeficit) {
-            quantities[item.product.productId] = quantity;
-          }
+
+          // 🔧 FIXED: Always send the quantity, regardless of whether it matches stockDeficit
+          quantities[item.product.productId] = quantity;
+
+          debugPrint(
+              '🔧 FIX DEBUG: Adding quantity for product ${item.product.productId}: $quantity');
         }
       }
+
+      // 🔧 FIX: Always set customQuantities if we have quantities
       if (quantities.isNotEmpty) {
         customQuantities = quantities;
+        debugPrint(
+            '🔧 FIX DEBUG: customQuantities will be sent: $customQuantities');
       }
 
       // Collect custom suppliers (only if not using global supplier)

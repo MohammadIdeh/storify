@@ -1,5 +1,6 @@
 // lib/admin/widgets/OrderSupplierWidgets/low_stock_service.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
@@ -27,7 +28,6 @@ class LowStockService {
 
       return false;
     } catch (e) {
-   
       return true; // Default to showing if there's an error
     }
   }
@@ -40,9 +40,7 @@ class LowStockService {
 
       await prefs.setString(_lastCheckKey, today);
       await prefs.setBool(_hasShownNotificationKey, true);
-    } catch (e) {
-   
-    }
+    } catch (e) {}
   }
 
   // Reset notification status (call this when user navigates away from orders screen)
@@ -50,9 +48,7 @@ class LowStockService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_hasShownNotificationKey, false);
-    } catch (e) {
-    
-    }
+    } catch (e) {}
   }
 
   // Get low stock items - Updated for new API structure
@@ -65,18 +61,13 @@ class LowStockService {
         headers: headers,
       );
 
-   
-      
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return LowStockResponse.fromJson(data);
       } else {
-      
         return null;
       }
     } catch (e) {
-   
       return null;
     }
   }
@@ -92,7 +83,6 @@ class LowStockService {
       );
 
       if (item.suppliers.isNotEmpty) {
-     
         return item.suppliers;
       }
 
@@ -103,8 +93,6 @@ class LowStockService {
         Uri.parse('$baseUrl/supplierOrders/product/$productId/suppliers'),
         headers: headers,
       );
-
- 
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -122,14 +110,11 @@ class LowStockService {
                 ))
             .toList();
 
-   
         return lowStockSuppliers;
       } else {
-      
         return null;
       }
     } catch (e) {
-     
       return null;
     }
   }
@@ -138,13 +123,18 @@ class LowStockService {
   static Future<GenerateOrdersResponse?> generateOrders({
     List<int>? selectedProductIds,
     bool selectAll = false,
-    Map<int, int>? customQuantities, // Product ID -> Custom Quantity
-    int? customSupplierId, // Single supplier for ALL items
-    Map<int, int>? customSuppliers, // Product ID -> Custom Supplier ID
+    Map<int, int>? customQuantities,
+    int? customSupplierId,
+    Map<int, int>? customSuppliers,
   }) async {
     try {
       final headers = await AuthService.getAuthHeaders();
       headers['Content-Type'] = 'application/json';
+
+      // DEBUG: Print the original custom quantities
+      debugPrint(
+          '🐛 ADMIN DEBUG: Original customQuantities: $customQuantities');
+      debugPrint('🐛 ADMIN DEBUG: selectedProductIds: $selectedProductIds');
 
       // Convert Map<int, int> to Map<String, int> for JSON serialization
       Map<String, int>? jsonCustomQuantities;
@@ -152,6 +142,8 @@ class LowStockService {
         jsonCustomQuantities = {};
         customQuantities.forEach((productId, quantity) {
           jsonCustomQuantities![productId.toString()] = quantity;
+          debugPrint(
+              '🐛 ADMIN DEBUG: Mapping productId $productId -> quantity $quantity');
         });
       }
 
@@ -171,25 +163,29 @@ class LowStockService {
         customSuppliers: jsonCustomSuppliers,
       );
 
-     
+      // DEBUG: Print the final request body
+      final requestBody = json.encode(request.toJson());
+      debugPrint('🐛 ADMIN DEBUG: Final request body: $requestBody');
 
       final response = await http.post(
         Uri.parse('$baseUrl/low-stock/generate-orders'),
         headers: headers,
-        body: json.encode(request.toJson()),
+        body: requestBody,
       );
 
-    
+      debugPrint('🐛 ADMIN DEBUG: Response status: ${response.statusCode}');
+      debugPrint('🐛 ADMIN DEBUG: Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         return GenerateOrdersResponse.fromJson(data);
       } else {
-     
+        debugPrint(
+            '🐛 ADMIN DEBUG: Request failed with status ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      
+      debugPrint('🐛 ADMIN DEBUG: Exception in generateOrders: $e');
       return null;
     }
   }
@@ -260,6 +256,5 @@ class LowStockService {
       LowStockItem item, LowStockSupplier newSupplier) async {
     // This would update the supplier for the product in the backend if needed
     // For now, we'll just update it locally in the UI
- 
   }
 }

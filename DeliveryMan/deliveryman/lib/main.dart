@@ -8,6 +8,7 @@ import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/location_service.dart';
 import 'services/order_service.dart';
+import 'services/profile_service.dart'; // ADD THIS
 import 'utils/theme.dart';
 
 void main() async {
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => LocationService()),
         ChangeNotifierProvider(create: (_) => OrderService()),
+        ChangeNotifierProvider(create: (_) => ProfileService()), // ADD THIS
       ],
       child: const AppWrapper(),
     );
@@ -87,10 +89,13 @@ class _AppWrapperState extends State<AppWrapper> {
         final orderService = Provider.of<OrderService>(context, listen: false);
         final locationService =
             Provider.of<LocationService>(context, listen: false);
+        final profileService =
+            Provider.of<ProfileService>(context, listen: false); // ADD THIS
 
         // Set token for other services
         orderService.updateToken(authService.token);
         locationService.updateToken(authService.token);
+        profileService.updateToken(authService.token); // ADD THIS
 
         // Initialize location service with timeout
         setState(() {
@@ -145,6 +150,26 @@ class _AppWrapperState extends State<AppWrapper> {
         } catch (e) {
           print('⚠️ Error fetching initial orders (continuing anyway): $e');
           // Don't treat this as a fatal error, user can try again
+        }
+
+        // Initialize profile (non-blocking)
+        setState(() {
+          _initializationStep = 'Loading profile...';
+        });
+
+        try {
+          print('👤 Fetching profile data...');
+          await profileService.fetchProfile().timeout(
+            const Duration(seconds: 8),
+            onTimeout: () {
+              print('⚠️ Profile fetch timed out');
+              return false;
+            },
+          );
+          print('✅ Profile data fetched successfully');
+        } catch (e) {
+          print('⚠️ Error fetching profile (continuing anyway): $e');
+          // Don't treat this as a fatal error
         }
       } else {
         print('👤 User not logged in, skipping service setup');
