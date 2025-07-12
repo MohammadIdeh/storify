@@ -384,6 +384,8 @@ class ProductGrid extends StatelessWidget {
 class CartWidget extends StatefulWidget {
   final List<CartItem> cartItems;
   final Function(int, int) updateQuantity;
+  final Function(int) removeItem; // NEW: Remove individual item
+  final Function() clearCart; // NEW: Clear all items
   final Function() placeOrder;
   final bool isPlacingOrder;
 
@@ -391,6 +393,8 @@ class CartWidget extends StatefulWidget {
     Key? key,
     required this.cartItems,
     required this.updateQuantity,
+    required this.removeItem, // NEW
+    required this.clearCart, // NEW
     required this.placeOrder,
     this.isPlacingOrder = false,
   }) : super(key: key);
@@ -399,13 +403,30 @@ class CartWidget extends StatefulWidget {
   State<CartWidget> createState() => _CartWidgetState();
 }
 
-class _CartWidgetState extends State<CartWidget> {
+class _CartWidgetState extends State<CartWidget> with TickerProviderStateMixin {
   List<TextEditingController> _quantityControllers = [];
   List<FocusNode> _focusNodes = [];
+  late AnimationController _clearAllAnimationController;
+  late Animation<double> _clearAllScaleAnimation;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize animation controller
+    _clearAllAnimationController = AnimationController(
+      duration: Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _clearAllScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _clearAllAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
     // Use post frame callback to avoid initState issues
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeControllers();
@@ -481,6 +502,7 @@ class _CartWidgetState extends State<CartWidget> {
   @override
   void dispose() {
     _disposeControllers();
+    _clearAllAnimationController.dispose();
     super.dispose();
   }
 
@@ -533,6 +555,14 @@ class _CartWidgetState extends State<CartWidget> {
     }
   }
 
+  // NEW: Handle clear all button with animation
+  void _handleClearAll() {
+    _clearAllAnimationController.forward().then((_) {
+      _clearAllAnimationController.reverse();
+      widget.clearCart();
+    });
+  }
+
   double getSubtotal() {
     return widget.cartItems.fold(0, (sum, item) => sum + item.total);
   }
@@ -560,47 +590,109 @@ class _CartWidgetState extends State<CartWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cart Header
+            // Cart Header with Clear All Button
             Padding(
               padding: EdgeInsetsDirectional.all(20.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    l10n.categoryWidgetsYourCart,
-                    style: isArabic
-                        ? GoogleFonts.cairo(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          )
-                        : GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                  ),
-                  if (widget.cartItems.isNotEmpty)
-                    Container(
-                      padding: EdgeInsetsDirectional.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7B5CFA),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Text(
-                        l10n.categoryWidgetsCartItemCount(
-                            widget.cartItems.length.toString()),
+                  // Cart title and count
+                  Row(
+                    children: [
+                      Text(
+                        "Your Cart",
                         style: isArabic
                             ? GoogleFonts.cairo(
                                 color: Colors.white,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               )
                             : GoogleFonts.spaceGrotesk(
                                 color: Colors.white,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
                       ),
+                      if (widget.cartItems.isNotEmpty) ...[
+                        SizedBox(width: 12),
+                        Container(
+                          padding: EdgeInsetsDirectional.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7B5CFA),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Text(
+                            "${widget.cartItems.length} items",
+                            style: isArabic
+                                ? GoogleFonts.cairo(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  )
+                                : GoogleFonts.spaceGrotesk(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  // Clear All Button
+                  if (widget.cartItems.isNotEmpty)
+                    AnimatedBuilder(
+                      animation: _clearAllScaleAnimation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _clearAllScaleAnimation.value,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: _handleClearAll,
+                              child: Container(
+                                padding: EdgeInsetsDirectional.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.red.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.delete_sweep_rounded,
+                                      color: Colors.red,
+                                      size: 18,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      "Clear All",
+                                      style: isArabic
+                                          ? GoogleFonts.cairo(
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            )
+                                          : GoogleFonts.spaceGrotesk(
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -613,34 +705,43 @@ class _CartWidgetState extends State<CartWidget> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.shopping_cart_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
+                      Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800]?.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       Text(
-                        l10n.categoryWidgetsCartEmpty,
+                        "Your cart is empty",
                         style: isArabic
                             ? GoogleFonts.cairo(
                                 color: Colors.grey[400],
-                                fontSize: 16,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               )
                             : GoogleFonts.spaceGrotesk(
                                 color: Colors.grey[400],
-                                fontSize: 16,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        l10n.categoryWidgetsAddItemsToStart,
+                        "Add items to start shopping",
                         style: isArabic
                             ? GoogleFonts.cairo(
-                                color: Colors.grey[400],
+                                color: Colors.grey[500],
                                 fontSize: 14,
                               )
                             : GoogleFonts.spaceGrotesk(
-                                color: Colors.grey[400],
+                                color: Colors.grey[500],
                                 fontSize: 14,
                               ),
                       ),
@@ -720,9 +821,7 @@ class _CartWidgetState extends State<CartWidget> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    l10n.categoryWidgetsPriceEach(item
-                                        .product.sellPrice
-                                        .toStringAsFixed(2)),
+                                    "\$${item.product.sellPrice.toStringAsFixed(2)} each",
                                     style: isArabic
                                         ? GoogleFonts.cairo(
                                             color: Colors.grey[400],
@@ -743,6 +842,7 @@ class _CartWidgetState extends State<CartWidget> {
                                 // Decrease button
                                 InkWell(
                                   onTap: () => _decreaseQuantity(index),
+                                  borderRadius: BorderRadius.circular(6),
                                   child: Container(
                                     width: 32,
                                     height: 32,
@@ -827,6 +927,7 @@ class _CartWidgetState extends State<CartWidget> {
                                 // Increase button
                                 InkWell(
                                   onTap: () => _increaseQuantity(index),
+                                  borderRadius: BorderRadius.circular(6),
                                   child: Container(
                                     width: 32,
                                     height: 32,
@@ -848,40 +949,72 @@ class _CartWidgetState extends State<CartWidget> {
                               ],
                             ),
 
-                            // Item Total
+                            // Item Total and Remove Button
                             SizedBox(
-                              width: 70,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              width: 100,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Text(
-                                    "\$${item.total.toStringAsFixed(2)}",
-                                    style: isArabic
-                                        ? GoogleFonts.cairo(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          )
-                                        : GoogleFonts.spaceGrotesk(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                    textAlign: TextAlign.right,
+                                  // Total price
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        "\$${item.total.toStringAsFixed(2)}",
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                      Text(
+                                        "x${item.quantity}",
+                                        style: isArabic
+                                            ? GoogleFonts.cairo(
+                                                color: Colors.grey[400],
+                                                fontSize: 12,
+                                              )
+                                            : GoogleFonts.spaceGrotesk(
+                                                color: Colors.grey[400],
+                                                fontSize: 12,
+                                              ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    l10n.categoryWidgetsQuantityMultiplier(
-                                        item.quantity.toString()),
-                                    style: isArabic
-                                        ? GoogleFonts.cairo(
-                                            color: Colors.grey[400],
-                                            fontSize: 12,
-                                          )
-                                        : GoogleFonts.spaceGrotesk(
-                                            color: Colors.grey[400],
-                                            fontSize: 12,
+                                  SizedBox(width: 8),
+
+                                  // Individual Remove Button
+                                  MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: GestureDetector(
+                                      onTap: () => widget.removeItem(index),
+                                      child: Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: Colors.red.withOpacity(0.3),
+                                            width: 1,
                                           ),
-                                    textAlign: TextAlign.right,
+                                        ),
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          color: Colors.red,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -911,9 +1044,7 @@ class _CartWidgetState extends State<CartWidget> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          l10n.categoryWidgetsSubtotalItems(widget.cartItems
-                              .fold(0, (sum, item) => sum + item.quantity)
-                              .toString()),
+                          "Subtotal (${widget.cartItems.fold(0, (sum, item) => sum + item.quantity)} items)",
                           style: isArabic
                               ? GoogleFonts.cairo(
                                   color: Colors.grey[300],
@@ -945,7 +1076,7 @@ class _CartWidgetState extends State<CartWidget> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          l10n.categoryWidgetsTotal,
+                          "Total",
                           style: isArabic
                               ? GoogleFonts.cairo(
                                   color: Colors.white,
@@ -1004,7 +1135,7 @@ class _CartWidgetState extends State<CartWidget> {
                                 ),
                               )
                             : Text(
-                                l10n.categoryWidgetsPlaceOrder,
+                                "Place Order",
                                 style: isArabic
                                     ? GoogleFonts.cairo(
                                         fontWeight: FontWeight.bold,

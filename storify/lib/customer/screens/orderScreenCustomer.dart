@@ -175,6 +175,139 @@ class _CustomerOrdersState extends State<CustomerOrders> {
     });
   }
 
+  // NEW: Clear individual item from cart
+  void _removeCartItem(int index) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    if (index >= 0 && index < _cartItems.length) {
+      final removedItem = _cartItems[index];
+      setState(() {
+        _cartItems.removeAt(index);
+      });
+
+      // Show confirmation snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "${removedItem.product.name} removed from cart",
+            style: isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
+          ),
+          backgroundColor: const Color(0xFF7B5CFA),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // NEW: Clear all items from cart
+  void _clearCart() {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    if (_cartItems.isEmpty) return;
+
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final isRtl = LocalizationHelper.isRTL(context);
+
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF283548),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  "Clear Cart",
+                  style: isArabic
+                      ? GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        )
+                      : GoogleFonts.spaceGrotesk(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                ),
+              ],
+            ),
+            content: Text(
+              "Are you sure you want to remove all items from your cart?",
+              style: isArabic
+                  ? GoogleFonts.cairo(color: Colors.white)
+                  : GoogleFonts.spaceGrotesk(color: Colors.white),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  "Cancel",
+                  style: isArabic
+                      ? GoogleFonts.cairo(color: Colors.grey[400])
+                      : GoogleFonts.spaceGrotesk(color: Colors.grey[400]),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _cartItems.clear();
+                  });
+
+                  // Show success snackbar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        "Cart cleared successfully",
+                        style: isArabic
+                            ? GoogleFonts.cairo()
+                            : GoogleFonts.spaceGrotesk(),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Text(
+                  "Clear Cart",
+                  style: isArabic
+                      ? GoogleFonts.cairo(fontWeight: FontWeight.bold)
+                      : GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _placeOrder() async {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
 
@@ -644,7 +777,7 @@ class _CustomerOrdersState extends State<CustomerOrders> {
               ),
             ),
 
-            // Right side - Cart
+            // Right side - Cart (UPDATED to include new clear functions)
             Expanded(
               flex: 2,
               child: Padding(
@@ -653,6 +786,8 @@ class _CustomerOrdersState extends State<CustomerOrders> {
                 child: CartWidget(
                   cartItems: _cartItems,
                   updateQuantity: _updateCartItemQuantity,
+                  removeItem: _removeCartItem, // NEW
+                  clearCart: _clearCart, // NEW
                   placeOrder: _placeOrder,
                   isPlacingOrder: _isPlacingOrder,
                 ),
