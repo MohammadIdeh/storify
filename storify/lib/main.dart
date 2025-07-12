@@ -72,7 +72,7 @@ void main() async {
   }
   try {
     debugPrint('🚀 Starting Storify app...');
-
+    debugPrint("asdasdasd");
     // ✅ ROUTING: Remove # from URLs for cleaner web experience
     usePathUrlStrategy();
     debugPrint('✅ URL strategy configured for clean web URLs');
