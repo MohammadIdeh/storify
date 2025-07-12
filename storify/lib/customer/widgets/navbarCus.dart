@@ -1,4 +1,5 @@
 // lib/customer/widgets/navbarCus.dart
+// Enhanced version with notification integration
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,6 +14,7 @@ import 'package:storify/utilis/notification_service.dart';
 import 'package:storify/Registration/Screens/loginScreen.dart';
 import 'package:storify/Registration/Widgets/auth_service.dart';
 import 'package:storify/services/user_profile_service.dart';
+import 'package:storify/customer/widgets/CustomerOrderService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NavigationBarCustomer extends StatefulWidget {
@@ -42,15 +44,17 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
   List<NotificationItem> _notifications = [];
   int _unreadCount = 0;
 
+  // Customer notification initialization
+  bool _notificationsInitialized = false;
+
   @override
   void initState() {
     super.initState();
     // Use post frame callback to avoid initState issues
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeCustomerNotifications();
       _loadNotifications();
-      NotificationService()
-          .registerNotificationsListChangedCallback(_onNotificationsChanged);
-      NotificationService().registerNewNotificationCallback(_onNewNotification);
+      _setupNotificationCallbacks();
     });
   }
 
@@ -58,11 +62,194 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
   void dispose() {
     debugPrint('🧹 Disposing NavigationBarCustomer...');
     _isDisposed = true;
+    _unregisterNotificationCallbacks();
+    _removeAllOverlays();
+    super.dispose();
+  }
+
+  // Initialize customer-specific notifications
+  Future<void> _initializeCustomerNotifications() async {
+    if (_notificationsInitialized) return;
+
+    try {
+      debugPrint('🔔 Initializing customer notifications...');
+
+      // Initialize the notification service
+      await CustomerOrderService.initializeCustomerNotifications();
+
+      // Register customer-specific handlers
+      NotificationService().registerCustomerNotificationHandler((notification) {
+        debugPrint('🛒 Customer notification received: ${notification.title}');
+        _handleCustomerNotification(notification);
+      });
+
+      // Register order status update handler
+      NotificationService().registerOrderStatusUpdateHandler((orderId) {
+        debugPrint('📦 Order status update for order: $orderId');
+        _handleOrderStatusUpdate(orderId);
+      });
+
+      // Register low stock notification handler
+      NotificationService().registerLowStockNotificationHandler(() {
+        debugPrint('📦 Low stock notification - navigating to orders');
+        _handleLowStockNotification();
+      });
+
+      _notificationsInitialized = true;
+      debugPrint('✅ Customer notifications initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Error initializing customer notifications: $e');
+    }
+  }
+
+  // Handle customer-specific notifications
+  void _handleCustomerNotification(NotificationItem notification) {
+    if (!mounted || _isDisposed) return;
+
+    // Update UI immediately
+    setState(() {
+      _unreadCount = NotificationService().getUnreadCount();
+    });
+
+    // Show toast notification for important events
+    if (notification.type?.contains('order') == true) {
+      _showToastNotification(notification);
+    }
+  }
+
+  // Handle order status updates
+  void _handleOrderStatusUpdate(String orderId) {
+    if (!mounted || _isDisposed) return;
+
+    debugPrint('📦 Handling order status update for order: $orderId');
+
+    // Could navigate to order history or show specific order details
+    // For now, just refresh the notification count
+    setState(() {
+      _unreadCount = NotificationService().getUnreadCount();
+    });
+  }
+
+  // Handle low stock notifications
+  void _handleLowStockNotification() {
+    if (!mounted || _isDisposed) return;
+
+    debugPrint('📦 Handling low stock notification');
+
+    // Navigate to orders screen where customer can see available products
+    if (widget.currentIndex != 0) {
+      widget.onTap(0); // Navigate to orders screen
+    }
+
+    // Show a brief message
+    _showLowStockMessage();
+  }
+
+  // Show toast notification for important events
+  void _showToastNotification(NotificationItem notification) {
+    if (!mounted || _isDisposed) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              notification.icon ?? Icons.notifications,
+              color: Colors.white,
+              size: 24,
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notification.title,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    notification.message,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white70,
+                      fontSize: 13,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor:
+            notification.iconBackgroundColor ?? const Color(0xFF7B5CFA),
+        duration: Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        action: SnackBarAction(
+          label: 'View',
+          textColor: Colors.white,
+          onPressed: () {
+            _toggleNotificationMenu();
+          },
+        ),
+      ),
+    );
+  }
+
+  // Show low stock message
+  void _showLowStockMessage() {
+    if (!mounted || _isDisposed) return;
+
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    final isArabic = LocalizationHelper.isArabic(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.inventory_2, color: Colors.white, size: 24),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Some items are running low in stock. Check available products!',
+                style:
+                    isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  // Setup notification callbacks
+  void _setupNotificationCallbacks() {
+    NotificationService()
+        .registerNotificationsListChangedCallback(_onNotificationsChanged);
+    NotificationService().registerNewNotificationCallback(_onNewNotification);
+  }
+
+  // Unregister notification callbacks
+  void _unregisterNotificationCallbacks() {
     NotificationService()
         .unregisterNotificationsListChangedCallback(_onNotificationsChanged);
     NotificationService().unregisterNewNotificationCallback(_onNewNotification);
-    _removeAllOverlays();
-    super.dispose();
+    NotificationService().unregisterCustomerNotificationHandler();
+    NotificationService().unregisterOrderStatusUpdateHandler();
+    NotificationService().unregisterLowStockNotificationHandler();
   }
 
   void _removeAllOverlays() {
@@ -103,6 +290,9 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
         _notifications = NotificationService().getNotifications();
         _unreadCount = NotificationService().getUnreadCount();
       });
+
+      // Show toast for new notifications
+      _showToastNotification(notification);
     }
   }
 
@@ -185,6 +375,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
 
     try {
       _removeAllOverlays();
+      _unregisterNotificationCallbacks();
       _isDisposed = true;
 
       await AuthService.logoutFromAllRoles();
@@ -357,7 +548,7 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
             // Right side: Notifications and Profile
             Row(
               children: [
-                // Notifications
+                // Notifications with enhanced indicator
                 InkWell(
                   onTap: _isDisposed ? null : _toggleNotificationMenu,
                   child: Container(
@@ -366,6 +557,12 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                     decoration: BoxDecoration(
                       color: const Color.fromARGB(255, 36, 50, 69),
                       borderRadius: BorderRadius.circular(16),
+                      border: _isNotificationMenuOpen
+                          ? Border.all(
+                              color: const Color.fromARGB(255, 105, 65, 198),
+                              width: 2,
+                            )
+                          : null,
                     ),
                     child: Stack(
                       children: [
@@ -379,15 +576,36 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                         ),
                         if (_unreadCount > 0)
                           PositionedDirectional(
-                            top: 10,
-                            end: 10,
+                            top: 8,
+                            end: 8,
                             child: Container(
-                              width: 10.w,
-                              height: 10.h,
+                              width: _unreadCount > 9 ? 18.w : 12.w,
+                              height: 12.h,
                               decoration: const BoxDecoration(
                                 color: Colors.red,
                                 shape: BoxShape.circle,
                               ),
+                              child: _unreadCount > 9
+                                  ? Center(
+                                      child: Text(
+                                        '9+',
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 8.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        _unreadCount.toString(),
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: Colors.white,
+                                          fontSize: 8.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                       ],
@@ -406,6 +624,13 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                         height: 50,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          border: _isMenuOpen
+                              ? Border.all(
+                                  color:
+                                      const Color.fromARGB(255, 105, 65, 198),
+                                  width: 2,
+                                )
+                              : null,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(25),
@@ -446,7 +671,9 @@ class _NavigationBarCustomerState extends State<NavigationBarCustomer> {
                             ? Icons.arrow_drop_up
                             : Icons.arrow_drop_down,
                         size: 35,
-                        color: const Color.fromARGB(255, 105, 123, 123),
+                        color: _isMenuOpen
+                            ? const Color.fromARGB(255, 105, 65, 198)
+                            : const Color.fromARGB(255, 105, 123, 123),
                       ),
                     ],
                   ),

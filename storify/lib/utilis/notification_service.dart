@@ -1,3 +1,5 @@
+// lib/utilis/notification_service.dart
+// Enhanced version with better customer integration
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -29,8 +31,10 @@ class NotificationService {
   List<Function(List<NotificationItem>)> _notificationsListChangedCallbacks =
       [];
 
-  // NEW: Low stock notification handler
+  // Role-specific notification handlers
   Function()? _lowStockNotificationHandler;
+  Function(String orderId)? _orderStatusUpdateHandler;
+  Function(NotificationItem)? _customerNotificationHandler;
 
   // In-memory store of notifications
   List<NotificationItem> _notifications = [];
@@ -38,6 +42,9 @@ class NotificationService {
   // Track initialization state
   bool _isInitialized = false;
   bool _isInitializing = false;
+
+  // Current user role for filtering notifications
+  String? _currentRole;
 
   // OPTIMIZED: Fast, non-blocking initialization
   static Future<void> initialize() async {
@@ -51,6 +58,11 @@ class NotificationService {
     instance._isInitializing = true;
 
     try {
+      // Get current role
+      instance._currentRole = await AuthService.getCurrentRole();
+      debugPrint(
+          '🔔 Initializing NotificationService for role: ${instance._currentRole}');
+
       // 1. Quick local notifications setup (non-blocking)
       await instance._initLocalNotifications();
 
@@ -93,7 +105,7 @@ class NotificationService {
         // Get token in background
         String? token = await FirebaseMessaging.instance.getToken(
           vapidKey: kIsWeb
-              ? "YOUR_VAPID_KEY_HERE"
+              ? "BOHOh4GKJLNdRFctdSl4_Uj5PDBrwOOyKpEODbTCaC4bJlBJF3g_Cw0z_4QkNBVGQTM5F9x-hTvG7wQtdV_Ng_c"
               : null, // Add your VAPID key for web
         );
 
@@ -198,12 +210,41 @@ class NotificationService {
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           debugPrint('Notification tapped: ${response.payload}');
+          _handleNotificationTap(response.payload);
         },
       );
 
       debugPrint('Local notifications initialized');
     } catch (e) {
       debugPrint('Error initializing local notifications: $e');
+    }
+  }
+
+  // Handle notification tap from local notifications
+  void _handleNotificationTap(String? payload) {
+    if (payload != null) {
+      try {
+        final data = jsonDecode(payload);
+        final type = data['type'];
+        final orderId = data['orderId'];
+
+        debugPrint('🔔 Notification tapped - Type: $type, OrderID: $orderId');
+
+        switch (type) {
+          case 'order_status':
+            if (_orderStatusUpdateHandler != null && orderId != null) {
+              _orderStatusUpdateHandler!(orderId);
+            }
+            break;
+          case 'low_stock':
+            if (_lowStockNotificationHandler != null) {
+              _lowStockNotificationHandler!();
+            }
+            break;
+        }
+      } catch (e) {
+        debugPrint('Error handling notification tap: $e');
+      }
     }
   }
 
@@ -228,7 +269,7 @@ class NotificationService {
         message.notification?.title ?? 'New Notification',
         message.notification?.body ?? '',
         platformChannelSpecifics,
-        payload: message.data.toString(),
+        payload: jsonEncode(message.data),
       );
     } catch (e) {
       debugPrint('Error showing local notification: $e');
@@ -265,6 +306,7 @@ class NotificationService {
         'message': notification.message,
         'timeAgo': notification.timeAgo,
         'isRead': notification.isRead,
+        'type': notification.type,
         'timestamp': DateTime.now().toIso8601String(),
       };
 
@@ -296,6 +338,7 @@ class NotificationService {
             message: notificationData['message'],
             timeAgo: _getTimeAgo(DateTime.parse(notificationData['timestamp'])),
             isRead: notificationData['isRead'] ?? false,
+            type: notificationData['type'],
           );
 
           // Add to list
@@ -346,7 +389,7 @@ class NotificationService {
         if (supplierId != null) 'supplierId': supplierId,
       };
 
-      debugPrint('Sending token to backend...');
+      debugPrint('Sending token to backend for role: $currentRole');
 
       // Send to your backend with timeout
       final response = await http
@@ -382,10 +425,20 @@ class NotificationService {
     callback(_notifications);
   }
 
-  // NEW: Register low stock notification handler
+  // CUSTOMER-SPECIFIC HANDLERS
   void registerLowStockNotificationHandler(Function() handler) {
     _lowStockNotificationHandler = handler;
     debugPrint('🔔 Low stock notification handler registered');
+  }
+
+  void registerOrderStatusUpdateHandler(Function(String orderId) handler) {
+    _orderStatusUpdateHandler = handler;
+    debugPrint('🔔 Order status update handler registered');
+  }
+
+  void registerCustomerNotificationHandler(Function(NotificationItem) handler) {
+    _customerNotificationHandler = handler;
+    debugPrint('🔔 Customer notification handler registered');
   }
 
   // Unregister callbacks when they're no longer needed
@@ -398,7 +451,22 @@ class NotificationService {
     _notificationsListChangedCallbacks.remove(callback);
   }
 
-  // Handle incoming foreground messages
+  void unregisterLowStockNotificationHandler() {
+    _lowStockNotificationHandler = null;
+    debugPrint('🔔 Low stock notification handler unregistered');
+  }
+
+  void unregisterOrderStatusUpdateHandler() {
+    _orderStatusUpdateHandler = null;
+    debugPrint('🔔 Order status update handler unregistered');
+  }
+
+  void unregisterCustomerNotificationHandler() {
+    _customerNotificationHandler = null;
+    debugPrint('🔔 Customer notification handler unregistered');
+  }
+
+  // Handle incoming foreground messages with role-specific processing
   void _handleForegroundMessage(RemoteMessage message) {
     debugPrint('Got a message whilst in the foreground!');
     debugPrint('Message data: ${message.data}');
@@ -413,29 +481,97 @@ class NotificationService {
       // Convert to NotificationItem
       final notification = NotificationItem.fromFirebaseMessage(message);
 
-      // Add to list
-      _notifications.add(notification);
+      // Check if this notification is for the current role
+      if (_shouldProcessNotificationForCurrentRole(
+          notification, message.data)) {
+        // Add to list
+        _notifications.add(notification);
 
-      // Save to SharedPreferences
-      _saveNotifications();
+        // Save to SharedPreferences
+        _saveNotifications();
 
-      // Save to Firestore in background (non-blocking)
-      _databaseService.saveNotification(notification).catchError((e) {
-        debugPrint('Error saving notification to Firestore: $e');
-      });
+        // Save to Firestore in background (non-blocking)
+        _databaseService.saveNotification(notification).catchError((e) {
+          debugPrint('Error saving notification to Firestore: $e');
+        });
 
-      // Notify listeners
-      for (var callback in _newNotificationCallbacks) {
-        callback(notification);
-      }
+        // Handle role-specific notifications
+        _handleRoleSpecificNotification(notification, message.data);
 
-      for (var callback in _notificationsListChangedCallbacks) {
-        callback(_notifications);
+        // Notify listeners
+        for (var callback in _newNotificationCallbacks) {
+          callback(notification);
+        }
+
+        for (var callback in _notificationsListChangedCallbacks) {
+          callback(_notifications);
+        }
       }
     }
   }
 
-  // Get all notifications
+  // Check if notification should be processed for current role
+  bool _shouldProcessNotificationForCurrentRole(
+      NotificationItem notification, Map<String, dynamic> data) {
+    final notificationRole = data['targetRole'];
+    final currentRole = _currentRole;
+
+    // If no target role specified, show to all
+    if (notificationRole == null) return true;
+
+    // If target role matches current role
+    if (notificationRole == currentRole) return true;
+
+    // For customer-specific checks
+    if (currentRole == 'Customer') {
+      // Show order-related notifications
+      if (notification.type?.contains('order') == true) return true;
+      // Show low stock notifications
+      if (notification.type == 'low_stock') return true;
+    }
+
+    return false;
+  }
+
+  // Handle role-specific notification processing
+  void _handleRoleSpecificNotification(
+      NotificationItem notification, Map<String, dynamic> data) {
+    if (_currentRole == 'Customer') {
+      _handleCustomerNotification(notification, data);
+    }
+  }
+
+  // Handle customer-specific notifications
+  void _handleCustomerNotification(
+      NotificationItem notification, Map<String, dynamic> data) {
+    debugPrint('🛒 Processing customer notification: ${notification.type}');
+
+    switch (notification.type) {
+      case 'order_accepted':
+      case 'order_prepared':
+      case 'order_delivered':
+      case 'order_cancelled':
+      case 'order_rejected':
+        final orderId = data['orderId'];
+        if (_orderStatusUpdateHandler != null && orderId != null) {
+          _orderStatusUpdateHandler!(orderId);
+        }
+        break;
+
+      case 'low_stock':
+        if (_lowStockNotificationHandler != null) {
+          _lowStockNotificationHandler!();
+        }
+        break;
+    }
+
+    // Call general customer handler
+    if (_customerNotificationHandler != null) {
+      _customerNotificationHandler!(notification);
+    }
+  }
+
+  // Get all notifications (filtered by role if needed)
   List<NotificationItem> getNotifications() {
     // Sort by timestamp (newest first) and return a copy
     final notifications = List<NotificationItem>.from(_notifications);
@@ -455,16 +591,7 @@ class NotificationService {
     final index = _notifications.indexWhere((n) => n.id == id);
     if (index != -1) {
       // Create a new notification with isRead set to true
-      final updatedNotification = NotificationItem(
-        id: _notifications[index].id,
-        title: _notifications[index].title,
-        message: _notifications[index].message,
-        timeAgo: _notifications[index].timeAgo,
-        icon: _notifications[index].icon,
-        iconBackgroundColor: _notifications[index].iconBackgroundColor,
-        isRead: true,
-        onTap: _notifications[index].onTap,
-      );
+      final updatedNotification = _notifications[index].copyWith(isRead: true);
 
       // Replace in list
       _notifications[index] = updatedNotification;
@@ -490,16 +617,7 @@ class NotificationService {
 
     for (var notification in _notifications) {
       // Create a new notification with isRead set to true
-      updatedList.add(NotificationItem(
-        id: notification.id,
-        title: notification.title,
-        message: notification.message,
-        timeAgo: notification.timeAgo,
-        icon: notification.icon,
-        iconBackgroundColor: notification.iconBackgroundColor,
-        isRead: true,
-        onTap: notification.onTap,
-      ));
+      updatedList.add(notification.copyWith(isRead: true));
     }
 
     _notifications = updatedList;
@@ -551,29 +669,6 @@ class NotificationService {
       } else {
         debugPrint(
             'Failed to send notification to supplier: ${response.statusCode}');
-
-        // Add a local notification for immediate feedback
-        final testNotification = NotificationItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: 'Supplier Notification (Local)',
-          message: 'Notification to supplier ID $supplierId: $message',
-          timeAgo: 'Just now',
-          isRead: false,
-          icon: Icons.business,
-        );
-
-        _notifications.add(testNotification);
-        await _saveNotifications();
-
-        // Save to Firestore in background
-        _databaseService.saveNotification(testNotification).catchError((e) {
-          debugPrint('Error saving to Firestore: $e');
-        });
-
-        // Notify listeners
-        for (var callback in _notificationsListChangedCallbacks) {
-          callback(_notifications);
-        }
       }
     } catch (e) {
       debugPrint('Error sending notification to supplier: $e');
@@ -613,49 +708,8 @@ class NotificationService {
         debugPrint(
             'Failed to send notification to admin: ${response.statusCode}');
       }
-
-      // Add a local notification for immediate feedback regardless of API response
-      final testNotification = NotificationItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        message: message,
-        timeAgo: 'Just now',
-        isRead: false,
-        icon: Icons.admin_panel_settings,
-      );
-
-      _notifications.add(testNotification);
-      await _saveNotifications();
-
-      // Save to Firestore in background
-      _databaseService.saveNotification(testNotification).catchError((e) {
-        debugPrint('Error saving to Firestore: $e');
-      });
-
-      // Notify listeners
-      for (var callback in _notificationsListChangedCallbacks) {
-        callback(_notifications);
-      }
     } catch (e) {
       debugPrint('Error sending notification to admin: $e');
-
-      // Even if there's an error, add a local notification
-      final errorNotification = NotificationItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: 'Error Sending Notification',
-        message: 'Failed to send: $title - $message',
-        timeAgo: 'Just now',
-        isRead: false,
-        icon: Icons.error,
-      );
-
-      _notifications.add(errorNotification);
-      await _saveNotifications();
-
-      // Notify listeners
-      for (var callback in _notificationsListChangedCallbacks) {
-        callback(_notifications);
-      }
     }
   }
 
@@ -676,15 +730,7 @@ class NotificationService {
   // Enhanced notification to map with low stock type
   Map<String, dynamic> _enhancedNotificationToMap(
       NotificationItem notification) {
-    final map = notification.toMap();
-
-    // Add special type for low stock notifications
-    if (notification.title.contains('Stock Alert') ||
-        notification.title.contains('Low Stock')) {
-      map['type'] = 'low_stock';
-    }
-
-    return map;
+    return notification.toMap();
   }
 
   // Enhanced notification from map
@@ -804,34 +850,6 @@ class NotificationService {
     }
   }
 
-  // Check Firestore connection
-  Future<void> checkFirestoreConnection() async {
-    try {
-      debugPrint('Checking Firestore connection...');
-
-      // Try to write a test document with timeout
-      final testDoc = {
-        'test': true,
-        'timestamp': DateTime.now().toIso8601String(),
-        'message': 'Firestore connection test'
-      };
-
-      await FirebaseFirestore.instance
-          .collection('connection_tests')
-          .add(testDoc)
-          .timeout(Duration(seconds: 5));
-
-      debugPrint('Successfully wrote test document to Firestore');
-
-      // Force reload notifications in background
-      loadNotificationsFromFirestore().catchError((e) {
-        debugPrint('Error reloading notifications: $e');
-      });
-    } catch (e) {
-      debugPrint('Firestore connection test failed: $e');
-    }
-  }
-
   // Add a manual notification for testing
   Future<void> addManualNotification(String title, String message) async {
     final testNotification = NotificationItem(
@@ -841,15 +859,10 @@ class NotificationService {
       timeAgo: 'Just now',
       isRead: false,
       icon: Icons.notifications,
+      type: 'manual',
     );
 
-    _notifications.add(testNotification);
-    await _saveNotifications();
-
-    // Notify listeners
-    for (var callback in _notificationsListChangedCallbacks) {
-      callback(_notifications);
-    }
+    await saveNotification(testNotification);
   }
 
   // Add a public method to save notifications
@@ -879,7 +892,7 @@ class NotificationService {
     }
   }
 
-  // NEW: Save low stock notification with special handling
+  // Save low stock notification with special handling
   Future<void> saveLowStockNotification(NotificationItem notification) async {
     try {
       // Add to in-memory list
@@ -908,22 +921,54 @@ class NotificationService {
     }
   }
 
-  // NEW: Handle notification tap - checks if it's a low stock notification
+  // Handle notification tap - checks type and calls appropriate handler
   bool handleNotificationTap(NotificationItem notification) {
-    if (notification.title.contains('Stock Alert') ||
-        notification.title.contains('Low Stock')) {
-      debugPrint('🔔 Low stock notification tapped: ${notification.title}');
+    debugPrint(
+        '🔔 Notification tapped: ${notification.title} (${notification.type})');
 
-      // Call the registered handler if available
-      if (_lowStockNotificationHandler != null) {
-        _lowStockNotificationHandler!();
-        return true; // Handled
-      } else {
-        debugPrint('⚠️ No low stock notification handler registered');
-        return false; // Not handled
-      }
+    switch (notification.type) {
+      case 'low_stock':
+        if (_lowStockNotificationHandler != null) {
+          _lowStockNotificationHandler!();
+          return true;
+        }
+        break;
+
+      case 'order_accepted':
+      case 'order_prepared':
+      case 'order_delivered':
+      case 'order_cancelled':
+      case 'order_rejected':
+        // Extract order ID from message or title
+        final orderIdMatch = RegExp(r'#(\d+)').firstMatch(notification.message);
+        if (orderIdMatch != null && _orderStatusUpdateHandler != null) {
+          final orderId = orderIdMatch.group(1)!;
+          _orderStatusUpdateHandler!(orderId);
+          return true;
+        }
+        break;
     }
 
-    return false; // Not a low stock notification
+    // Call general customer handler if available
+    if (_customerNotificationHandler != null) {
+      _customerNotificationHandler!(notification);
+      return true;
+    }
+
+    return false; // Not handled
+  }
+
+  // Update current role (useful when user switches roles)
+  Future<void> updateCurrentRole(String role) async {
+    _currentRole = role;
+    debugPrint('🔔 NotificationService role updated to: $role');
+
+    // Re-register token with new role
+    String? token = await FirebaseMessaging.instance.getToken();
+    if (token != null) {
+      _sendTokenToBackend(token).catchError((e) {
+        debugPrint('Error updating token for new role: $e');
+      });
+    }
   }
 }
