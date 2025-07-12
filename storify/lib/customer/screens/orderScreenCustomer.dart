@@ -163,21 +163,6 @@ class _CustomerOrdersState extends State<CustomerOrders> {
 
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
     final isArabic = LocalizationHelper.isArabic(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          l10n.customerOrdersItemAddedToCart(item.product.name),
-          style: isArabic ? GoogleFonts.cairo() : GoogleFonts.spaceGrotesk(),
-        ),
-        duration: const Duration(seconds: 1),
-        backgroundColor: const Color(0xFF7B5CFA),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
   }
 
   void _updateCartItemQuantity(int index, int quantity) {
