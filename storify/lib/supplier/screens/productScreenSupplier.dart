@@ -36,6 +36,10 @@ class _SupplierProductsState extends State<SupplierProducts> {
   // Show products or requested products
   bool _showRequestedProducts = false;
 
+  // Refresh loading states
+  bool _isRefreshingProducts = false;
+  bool _isRefreshingRequestedProducts = false;
+
   // Filter options - will be localized in build method
   List<String> _filterOptions = [];
   List<String> _requestedFilterOptions = [];
@@ -109,6 +113,78 @@ class _SupplierProductsState extends State<SupplierProducts> {
         _searchQuery = query;
       }
     });
+  }
+
+  // Manual refresh for products table
+  Future<void> _manualRefreshProducts() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
+    setState(() {
+      _isRefreshingProducts = true;
+    });
+
+    try {
+      if (_productsTableKey.currentState != null) {
+        _productsTableKey.currentState!.refreshProducts();
+        debugPrint('Products table refresh called manually');
+      }
+
+      // Wait a bit for the refresh to complete
+      await Future.delayed(const Duration(seconds: 1));
+
+      setState(() {
+        _isRefreshingProducts = false;
+      });
+
+      // Show success message
+    } catch (e) {
+      setState(() {
+        _isRefreshingProducts = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error refreshing products: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Manual refresh for requested products table
+  Future<void> _manualRefreshRequestedProducts() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
+    setState(() {
+      _isRefreshingRequestedProducts = true;
+    });
+
+    try {
+      if (_requestedProductsTableKey.currentState != null) {
+        _requestedProductsTableKey.currentState!.refreshProducts();
+        debugPrint('Requested products table refresh called manually');
+      }
+
+      // Wait a bit for the refresh to complete
+      await Future.delayed(const Duration(seconds: 1));
+
+      setState(() {
+        _isRefreshingRequestedProducts = false;
+      });
+
+      // Show success message
+    } catch (e) {
+      setState(() {
+        _isRefreshingRequestedProducts = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error refreshing requested products: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _onProductAdded(Map<String, dynamic> newProduct) {
@@ -291,7 +367,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Filter and Search Row
+        // Filter and Search Row with Refresh Icon
         Row(
           children: [
             Text(
@@ -329,6 +405,35 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 ),
               ),
             ),
+            SizedBox(width: 16.w), // Add some spacing
+
+            // Refresh Icon Button for Products
+            Container(
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 36, 50, 69),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: IconButton(
+                onPressed:
+                    _isRefreshingProducts ? null : _manualRefreshProducts,
+                icon: _isRefreshingProducts
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.0,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        ),
+                      )
+                    : Icon(
+                        Icons.refresh,
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                        size: 24.sp,
+                      ),
+                // tooltip: l10n.refreshProducts ?? 'Refresh Products',
+              ),
+            ),
+
             const Spacer(),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -421,7 +526,7 @@ class _SupplierProductsState extends State<SupplierProducts> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Filter and Search Row
+        // Filter and Search Row with Refresh Icon
         Row(
           children: [
             Text(
@@ -460,6 +565,36 @@ class _SupplierProductsState extends State<SupplierProducts> {
                 ),
               ),
             ),
+            SizedBox(width: 16.w), // Add some spacing
+
+            // Refresh Icon Button for Requested Products
+            Container(
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 36, 50, 69),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: IconButton(
+                onPressed: _isRefreshingRequestedProducts
+                    ? null
+                    : _manualRefreshRequestedProducts,
+                icon: _isRefreshingRequestedProducts
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.0,
+                          color: const Color.fromARGB(255, 105, 65, 198),
+                        ),
+                      )
+                    : Icon(
+                        Icons.refresh,
+                        color: const Color.fromARGB(255, 105, 65, 198),
+                        size: 24.sp,
+                      ),
+                // tooltip: l10n.refreshRequestedProducts ?? 'Refresh Requested Products',
+              ),
+            ),
+
             const Spacer(),
             Container(
               width: 300.w,

@@ -30,6 +30,7 @@ class _SupplierOrdersState extends State<SupplierOrders> {
   // Orders state
   List<Order> _orders = [];
   bool _isLoading = true;
+  bool _isRefreshing = false; // Add refresh loading state
   int _selectedFilterIndex = 0;
   String _searchQuery = "";
 
@@ -127,6 +128,38 @@ class _SupplierOrdersState extends State<SupplierOrders> {
           );
         }
       }
+    }
+  }
+
+  // Manual refresh method for the refresh icon
+  Future<void> _manualRefreshOrders() async {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      final orders = await _apiService.fetchSupplierOrders();
+      setState(() {
+        _orders = orders;
+        _isRefreshing = false;
+        // Clear selection when refreshing
+        _selectedOrder = null;
+        _orderDetails = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isRefreshing = false;
+      });
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${l10n.failedToRefreshOrders}: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -245,7 +278,7 @@ class _SupplierOrdersState extends State<SupplierOrders> {
                 ),
                 SizedBox(height: 24.h),
 
-                // Filter and Search Row
+                // Filter and Search Row with Refresh Icon
                 Row(
                   children: [
                     Text(
@@ -284,6 +317,39 @@ class _SupplierOrdersState extends State<SupplierOrders> {
                         ),
                       ),
                     ),
+                    SizedBox(width: 16.w), // Add some spacing
+
+                    // Refresh Icon Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 36, 50, 69),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: IconButton(
+                        onPressed: _isRefreshing || _isLoading
+                            ? null
+                            : _manualRefreshOrders,
+                        icon: _isRefreshing
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.h,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.0,
+                                  color:
+                                      const Color.fromARGB(255, 105, 65, 198),
+                                ),
+                              )
+                            : Icon(
+                                Icons.refresh,
+                                color: _isLoading
+                                    ? Colors.white30
+                                    : const Color.fromARGB(255, 105, 65, 198),
+                                size: 24.sp,
+                              ),
+                        // tooltip: l10n.refreshOrders ?? 'Refresh Orders',
+                      ),
+                    ),
+
                     const Spacer(),
                     Container(
                       width: 300.w,
